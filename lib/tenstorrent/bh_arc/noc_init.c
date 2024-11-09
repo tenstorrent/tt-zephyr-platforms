@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "noc_init.h"
+
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <zephyr/sys/util.h>
@@ -13,14 +16,27 @@
 #include "noc2axi.h"
 #include "fw_table.h"
 
-#define NIU_CFG_0 0x0
+/* NIU config register indices for Read/WriteNocCfgReg */
+#define NIU_CFG_0			0x0
+#define ROUTER_CFG(n)			((n) + 1)
+#define NOC_X_ID_TRANSLATE_TABLE(n)	((n) + 0x6)
+#define NOC_Y_ID_TRANSLATE_TABLE(n)	((n) + 0xC)
+#define NOC_ID_LOGICAL			0x12
+#define NOC_ID_TRANSLATE_COL_MASK	0x14
+#define NOC_ID_TRANSLATE_ROW_MASK	0x15
+#define DDR_COORD_TRANSLATE_TABLE(n)	((n) + 0x16)
 
-#define ROUTER_CFG(n) ((n) + 1)
+/* NIU_CFG_0 fields */
+#define NIU_CFG_0_TILE_HEADER_STORE_OFF	13 /* NOC2AXI only */
+#define NIU_CFG_0_NOC_ID_TRANSLATE_EN	14
+#define NIU_CFG_0_AXI_SLAVE_ENABLE	15
 
-#define CLOCK_GATING_EN                 0
-#define NIU_CFG_0_TILE_HEADER_STORE_OFF 13 // NOC2AXI only
-#define NIU_CFG_0_AXI_SLAVE_ENABLE      15
-#define STREAM_PERF_CONFIG_REG_INDEX    35
+#define NOC_TRANSLATE_ID_WIDTH		5
+#define NOC_TRANSLATE_TABLE_XY_SIZE	(32/NOC_TRANSLATE_ID_WIDTH)
+
+/* Overlay stream registers & fields */
+#define STREAM_PERF_CONFIG_REG_INDEX	35
+#define CLOCK_GATING_EN			0
 
 static const uint8_t kTlbIndex = 0;
 
@@ -116,4 +132,273 @@ void NocInit() {
       EnableOverlayCg(kTlbIndex, px, py);
     }
   }
+}
+
+#define PRE_TRANSLATION_SIZE 32
+
+struct NocTranslation {
+  bool translate_en;
+  uint8_t translate_table_x[PRE_TRANSLATION_SIZE];
+  uint8_t translate_table_y[PRE_TRANSLATION_SIZE];
+
+  uint32_t translate_col_mask[DIV_ROUND_UP(PRE_TRANSLATION_SIZE, 32)];
+  uint32_t translate_row_mask[DIV_ROUND_UP(PRE_TRANSLATION_SIZE, 32)];
+
+  uint16_t logical_coords[NOC_X_SIZE][NOC_Y_SIZE];
+};
+
+static void SetLogicalCoord(struct NocTranslation *nt, uint8_t post_x, uint8_t post_y, uint8_t logical_x, uint8_t logical_y)
+{
+  nt->logical_coords[post_x][post_y] = ((uint32_t)logical_y << 6) | logical_x;
+}
+
+static void MakeIdentity(struct NocTranslation *nt)
+{
+  memset(nt, 0, sizeof(*nt));
+
+  nt->translate_en = true;
+
+  for (unsigned int i = 0; i < PRE_TRANSLATION_SIZE; i++) {
+    nt->translate_table_x[i] = (i < NOC_X_SIZE) ? i : 0;
+    nt->translate_table_y[i] = (i < NOC_Y_SIZE) ? i : 0;
+  }
+
+  for (unsigned int x = 0; x < NOC_X_SIZE; x++) {
+    for (unsigned int y = 0; y < NOC_Y_SIZE; y++) {
+      SetLogicalCoord(nt, x, y, x, y);
+    }
+  }
+}
+
+static void CopyNoc0ToNoc1(const struct NocTranslation *noc0, struct NocTranslation *noc1) {
+  *noc1 = *noc0;
+
+  for (unsigned i = 0; i < PRE_TRANSLATION_SIZE; i++) {
+    noc1->translate_table_x[i] = NOC_X_SIZE - noc0->translate_table_x[i] - 1;
+    noc1->translate_table_y[i] = NOC_Y_SIZE - noc0->translate_table_y[i] - 1;
+  }
+
+  for (unsigned int x = 0; x < NOC_X_SIZE; x++) {
+    for (unsigned int y = 0; y < NOC_Y_SIZE; y++) {
+      noc1->logical_coords[x][y] = noc0->logical_coords[NOC_X_SIZE - x - 1][NOC_Y_SIZE - y - 1];
+    }
+  }
+}
+
+/* https://tenstorrent.sharepoint.com/:x:/r/sites/SOC/Blackhole%20Documents/Blackhole%20-%20NOC%20Co-ordinates.xlsx?d=w449397eff6fc48abaed13762398c30dd&csf=1&web=1&e=G4HRZp */
+/* X coordinate of tensix_with_l1[i][j] (for all j) and tt_eth_ss[i] */
+static const uint8_t kTensixEthNoc0X[] = { 1, 16, 2, 15, 3, 14, 4, 13, 5, 12, 6, 11, 7, 10 };
+/* Y coordinate of l2cpu_ss_inst[i]-P1. */
+static const uint8_t kL2CpuNoc0Y[] = { 3, 9, 5, 7 };
+/* Y coordinates of GDDR[i] and GDDR[i+4]. Order of ports within controllers doesn't matter. */
+static const uint8_t kGddrY[][3] =  { { 0, 1, 11 }, { 2, 10, 3 }, { 9, 4, 8 }, { 5, 7, 6 } };
+
+static void CopyBytesSkipIndices(uint8_t *out, const uint8_t *in, size_t count, uint32_t skip_mask) {
+  uint8_t *out_end = out + count;
+
+  while (out != out_end) {
+    if (!(skip_mask & 1))
+      *out++ = *in;
+
+    skip_mask >>= 1;
+    in++;
+  }
+}
+
+/* NOC Overlay needs a "logical coordinate" for each node.
+   We can't derive this from the translation tables alone because there may be many unintentional aliases for each node.
+   But within the given pre-translation coordinate box, there must not be any aliases. */
+static void ApplyLogicalCoords(struct NocTranslation *nt,
+                               uint8_t post_x_start, uint8_t post_y_start, uint8_t post_x_end, uint8_t post_y_end,
+                               uint8_t pre_x_start, uint8_t pre_y_start, uint8_t pre_x_end, uint8_t pre_y_end)
+{
+  for (unsigned pre_x = pre_x_start; pre_x <= pre_x_end; pre_x++) {
+
+    unsigned post_x = nt->translate_table_x[pre_x];
+    if (post_x < post_x_start || post_x > post_x_end)
+      continue;
+
+    for (unsigned pre_y = pre_y_start; pre_y <= pre_y_end; pre_y++) {
+
+      unsigned post_y = nt->translate_table_y[pre_y];
+      if (post_y < post_y_start || post_y > post_y_end)
+        continue;
+
+      SetLogicalCoord(nt, post_x, post_y, pre_x, pre_y);
+    }
+  }
+}
+
+static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned noc_id)
+{
+  uint32_t translate_table_x[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+  uint32_t translate_table_y[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+
+  for (unsigned i = 0; i < PRE_TRANSLATION_SIZE; i++) {
+    uint32_t index = i / NOC_TRANSLATE_TABLE_XY_SIZE;
+    uint32_t shift = i % NOC_TRANSLATE_TABLE_XY_SIZE * NOC_TRANSLATE_ID_WIDTH;
+
+    uint32_t x = nt->translate_table_x[i];
+    translate_table_x[index] |= x << shift;
+
+    uint32_t y = nt->translate_table_y[i];
+    translate_table_y[index] |= y << shift;
+  }
+
+  /* Because there's no embedded identity map, we must ensure that the very last
+     step is enabling translation for ARC. */
+
+  const unsigned arc_x = 8;
+  const unsigned arc_y = (noc_id == 0) ? 0 : NOC0_Y_TO_NOC1(0);
+
+  for (unsigned x = 0; x < NOC_X_SIZE; x++) {
+    for (unsigned y = 0; y < NOC_Y_SIZE; y++) {
+      volatile void *noc_regs = SetupNiuTlb(kTlbIndex, x, y, noc_id);
+
+      WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_COL_MASK, nt->translate_col_mask[0]);
+      WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_ROW_MASK, nt->translate_row_mask[0]);
+
+      /* Clear ddr_translate_east/west_column so DDR translation is never used. */
+      WriteNocCfgReg(noc_regs, DDR_COORD_TRANSLATE_TABLE(5), 0);
+
+      WriteNocCfgReg(noc_regs, NOC_ID_LOGICAL, nt->logical_coords[x][y]);
+
+      for (unsigned i = 0; i < ARRAY_SIZE(translate_table_x); i++) {
+        WriteNocCfgReg(noc_regs, NOC_X_ID_TRANSLATE_TABLE(i), translate_table_x[i]);
+        WriteNocCfgReg(noc_regs, NOC_Y_ID_TRANSLATE_TABLE(i), translate_table_y[i]);
+      }
+
+      if (x != arc_x || y != arc_y) {
+        uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+        WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, nt->translate_en);
+        WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+      }
+    }
+  }
+
+  volatile void *noc_regs = SetupNiuTlb(kTlbIndex, arc_x, arc_y, noc_id);
+
+  uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+  WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, nt->translate_en);
+  WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+}
+
+/* Please see https://docs.google.com/spreadsheets/d/1tGG4UPfABXrd97Y3VPJS7CusDFlamcml9kEw1HEwrlM/edit?usp=sharing
+   and also the python reference code. */
+static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, uint8_t bad_gddr, uint16_t skip_eth)
+{
+  struct NocTranslation noc0;
+
+  MakeIdentity(&noc0);
+
+  /* Block column translations on PCIE and ethernet rows. Column translations will only affect the Tensix rows. */
+  noc0.translate_row_mask[0] |= BIT(0) | BIT(1);
+
+  /* Tensix
+     bad_tensix_cols is a bitmap of i as in tensix_with_l1[i][j].
+     We want to fill out the tensix NOC columns (1-7, 10-16) in increasing order, except skipping
+     the disabled columns which will be moved to the end. */
+
+  const unsigned num_tensix_cols = ARRAY_SIZE(kTensixEthNoc0X);
+
+  /* Convert physical tensix column bits into NOC 0 X bits. */
+  unsigned int good_tensix_noc0_x = GENMASK(7, 1) | GENMASK(16, 10);
+  for (unsigned int i = 0; i < num_tensix_cols; i++)
+    if (bad_tensix_cols & BIT(i))
+      good_tensix_noc0_x &= ~BIT(kTensixEthNoc0X[i]);
+
+  for (unsigned int noc_x = 1; noc_x <= 7 && good_tensix_noc0_x; noc_x++) {
+    /* pop lowest bit, it's the next valid column */
+    unsigned good_tensix_lsb = LSB_GET(good_tensix_noc0_x);
+    good_tensix_noc0_x &= ~good_tensix_lsb;
+    unsigned next_good_tensix = LOG2(good_tensix_lsb);
+
+    noc0.translate_table_x[noc_x] = next_good_tensix;
+  }
+
+  for (unsigned int noc_x = 10; noc_x <= 16 && good_tensix_noc0_x; noc_x++) {
+    /* pop lowest bit, it's the next valid column */
+    unsigned good_tensix_lsb = LSB_GET(good_tensix_noc0_x);
+    good_tensix_noc0_x &= ~good_tensix_lsb;
+    unsigned next_good_tensix = LOG2(good_tensix_lsb);
+
+    noc0.translate_table_x[noc_x] = next_good_tensix;
+  }
+
+  /* This assumes that there are no more than 7 bad columns.
+     It only updates cols 10-16 and never looks back into cols 1-7. */
+  for (unsigned int noc_x = 16; noc_x >= 10 && bad_tensix_cols; noc_x--) {
+    unsigned bad_tensix_lsb = LSB_GET(bad_tensix_cols);
+    bad_tensix_cols &= ~bad_tensix_lsb;
+    unsigned next_bad_tensix = kTensixEthNoc0X[LOG2(bad_tensix_lsb)];
+
+    noc0.translate_table_x[noc_x] = next_bad_tensix;
+  }
+
+  ApplyLogicalCoords(&noc0, 1, 2, 7, 11, 1, 2, 16, 11);
+  ApplyLogicalCoords(&noc0, 10, 2, 16, 11, 1, 2, 16, 11);
+
+  /* GDDR */
+  if (bad_gddr >= 4) { /* includes all GDDR good */
+    /* Put columns in west/east order. If there's a bad GDDR, it's in east. */
+    noc0.translate_table_x[17] = 0; /* West */
+    noc0.translate_table_x[18] = 9; /* East */
+  } else {
+    /* Bad GDDR is in west. */
+    noc0.translate_table_x[17] = 9; /* East */
+    noc0.translate_table_x[18] = 0; /* West */
+  }
+
+  uint8_t gddr_y_order[] = { 0, 1, 2, 3 };
+  if (bad_gddr != NO_BAD_GDDR) {
+    /* Move bad_gddr to the end (highest Y). */
+    uint8_t bad_gddr_row = bad_gddr % 4;
+    memmove(gddr_y_order + bad_gddr_row, gddr_y_order + bad_gddr_row + 1, ARRAY_SIZE(gddr_y_order) - bad_gddr_row - 1);
+    gddr_y_order[3] = bad_gddr % 4;
+  }
+
+  for (unsigned int gddr = 0; gddr < ARRAY_SIZE(gddr_y_order); gddr++)
+    memcpy(&noc0.translate_table_y[12 + gddr * 3], kGddrY[gddr_y_order[gddr]], 3);
+
+  ApplyLogicalCoords(&noc0, 0, 0, 0, 11, 17, 12, 17, 23);
+  ApplyLogicalCoords(&noc0, 9, 0, 9, 11, 17, 12, 17, 23);
+
+  /* PCIE
+     19-24 => 2-0 or 11-0, whichever is in use as the endpoint. */
+  unsigned pcie_x = pcie_instance ? 11 : 2;
+  noc0.translate_table_x[19] = pcie_x;
+  noc0.translate_table_y[24] = 0;
+
+  ApplyLogicalCoords(&noc0, pcie_x, 0, pcie_x, 0, 19, 24, 19, 24);
+
+  /* Ethernet
+     20-25..31-25 => X-1 where X is rearranged to give a predictable mapping from NOC coordinate to SERDES. */
+  noc0.translate_table_y[25] = 1;
+  CopyBytesSkipIndices(noc0.translate_table_x + 20, kTensixEthNoc0X, 12, skip_eth);
+  ApplyLogicalCoords(&noc0, 1, 1, 7, 1, 20, 25, 31, 25);
+  ApplyLogicalCoords(&noc0, 10, 1, 16, 1, 20, 25, 31, 25);
+
+  /* L2CPU
+     8-26,27,28,29 => 8-3,9,5,7
+     This puts l2cpu_ss_inst[i]-P1 in order by i. */
+  memcpy(noc0.translate_table_y+26, kL2CpuNoc0Y, ARRAY_SIZE(kL2CpuNoc0Y));
+  /* L2CPU are on row X=8 which is same pre/post translated */
+  ApplyLogicalCoords(&noc0, 8, 3, 8, 9, 8, 26, 8, 29);
+
+  /* Security
+     8-30 => 8-2 */
+  noc0.translate_table_y[30] = 2;
+  ApplyLogicalCoords(&noc0, 8, 2, 8, 2, 8, 30, 8, 30);
+
+  return noc0;
+}
+
+void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, uint8_t bad_gddr, uint16_t skip_eth)
+{
+  struct NocTranslation noc0 = ComputeNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
+  ProgramNocTranslation(&noc0, 0);
+
+  struct NocTranslation noc1;
+  CopyNoc0ToNoc1(&noc0, &noc1);
+  ProgramNocTranslation(&noc1, 1);
 }
