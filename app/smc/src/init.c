@@ -470,6 +470,10 @@ uint32_t InitHW() {
     EnableTensixCG();
   }
 
+  if (get_fw_table()->feature_enable.noc_translation_en) {
+    InitNocTranslationFromHarvesting();
+  }
+
   // Indicate successful HW Init
   boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
   boot_status0.f.hw_init_status = kHwInitDone;
