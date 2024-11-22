@@ -22,6 +22,8 @@ uint64_t OverlayRegsBase(uint8_t px, uint8_t py); // Returns 0 if node doesn't s
 
 uint8_t PhysXToNoc(uint8_t px, uint8_t noc_id);
 uint8_t PhysYToNoc(uint8_t py, uint8_t noc_id);
+uint8_t NocToPhysX(uint8_t nx, uint8_t noc_id);
+uint8_t NocToPhysY(uint8_t ny, uint8_t noc_id);
 
 uint8_t TensixPhysXToNoc(uint8_t px, uint8_t noc_id);
 uint8_t TensixPhysYToNoc(uint8_t py, uint8_t noc_id);

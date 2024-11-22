@@ -57,6 +57,9 @@ static const uint8_t kNodeTypes[NOC_Y_SIZE][NOC_X_SIZE] = {
 static const uint8_t kPhysXToNoc0[NOC_X_SIZE] = { 0, 1, 16, 2, 15, 3, 14, 4, 13, 5, 12, 6, 11, 7, 10, 8, 9 };
 static const uint8_t kPhysYToNoc0[NOC_Y_SIZE] = { 0, 1, 11, 2, 10, 3, 9, 4, 8, 5, 7, 6 };
 
+static const uint8_t kNoc0XToPhys[NOC_X_SIZE] = { 0, 1, 3, 5, 7, 9, 11, 13, 15, 16, 14, 12, 10, 8, 6, 4, 2 };
+static const uint8_t kNoc0YToPhys[NOC_Y_SIZE] = { 0, 1, 3, 5, 7, 9, 11, 10, 8, 6, 4, 2 };
+
 static enum NocNodeType GetNodeType(uint8_t px, uint8_t py) {
   uint8_t flipped_py = NOC_Y_SIZE - py - 1;
   return kNodeTypes[flipped_py][px];
@@ -118,6 +121,18 @@ uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id) {
   }
   // Invalid
   return 0xFF;
+}
+
+uint8_t NocToPhysX(uint8_t nx, uint8_t noc_id)
+{
+  uint8_t noc0_x = (noc_id == 0) ? nx : NOC0_X_TO_NOC1(nx);
+  return kNoc0XToPhys[noc0_x];
+}
+
+uint8_t NocToPhysY(uint8_t ny, uint8_t noc_id)
+{
+  uint8_t noc0_y = (noc_id == 0) ? ny : NOC0_Y_TO_NOC1(ny);
+  return kNoc0YToPhys[noc0_y];
 }
 
 /*
