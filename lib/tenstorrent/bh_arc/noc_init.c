@@ -35,6 +35,15 @@ static volatile void *SetupNiuTlbPhys(uint8_t tlb_index, uint8_t px, uint8_t py,
   return GetTlbWindowAddr(noc_id, tlb_index, regs);
 }
 
+static volatile void *SetupNiuTlb(uint8_t tlb_index, uint8_t nx, uint8_t ny, uint8_t noc_id)
+{
+  uint64_t regs = NiuRegsBase(NocToPhysX(nx, noc_id), NocToPhysY(ny, noc_id), noc_id);
+
+  NOC2AXITlbSetup(noc_id, tlb_index, nx, ny, regs);
+
+  return GetTlbWindowAddr(noc_id, tlb_index, regs);
+}
+
 static uint32_t ReadNocCfgReg(volatile void* regs, uint32_t cfg_reg_index) {
   return ((volatile uint32_t*)regs)[kFirstCfgRegIndex+cfg_reg_index];
 }
