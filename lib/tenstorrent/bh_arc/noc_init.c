@@ -26,7 +26,8 @@ static const uint8_t kTlbIndex = 0;
 
 static const uint32_t kFirstCfgRegIndex = 0x100 / sizeof(uint32_t);
 
-static volatile void *SetupNiuTlb(uint8_t tlb_index, uint8_t px, uint8_t py, uint8_t noc_id) {
+static volatile void *SetupNiuTlbPhys(uint8_t tlb_index, uint8_t px, uint8_t py, uint8_t noc_id)
+{
   uint64_t regs = NiuRegsBase(px, py, noc_id);
 
   NOC2AXITlbSetup(noc_id, tlb_index, PhysXToNoc(px, noc_id), PhysYToNoc(py, noc_id), regs);
@@ -87,7 +88,7 @@ void NocInit() {
   for (uint32_t py = 0; py < NOC_Y_SIZE; py++) {
     for (uint32_t px = 0; px < NOC_X_SIZE; px++) {
       for (uint32_t noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
-        volatile uint32_t *noc_regs = SetupNiuTlb(kTlbIndex, px, py, noc_id);
+        volatile uint32_t *noc_regs = SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
 
         uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
         niu_cfg_0 |= niu_cfg_0_updates;
