@@ -17,7 +17,7 @@ enum msg_type {
   MSG_TYPE_SET_VOLTAGE                     = 0x12,
   MSG_TYPE_GET_VOLTAGE                     = 0x13,
   MSG_TYPE_SWITCH_CLK_SCHEME               = 0x14,
-  MSG_TYPE_TELEMETRY_START                 = 0x15,
+  MSG_TYPE_DEBUG_NOC_TRANSLATION           = 0x15,
   MSG_TYPE_REPORT_SCRATCH_ONLY             = 0x16,
   MSG_TYPE_SEND_PCIE_MSI                   = 0x17,
   MSG_TYPE_SWITCH_VOUT_CONTROL             = 0x18,

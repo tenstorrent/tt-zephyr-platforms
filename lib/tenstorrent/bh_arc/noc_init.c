@@ -13,6 +13,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
+#include <tenstorrent/msgqueue.h>
+#include <tenstorrent/msg_type.h>
 #include "noc.h"
 #include "noc2axi.h"
 #include "fw_table.h"
@@ -459,3 +461,65 @@ void InitNocTranslationFromHarvesting()
 
   InitNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
 }
+
+static void DisableArcNocTranslation()
+{
+  /* Program direct rather than relying on NOC loopback, because we
+     don't know what the pre-translation ARC coordinates are. */
+  const uint32_t kNoc0RegBase = 0x80050000;
+  const uint32_t kNoc1RegBase = 0x80058000;
+  const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;
+
+  uint32_t niu_cfg_0 = ReadReg(kNoc0RegBase + kNiuCfg0Offset);
+  WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
+  WriteReg(kNoc0RegBase + kNiuCfg0Offset, niu_cfg_0);
+
+  niu_cfg_0 = ReadReg(kNoc1RegBase + kNiuCfg0Offset);
+  WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
+  WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
+}
+
+static void ClearNocTranslation()
+{
+  DisableArcNocTranslation();
+
+  struct NocTranslation all_zeroes = {0,};
+
+  for (unsigned int x = 0; x < NOC_X_SIZE; x++) {
+    for (unsigned int y = 0; y < NOC_Y_SIZE; y++) {
+      SetLogicalCoord(&all_zeroes, x, y, x, y);
+    }
+  }
+
+  ProgramNocTranslation(&all_zeroes, 0);
+  ProgramNocTranslation(&all_zeroes, 1);
+}
+
+static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct request *req, struct response *rsp)
+{
+  bool enable_translation     = FIELD_GET(GENMASK(8, 8), req->data[0]);
+  unsigned int pcie_instance  = FIELD_GET(GENMASK(9, 9), req->data[0]);
+  bool pcie_instance_override = FIELD_GET(GENMASK(10, 10), req->data[0]);
+  uint16_t bad_tensix_cols    = FIELD_GET(GENMASK(31, 16), req->data[0]);
+
+  uint8_t bad_gddr            = FIELD_GET(GENMASK(7, 0), req->data[1]);
+  uint16_t skip_eth           = FIELD_GET(GENMASK(23, 8), req->data[1]);
+
+  ClearNocTranslation();
+
+  if (enable_translation) {
+    if (!pcie_instance_override) {
+      if (get_fw_table()->pci1_property_table.pcie_mode == FwTable_PciPropertyTable_PcieMode_EP) {
+        pcie_instance = 1;
+      } else {
+        pcie_instance = 0;
+      }
+    }
+
+    InitNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
+  }
+
+  return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_DEBUG_NOC_TRANSLATION, DebugNocTranslationHandler);
