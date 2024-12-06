@@ -86,6 +86,7 @@ void NOC2AXITlbSetup(const uint8_t ring, const uint8_t tlb_num, const uint8_t x,
   tlb2.val = 0;
   tlb2.f.x_end = x;
   tlb2.f.y_end = y;
+  tlb2.f.ordering_mode = kNoc2AxiOrderingStrict;
   NOC2AXITlb3RegU tlb3 = {.val = 0};
   WriteTlbSetup(ring, tlb_num, tlb0, tlb1, tlb2, tlb3);
 }
