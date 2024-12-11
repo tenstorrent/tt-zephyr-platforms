@@ -36,6 +36,7 @@
 #include "fw_table.h"
 #include "read_only_table.h"
 #include "flash_info_table.h"
+#include "harvesting.h"
 
 #define RESET_UNIT_GLOBAL_RESET_REG_ADDR 0x80030000
 #define RESET_UNIT_ETH_RESET_REG_ADDR    0x80030008
@@ -401,6 +402,8 @@ uint32_t InitHW() {
   SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
   // Enable CATMON for early thermal protection
   CATInit();
+
+  CalculateHarvesting();
 
   SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP3);
   // Put all PLLs back into bypass, since tile resets need to be deasserted at low speed

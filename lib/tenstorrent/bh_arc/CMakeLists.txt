@@ -19,6 +19,7 @@ zephyr_library_sources(
   flash_info_table.c
   fw_table.c
   gddr.c
+  harvesting.c
   i2c_messages.c
   msgqueue.c
   noc_init.c
