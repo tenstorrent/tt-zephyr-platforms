@@ -20,6 +20,7 @@
 #include "fan_ctrl.h"
 #include "read_only_table.h"
 #include "fw_table.h"
+#include "harvesting.h"
 
 #include <zephyr/kernel.h>
 #include <app_version.h>
@@ -81,6 +82,14 @@ static void write_static_telemetry()
   telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
   telemetry[CM_FW_VERSION] = APPVERSION;
   telemetry[L2CPU_FW_VERSION] = 0x00000000;
+
+  // Tile enablement / harvesting information
+  telemetry[ENABLED_TENSIX_COL] = tile_enable.tensix_col_enabled;
+  telemetry[ENABLED_ETH] = tile_enable.eth_enabled;
+  telemetry[ENABLED_GDDR] = tile_enable.gddr_enabled;
+  telemetry[ENABLED_L2CPU] = tile_enable.l2cpu_enabled;
+  telemetry[PCIE_USAGE] = ((tile_enable.pcie_usage[1] & 0x3) << 2) |
+                            (tile_enable.pcie_usage[0] & 0x3);
 }
 
 static void update_telemetry()
@@ -145,7 +154,12 @@ static void update_tag_table()
   tag_table[29] = (struct telemetry_entry){TAG_L2CPU_FW_VERSION, L2CPU_FW_VERSION};
   tag_table[30] = (struct telemetry_entry){TAG_FAN_SPEED, FAN_SPEED};
   tag_table[31] = (struct telemetry_entry){TAG_TIMER_HEARTBEAT, TIMER_HEARTBEAT};
-  tag_table[32] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+  tag_table[32] = (struct telemetry_entry){TAG_ENABLED_TENSIX_COL, ENABLED_TENSIX_COL};
+  tag_table[33] = (struct telemetry_entry){TAG_ENABLED_ETH, ENABLED_ETH};
+  tag_table[34] = (struct telemetry_entry){TAG_ENABLED_GDDR, ENABLED_GDDR};
+  tag_table[35] = (struct telemetry_entry){TAG_ENABLED_L2CPU, ENABLED_L2CPU};
+  tag_table[36] = (struct telemetry_entry){TAG_PCIE_USAGE, PCIE_USAGE};
+  tag_table[37] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 // Handler functions for zephyr timer and worker objects

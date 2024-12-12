@@ -45,6 +45,11 @@
 #define TAG_FAN_SPEED 31
 #define TAG_TIMER_HEARTBEAT 32
 #define TAG_TELEM_ENUM_COUNT 33
+#define TAG_ENABLED_TENSIX_COL 34
+#define TAG_ENABLED_ETH 35
+#define TAG_ENABLED_GDDR 36
+#define TAG_ENABLED_L2CPU 37
+#define TAG_PCIE_USAGE 38
 
 // Enums are subject to updates
 typedef enum {
@@ -96,8 +101,15 @@ typedef enum {
   // MISC
   FAN_SPEED,
   TIMER_HEARTBEAT,  // Incremented every time the timer is called
-  TELEM_ENUM_COUNT, // Count to check how large the enum is
 
+  // Tile enablement/harvesting information
+  ENABLED_TENSIX_COL,
+  ENABLED_ETH,
+  ENABLED_GDDR,
+  ENABLED_L2CPU,
+  PCIE_USAGE,
+
+  TELEM_ENUM_COUNT, // Count to check how large the enum is
 } Telemetry;
 
 void init_telemetry(void);
