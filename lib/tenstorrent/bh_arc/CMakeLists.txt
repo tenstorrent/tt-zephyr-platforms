@@ -17,6 +17,7 @@ zephyr_library_sources(
   eth.c
   fan_ctrl.c
   flash_info_table.c
+  functional_efuse.c
   fw_table.c
   gddr.c
   harvesting.c
