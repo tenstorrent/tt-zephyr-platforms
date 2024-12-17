@@ -1,0 +1,319 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "skeleton.dtsi"
+
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+/ {
+	aliases {
+		uart-0 = &uart0;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "snps,archs4xd";
+			reg = <0>;
+		};
+
+		cpu@1 {
+			device_type = "cpu";
+			compatible = "snps,archs4xd";
+			reg = <1>;
+		};
+
+		cpu@2 {
+			device_type = "cpu";
+			compatible = "snps,archs4xd";
+			reg = <2>;
+		};
+
+		cpu@3 {
+			device_type = "cpu";
+			compatible = "snps,archs4xd";
+			reg = <3>;
+		};
+
+	};
+
+	sysclk: system-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <500000000>;
+		#clock-cells = <0>;
+	};
+
+	intc: arcv2-intc {
+		compatible = "snps,arcv2-intc";
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+
+	idu_intc: idu-interrupt-controller {
+		compatible = "snps,archs-idu-intc";
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&intc>;
+	};
+
+	ictl0: ictl@800c0000 {
+		compatible = "snps,designware-intc";
+		reg = <0x800c0000 0x1000>;
+		interrupt-parent = <&intc>;
+		interrupts = <33 0>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		num-irqs = <34>;
+	};
+
+	ictl1: ictl@800d0000 {
+		compatible = "snps,designware-intc";
+		reg = <0x800d0000 0x1000>;
+		interrupt-parent = <&intc>;
+		interrupts = <34 0>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		num-irqs = <22>;
+	};
+
+	ictl2: ictl@800e0000 {
+		compatible = "snps,designware-intc";
+		reg = <0x800e0000 0x1000>;
+		interrupt-parent = <&intc>;
+		interrupts = <35 0>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		num-irqs = <64>;
+	};
+
+	ictl3: ictl@800f0000 {
+		compatible = "snps,designware-intc";
+		reg = <0x800f0000 0x1000>;
+		interrupt-parent = <&intc>;
+		interrupts = <36 0>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		num-irqs = <64>;
+	};
+
+	ici: intercore-interrupt-unit {
+		compatible = "snps,archs-ici";
+		interrupts = <19 1>;
+		interrupt-parent = <&intc>;
+	};
+
+	timer0: timer0 {
+		compatible = "snps,arc-timer";
+		interrupts = <16 1>;
+		interrupt-parent = <&intc>;
+	};
+
+	timer1: timer1 {
+		compatible = "snps,arc-timer";
+		interrupts = <17 1>;
+		interrupt-parent = <&intc>;
+	};
+
+	vuart0: vuart {
+		compatible = "tenstorrent,uart-virt";
+		tx-buf-size = <3072>;
+		rx-buf-size = <1024>;
+		status = "disabled";
+	};
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&idu_intc>;
+		ranges;
+
+		global_reset: reset@80030000 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030000 0x4>;
+			#reset-cells = <1>;
+			reset-mask = <0x2383>;
+			status = "okay";
+		};
+
+		pcie_reset: reset@80030004 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030004 0x4>;
+			#reset-cells = <1>;
+			nresets = <4>;
+			status = "okay";
+		};
+
+		eth_reset: reset@80030008 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030008 0x4>;
+			#reset-cells = <1>;
+			nresets = <14>;
+			status = "okay";
+		};
+
+		ddr_reset: reset@80030010 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030010 0x4>;
+			#reset-cells = <1>;
+			nresets = <8>;
+			status = "okay";
+		};
+
+		l2cpu_reset: reset@80030014 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030014 0x4>;
+			#reset-cells = <1>;
+			nresets = <4>;
+			status = "okay";
+		};
+
+		tensix_reset0: reset@80030020 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030020 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset1: reset@80030024 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030024 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset2: reset@80030028 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030028 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset3: reset@8003002c {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x8003002c 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset4: reset@80030030 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030030 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset5: reset@80030034 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030034 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset6: reset@80030038 {
+			compatible = "tenstorrent,blackhole-reset";
+			reg = <0x80030038 0x4>;
+			#reset-cells = <1>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		tensix_reset7: reset@8003003c {
+			compatible = "tenstorrent,blackhole-reset";
+			#reset-cells = <1>;
+			reg = <0x8003003c 0x4>;
+			nresets = <32>;
+			status = "okay";
+		};
+
+		uart0: uart@80200000 {
+			compatible = "ns16550";
+			clocks = <&sysclk>;
+			reg = <0x80200000 0x1000>;
+			interrupts = <59 1>;
+			reg-shift = <2>;
+			status = "disabled";
+		};
+
+		// Each core has 4kB of ICCM @ 0.
+		iccm0: iccm@0 {
+			compatible = "arc,iccm";
+			reg = <0x0 0x1000>;
+		};
+
+		// CSM is 512kB @ 0x1000_0000
+		csm: memory@10000000 {
+			compatible = "zephyr,memory-region", "mmio-sram";
+			zephyr,memory-region = "CSM";
+			device_type = "memory";
+			reg = <0x10000000 0x80000>;
+		};
+
+		i2c0: i2c@80060000 {
+			compatible = "snps,designware-i2c";
+			clock-frequency = <I2C_BITRATE_FAST>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x80060000 0x1000>;
+			interrupts = <0 1 0>, <1 1 0>, <2 1 0>, <3 1 0>, <4 1 0>, <5 1 0>,
+					<6 1 0>, <7 1 0>, <8 1 0>, <9 1 0>, <10 1 0>, <11 1 0>,
+					<12 1 0>, <13 1 0>, <14 1 0>, <15 1 0>, <16 1 0>, <17 1 0>,
+					<18 1 0>, <19 1 0>, <20 1 0>, <21 1 0>, <22 1 0>, <23 1 0>;
+			interrupt-parent = <&ictl2>;
+			status = "okay";
+		};
+
+		i2c1: i2c@80090000 {
+			compatible = "snps,designware-i2c";
+			clock-frequency = <I2C_BITRATE_FAST>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x80090000 0x1000>;
+			interrupts = <24 1 0>, <25 1 0>, <26 1 0>, <27 1 0>, <28 1 0>, <29 1 0>,
+					<30 1 0>, <31 1 0>, <32 1 0>, <33 1 0>, <34 1 0>, <35 1 0>,
+					<36 1 0>, <37 1 0>, <38 1 0>, <39 1 0>, <40 1 0>, <41 1 0>,
+					<42 1 0>, <43 1 0>, <44 1 0>, <45 1 0>, <46 1 0>, <47 1 0>;
+			interrupt-parent = <&ictl2>;
+			status = "okay";
+		};
+
+		i2c2: i2c@800a0000 {
+			compatible = "snps,designware-i2c";
+			clock-frequency = <I2C_BITRATE_FAST>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x800a0000 0x1000>;
+			interrupts = <0 1 0>, <1 1 0>, <2 1 0>, <3 1 0>, <4 1 0>, <5 1 0>,
+					<6 1 0>, <7 1 0>, <8 1 0>, <9 1 0>, <10 1 0>, <11 1 0>,
+					<12 1 0>, <13 1 0>, <14 1 0>, <15 1 0>, <16 1 0>, <17 1 0>,
+					<18 1 0>, <19 1 0>, <20 1 0>, <21 1 0>, <22 1 0>, <23 1 0>;
+			interrupt-parent = <&ictl3>;
+			status = "disabled";
+		};
+
+		spi0: spi@80070000 {
+			compatible = "snps,designware-spi";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x80070000 0x1000>;
+			interrupts = <26 1 0>, <24 1 0>, <29 1 0>;
+			interrupt-parent = <&ictl3>;
+			interrupt-names = "rx_avail", "tx_req", "err_int";
+			fifo-depth = <15>;
+			max-xfer-size = <32>;
+			clocks = <&sysclk>;
+		};
+	};
+};

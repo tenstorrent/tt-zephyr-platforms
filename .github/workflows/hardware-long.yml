@@ -1,0 +1,169 @@
+name: Hardware Long Tests
+
+# Run long tests once nightly, at 00:00
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  hardware-metal-test:
+    if: github.repository_owner == 'tenstorrent'
+    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    env:
+      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /dev/hugepages:/dev/hugepages
+        - /opt/SEGGER:/opt/SEGGER
+        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
+        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Log Test SHA
+        working-directory: tt-zephyr-platforms
+        run: |
+          # debug
+          git log  --pretty=oneline | head -n 10
+
+      - name: Install west
+        run: |
+          pip install west
+
+      - name: west setup
+        # FIXME: would be ideal to use a built-in github environment variable
+        # instead of tt-zephyr-platforms
+        run: |
+          west init -l tt-zephyr-platforms
+
+      - name: Setup Zephyr modules
+        run: |
+          west config manifest.group-filter -- +optional
+          west update
+
+          # need to install protoc manually here, for some reason
+          pip install -r zephyr/scripts/requirements.txt
+          pip install protobuf grpcio-tools
+
+      - name: Apply patches
+        run: |
+          west -v patch apply
+
+      - name: Checkout pyluwen
+        uses: actions/checkout@v4
+        with:
+          repository: tenstorrent/luwen
+          path: luwen
+
+      - name: Build pyluwen
+        run: |
+          # Setup cargo, since we run with a different $HOME
+          HOME=/root . /root/.cargo/env
+          # Install maturin for build (we already have cargo)
+          pip install maturin
+          cd luwen/crates/pyluwen
+          maturin build --release
+          pip install ../../target/wheels/*
+
+      - name: Flash Firmware
+        working-directory: zephyr
+        run: |
+          # This needs to be added to the github runner
+          export PATH=$PATH:/opt/SEGGER/JLink/
+
+          # TODO: ideally we would use one twister command to build and
+          # flash BMC and SMC firmware, but since each chip uses a separate
+          # debug adapter this doesn't work. For now, just flash BMC
+          # then run twister with SMC firmware
+          ./scripts/twister -i --retry-failed 3 \
+            --retry-interval 5 \
+            --tag e2e \
+            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -T ../tt-zephyr-platforms/app -ll DEBUG
+          # Run E2E test to verify BMC and SMC firmware boot, and that
+          # the SMC firmware sets up PCIe and ARC messages
+          ./scripts/twister -i --retry-failed 3 \
+            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            --tag e2e \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -T ../tt-zephyr-platforms/app -ll DEBUG
+
+
+      - name: Fix APT URLs
+        run: |
+          # Patch APT URLs to use https
+          sed -i -e 's/http/https/g' /etc/apt/sources.list
+          apt update
+
+      - name: Install clang 17
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          sed -i "s/http:\/\/apt.llvm.org/https:\/\/apt.llvm.org/" -i llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh 17 all
+          rm -f llvm.sh
+
+      - name: Install Git LFS
+        run: |
+          apt install -y git-lfs
+
+      - name: Checkout Metal
+        uses: actions/checkout@v4
+        with:
+          repository: tenstorrent/tt-metal
+          path: tt-metal
+          lfs: true
+          submodules: true
+          ref: v0.55.0
+
+      - name: Install Metal Dependencies
+        working-directory: tt-metal
+        continue-on-error: true
+        shell: bash
+        run: |
+          sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
+          sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
+          apt install -y python3.10-dev python3.10-venv libpython3.10-dev python3.10
+          # This script will fail to install the tt-hugepages service, just ignore it
+          ./install_dependencies.sh
+
+      - name: Run Metal Tests
+        working-directory: tt-metal
+        shell: bash
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+          PYTHONPATH: ${{ github.workspace }}/tt-metal
+        run: |
+          # Debug
+          python3 -V
+          # Build metal
+          ./build_metal.sh --build-tests --build-programming-examples
+          PYTHON_CMD=python3.10 source ./create_venv.sh
+          # Run metal tests
+          tests/scripts/run_cpp_unit_tests.sh
+          TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean up patched Zephyr repo
+          west patch clean
+          # Clean out metal
+          rm -rf tt-metal
+          # Cleanup the checked out repo, we can leave everything else
+          rm -rf tt-zephyr-platforms
+          rm -rf .west

@@ -1,0 +1,23 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_TT_BLACKHOLE
+	bool
+	help
+	  Tenstorrent Blackhole SoC
+
+config SOC_TT_BLACKHOLE_BMC
+	bool
+	select SOC_SERIES_STM32G0X
+	select SOC_STM32G0B1XX
+	help
+	  Tenstorrent Blackhole BMC
+
+config SOC_TT_BLACKHOLE_SMC
+	bool
+	select SOC_TT_BLACKHOLE
+	help
+	  Tenstorrent Blackhole SMC cluster
+
+config SOC
+	default "tt_blackhole" if SOC_TT_BLACKHOLE

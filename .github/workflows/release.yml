@@ -1,0 +1,86 @@
+name: Create a Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*rc*'
+
+jobs:
+  build-release:
+    uses: ./.github/workflows/build-fw.yml
+    secrets:
+      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
+
+  publish-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/prepare-zephyr
+
+      - name: Get the version
+        id: get_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "TRIMMED_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v5
+        with:
+          args: spdx -o tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
+
+      - name: upload-spdx
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
+          path: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
+
+      # FIXME: need a more clever way to download and combine lots of artifacts
+      - name: Download firmware artifact (p100)
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-p100
+          path: assets/p100
+
+      - name: Download firmware artifact (p100a)
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-p100a
+          path: assets/p100a
+
+      - name: Download firmware artifact (p150a)
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-p150a
+          path: assets/p150a
+
+      - name: Package firmware artifacts
+        run: |
+          cp assets/p100/update.fwbundle p100.fwbundle
+          cp assets/p100a/update.fwbundle p100a.fwbundle
+          cp assets/p150a/update.fwbundle p150a.fwbundle
+
+          cd assets
+          zip -r -9 ../tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip \
+            p100 \
+            p100a \
+            p150a
+
+      - name: Create empty release notes body
+        run: |
+          echo "TODO: add release overview and notes link" > release-notes.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: release-notes.txt
+          draft: true
+          prerelease: true
+          files: |
+            p100.fwbundle
+            p100a.fwbundle
+            p150a.fwbundle
+            tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip
+            tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx

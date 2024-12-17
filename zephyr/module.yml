@@ -1,0 +1,99 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# See https://docs.zephyrproject.org/latest/develop/modules.html
+
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    board_root: .
+    dts_root: .
+    snippet_root: .
+    soc_root: .
+
+# twister settings
+samples:
+  - samples
+tests:
+  - tests
+boards:
+  - boards
+
+# Runner for tt-flash
+runners:
+  - file: scripts/tt_flash_runner.py
+
+blobs:
+  - path: tt_blackhole_erisc.bin
+    sha256: 641b27703ad39b55277b53015acbd7981dc1ccfccc1a77b51d460688bf8e8468
+    type: img
+    version: '0.4.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc.bin"
+    description: "Ethernet FW"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_erisc_params.bin
+    sha256: 1e690e36a26100ca61f5e7e8edb1533f421d9e51aaf2a44b4519b0a21ae7e53a
+    type: img
+    version: '0.4.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
+    description: "Ethernet FW parameters"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_libpciesd.a
+    sha256: 31b2000e72412ae1dac03c93110f6124538934505007f43f49ad74172a303a9b
+    type: lib
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_libpciesd.a"
+    description: "PCIe SerDes FW and parameters"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_serdes_eth_fwreg.bin
+    sha256: 15b31ca6ee1840b9307d333a23dba6067e84bedfa1e8c27b17ddcd3182fdf247
+    type: img
+    version: '2.4.12'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin"
+    description: "Ethernet SerDes parameters"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_serdes_eth_fw.bin
+    sha256: b0cd575ef19b48245f02a2e967a7dc2fe3760ad797753dfbeac264e8760ff14b
+    type: img
+    version: '2.4.12'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin"
+    description: "Ethernet SerDes firmware"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_gddr_init.bin
+    sha256: 7bceecf87af619f119572fde9575153070028242a00afbda9a9efa6d779f0760
+    type: img
+    version: '2.5'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
+    description: "Memory Controller FW"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_gddr_params.bin
+    sha256: 2ff26b5bb0a7e37adf0ee8d93bbd5ab7df7ee11ebf37f601dcc28f731b94c672
+    type: img
+    version: '2.5'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params.bin"
+    description: "Memory Controller FW parameters"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_nano_bootcode.bin
+    sha256: 15923a962b3e36c30332fc06f171a139b5c43e672d253bd7a1abda387201108d
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_nano_bootcode.bin"
+    description: "Modified bootrom to boot Blackhole"
+    doc-url: https://tenstorrent.com

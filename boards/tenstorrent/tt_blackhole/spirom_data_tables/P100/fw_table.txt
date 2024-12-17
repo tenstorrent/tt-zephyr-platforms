@@ -1,0 +1,66 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+chip_limits {
+  asic_fmax: 1350
+  asic_fmin: 800
+  vdd_max: 0
+  vdd_min: 0
+  voltage_margin: 0
+  tdp_limit: 150
+  tdc_limit: 200
+  thm_limit: 90
+  tdc_fast_limit: 220
+  therm_trip_l1_limit: 0
+  bus_peak_limit: 0
+  frequency_margin: 0
+}
+
+feature_enable {
+  cg_en: true
+  noc_translation_en: false
+  ddr_train_en: false
+  aiclk_ppm_en: false
+  watchdog_en: false
+  smbus_en: false
+}
+
+fan_table {
+  fan_table_point_x1: 0
+  fan_table_point_x2: 0
+  fan_table_point_y1: 0
+  fan_table_point_y2: 0
+}
+
+dram_table {
+  dram_mask: 0
+  dram_mask_en: false
+}
+
+chip_harvesting_table {
+  soft_harvesting_en: 0
+  soft_harvesting: 0
+}
+
+pci0_property_table {
+  max_pcie_speed: 0
+  pcie_bar0_size: 0
+  pcie_bar2_size: 0
+  pcie_bar4_size: 0
+  pcie_mode: DISABLED
+  num_serdes: 0
+}
+
+pci1_property_table {
+  max_pcie_speed: 0
+  pcie_bar0_size: 0
+  pcie_bar2_size: 0
+  pcie_bar4_size: 0
+  pcie_mode: EP
+  num_serdes: 2
+}
+
+eth_property_table {
+  eth_disable_mask: 0x3fff
+  eth_disable_mask_en: true
+}

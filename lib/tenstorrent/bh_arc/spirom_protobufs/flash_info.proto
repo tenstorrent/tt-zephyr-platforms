@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+message FlashInfoTable {
+  uint32 reprogrammed_count = 1;
+  uint32 date_programmed = 2;
+  uint32 vrm_checksum = 3;
+  uint32 tt_flash_version = 4;
+}

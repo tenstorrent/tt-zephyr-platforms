@@ -1,0 +1,13 @@
+boards:
+- name: tt_blackhole
+  full_name: Tenstorrent Blackhole board
+  vendor: tenstorrent
+  revision:
+    format: custom
+    default: "p100"
+    revisions:
+    - name: "p100"
+    - name: "p100a"
+    - name: "p150a"
+  socs:
+  - name: tt_blackhole

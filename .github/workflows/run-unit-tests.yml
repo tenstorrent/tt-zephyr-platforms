@@ -1,0 +1,49 @@
+name: Run Unit Tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  unit-test:
+    env:
+      platforms: -p unit_testing -p native_sim
+      roots: -T tests -T samples
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/prepare-zephyr
+
+      - id: build
+        shell: bash
+        run: |
+          west twister -i --build-only $platforms $roots
+
+      - id: run
+        shell: bash
+        run: |
+          west twister -i --run-only --retry-failed=3 $platforms $roots
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            twister-out/**/.config
+            twister-out/**/devicetree_generated.h
+            twister-out/**/zephyr.bin
+            twister-out/**/zephyr.dts
+            twister-out/**/zephyr.elf
+            twister-out/**/zephyr.map
+            twister-out/**/zephyr.stat
+            twister-out/**/handler.log
+            twister-out/twister.log
+            twister-out/twister.json

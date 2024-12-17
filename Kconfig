@@ -1,0 +1,21 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+rsource "drivers/Kconfig"
+rsource "lib/Kconfig"
+
+menu "Tenstorrent App Configuration"
+
+# FIXME: we probably don't need this - main.c already sets variables to NULL if this is not
+# selected, and we can just compare the variables in question to NULL in the few conditional
+# statements where CONFIG_TT_ASSEMBLY_TEST is used. Moved here because check_compliance.py
+# was cranky with it in the app directory.
+config TT_ASSEMBLY_TEST
+	bool "Output additional debug if we are running in a test environment"
+
+# common log level for applications
+module = TT_APP
+module-str = "Tenstorrent app"
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endmenu

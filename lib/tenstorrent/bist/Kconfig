@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_BIST
+	bool "Tenstorrent Built-in Self Test (BIST)"
+	help
+	  Tenstorrent's built-in self test (BIST) library.
+
+if TT_BIST
+
+module = TT_BIST
+module-str = "Tenstorrent firmware bist"
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif

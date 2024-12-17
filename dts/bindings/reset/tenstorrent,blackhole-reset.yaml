@@ -1,0 +1,83 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrrent Blackhole Reset Controller
+
+compatible: "tenstorrent,blackhole-reset"
+
+include: [base.yaml, reset-controller.yaml]
+
+description: |
+  The Tenstorrent Blackhole reset controller is used to manage one bank of reset signals occupying
+  a 32-bit memory-mapped address.
+
+  There are 3 usage modes.
+
+  1. no mask is specified - 32 reset lines are available to the reset controller instance
+
+    resetX: reset@abcd1234 {
+    	compatible = "tenstorrent,blackhole-reset";
+     	reg = <0xabcd1234 0x4>;
+    	#reset-cells = <1>;
+    	status = "okay";
+    };
+
+  2. a mask is specified. Only the bits (id values) set high in the mask are valid. In the
+    example below, id 1 and id 2 are valid.
+
+    resetX: reset@abcd1234 {
+    	compatible = "tenstorrent,blackhole-reset";
+     	reg = <0xabcd1234 0x4>;
+    	#reset-cells = <1>;
+      reset-mask = <0x42>;
+    	status = "okay";
+    };
+
+  3. a number of resets is specified. In the example below, the least-significant 2 bits are
+     available to the reset controller instance. So id 0 and id 1 are valid.
+
+    resetX: reset@abcd1234 {
+    	compatible = "tenstorrent,blackhole-reset";
+     	reg = <0xabcd1234 0x4>;
+    	#reset-cells = <1>;
+      nresets = <3>;
+    	status = "okay";
+    };
+
+  If neither nresets, nor reset-mask is specified, then all 32 reset lines are available.
+
+  Maximally one of nresets or reset-mask may be specified.
+
+
+properties:
+  reg:
+    required: true
+
+  nresets:
+    type: int
+    description: |
+      The number of reset lines associated with the reset controller instance.
+
+      This parameter is useful when the lines associated with the reset controller instance are
+      contiguous, beginning at bit 0.
+
+      I.e. for nresets = <5>, the value written to the reset register would be equivalent to
+      BIT_MASK(5), or 0x1f.
+
+      The valid range for nresets is 0 <= nresets <= 32.
+
+  reset-mask:
+    type: int
+    description: |
+      The bitmask to write to the reset register associated with the reset controller instance.
+
+      This parameter is useful when the lines associated with the reset controller instance are
+      non-contiguous.
+
+      I.e. for reset-mask = <0x3fff0000>, only lines 29..16 are affected.
+
+  "#reset-cells":
+    const: 1
+
+reset-cells:
+- id

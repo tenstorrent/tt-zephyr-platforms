@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+if SMBUS
+
+menu "SMBUS"
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.tt"
+# zephyr-keep-sorted-stop
+
+endmenu
+
+endif

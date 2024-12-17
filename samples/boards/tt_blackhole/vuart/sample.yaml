@@ -1,0 +1,9 @@
+sample:
+  description: Tenstorrent Blackhole Chip Management Firmware
+  name: virtual pcie uart
+common:
+  platform_allow:
+    - tt_blackhole/tt_blackhole/smc
+tests:
+  boards.tt_blackhole.vuart:
+    build_only: true

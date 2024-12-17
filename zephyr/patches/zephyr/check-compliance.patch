@@ -1,0 +1,98 @@
+diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
+index fe56b715162..2d7bdde4914 100755
+--- a/scripts/ci/check_compliance.py
++++ b/scripts/ci/check_compliance.py
+@@ -140,6 +140,7 @@ class ComplianceTest:
+         # always restored form the element tree, the subclass is lost upon
+         # restoring
+         self.fmtd_failures = []
++        self.path_hint = "<git-top>"
+ 
+     def _result(self, res, text):
+         res.text = text.rstrip()
+@@ -225,7 +226,7 @@ class CheckPatch(ComplianceTest):
+             cmd = [checkpatch]
+ 
+         cmd.extend(['--mailback', '--no-tree', '-'])
+-        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE),
++        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE, '--', ':!*.diff', ':!*.patch'),
+                                 stdout=subprocess.PIPE,
+                                 cwd=GIT_TOP)
+         try:
+@@ -264,7 +265,6 @@ class BoardYmlCheck(ComplianceTest):
+     """
+     name = "BoardYml"
+     doc = "Check the board.yml file format"
+-    path_hint = "<zephyr-base>"
+ 
+     def check_board_file(self, file, vendor_prefixes):
+         """Validate a single board file."""
+@@ -303,7 +303,6 @@ class ClangFormatCheck(ComplianceTest):
+     """
+     name = "ClangFormat"
+     doc = "See https://docs.zephyrproject.org/latest/contribute/guidelines.html#clang-format for more details."
+-    path_hint = "<git-top>"
+ 
+     def run(self):
+         exe = f"clang-format-diff.{'exe' if platform.system() == 'Windows' else 'py'}"
+@@ -345,7 +344,6 @@ class DevicetreeBindingsCheck(ComplianceTest):
+     """
+     name = "DevicetreeBindings"
+     doc = "See https://docs.zephyrproject.org/latest/build/dts/bindings.html for more details."
+-    path_hint = "<zephyr-base>"
+ 
+     def run(self, full=True):
+         dts_bindings = self.parse_dt_bindings()
+@@ -382,7 +380,6 @@ class KconfigCheck(ComplianceTest):
+     """
+     name = "Kconfig"
+     doc = "See https://docs.zephyrproject.org/latest/build/kconfig/tips.html for more details."
+-    path_hint = "<zephyr-base>"
+ 
+     # Top-level Kconfig file. The path can be relative to srctree (ZEPHYR_BASE).
+     FILENAME = "Kconfig"
+@@ -1076,6 +1073,7 @@ flagged.
+         "MCUBOOT_CLEANUP_ARM_CORE", # Used in (sysbuild-based) test
+         "MCUBOOT_DOWNGRADE_PREVENTION", # but symbols are defined in MCUboot
+                                         # itself.
++        "MCUBOOT_LOG_LEVEL_DBG",
+         "MCUBOOT_LOG_LEVEL_INF",
+         "MCUBOOT_LOG_LEVEL_WRN",        # Used in example adjusting MCUboot
+                                         # config,
+@@ -1181,6 +1179,7 @@ class SysbuildKconfigCheck(KconfigCheck):
+     # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
+     UNDEF_KCONFIG_ALLOWLIST = {
+         # zephyr-keep-sorted-start re(^\s+")
++        "BMC_BOARD",
+         "FOO",
+         "MY_IMAGE", # Used in sysbuild documentation as example
+         "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example
+@@ -1220,7 +1219,6 @@ class Nits(ComplianceTest):
+     """
+     name = "Nits"
+     doc = "See https://docs.zephyrproject.org/latest/contribute/guidelines.html#coding-style for more details."
+-    path_hint = "<git-top>"
+ 
+     def run(self):
+         # Loop through added/modified files
+@@ -1325,7 +1323,7 @@ class GitDiffCheck(ComplianceTest):
+         for shaidx in get_shas(COMMIT_RANGE):
+             # Ignore non-zero return status code
+             # Reason: `git diff --check` sets the return code to the number of offending lines
+-            diff = git("diff", f"{shaidx}^!", "--check", ignore_non_zero=True)
++            diff = git("diff", f"{shaidx}^!", "--check", "--", ":!*.diff", ":!*.patch", ignore_non_zero=True)
+ 
+             lines = p.findall(diff)
+             lines = map(lambda x: f"{shaidx}: {x}", lines)
+@@ -1717,6 +1715,11 @@ class KeepSorted(ComplianceTest):
+         if not mime_type.startswith("text/"):
+             return
+ 
++        skip_exts = {".patch", ".diff"}
++        _, ext = os.path.splitext(file)
++        if ext in skip_exts:
++            return
++
+         block_data = ""
+         in_block = False
+ 

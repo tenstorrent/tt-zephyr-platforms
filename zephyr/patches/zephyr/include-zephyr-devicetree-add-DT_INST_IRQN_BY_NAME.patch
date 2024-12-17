@@ -1,0 +1,89 @@
+From 6b52e6a77ad3f711f3c9f19de300c24de5b5853e Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Sun, 9 Feb 2025 00:20:34 -0500
+Subject: [PATCH 5/8] include: zephyr: devicetree: add DT_INST_IRQN_BY_NAME()
+
+This macro should have been included with DT_INST_IRQN() (and is
+referenced in the migration guide), but was absent. Add the
+infrastructure to use it.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ include/zephyr/devicetree.h | 47 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+
+diff --git a/include/zephyr/devicetree.h b/include/zephyr/devicetree.h
+index 2b10eaf8d48..85fa22acbcd 100644
+--- a/include/zephyr/devicetree.h
++++ b/include/zephyr/devicetree.h
+@@ -2864,6 +2864,29 @@
+ #define DT_MULTI_LEVEL_IRQN_INTERNAL(node_id, idx)                                                 \
+ 	DT_IRQN_LVL_INTERNAL(node_id, idx, DT_IRQ_LEVEL(node_id))
+ 
++
++/* DT helper macro to encode a node's IRQN to level 1 according to the multi-level scheme */
++#define DT_IRQN_NAME_L1_INTERNAL(node_id, name) DT_IRQ_BY_NAME(node_id, name, irq)
++/* DT helper macro to encode a node's IRQN to level 2 according to the multi-level scheme */
++#define DT_IRQN_NAME_L2_INTERNAL(node_id, name)                                                    \
++	(IRQ_TO_L2(DT_IRQN_NAME_L1_INTERNAL(node_id, name)) |                                      \
++	 DT_IRQ(DT_IRQ_INTC_BY_NAME(node_id, name), irq))
++/* DT helper macro to encode a node's IRQN to level 3 according to the multi-level scheme */
++#define DT_IRQN_NAME_L3_INTERNAL(node_id, name)                                                    \
++	(IRQ_TO_L3(DT_IRQN_NAME_L1_INTERNAL(node_id, name)) |                                      \
++	 IRQ_TO_L2(DT_IRQ(DT_IRQ_INTC_BY_NAME(node_id, name), irq)) |                              \
++	 DT_IRQ(DT_IRQ_INTC(DT_IRQ_INTC_BY_NAME(node_id, name)), irq))
++/* DT helper macro for the macros above */
++#define DT_IRQN_NAME_LVL_INTERNAL(node_id, name, level)                                            \
++	 DT_CAT3(DT_IRQN_NAME_L, level, _INTERNAL)(node_id, name)
++
++/**
++ * DT helper macro to encode a node's interrupt number according to the Zephyr's multi-level scheme
++ * See doc/kernel/services/interrupts.rst for details
++ */
++#define DT_MULTI_LEVEL_IRQN_NAME_INTERNAL(node_id, name)                                           \
++	DT_IRQN_NAME_LVL_INTERNAL(node_id, name, DT_IRQ_LEVEL(node_id))
++
+ /**
+  * INTERNAL_HIDDEN @endcond
+  */
+@@ -2881,6 +2904,20 @@
+ 		    (DT_MULTI_LEVEL_IRQN_INTERNAL(node_id, idx)),                                  \
+ 		    (DT_IRQ_BY_IDX(node_id, idx, irq)))
+ 
++/**
++ * @brief Get the node's Zephyr interrupt number by name
++ * If @kconfig{CONFIG_MULTI_LEVEL_INTERRUPTS} is enabled, the interrupt number by name will be
++ * multi-level encoded
++ * @param node_id node identifier
++ * @param name lowercase-and-underscores interrupt specifier name
++ * @param cell cell name specifier
++ * @return the Zephyr interrupt number
++ */
++#define DT_IRQN_BY_NAME(node_id, name)                                                             \
++	COND_CODE_1(IS_ENABLED(CONFIG_MULTI_LEVEL_INTERRUPTS),                                     \
++		    (DT_MULTI_LEVEL_IRQN_NAME_INTERNAL(node_id, name)),                            \
++		    (DT_IRQ_BY_NAME(node_id, name, irq)))
++
+ /**
+  * @brief Get a node's (only) irq number
+  *
+@@ -4655,6 +4692,16 @@
+  */
+ #define DT_INST_IRQN_BY_IDX(inst, idx) DT_IRQN_BY_IDX(DT_DRV_INST(inst), idx)
+ 
++/**
++ * @brief Get a `DT_DRV_COMPAT` irq number by name
++ * @param inst instance number
++ * @param name lowercase-and-underscores interrupt specifier name
++ * @param cell cell name specifier
++ * @return interrupt number at the specifier given by the index
++ */
++#define DT_INST_IRQN_BY_NAME(inst, name) \
++	DT_IRQN_BY_NAME(DT_DRV_INST(inst), name)
++
+ /**
+  * @brief Get a `DT_DRV_COMPAT`'s bus node identifier
+  * @param inst instance number
+-- 
+2.34.1
+

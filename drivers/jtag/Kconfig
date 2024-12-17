@@ -1,0 +1,39 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig JTAG
+	bool "JTAG Drivers"
+
+if JTAG
+
+module = JTAG
+module-str = jtag drv
+source "subsys/logging/Kconfig.template.log_config"
+
+config JTAG_INIT_PRIO
+	int "JTAG driver initialization priority"
+	default 80
+	help
+	  Set the initialization priority number.
+
+config JTAG_SHELL
+	bool "JTAG shell"
+	default y
+	depends on SHELL
+	help
+	  Enable JTAG shell commands.
+
+config JTAG_USE_MMAPPED_IO
+	bool "Use memory-mapped I/O for JTAG"
+	help
+	  If this option is enabled, the JTAG driver will use memory-mapped I/O
+	  to access the JTAG hardware. This is the preferred method for most
+	  systems, but may not be supported on all platforms.
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.bitbang"
+rsource "Kconfig.emul"
+# zephyr-keep-sorted-stop
+
+endif # JTAG

@@ -1,0 +1,233 @@
+                      TT Blob Software License Agreement
+
+PLEASE READ THIS SOFTWARE LICENSE AGREEMENT (THIS "AGREEMENT") CAREFULLY. THIS
+IS A LEGAL AGREEMENT BETWEEN YOUR EMPLOYER, OF WHICH YOU ARE AN AUTHROIZED
+REPRESENTATIVE, OR, IF YOU HAVE NO EMPLOYER, YOU AS AN INDIVIDUAL ("YOU" OR
+"LICENSEE") AND TENSTORRENT USA, INC. ON BEHALF OF ITSELF AND ITS AFFILIATES
+("TENSTORRENT" OR "WE"). THIS AGREEMENT GOVERNS YOUR USE OF TENSTORRENT'S
+PROPRIETARY DISTRIBUTED BINARY ARTIFACTS SOFTWARE PROVIDED TO YOU IN EXECUTABLE
+FORM AND ANY ACCOMPANYING WRITTEN MATERIALS (THE "LICENSED SOFTWARE"). BY
+CLICKING THE "I ACCEPT" BUTTON OR OTHERWISE DOWNLOADING, INSTALLING, OR USING
+THE LICENSED SOFTWARE, YOU AGREE TO BE BOUND BY AND BECOME A PARTY TO THIS
+AGREEMENT, AND YOU REPRESENT THAT (1) YOU HAVE READ, UNDERSTAND AND AGREE TO BE
+BOUND BY THE TERMS OF THIS AGREEMENT, (2) YOU ARE OF LEGAL AGE TO FORM A
+BINDING CONTRACT WITH TENSTORRENT, AND (3) YOU HAVE THE AUTHORITY TO ENTER INTO
+THIS AGREEMENT.  IF YOU DO NOT AGREE TO ALL OF THE TERMS OF THIS AGREEMENT, YOU
+MAY NOT DOWNLOAD, INSTALL, ACCESS OR USE THE LICENSED SOFTWARE.
+
+1. License Grant.  Subject to your compliance with this Agreement, Tenstorrent
+grants you a non-exclusive, non-transferable, non-sublicensable, revocable
+license to download, install and use a copy of the Licensed Software solely for
+internal business purposes in connection with your use of Tenstorrent products.
+
+2. Updates.  You understand that the Licensed Software is evolving.  As a
+result, Tenstorrent may require you to accept updates to the Licensed Software.
+You acknowledge and agree that Tenstorrent may update the Licensed Software
+with or without notifying you. Any future release, update, or other addition to
+functionality of the Licensed Software shall be subject to the terms of this
+Agreement, unless Tenstorrent expressly states otherwise.  Neither Tenstorrent
+nor any of its suppliers is obligated to provide any services, updates or
+upgrades to the Licensed Software.
+
+3. Restrictions. The rights granted to you in this Agreement are subject to the
+following restrictions: (a) you shall not license, sell, rent, lease, transfer,
+assign, distribute, host, outsource, disclose or otherwise commercially exploit
+the Licensed Software or make the Licensed Software available to any third
+party; (b) you shall not modify, make derivative works of, disassemble, reverse
+compile or reverse engineer any part of the Licensed Software; (c) you shall
+not access the Licensed Software in order to build a similar or competitive
+product or service; (d) access or use the Licensed Software to identify
+vulnerabilities in it or publish any information on how to circumvent the
+Licensed Software; or (e) except as expressly stated herein, no part of the
+Licensed Software may be copied, reproduced, distributed, republished,
+downloaded, displayed, posted or transmitted in any form or by any means,
+including but not limited to electronic, mechanical, photocopying, recording or
+other means; and (f) you shall not remove, obscure or destroy any copyright and
+other proprietary rights notices in the Licensed Software and all copies
+thereof.  All rights not expressly granted to you in this Agreement are
+reserved by Tenstorrent.  Any unauthorized use of the Licensed Software
+terminates the licenses granted by Tenstorrent pursuant to this Agreement.
+
+4. Ownership. The Licensed Software is licensed and not sold. Tenstorrent
+retains all title, copyright and other proprietary rights in the Licensed
+Software.  You do not acquire any rights, express or implied, in the Licensed
+Software, other than those specified in this Agreement. You agree not to use or
+duplicate the Licensed Software (including any documentation) for any purpose
+other than as specified herein or make the Licensed Software available to
+unauthorized third parties.
+
+5. Confidential Information. Subject to the license grants set forth in this
+Agreement, you must treat the Licensed Software as confidential information and
+maintain its confidentiality in perpetuity. You may not disclose any part of
+the Licensed Software except to employees and subcontractors, provided they
+have a need to know the Licensed Software and have executed written
+confidentiality agreements that impose obligations at least as protective as
+those in this Agreement. You agree to exercise at least the same degree of
+care, but no less than a reasonable degree of care, in protecting the Licensed
+Software as you use to protect your own confidential and proprietary
+information. You may disclose Licensed Software only to the extent required by
+law, regulation, or valid court order, provided that you: (a) promptly notify
+Tenstorrent of the required disclosure (unless legally prohibited from doing
+so); (b) limit disclosure to only the minimum amount of information necessary
+to comply with the legal requirement; and (c) allow Tenstorrent a reasonable
+opportunity to seek a protective order or other remedy to prevent or limit
+disclosure.
+
+6. Trademarks. Tenstorrent's name and other related graphics, logos, service
+marks and trade names used on or in connection with the Licensed Software are
+the trademarks of Tenstorrent and may not be used without permission in
+connection with any third-party product or services.
+
+7. Warranty Disclaimers. YOU EXPRESSLY UNDERSTAND AND AGREE THAT TO THE MAXIMUM
+EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED SOFTWARE IS PROVIDED "AS IS"
+AND "AS AVAILABLE," WITH ALL FAULTS, AND  WARRANTY, REPRESENTATION, AND
+CONDITION OF ANY KIND, EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE, AND ANY WARRANTIES IMPLIED BY ANY COURSE
+OF PERFORMANCE OR USAGE OF TRADE, ALL OF WHICH, TO THE MAXIMUM EXTENT PERMITTED
+UNDER APPLICABLE LAW, ARE EXPRESSLY DISCLAIMED. YOU AGREE THAT ALL USE OF THE
+LICENSED SOFTWARE IS SOLELY AT YOUR OWN RISK. TENSTORRENT MAKES NO WARRANTY,
+REPRESENTATION OR CONDITION THAT: (a) THE LICENSED SOFTWARE WILL MEET YOUR
+REQUIREMENTS; (b) THE LICENSED SOFTWARE WILL BE UNINTERRUPTED, TIMELY, SECURE
+OR ERROR-FREE; (c) THE RESULTS THAT MAY BE OBTAINED FROM USE OF THE LICENSED
+SOFTWARE WILL BE ACCURATE OR RELIABLE; OR (d) ANY ERRORS IN THE LICENSED
+SOFTWARE WILL BE CORRECTED. TENSTORRENT ASSUMES NO RESPONSIBILITY FOR THE
+TIMELINESS, DELETION, MIS-DELIVERY OR FAILURE TO STORE ANY DATA THROUGH THE
+LICENSED SOFTWARE. SOME STATES DO NOT ALLOW LIMITATIONS ON HOW LONG AN IMPLIED
+WARRANTY LASTS, SO THE ABOVE LIMITATIONS MAY NOT APPLY TO YOU IN THEIR
+ENTIRETY. TENSTORRENT IS NOT OBLIGATED TO INDEMNIFY YOU FROM ANY CLAIM OR
+ACTION, INCLUDING INTELLECTUAL PROPERTY INFRINGEMENT CLAIMS OR ACTIONS.
+
+8. Limitations of Liability. IN NO EVENT SHALL TENSTORRENT, NOR ITS DIRECTORS,
+EMPLOYEES, AGENTS, PARTNERS, OR SUPPLIERS BE LIABLE UNDER CONTRACT, TORT,
+STRICT LIABILITY, NEGLIGENCE OR ANY OTHER LEGAL OR EQUITABLE THEORY WITH
+RESPECT TO THE LICENSED SOFTWARE (a) FOR ANY LOST PROFITS, DATA LOSS, COST OF
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, OR SPECIAL, INDIRECT, INCIDENTAL,
+PUNITIVE, OR CONSEQUENTIAL DAMAGES OF ANY KIND WHATSOEVER, OR SUBSTITUTE GOODS
+OR SERVICES, WHETHER OR NOT TENSTORRENT HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES (b) FOR YOUR RELIANCE ON THE LICENSED SOFTWARE (c) FOR ANY DIRECT
+DAMAGES IN EXCESS (IN THE AGGREGATE) OF $100 (d) FOR ANY MATTER BEYOND
+TENSTORRENT'S REASONABLE CONTROL OR (V) FOR ANY DAMAGES FOR PERSONAL OR BODILY
+INJURY OR EMOTIONAL DISTRESS ARISING OUT OF OR IN CONNECTION WITH THIS
+AGREEMENT, ON ANY THEORY OF LIABILITY, RESULTING FROM: (i) THE USE OR INABILITY
+TO USE THE LICENSED SOFTWARE; (ii) UNAUTHORIZED ACCESS TO OR ALTERATION OF YOUR
+TRANSMISSIONS OR DATA; OR (iii) ANY OTHER MATTER RELATED TO THE LICENSED
+SOFTWARE. THIS LIMITATION OF LIABILITY SHALL BE ENFORCED TO THE MAXIMUM EXTENT
+PERMITTED UNDER APPLICABLE LAW.  SOME STATES DO NOT ALLOW THE EXCLUSION OR
+LIMITATION OF INCIDENTAL OR CONSEQUENTIAL DAMAGES, SO THE ABOVE LIMITATIONS AND
+EXCLUSIONS MAY NOT APPLY TO YOU IN THEIR ENTIRETY. LIMITATIONS OF DAMAGES SET
+FORTH ABOVE ARE FUNDAMENTAL ELEMENTS OF THE BASIS OF THE BARGAIN BETWEEN
+TENSTORRENT AND YOU.
+
+9. Application of Disclaimers, Exclusions and Limitations to Consumers. The
+limitations or exclusions of warranties and liability contained in this
+Agreement do not affect or prejudice the statutory rights of a consumer, i.e.,
+a person acquiring goods otherwise than in the course of a business.  The
+limitations or exclusions of warranties and remedies contained in this
+Agreement shall apply to you only to the extent such limitations or exclusions
+and remedies are permitted under the laws of the jurisdiction where you are
+located.
+
+10. Indemnification. You agree to indemnify and hold Tenstorrent and its
+parents, subsidiaries, affiliates, officers, employees, agents, partners and
+licensors harmless from any losses, costs, liabilities and expenses (including
+reasonable attorneys' fees) relating to or arising out of: (a) your use of, or
+inability to use, the Licensed Software; (b) your violation of this Agreement;
+(c) your violation of any rights of another party, or (d) your violation of any
+applicable laws, rules or regulations. Tenstorrent reserves the right, at its
+own cost, to assume the exclusive defense and control of any matter otherwise
+subject to indemnification by you, in which event you will fully cooperate with
+Tenstorrent in asserting any available defenses. You agree that the provisions
+in this section will survive any termination of this Agreement.
+
+11. No Software Maintenance or Support. Unless expressly and otherwise agreed
+by Tenstorrent in a separate written agreement, the Licensed Software is
+provided without software maintenance or support of any kind.
+
+12. License Term & Termination.
+   1. Term.  This Agreement commence on the date when you accept (as described
+in the preamble above) and remains in full force and effect while you use the
+Licensed Software, unless terminated earlier in accordance with this Agreement.
+   2. Termination of License by Tenstorrent.  Tenstorrent has the right to
+suspend or terminate your use or access to the Licensed Software provided to
+you for any reason, including if you have breached any provision of this
+Agreement or if Tenstorrent is required to do so by law (e.g., where the
+provision of the Licensed Software is, or becomes, unlawful). You agree that
+all terminations for cause shall be made in Tenstorrent's sole discretion and
+that Tenstorrent shall not be liable to you or any third party for any
+termination of your license.
+   3. Termination of License by You.  If you want to terminate this Agreement,
+you may do so by (i) deleting the Licensed Software from your device(s), and
+(ii) discontinuing your use of the Licensed Software.
+   4. Effect of Termination. Upon termination of this Agreement, your right to
+use the Licensed Software will automatically terminate immediately, and you
+will destroy all parts of the Licensed Software, and at Tenstorrent's request,
+provide to Tenstorrent a statement certifying the same. Tenstorrent will not
+have any liability whatsoever to you for any suspension or termination. All
+provisions of this Agreement which by their nature should survive, shall
+survive termination of this license, including without limitation, ownership
+provisions, warranty disclaimers, and limitation of liability.
+
+13. Export. The Licensed Software and related technology are subject to U.S.
+export control laws and may be subject to export or import regulations in other
+countries.  Licensee agrees to comply with all applicable export and reexport
+control laws and regulations.  Specifically, Licensee covenants that it shall
+not - directly or indirectly - sell, export, reexport, transfer, divert, or
+otherwise dispose of any products, software, or technology (including products
+derived from or based on such technology) received from Tenstorrent under this
+Agreement to any destination, entity, or person prohibited by the laws or
+regulations of the United States and/or Canada or for any end-use prohibited by
+the laws or regulations of the United States and/or Canada, without obtaining
+prior authorization from the competent government authorities as required by
+those laws and regulations.  Licensee also agrees to comply with any applicable
+import or export controls of non-U.S. and Canadian countries.  Licensee is
+solely responsible for such compliance. By using the Licensed Software, you
+represent and warrant that (a) you are not located in a country that is subject
+to a U.S. Government embargo, or that has been designated by the U.S.
+Government as a "terrorist supporting" country and (b) you are not listed on
+any U.S. Government list of prohibited or restricted parties. Licensee will
+defend, indemnify, and hold harmless Tenstorrent from and against any and all
+damages, fines, penalties, assessments, liabilities, costs and expenses
+(including attorneys' fees and expenses) that may arise as a result of
+Licensee's breach of this provision.
+
+14. Restricted Rights. The Licensed Software is deemed to be "commercial
+computer software" and "commercial computer software documentation" as defined
+in DFARS Section 227.7202 and FAR Section 12.212, as applicable.  Any use,
+modification, reproduction release, performance, display or disclosure of the
+Licensed Software by the U.S. Government shall be solely in accordance with the
+terms of this Agreement.
+
+15. Feedback. If you provide Tenstorrent any feedback or suggestions
+("Feedback"), you hereby assign to Tenstorrent all rights in the Feedback and
+agree that Tenstorrent shall have the right to use such Feedback and related
+information in any manner it deems appropriate.  Tenstorrent will treat any
+Feedback you provide to Tenstorrent as non-confidential and non-proprietary.
+You agree that you will not submit to Tenstorrent any information or ideas that
+you consider to be confidential or proprietary.
+
+16. Notices. All notices and communications under this Agreement will be made
+in writing, and will be effective when received at the following addresses:
+   1. Tenstorrent:
+Tenstorrent USA, Inc.
+Attn: Legal Department
+7717 Southwest Pkwy,
+Building 3, Suite 200,
+Austin, TX 78735
+Email: notice@tenstorrent.com
+   2. You: The email address you provided at registration shall be used.
+
+17. Miscellaneous. Licensee agrees that any violation or threatened violation
+of this Agreement may cause irreparable injury to Licensor, entitling Licensor
+to seek injunctive relief in addition to all other legal remedies.  This
+Agreement constitutes the entire agreement between the parties with respect to
+Licensee's use of the Licensed Software, and supersedes all prior or
+contemporaneous understandings or agreements, whether oral or written, express
+or implied.  Any waiver of a right arising under this Agreement must be made in
+writing and signed by the party making the waiver.  This Agreement may only be
+amended in a writing signed by the parties.  Licensee may not assign this
+Agreement without Licensor prior express written consent. Any attempted
+assignment in violation of the prior sentence constitutes a breach of this
+Agreement.  If any provision of this Agreement is held by a court of competent
+jurisdiction to be unenforceable, then the remaining provisions of this
+Agreement will remain in effect.

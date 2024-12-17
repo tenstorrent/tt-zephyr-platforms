@@ -1,0 +1,39 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_JTAG_BOOTROM
+	bool "Use JTAG to load bootrom"
+	depends on JTAG
+	depends on TT_BH_CHIP
+	depends on GPIO
+	help
+	  Use JTAG to load bootrom.
+
+if TT_JTAG_BOOTROM
+
+config JTAG_VERIFY_WRITE
+	bool "Verify data written over AXI matches the bootrom"
+	help
+	  Verify data written over AXI.
+
+config JTAG_PROFILE_FUNCTIONS
+	bool "Profile JTAG functions"
+	help
+	  Print the cycle count at the beginning and end of each function.
+
+config JTAG_LOAD_ON_PRESET
+	bool "Do not load the workaround during startup, instead wait for the preset line to toggle"
+	help
+	  Wait for preset to load workaround
+
+config JTAG_LOAD_BOOTROM
+	bool "Skip bootrom load, skill deassert resets; used primarily to debug while loading arc_fw"
+	default y
+	help
+	  Skip bootrom load, only deassert resets
+
+module = TT_JTAG_BOOTROM
+module-str = JTAG Bootrom Loader
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TT_JTAG_BOOTROM

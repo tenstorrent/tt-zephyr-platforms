@@ -1,0 +1,95 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# A pykwalify schema for basic validation of the tt_boot_fs.yml format.
+
+# The schema for alignment objects
+schema;alignment-schema:
+  type: map
+  mapping:
+    # Flash device size in bytes
+    flash_device_size:
+      type: int
+      required: true
+    # Flash block size in bytes
+    flash_block_size:
+      type: int
+      required: true
+
+# The schema for image objects
+schema;image-schema:
+  type: map
+  mapping:
+
+    # Name of the tt_boot_fs_entry
+    name:
+      type: str
+      required: true
+      # may be between 1 and 8 characters, inclusive
+      pattern: "^[0-9a-zA-Z]{1,8}$"
+
+    # Path name of the binary. This may refer to the git repository root as $ROOT.
+    binary:
+      type: str
+      required: true
+
+    # Executable bit. Indicates this is the binary that the boot rom should load.
+    # This should not be enabled for the failover image.
+    executable:
+      type: bool
+
+    # Load offset. For executable and failover images, the offset where the binary should be
+    # loaded within the address space.
+    offset:
+      type: int
+
+    # Source (or placement) within the flash filesystem. This may be a simple arithmetic
+    # expression and may include $END, which refers to the end of flash, less the size of the
+    # fail_over_image.
+    source:
+      type: str
+
+    # Indicates that the binary in question should only be modified during board provisioning.
+    provisioning_only:
+      type: bool
+
+    # Pad the region the binary occupies to support fixed size tt_boot_fs entries.
+    padto:
+      type: int
+      # the default signifies to not pad (aside from the mandatory multiple of 4 bytes)
+      default: 0
+
+# The top-level schema for tt_boot_fs.yml files
+type: map
+mapping:
+
+  # Name of the tt_boot_fs spec
+  name:
+    type: str
+    required: true
+
+  # Name of the product
+  product_name:
+    type: str
+    required: true
+
+  # Name of the product generation
+  gen_name:
+    type: str
+    required: true
+
+  # Alignment info
+  alignment:
+    include: alignment-schema
+    required: true
+
+  # The list of image objects
+  images:
+    type: seq
+    sequence:
+      - include: image-schema
+
+  # Fail over image
+  fail_over_image:
+    include: image-schema
+    required: true

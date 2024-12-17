@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	gpio0: gpio-emul {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	jtag0: jtag {
+		compatible = "zephyr,jtag-gpio";
+		status = "okay";
+		tck-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		trst-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+		tms-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpio0 3 GPIO_PULL_UP>;
+		tdi-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		port-write-cycles = <2>;
+	};
+
+	mcureset {
+	       compatible = "zephyr,gpio-line";
+	       label = "ASIC reset line";
+	       gpios = <&gpio0 5 GPIO_PULL_DOWN>;
+	};
+
+	spireset {
+	       compatible = "zephyr,gpio-line";
+	       label = "Spi reset line";
+	       gpios = <&gpio0 6 GPIO_PULL_DOWN>;
+	};
+
+	pgood {
+	       compatible = "zephyr,gpio-line";
+	       label = "Power good indicator";
+	       gpios = <&gpio0 8 GPIO_PULL_DOWN>;
+	};
+
+	arc_rambus_jtag_mux_sel: arc_rambus_jtag_mux_enable {
+	       label = "Enable to select the arc jtag, disable to select rambus";
+	       compatible = "zephyr,gpio-line";
+	       gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+	};
+
+	arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
+	       label = "Enable to select the arc jtag, disable to select l2cpu";
+	       compatible = "zephyr,gpio-line";
+	       gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+	};
+};

@@ -1,0 +1,23 @@
+name: Copyright Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  copyright_check_job:
+    runs-on: ubuntu-22.04
+    name: Copyright Check
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run the script
+        run: |
+          ./scripts/check-copyright.py

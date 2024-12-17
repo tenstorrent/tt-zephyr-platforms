@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_BH_CHIP
+	bool "Use the high level bh_chip abstraction"
+	depends on JTAG
+	depends on GPIO
+	help
+		Enable the high level bh_chip abstraction
+
+if TT_BH_CHIP
+
+module = TT_BH_CHIP
+module-str = BH Chip API
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TT_BH_CHIP

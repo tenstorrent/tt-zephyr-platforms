@@ -1,0 +1,81 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_TT_BLACKHOLE_SMC
+
+config CPU_HS4X
+	default y
+
+config NUM_IRQ_PRIO_LEVELS
+	# This processor supports 2 priority levels:
+	# 0 for Fast Interrupts (FIRQs) and 1 for Regular Interrupts (IRQs).
+	default 2
+
+config MAX_IRQ_PER_AGGREGATOR
+	# must be > the highest interrupt number used
+	default 48
+
+config NUM_IRQS
+	# must be > the highest interrupt number used
+	# 142 builtin interrupts + 4 aggregators (48 each) = 334
+	range 17 512
+	default 334
+
+config RGF_NUM_BANKS
+	default 1
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	default 540000000
+
+config CODE_DENSITY
+	default y
+
+config ARCV2_TIMER_IRQ_PRIORITY
+	default 1
+
+#config ARC_CONNECT
+#	default y
+
+#config IDU_NUM_IRQS
+#	default 8
+
+config MP_MAX_NUM_CPUS
+	default 1
+
+config ARC_EARLY_SOC_INIT
+	default y
+
+config SPI_DW
+	default y if SPI
+
+# SPI DW instance requires word aligned access
+config SPI_DW_ACCESS_WORD_ONLY
+	default y if SPI_DW
+
+config 2ND_LVL_ISR_TBL_OFFSET
+	default 142
+
+config NUM_2ND_LEVEL_AGGREGATORS
+	default 4
+
+config 2ND_LVL_INTR_00_OFFSET
+	default 33
+
+config 2ND_LVL_INTR_01_OFFSET
+	default 34
+
+config 2ND_LVL_INTR_02_OFFSET
+	default 35
+
+config 2ND_LVL_INTR_03_OFFSET
+	default 36
+
+# Needed for octal SPI. WH doesn't actually have this but BH will.
+# config CONFIG_SPI_EXTENDED_MODES
+#	default y
+
+# pull in the reset controller driver by default
+# config RESET
+#	default y
+
+endif # SOC_TT_BLACKHOLE_SMC

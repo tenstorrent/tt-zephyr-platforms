@@ -1,0 +1,35 @@
+#  Copyright (c) 2025 Tenstorrent AI ULC
+#  SPDX-License-Identifier: Apache-2.0
+
+config FLASH_SPI_DW
+	bool "SPI DW flash driver"
+	default y
+	select FLASH_HAS_DRIVER_ENABLED
+	select FLASH_HAS_EXPLICIT_ERASE
+	select FLASH_JESD216
+	select FLASH_HAS_PAGE_LAYOUT
+	select FLASH_HAS_EX_OP
+	depends on DT_HAS_SNPS_DESIGNWARE_SPI_ENABLED && !SPI_DW
+
+if FLASH_SPI_DW
+
+config FLASH_SPI_DW_TIMEOUT
+	int "SPI DW flash transfer timeout (ms)"
+	default 1000
+	help
+	  Timeout in milliseconds for SPI DW flash transfers.
+
+config FLASH_SPI_DW_PROG_TIMEOUT
+	int "SPI DW flash program timeout (ms)"
+	default 10000
+	help
+	  Timeout in milliseconds for SPI DW flash program and erase operations
+
+config FLASH_SPI_DW_DEV_INIT_PRIO
+	int "SPI DW flash device initialization priority"
+	default 60
+	help
+	  Priority for SPI DW flash device initialization. Must be greater than
+	  the flash initialization priority
+
+endif # FLASH_SPI_DW

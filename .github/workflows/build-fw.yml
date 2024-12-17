@@ -1,0 +1,116 @@
+name: Build Firmware
+
+on:
+  workflow_call:
+    secrets:
+      SIGNATURE_KEY:
+        required: true
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - p100
+          - p100a
+          - p150a
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/prepare-zephyr
+
+      - name: Generate BOARD
+        shell: bash
+        run: |
+          case "${{ matrix.board }}" in
+            p100) BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
+          esac
+          echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
+
+      - name: Check signing key
+        shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -gt 42 ]; then
+            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build firmware bundle
+        shell: bash
+        run: |
+          if [ "$BOARD" = "" ]; then
+            echo "BOARD is not set"
+            exit 1
+          fi
+
+          west build \
+            -d build-${{ matrix.board }} \
+            --sysbuild \
+            -p \
+            -b $BOARD \
+            app/smc \
+            -- \
+              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
+              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
+
+      - name: Upload firmware assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: |
+            build-${{ matrix.board }}/update.fwbundle
+            build-${{ matrix.board }}/**/.config
+            build-${{ matrix.board }}/**/devicetree_generated.h
+            build-${{ matrix.board }}/**/zephyr.bin
+            build-${{ matrix.board }}/**/zephyr.dts
+            build-${{ matrix.board }}/**/zephyr.elf
+            build-${{ matrix.board }}/**/zephyr.hex
+            build-${{ matrix.board }}/**/zephyr.map
+            build-${{ matrix.board }}/**/zephyr.signed.bin
+            build-${{ matrix.board }}/**/zephyr.signed.hex
+            build-${{ matrix.board }}/**/zephyr.stat
+
+  build-recovery:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/prepare-zephyr
+
+      - name: Build recovery firmware
+        shell: bash
+        run: |
+          west build \
+            -d build-recovery \
+            -p auto \
+            -b tt_blackhole/tt_blackhole/smc \
+            app/smc \
+            -- \
+              -DEXTRA_CONF_FILE=recovery.conf \
+              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y
+
+      - name: Upload recovery assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery
+          path: |
+            build-recovery/**/.config
+            build-recovery/**/devicetree_generated.h
+            build-recovery/**/zephyr.bin
+            build-recovery/**/zephyr.dts
+            build-recovery/**/zephyr.elf
+            build-recovery/**/zephyr.hex
+            build-recovery/**/zephyr.map
+            build-recovery/**/zephyr.stat

@@ -1,0 +1,3 @@
+tests:
+  lib.tenstorrent.bitrev:
+    type: unit

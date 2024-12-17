@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Sysnopsys DesignWare SPI Flash device
+
+include: [spi-device.yaml, "jedec,jesd216.yaml"]
+
+compatible: snps,designware-spi-flash
+
+properties:
+  reg:
+    required: true

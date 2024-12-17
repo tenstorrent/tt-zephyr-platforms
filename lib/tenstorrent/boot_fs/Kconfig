@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_BOOT_FS
+	bool "Tenstorrent boot filesystem library"
+	help
+	  Library for interacting with the boot filesystem.
+
+if TT_BOOT_FS
+
+config TT_BOOT_FS_IMAGE_COUNT_MAX
+	int "Maximum number of filesystem images"
+	default 10
+	help
+	  Maximum number of filesystem images.
+
+endif

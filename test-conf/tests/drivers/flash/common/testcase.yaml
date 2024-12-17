@@ -1,0 +1,20 @@
+common:
+  tags:
+    - drivers
+    - flash
+tests:
+  drivers.flash.common.rtt:
+    tags: smoke
+    platform_allow:
+      - tt_blackhole/tt_blackhole/smc
+    extra_configs:
+      - CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=4096
+    extra_args:
+      - "platform:tt_blackhole@p100/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
+         common/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p100/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
+         common/tt_blackhole_tt_blackhole_smc.conf"
+    required_snippets:
+      - rtt-console

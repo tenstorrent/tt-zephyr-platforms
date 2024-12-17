@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Tenstorrent libraries"
+
+# zephyr-keep-sorted-start
+rsource "banner/Kconfig"
+rsource "bh_arc/Kconfig"
+rsource "bh_chip/Kconfig"
+rsource "bist/Kconfig"
+rsource "boot_fs/Kconfig"
+rsource "fan_ctrl/Kconfig"
+rsource "fwupdate/Kconfig"
+rsource "jtag_bootrom/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu

@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+message FwTable {
+
+  uint32 fw_bundle_version = 1;
+  ChipLimits chip_limits = 2;
+  FeatureEnable feature_enable = 3;
+  FanTable fan_table = 4;
+  DramTable dram_table = 5;
+  ChipHarvestingTable chip_harvesting_table = 6;
+  PciPropertyTable pci0_property_table = 7;
+  PciPropertyTable pci1_property_table = 8;
+  EthPropertyTable eth_property_table = 9;
+  ProductSpecHarvesting product_spec_harvesting = 10;
+
+  message ChipLimits {
+    uint32 asic_fmax = 1;
+    uint32 vdd_max = 2;
+    uint32 vdd_min = 3;
+    uint32 voltage_margin = 4;
+    uint32 tdp_limit = 5;
+    uint32 tdc_limit = 6;
+    uint32 thm_limit = 7;
+    uint32 tdc_fast_limit = 8;
+    uint32 therm_trip_l1_limit = 9;
+    uint32 bus_peak_limit = 10;
+    uint32 frequency_margin = 11;
+    uint32 asic_fmin = 12;
+  }
+
+  message FeatureEnable {
+    bool cg_en = 1;
+    bool noc_translation_en = 2;
+    bool ddr_train_en = 3;
+    bool aiclk_ppm_en = 4;
+    bool watchdog_en = 5;
+    bool smbus_en = 6;
+    bool harvesting_en = 7;
+    bool fan_ctrl_en = 8;
+  }
+
+  message FanTable{
+    uint32 fan_table_point_x1 = 1;
+    uint32 fan_table_point_x2 = 2;
+    uint32 fan_table_point_y1 = 3;
+    uint32 fan_table_point_y2 = 4;
+  }
+
+  message DramTable {
+    uint32 dram_mask = 1;
+    bool dram_mask_en = 2;
+  }
+
+  message ChipHarvestingTable {
+    uint32 soft_harvesting_en = 1;
+    uint32 soft_harvesting = 2;
+  }
+
+  message PciPropertyTable {
+    reserved 2;
+    uint32 max_pcie_speed = 1;
+    uint32 pcie_bar0_size = 3;
+    uint32 pcie_bar2_size = 4;
+    uint32 pcie_bar4_size = 5;
+    PcieMode pcie_mode = 6;
+    uint32 num_serdes = 7;
+
+    enum PcieMode {
+      DISABLED = 0;
+      EP = 1;
+      RP = 2;
+    }
+  }
+
+  message EthPropertyTable {
+    uint32 eth_disable_mask = 1;
+    bool eth_disable_mask_en = 2;
+  }
+
+  message ProductSpecHarvesting {
+    uint32 dram_disable_count = 1;
+    bool eth_disabled = 2;
+    uint32 tensix_col_disable_count = 3;
+  }
+}

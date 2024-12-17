@@ -1,0 +1,57 @@
+# Copyright (c) 2019 Phytec Messtechnik GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_I2C_DRIVER
+	bool "stm32 i2c driver with some customizations [EXPERIMENTAL]"
+	select EXPERIMENTAL
+
+if TT_I2C_DRIVER
+
+module = TT_I2C_DRIVER
+module-str = tt i2c drv
+source "subsys/logging/Kconfig.template.log_config"
+
+config TT_I2C_STM32_INTERRUPT
+	bool "STM32 MCU I2C Interrupt Support"
+	default y
+	help
+	  Enable Interrupt support for the I2C Driver
+
+config TT_I2C_STM32_POLL
+	bool "Use simple byte polling instead of the NBYTES counter"
+	default n
+	help
+	  Enable Use single byte polling instead of multibyte
+
+config TT_I2C_STM32_BYTE_POLL
+	bool "Use simple byte polling instead of the NBYTES counter"
+	default n
+	help
+	  Enable Use single byte polling instead of multibyte
+
+config TT_I2C_STM32_COMBINED_INTERRUPT
+	bool
+	depends on TT_I2C_STM32_INTERRUPT
+	default y if SOC_SERIES_STM32C0X || SOC_SERIES_STM32F0X || \
+		     SOC_SERIES_STM32G0X || SOC_SERIES_STM32L0X
+
+config TT_I2C_STM32_BUS_RECOVERY
+	bool "Bus recovery support"
+	select I2C_BITBANG
+	help
+	  Enable STM32 driver bus recovery support via GPIO bitbanging.
+
+config TT_I2C_STM32_TIMEOUT
+	int "The bus timeout in ms (how long we will wait for target before aborting)"
+	default 500
+	depends on !TT_I2C_STM32_INTERRUPT
+	help
+	  The length of time (in ms) driver will wait for target to show activity before aborting
+
+config TT_I2C_STM32_SELECT_GPIOS
+	bool
+	default y if TT_I2C_STM32_BUS_RECOVERY || TT_I2C_STM32_BYTE_POLL
+
+
+endif # JTAG_DRIVER

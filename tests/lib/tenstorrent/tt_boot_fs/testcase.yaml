@@ -1,0 +1,12 @@
+common:
+  platform_allow:
+    - native_sim
+tests:
+  lib.tenstorrent.boot_fs: {}
+  lib.tenstorrent.boot_fs.python:
+    # Although the zephyr pytest harness is usually used for testing host + device interaction,
+    # here, we use it only to test the scripts/tt_boot_fs.py script.
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/test-tt-boot-fs.py

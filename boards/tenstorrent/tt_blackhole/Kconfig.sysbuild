@@ -1,0 +1,12 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+choice BOOTLOADER
+	default BOOTLOADER_NONE
+endchoice
+
+choice BOOT_SIGNATURE_TYPE
+	# Note: CONFIG_MCUBOOT_SIGNATURE_KEY_FILE must point to an
+	# internally-managed RSA key file for production builds.
+	default BOOT_SIGNATURE_TYPE_RSA
+endchoice

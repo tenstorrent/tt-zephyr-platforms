@@ -1,0 +1,11 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_FAN_CTRL
+	bool "Communicate with MAX6639 fan controller"
+	help
+	  Communicate with MAX6639 fan controller.
+
+module = TT_FAN_CTRL
+module-str = TT Fan Control
+source "subsys/logging/Kconfig.template.log_config"

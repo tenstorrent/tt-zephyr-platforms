@@ -1,0 +1,64 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <arc/tenstorrent/tt_blackhole_smc.dtsi>
+#include "tt_blackhole-pinctrl.dtsi"
+
+#include <freq.h>
+
+/ {
+	model = "Tenstorrent Blackhole board";
+	compatible = "tenstorrent,blackhole";
+
+	chosen {
+		zephyr,sram = &csm;
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+	};
+
+};
+
+&spi0 {
+	status = "okay";
+
+	spi_flash: eeprom@0 {
+		compatible = "snps,designware-spi-flash";
+		reg = <0>;
+		status = "disabled";
+		spi-max-frequency = <DT_FREQ_M(3)>;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+
+	fanctl0: max6639@58 {
+		compatible = "maxim,max6639";
+		reg = <0x58>;
+		status = "disabled";
+	};
+
+	sw0: switch@72 {
+		compatible = "ti,tps22993";
+		reg = <0x72>;
+		status = "disabled";
+	};
+
+	sw1: switch@73 {
+		compatible = "ti,tps22993";
+		reg = <0x73>;
+		status = "disabled";
+	};
+};

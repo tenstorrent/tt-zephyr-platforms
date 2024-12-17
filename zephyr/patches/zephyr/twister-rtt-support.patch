@@ -1,0 +1,482 @@
+commit 87f36fbdf5c359a207dd4f31aa8759ea27ae18aa
+Author: Chris Friedt <cfriedt@tenstorrent.com>
+Date:   Sun Nov 24 12:38:20 2024 -0500
+
+    twister: support segger real-time-transfer (rtt) for serial_pty
+
+    Support RTT (Segger Real-time Transfer) for reading console
+    messages with twister when testing with hardware.
+
+    Tested with:
+
+    twister -p nucleo_l496zg --device-testing --flash-before \
+      --west-runner openocd --west-flash --device-serial-pty rtt \
+      -T samples/hello_world
+
+    cat twister-out/nucleo_l496zg_stm32l496xx/samples/hello_world/\
+    sample.basic.helloworld/handler.log
+    *** Booting Zephyr OS build v4.0.0-749-gc9e567da3747 ***
+    Hello World! nucleo_l496zg/stm32l496xx
+
+    Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
+
+diff --git a/scripts/pylib/twister/twisterlib/environment.py b/scripts/pylib/twister/twisterlib/environment.py
+index d771d93f35e..22944c4e665 100644
+--- a/scripts/pylib/twister/twisterlib/environment.py
++++ b/scripts/pylib/twister/twisterlib/environment.py
+@@ -855,6 +855,18 @@ def parse_arguments(
+         logger.error("west-flash requires device-testing to be enabled")
+         sys.exit(1)
+
++    if options.device_serial_pty and options.device_serial_pty == "rtt":
++        if options.west_flash is None:
++            logger.error("--device-serial-pty rtt requires --west-flash")
++            sys.exit(1)
++
++        # add the following options
++        options.extra_args += ['CONFIG_USE_SEGGER_RTT=y',
++                               'CONFIG_RTT_CONSOLE=y', 'CONFIG_CONSOLE=y',
++                               # This option is needed to ensure the uart console is not selected
++                               # when CONFIG_RTT_CONSOLE is enabled due to #81798
++                               'CONFIG_UART_CONSOLE=n']
++
+     if not options.testsuite_root:
+         # if we specify a test scenario which is part of a suite directly, do
+         # not set testsuite root to default, just point to the test directory
+diff --git a/scripts/pylib/twister/twisterlib/handlers.py b/scripts/pylib/twister/twisterlib/handlers.py
+index eb7d90ddd3e..9c27e41a6f9 100755
+--- a/scripts/pylib/twister/twisterlib/handlers.py
++++ b/scripts/pylib/twister/twisterlib/handlers.py
+@@ -16,6 +16,7 @@ import re
+ import select
+ import shlex
+ import signal
++import stat
+ import subprocess
+ import sys
+ import threading
+@@ -544,9 +545,9 @@ class DeviceHandler(Handler):
+                 proc.communicate()
+                 logger.error(f"{script} timed out")
+
+-    def _create_command(self, runner, hardware):
++    def _create_command(self, base_command, runner, hardware):
+         if (self.options.west_flash is not None) or runner:
+-            command = ["west", "flash", "--skip-rebuild", "-d", self.build_dir]
++            command = base_command
+             command_extra_args = []
+
+             # There are three ways this option is used.
+@@ -706,6 +707,27 @@ class DeviceHandler(Handler):
+
+         return serial_device, ser_pty_process
+
++    def _create_serial_pty_script(self, runner, hardware):
++        serial_pty = self.build_dir + '/rtt.sh'
++
++        rtt_cmd = ["west", "-qqqqq", "rtt", "-d", self.build_dir, "--skip-rebuild", "--rtt-quiet"]
++        rtt_cmd = self._create_command(rtt_cmd, runner, hardware)
++
++        with open(serial_pty, 'w') as f:
++            f.write("#!/bin/sh\n");
++            for cmd in rtt_cmd:
++                if " " in cmd:
++                    f.write(f"'{cmd}' ")
++                else:
++                    f.write(f"{cmd} ")
++
++        st = os.stat(serial_pty)
++        os.chmod(serial_pty, st.st_mode | stat.S_IEXEC)
++
++        logger.debug(f'RTT command is "{rtt_cmd}"')
++
++        return serial_pty
++
+     def handle(self, harness):
+         runner = None
+         hardware = self.get_hardware()
+@@ -717,11 +739,17 @@ class DeviceHandler(Handler):
+         runner = hardware.runner or self.options.west_runner
+         serial_pty = hardware.serial_pty
+
+-        serial_device, ser_pty_process = self._get_serial_device(serial_pty, hardware.serial)
++        if serial_pty == 'rtt':
++            serial_pty = self._create_serial_pty_script(runner, hardware)
++            logger.debug(f'Created RTT script {serial_pty}')
+
+-        logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
++        if not hardware.flash_before:
++            serial_device, ser_pty_process = self._get_serial_device(
++                serial_pty, hardware.serial)
++            logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
+
+-        command = self._create_command(runner, hardware)
++        base_command = ["west", "flash", "--skip-rebuild", "-d", self.build_dir]
++        command = self._create_command(base_command, runner, hardware)
+
+         pre_script = hardware.pre_script
+         post_flash_script = hardware.post_flash_script
+@@ -738,28 +766,27 @@ class DeviceHandler(Handler):
+         if hardware.flash_with_test:
+             flash_timeout += self.get_test_timeout()
+
+-        serial_port = None
+-        if hardware.flash_before is False:
+-            serial_port = serial_device
+-
+-        try:
+-            ser = self._create_serial_connection(
+-                hardware,
+-                serial_port,
+-                hardware.baud,
+-                flash_timeout,
+-                serial_pty,
+-                ser_pty_process
+-            )
+-        except serial.SerialException:
+-            return
++        halt_monitor_evt = None
++        t = None
++        if not hardware.flash_before:
++            try:
++                ser = self._create_serial_connection(
++                    hardware,
++                    serial_device,
++                    hardware.baud,
++                    flash_timeout,
++                    serial_pty,
++                    ser_pty_process
++                )
++            except serial.SerialException:
++                return
+
+-        halt_monitor_evt = threading.Event()
++            halt_monitor_evt = threading.Event()
+
+-        t = threading.Thread(target=self.monitor_serial, daemon=True,
+-                             args=(ser, halt_monitor_evt, harness))
+-        start_time = time.time()
+-        t.start()
++            t = threading.Thread(target=self.monitor_serial, daemon=True,
++                                 args=(ser, halt_monitor_evt, harness))
++            start_time = time.time()
++            t.start()
+
+         d_log = f"{self.instance.build_dir}/device.log"
+         logger.debug(f'Flash command: {command}', )
+@@ -778,7 +805,8 @@ class DeviceHandler(Handler):
+                         flash_error = True
+                         with open(d_log, "w") as dlog_fp:
+                             dlog_fp.write(stderr.decode())
+-                        halt_monitor_evt.set()
++                        if halt_monitor_evt:
++                            halt_monitor_evt.set()
+                 except subprocess.TimeoutExpired:
+                     logger.warning("Flash operation timed out.")
+                     self.terminate(proc)
+@@ -791,7 +819,8 @@ class DeviceHandler(Handler):
+                 dlog_fp.write(stderr.decode())
+
+         except subprocess.CalledProcessError:
+-            halt_monitor_evt.set()
++            if halt_monitor_evt:
++                halt_monitor_evt.set()
+             self.instance.status = TwisterStatus.ERROR
+             self.instance.reason = "Device issue (Flash error)"
+             flash_error = True
+@@ -802,26 +831,43 @@ class DeviceHandler(Handler):
+                 timeout = script_param.get("post_flash_timeout", timeout)
+             self.run_custom_script(post_flash_script, timeout)
+
+-        # Connect to device after flashing it
+         if hardware.flash_before:
++            serial_device, ser_pty_process = self._get_serial_device(
++                serial_pty, hardware.serial)
++            logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
++
+             try:
+-                logger.debug(f"Attach serial device {serial_device} @ {hardware.baud} baud")
+-                ser.port = serial_device
+-                ser.open()
++                ser = self._create_serial_connection(
++                    hardware,
++                    serial_device,
++                    hardware.baud,
++                    flash_timeout,
++                    serial_pty,
++                    ser_pty_process
++                )
+             except serial.SerialException as e:
+                 self._handle_serial_exception(e, hardware, serial_pty, ser_pty_process)
+                 return
+
++            halt_monitor_evt = threading.Event()
++
++            t = threading.Thread(target=self.monitor_serial, daemon=True,
++                                 args=(ser, halt_monitor_evt, harness))
++            start_time = time.time()
++            t.start()
++
+         if not flash_error:
+             # Always wait at most the test timeout here after flashing.
+-            t.join(self.get_test_timeout())
++            if t:
++                t.join(self.get_test_timeout())
+         else:
+             # When the flash error is due exceptions,
+             # twister tell the monitor serial thread
+             # to close the serial. But it is necessary
+             # for this thread being run first and close
+             # have the change to close the serial.
+-            t.join(0.1)
++            if t:
++                t.join(0.1)
+
+         if t.is_alive():
+             logger.debug(
+
+commit f89b3482095dcfb2f48c5bfa6ad16cf7b2b92565
+Author: Chris Friedt <cfriedt@tenstorrent.com>
+Date:   Sun Nov 24 12:37:34 2024 -0500
+
+    twister: support flash_before with device_serial_pty
+
+    Ensure that --device-serial-pty may be used with --flash-before
+    in order to support capturing test results via RTT console.
+
+    This is required (at least) for openocd, since the flash (or
+    debug or rtt or any other operation) will fail if an existing
+    process is already in control of the USB device in question.
+
+    Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
+
+diff --git a/scripts/pylib/twister/twisterlib/environment.py b/scripts/pylib/twister/twisterlib/environment.py
+index b161096d562..d771d93f35e 100644
+--- a/scripts/pylib/twister/twisterlib/environment.py
++++ b/scripts/pylib/twister/twisterlib/environment.py
+@@ -921,10 +921,6 @@ def parse_arguments(
+         logger.error("--device-flash-with-test does not apply when --flash-before is used")
+         sys.exit(1)
+
+-    if options.flash_before and options.device_serial_pty:
+-        logger.error("--device-serial-pty cannot be used when --flash-before is set (for now)")
+-        sys.exit(1)
+-
+     if options.shuffle_tests and options.subset is None:
+         logger.error("--shuffle-tests requires --subset")
+         sys.exit(1)
+diff --git a/scripts/pylib/twister/twisterlib/hardwaremap.py b/scripts/pylib/twister/twisterlib/hardwaremap.py
+index 1121301c577..eeb702ac96c 100644
+--- a/scripts/pylib/twister/twisterlib/hardwaremap.py
++++ b/scripts/pylib/twister/twisterlib/hardwaremap.py
+@@ -213,7 +213,7 @@ class HardwareMap:
+                                 True,
+                                 flash_timeout=self.options.device_flash_timeout,
+                                 flash_with_test=self.options.device_flash_with_test,
+-                                flash_before=False,
++                                flash_before=self.options.flash_before
+                                 )
+
+             # the fixtures given by twister command explicitly should be assigned to each DUT
+
+commit 829c6d37607d5f54bb5225834afd9dc7eb423cd9
+Author: Chris Friedt <cfriedt@tenstorrent.com>
+Date:   Sun Nov 24 12:34:22 2024 -0500
+
+    west: runners: jlink: add support for --rtt-quiet option
+
+    Add support for the --rtt-quiet argument, which prevents
+    subprocesses from printing to stdout and stderr, so that rtt
+    messages are the only items printed to standard output.
+
+    This almnost completely silences the 'west rtt' command with the
+    exception of '-- west rtt: using runner openocd' bring printed
+    on the first line of the output.
+
+    In order to silence that line from west, the top-level '--quiet'
+    argument must be passed to west. E.g.
+
+    west -qqqq rtt --rtt-quiet ...
+
+    Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
+
+diff --git a/scripts/west_commands/runners/jlink.py b/scripts/west_commands/runners/jlink.py
+index 00438ba6e5d..5309689108b 100644
+--- a/scripts/west_commands/runners/jlink.py
++++ b/scripts/west_commands/runners/jlink.py
+@@ -89,6 +89,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+                  gdb_host='',
+                  gdb_port=DEFAULT_JLINK_GDB_PORT,
+                  rtt_port=DEFAULT_JLINK_RTT_PORT,
++                 rtt_quiet=False,
+                  tui=False, tool_opt=None):
+         super().__init__(cfg)
+         self.file = cfg.file
+@@ -112,6 +113,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+         self.tui_arg = ['-tui'] if tui else []
+         self.loader = loader
+         self.rtt_port = rtt_port
++        self.rtt_quiet = rtt_quiet
+
+         self.tool_opt = []
+         if tool_opt is not None:
+@@ -174,6 +176,8 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+                             help='RTT client, default is JLinkRTTClient')
+         parser.add_argument('--rtt-port', default=DEFAULT_JLINK_RTT_PORT,
+                             help=f'jlink rtt port, defaults to {DEFAULT_JLINK_RTT_PORT}')
++        parser.add_argument('--rtt-quiet', action='store_true',
++                            help='only output rtt to stdout, not that of subprocesses')
+
+         parser.set_defaults(reset=False)
+
+@@ -192,9 +196,13 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+                                  gdb_host=args.gdb_host,
+                                  gdb_port=args.gdb_port,
+                                  rtt_port=args.rtt_port,
++                                 rtt_quiet=args.rtt_quiet,
+                                  tui=args.tui, tool_opt=args.tool_opt)
+
+     def print_gdbserver_message(self):
++        if self.rtt_quiet:
++            return
++
+         if not self.thread_info_enabled:
+             thread_msg = '; no thread info available'
+         elif self.supports_thread_info:
+@@ -205,6 +213,9 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+                          f'{self.gdb_port}{thread_msg}')
+
+     def print_rttserver_message(self):
++        if self.rtt_quiet:
++            return
++
+         self.logger.info(f'J-Link RTT server running on port {self.rtt_port}')
+
+     @property
+@@ -317,10 +328,14 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+             self.print_gdbserver_message()
+             self.check_call(server_cmd)
+         elif command == 'rtt':
++            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
++                          'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
++
+             self.print_gdbserver_message()
+             self.print_rttserver_message()
+             server_cmd += ['-nohalt']
+-            server_proc = self.popen_ignore_int(server_cmd)
++            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
++            time.sleep(1)
+             try:
+                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                 # wait for the port to be open
+commit 0bc7e1d7e904b11a4ac87b9ec27fe4211554139e
+Author: Chris Friedt <cfriedt@tenstorrent.com>
+Date:   Sun Nov 24 12:24:18 2024 -0500
+
+    west: runners: openocd: add support for --rtt-quiet option
+
+    Add support for the --rtt-quiet argument, which prevents
+    subprocesses from printing to stdout and stderr, so that rtt
+    messages are the only items printed to standard output.
+
+    This almnost completely silences the 'west rtt' command with the
+    exception of '-- west rtt: using runner openocd' bring printed
+    on the first line of the output.
+
+    In order to silence that line from west, the top-level '--quiet'
+    argument must be passed to west. E.g.
+
+    west -qqqq rtt --rtt-quiet ...
+
+    Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
+
+diff --git a/scripts/west_commands/runners/openocd.py b/scripts/west_commands/runners/openocd.py
+index d30992a30a0..f79ebb4f5cf 100644
+--- a/scripts/west_commands/runners/openocd.py
++++ b/scripts/west_commands/runners/openocd.py
+@@ -59,7 +59,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+                  gdb_client_port=DEFAULT_OPENOCD_GDB_PORT,
+                  gdb_init=None, no_load=False,
+                  target_handle=DEFAULT_OPENOCD_TARGET_HANDLE,
+-                 rtt_port=DEFAULT_OPENOCD_RTT_PORT):
++                 rtt_port=DEFAULT_OPENOCD_RTT_PORT,
++                 rtt_quiet=False, rtt_no_reset=False):
+         super().__init__(cfg)
+ 
+         if not path.exists(cfg.board_dir):
+@@ -120,6 +121,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+         self.load_arg = [] if no_load else ['-ex', 'load']
+         self.target_handle = target_handle
+         self.rtt_port = rtt_port
++        self.rtt_quiet = rtt_quiet
++        self.rtt_no_reset = rtt_no_reset
+ 
+     @classmethod
+     def name(cls):
+@@ -194,6 +197,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+                             ''')
+         parser.add_argument('--rtt-port', default=DEFAULT_OPENOCD_RTT_PORT,
+                             help='openocd rtt port, defaults to 5555')
++        parser.add_argument('--rtt-quiet', action='store_true',
++                            help='only output rtt to stdout, not that of subprocesses')
++        parser.add_argument('--rtt-no-reset', action='store_true',
++                            help='skip reset when configuring rtt')
+ 
+ 
+     @classmethod
+@@ -210,9 +217,13 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+             telnet_port=args.telnet_port, gdb_port=args.gdb_port,
+             gdb_client_port=args.gdb_client_port, gdb_init=args.gdb_init,
+             no_load=args.no_load, target_handle=args.target_handle,
+-            rtt_port=args.rtt_port)
++            rtt_port=args.rtt_port, rtt_quiet=args.rtt_quiet,
++            rtt_no_reset=args.rtt_no_reset)
+ 
+     def print_gdbserver_message(self):
++        if self.rtt_quiet:
++            return
++
+         if not self.thread_info_enabled:
+             thread_msg = '; no thread info available'
+         elif self.supports_thread_info():
+@@ -223,6 +234,9 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+                          f'{self.gdb_port}{thread_msg}')
+ 
+     def print_rttserver_message(self):
++        if self.rtt_quiet:
++            return
++
+         self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
+ 
+     def read_version(self):
+@@ -407,7 +421,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+             # start the internal openocd rtt service via gdb monitor commands
+             gdb_cmd.extend(
+                 ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])
+-            gdb_cmd.extend(['-ex', 'monitor reset run'])
++            gdb_cmd.extend(['-ex', 'monitor resume'])
+             gdb_cmd.extend(['-ex', 'monitor rtt start'])
+             gdb_cmd.extend(
+                 ['-ex', f'monitor rtt server start {self.rtt_port} 0'])
+@@ -425,8 +439,11 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+                 server_proc.terminate()
+                 server_proc.wait()
+         elif command == 'rtt':
++            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
++                                'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
++
+             self.print_rttserver_message()
+-            server_proc = self.popen_ignore_int(server_cmd)
++            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
+ 
+             if os_name != 'nt':
+                 # Save the terminal settings
+@@ -443,7 +460,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+ 
+             try:
+                 # run the binary with gdb, set up the rtt server (runs to completion)
+-                subprocess.run(gdb_cmd)
++                subprocess.run(gdb_cmd, **rtt_quiet_kwargs)
+                 # run the rtt client in the foreground
+                 self.run_telnet_client('localhost', self.rtt_port)
+             finally:

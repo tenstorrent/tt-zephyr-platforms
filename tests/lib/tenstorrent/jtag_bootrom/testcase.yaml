@@ -1,0 +1,3 @@
+tests:
+  lib.tenstorrent.jtag_bootrom.qemu:
+    filter: dt_compat_enabled("zephyr,gpio-emul")

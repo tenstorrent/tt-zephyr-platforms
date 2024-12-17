@@ -1,0 +1,76 @@
+From ed09c55dd814b27f7a3132749f72ba9fc0a528a4 Mon Sep 17 00:00:00 2001
+From: Aaron Fong <afong@tenstorrent.com>
+Date: Sat, 8 Feb 2025 17:15:34 -0500
+Subject: [PATCH 2/3] arch: arc: add support for multilevel interrupts
+
+Update the arch_irq_enable/disable functions to support multilevel
+interrupts on the ARC architecture.
+---
+ arch/arc/core/irq_manage.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/arch/arc/core/irq_manage.c b/arch/arc/core/irq_manage.c
+index f6573f5e1bd..03ca6a8f8c9 100644
+--- a/arch/arc/core/irq_manage.c
++++ b/arch/arc/core/irq_manage.c
+@@ -25,7 +25,10 @@
+ #include <zephyr/sw_isr_table.h>
+ #include <zephyr/irq.h>
+ #include <zephyr/sys/printk.h>
++#include <zephyr/irq_multilevel.h>
++#include <zephyr/irq_nextlevel.h>
+ 
++#include "../../common/include/sw_isr_common.h"
+ 
+ /*
+  * storage space for the interrupt stack of fast_irq
+@@ -187,11 +190,46 @@ int arch_irq_is_enabled(unsigned int irq)
+ #else
+ void arch_irq_enable(unsigned int irq)
+ {
++#ifdef CONFIG_MULTI_LEVEL_INTERRUPTS
++	unsigned int level = irq_get_level(irq);
++	const struct device *dev;
++
++#ifdef CONFIG_3RD_LEVEL_INTERRUPTS
++	if (level == 3) {
++		dev = z_get_sw_isr_device_from_irq(irq);
++		irq_enable_next_level(dev, irq_from_level_3(irq));
++		return;
++} else
++#endif
++	if (level == 2) {
++		dev = z_get_sw_isr_device_from_irq(irq);
++		irq_enable_next_level(dev, irq_from_level_2(irq));
++		return;
++	}
++#endif
+ 	z_arc_v2_irq_unit_int_enable(irq);
+ }
+ 
+ void arch_irq_disable(unsigned int irq)
+ {
++#ifdef CONFIG_MULTI_LEVEL_INTERRUPTS
++	unsigned int level = irq_get_level(irq);
++	const struct device *dev;
++
++#ifdef CONFIG_3RD_LEVEL_INTERRUPTS
++	if (level == 3) {
++		dev = z_get_sw_isr_device_from_irq(irq);
++		irq_disable_next_level(dev, irq_from_level_3(irq));
++		return;
++} else
++#endif
++	if (level == 2) {
++		dev = z_get_sw_isr_device_from_irq(irq);
++		irq_disable_next_level(dev, irq_from_level_2(irq));
++		return;
++	}
++#endif
++
+ 	z_arc_v2_irq_unit_int_disable(irq);
+ }
+ 
+-- 
+2.39.3 (Apple Git-146)
+

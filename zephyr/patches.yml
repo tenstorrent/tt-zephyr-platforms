@@ -1,0 +1,61 @@
+patches:
+  - path: zephyr/twister-rtt-support.patch
+    sha256sum: c64e1ca07119aea925f482bbdb4e5c76c17dc1843b5616ebecf49c004183bef6
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2024-11-24
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/81837
+    comments: |
+      This works. It might go through a few more rounds of review though. No sense in delaying.
+  - path: zephyr/multiple_icntl.patch
+    sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
+    module: zephyr
+    author: Samridhi Bansal
+    email: sbansal@tenstorrent.com
+    date: 2025-02-07
+    comments: |
+      This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
+      It also enhances the driver to support multiple instances on the same platform.
+  - path: zephyr/move-bss-to-end.patch
+    sha256sum: bc781234c7bb8acf1346a860db00252311b5c7aab9cca81b015a53cf9ef78358
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2024-10-10
+    comments: |
+      This patch moves BSS and noinit sections to the end.
+  - path: zephyr/check-compliance.patch
+    sha256sum: c5daf5811be596d84463d347004f48ecd1f1ca83196121b608e897dea88d2538
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-01-15
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84054
+    comments: |
+      Fix upstream check_compliance.py to be usable by other modules.
+  - path: zephyr/arc-multilvl-int.patch
+    sha256sum: fe33bdd040c7f89b848d17193aca3777e1b2c2d71d21f909aa202fb68bf024da
+    module: zephyr
+    author: Aaron Fong
+    email: afong@tenstorrent.com
+    date: 2025-02-07
+    comments: |
+      Add support for multilevel interrupts on the ARC architecture.
+  - path: zephyr/i2c-dw-multi-ints.patch
+    sha256sum: 01e793791b6243697362c7d87ab05f90bf0dcc3f14939f101260021c7dd9e11b
+    module: zephyr
+    author: Aaron Fong
+    email: afong@tenstorrent.com
+    date: 2025-02-07
+    comments: |
+      Hack to support the version of the DesignWare I2C hardware that splits the interrupts
+      to multiple lines.
+  - path: zephyr/include-zephyr-devicetree-add-DT_INST_IRQN_BY_NAME.patch
+    sha256sum: 1859e965ac042bf49ffb2d219ac1d9731562cfe334697180c3633ae402ac637f
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-02-08
+    comments: |
+      Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h

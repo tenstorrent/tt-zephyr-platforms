@@ -1,0 +1,19 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_TT_BLACKHOLE_BMC
+	select ARM
+	select CPU_CORTEX_M0PLUS
+	select CPU_CORTEX_M_HAS_VTOR
+	select CPU_HAS_ARM_MPU
+	select CPU_CORTEX_M_HAS_SYSTICK
+	select HAS_PM
+	select SOC_EARLY_INIT_HOOK
+
+config SOC_TT_BLACKHOLE_SMC
+	select ARC
+	select CPU_HAS_FPU
+	select MULTI_LEVEL_INTERRUPTS
+	select 2ND_LEVEL_INTERRUPTS
+	select HAS_SEGGER_RTT if ZEPHYR_SEGGER_MODULE
+	select SOC_EARLY_INIT_HOOK

@@ -1,0 +1,14 @@
+#  Copyright (c) 2025 Tenstorrent AI ULC
+#  SPDX-License-Identifier: Apache-2.0
+
+if SENSOR
+
+menu "Sensor Drivers"
+
+# zephyr-keep-sorted-start
+rsource "ti/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu
+
+endif

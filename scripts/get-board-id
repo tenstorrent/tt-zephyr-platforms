@@ -1,0 +1,34 @@
+#!/bin/env python3
+
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# Gets the 'id' parameter for a given platform in a hardware map, for use
+# with flashing utilities like "west flash"
+
+import yaml
+import sys
+
+if len(sys.argv) != 3:
+    print("script usage: get-board-id <hwmap> <platform_name>")
+    sys.exit(-1)
+
+try:
+    hwmap = yaml.load(open(sys.argv[1], 'r'), Loader=yaml.Loader)
+except yaml.YAMLError as exc:
+    print("Error in configuration file:", exc)
+    sys.exit(-1)
+except FileNotFoundError as exc:
+    print(f"File {sys.argv[1]} was not found:", exc)
+    sys.exit(-1)
+
+for dut in hwmap:
+    if not dut['connected']:
+        continue
+    if (dut['platform'] == sys.argv[2]) or (dut['platform'].replace('/', "_") == sys.argv[2]):
+        print(dut['id'])
+        sys.exit(0)
+
+# We made it out of the loop without finding the right platform
+print(f"Platform {sys.argv[2]} not found...")
+sys.exit(-1)

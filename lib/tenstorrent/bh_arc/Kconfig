@@ -1,0 +1,66 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_BH_ARC
+	bool "Blackhole ARC firmware library"
+	depends on NANOPB
+	# this is a hack
+	default y if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+	help
+	  This option enables the Blackhole ARC firmware library.
+
+# This is a hack - the msgqueue test depends on this value but
+# This library depends on nanopb and specifically values from nanopb stored in spi falsh
+# We really cannot depend on nanopb outside of the application.
+# And that definition of application does not include drivers.
+#if TT_BH_ARC
+
+config TT_BH_ARC_NUM_MSG_CODES
+	int "Number of message codes"
+	default 193
+	help
+	  The number of message codes
+
+config TT_BH_ARC_FAN_CTRL_ALPHA
+	int "Fan control alpha value"
+	default 50
+	help
+		Value of alpha for filtering fan curve input temp
+
+config TT_BH_ARC_FAN_CTRL_GDDR_TEMP
+	bool "Use GDDR temp as fan curve input"
+	default y
+	help
+		Enable to use GDDR temp in fan speed calculation
+
+config TT_BH_ARC_I2C_TIMEOUT
+	bool "Time out if I2C transaction exceeds given duration"
+	default y
+	help
+	  Timeout if I2C transaction exceeds set duration. This can be useful
+	  to recover from bus stalls. If the TX FIFO for the I2C controller
+	  remains full for this timeout, the I2C controller will attempt to
+	  recover the bus by sending 16 SCL pulses while holding SDA low.
+
+config TT_BH_ARC_I2C_TIMEOUT_DURATION
+	int "Timeout for I2C transactions in milliseconds"
+	default 25
+	depends on TT_BH_ARC_I2C_TIMEOUT
+	help
+	  Timeout for I2C transactions in milliseconds. If the TX FIFO for the I2C controller
+	  remains full for this timeout, the I2C controller will attempt to recover the bus by
+	  sending 16 SCL pulses while holding SDA low.
+
+#endif
+
+config TT_SMC_RECOVERY
+	bool "build smc recovery image"
+	help
+	  Enable to build smc recovery image.
+
+config TT_BH_ARC_SYSINIT
+	bool "Perform bh_arc FW and HW init prior to main()"
+	help
+	  Initialize blackhole firmware and hardware prior to starting the application.
+
+	  This allows our library drivers to work better with Zephyr's driver model.

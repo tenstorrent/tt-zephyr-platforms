@@ -1,0 +1,33 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+message ReadOnly {
+
+  uint64 board_id = 1;
+  FuntestTable funtest_table = 2;
+  ReferenceValuesTable reference_values_table = 3;
+  uint32 vendor_id = 4;
+  uint32 asic_location = 5;
+
+  message FuntestTable {
+    uint32 ft_stage = 1;
+    uint32 ft1_exit_code = 2;
+    uint32 ft2_exit_code = 3;
+    uint32 ft_version = 4;
+    uint32 ft_build_date = 5;
+    uint32 ft_job_info = 6;
+  }
+
+  message ReferenceValuesTable {
+    uint32 reference_ro_08v = 1;
+    uint32 aging_ro_08v = 2;
+    uint32 reference_idd_08v_room_temp = 3;
+    uint32 reference_temp_reading = 4;
+    uint32 reference_voltage_reading = 5;
+  }
+}

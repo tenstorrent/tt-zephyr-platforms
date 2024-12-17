@@ -1,0 +1,22 @@
+# Copyright (c) 2019 Phytec Messtechnik GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_SMBUS_DRIVER
+	bool "stm32 smbus driver with some customizations [EXPERIMENTAL]"
+	select EXPERIMENTAL
+	select CRC
+
+if TT_SMBUS_DRIVER
+
+module = TT_SMBUS_DRIVER
+module-str = tt smbus drv
+source "subsys/logging/Kconfig.template.log_config"
+
+config SMBUS_TT_STM32_SMBALERT
+	bool "SMBus STM32 SMBALERT signal support"
+	default y
+	help
+	  Support SMBALERT signal from peripheral devices.
+
+endif # JTAG_DRIVER

@@ -1,0 +1,53 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "zephyr,jtag-gpio"
+
+description: |
+  This binding is used to describe the JTAG GPIO pins used for JTAG
+  communication. The JTAG GPIO pins are used to control the JTAG signals
+  (TCK, TDI, TDO, TMS, TRST) for JTAG communication.
+
+include: base.yaml
+
+properties:
+  tck-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO pin used for TCK output.
+
+  tdi-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO pin used for TDI output.
+
+  tdo-gpios:
+    type: phandle-array
+    description: |
+      GPIO pin used for TDO input.
+
+  tms-gpios:
+    type: phandle-array
+    description: |
+      GPIO pin used for TMS output.
+
+  trst-gpios:
+    type: phandle-array
+    description: |
+      GPIO pin used for TRST output. Normally, this is active low.
+
+  port-write-cycles:
+    type: int
+    required: true
+    description: |
+      Number of processor cycles for I/O Port write operations.For example, the
+      GPIO clock may be different from the CPU clock. This can usually be
+      found in the SoC documentation.
+
+  tck-delay:
+    type: int
+    default: 1
+    description: |
+      Number of microseconds to wait between clock pulses.
