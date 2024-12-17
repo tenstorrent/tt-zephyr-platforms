@@ -13,6 +13,7 @@ typedef struct {
   uint16_t eth_serdes_connected; // Bitmap 0-11. 1 = Expect an outside board connection
   uint8_t gddr_enabled; // Bitmap 0-7
   uint8_t l2cpu_enabled; // Bitmap 0-3. Shows L2CPU cluster enablement
+  uint8_t pcie_enabled; // Bitmap 0-1. Shows PCIe instance enablement
   FwTable_PciPropertyTable_PcieMode pcie_usage[2];
   uint8_t pcie_num_serdes[2]; // 1 or 2 if enabled
 } TileEnable;

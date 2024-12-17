@@ -110,6 +110,16 @@ uint8_t TensixPhysYToNoc(uint8_t py, uint8_t noc_id) {
   return PhysYToNoc(py + 2, noc_id);
 }
 
+uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id) {
+  for (uint8_t i = 0; i < 14; i++) {
+    if (TensixPhysXToNoc(i, noc_id) == x) {
+      return i;
+    }
+  }
+  // Invalid
+  return 0xFF;
+}
+
 /*
 Physical Layout of GDDR NOC Nodes:
 - gIpJ = gddr inst I, noc2axi port J

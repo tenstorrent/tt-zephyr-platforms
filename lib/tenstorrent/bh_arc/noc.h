@@ -25,6 +25,7 @@ uint8_t PhysYToNoc(uint8_t py, uint8_t noc_id);
 
 uint8_t TensixPhysXToNoc(uint8_t px, uint8_t noc_id);
 uint8_t TensixPhysYToNoc(uint8_t py, uint8_t noc_id);
+uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id);
 void GetGddrNocCoords(uint8_t gddr_inst, uint8_t noc2axi_port, uint8_t noc_id, uint8_t *x, uint8_t *y);
 void GetEthNocCoords(uint8_t eth_inst, uint8_t noc_id, uint8_t *x, uint8_t *y);
 void GetSerdesNocCoords(uint8_t serdes_inst, uint8_t noc_id, uint8_t *x, uint8_t *y);
