@@ -1,0 +1,4 @@
+tests:
+  lib.tenstorrent.jtag_bootrom.qemu:
+    platform_allow:
+      - qemu_riscv32

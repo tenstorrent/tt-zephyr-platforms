@@ -1,0 +1,59 @@
+diff --git a/samples/hello_world/sample.yaml b/samples/hello_world/sample.yaml
+index 1bcb7db62f2..986f3235e5f 100644
+--- a/samples/hello_world/sample.yaml
++++ b/samples/hello_world/sample.yaml
+@@ -6,11 +6,17 @@ common:
+   tags: introduction
+   integration_platforms:
+     - native_sim
+   harness: console
+   harness_config:
+     type: one_line
+     regex:
+       - "Hello World! (.*)"
+ tests:
+-  sample.basic.helloworld:
+-    tags: introduction
++  sample.basic.helloworld: {}
++  sample.basic.helloworld.rtt:
++    platform_allow:
++      - tt_blackhole/stm32g0b1xx
++    required_snippets:
++      - rtt-console
++    tags:
++      - rtt
+diff --git a/tests/boot/test_mcuboot/testcase.yaml b/tests/boot/test_mcuboot/testcase.yaml
+index a19a51485d1..8352932a8db 100644
+--- a/tests/boot/test_mcuboot/testcase.yaml
++++ b/tests/boot/test_mcuboot/testcase.yaml
+@@ -2,12 +2,13 @@ common:
+   sysbuild: true
+   harness: console
+   harness_config:
+-    type: multi_line
++    type: one_line
+     regex:
+-      - "I: Starting bootloader"
+-      - "Launching primary slot application on (.*)"
+-      - "Secondary application ready for swap, rebooting"
+-      - "I: Starting swap using (.*)|I: Image 0 upgrade secondary slot -> primary slot"
++# Some of these messages tend to get lost with RTT due to tight printk() / RTT / sys_reboot() margins
++#      - "I: Starting bootloader"
++#      - "Launching primary slot application on (.*)"
++#      - "Secondary application ready for swap, rebooting"
++#      - "I: Starting swap using (.*)|I: Image 0 upgrade secondary slot -> primary slot"
+       - "Swapped application booted on (.*)"
+ tests:
+   bootloader.mcuboot:
+@@ -53,3 +54,11 @@ tests:
+       - b_u585i_iot02a
+     extra_configs:
+       - CONFIG_ASSERT=y
++  bootloader.mcuboot.rtt:
++    tags:
++      - mcuboot
++      - rtt
++    platform_allow:
++      - tt_blackhole/stm32g0b1xx
++    required_snippets:
++      - rtt-console

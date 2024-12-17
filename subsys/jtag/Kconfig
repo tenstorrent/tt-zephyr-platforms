@@ -1,0 +1,60 @@
+# Copyright (c) 2018-2019 PHYTEC Messtechnik GmbH
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig JTAG
+	bool "JTAG Port support [EXPERIMENTAL]"
+	select EXPERIMENTAL
+	select JTAG_DRIVER
+
+if JTAG
+
+config JTAG_PACKET_COUNT
+	int "Maximum packet buffers for request and response data."
+	default 4
+	range 1 255
+	help
+	  Maximum packet buffers for request and response data.
+
+config JTAG_PACKET_SIZE
+	int "Maximum packet size for request and response data."
+	default 64
+	range 64 512
+	help
+	  Maximum packet size for request and response data.
+
+config JTAG_PROBE_VENDOR
+	string "Probe vendor"
+	default "Zephyr"
+
+config JTAG_PROBE_NAME
+	string "Probe name"
+	default "JTAG"
+
+config JTAG_BOARD_VENDOR
+	string "Target board vendor"
+	default ""
+
+config JTAG_BOARD_NAME
+	string "Target board name"
+	default ""
+
+config JTAG_DEVICE_VENDOR
+	string "Target device vendor"
+	default ""
+
+config JTAG_DEVICE_NAME
+	string "Target device name"
+	default ""
+
+config JTAG_USE_MMAPPED_IO
+    bool "Use memory-mapped I/O for JTAG"
+    help
+      If this option is enabled, the JTAG driver will use memory-mapped I/O
+      to access the JTAG hardware. This is the preferred method for most
+      systems, but may not be supported on all platforms.
+
+module = JTAG
+module-str = jtag
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # JTAG

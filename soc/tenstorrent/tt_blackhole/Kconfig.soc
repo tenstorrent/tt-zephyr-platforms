@@ -1,0 +1,16 @@
+# Copyright (c) 2024 Tenstorrent, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_TT_BLACKHOLE
+	bool
+	help
+	  Tenstorrent Blackhole SoC
+
+config SOC_TT_BLACKHOLE_SMC
+	bool
+	select SOC_TT_BLACKHOLE
+	help
+	  Tenstorrent Blackhole SMC cluster
+
+config SOC
+	default "tt_blackhole" if SOC_TT_BLACKHOLE

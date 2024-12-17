@@ -1,0 +1,34 @@
+# Copyright (c) 2019 Phytec Messtechnik GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig JTAG_DRIVER
+	bool "JTAG interface driver [EXPERIMENTAL]"
+	select EXPERIMENTAL
+
+if JTAG_DRIVER
+
+module = JTAG_DRIVER
+module-str = jtag drv
+source "subsys/logging/Kconfig.template.log_config"
+
+config JTAG_DRIVER_INIT_PRIO
+	int "JTAG driver initialization priority"
+	default 80
+	help
+	  Set the initialization priority number.
+
+config JTAG_BITBANG_DRIVER
+	bool "JTAG Port bit-bang driver"
+	default y
+	depends on DT_HAS_ZEPHYR_JTAG_GPIO_ENABLED
+	depends on GPIO
+
+config JTAG_SHELL
+	bool "JTAG shell"
+	default y
+	depends on SHELL
+	help
+	  Enable JTAG shell commands.
+
+endif # JTAG_DRIVER

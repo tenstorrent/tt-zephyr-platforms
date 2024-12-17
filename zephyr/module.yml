@@ -1,0 +1,34 @@
+# Copyright (c) 2024 Tenstorrent, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# See https://docs.zephyrproject.org/latest/develop/modules.html
+
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    board_root: .
+    dts_root: .
+    snippet_root: .
+    soc_root: .
+
+# twister settings
+samples:
+  - samples
+tests:
+  - tests
+boards:
+  - boards
+
+blobs:
+  - path: nano_bootcode.bin
+    sha256: 1762aad22a96465563d9b88bbd4ec6ddb7a2f13f68a2c33068492fa1cf612143
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    # FIXME: this url needs to be modified to point to nano_bootcode.bin. It should be fetchable
+    # without authentication and eventually should not be checked into git.
+    # It should be fetched with "west blobs fetch bh-bmfw"
+    url: https://yyz-gitlab.local.tenstorrent.com/syseng-platform/bh-bmfw/-/raw/ab953f1d7d0247af4541cbe48e464b086b94f620/app/jtag_ugly_block/nano_bootcode.bin
+    description: "Modified bootrom to boot Blackhole"
+    doc-url: https://tenstorrent.com

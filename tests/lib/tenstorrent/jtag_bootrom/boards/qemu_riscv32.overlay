@@ -1,0 +1,73 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	gpio0: gpio-emul {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	jtag0: jtag {
+		compatible = "zephyr,jtag-gpio";
+		status = "okay";
+		tck-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		trst-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+		tms-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpio0 3 GPIO_PULL_UP>;
+		tdi-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		port-write-cycles = <2>;
+	};
+
+	mcureset {
+		compatible = "gpio-leds";
+		mcureset0: mcureset {
+			label = "MCU reset";
+			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
+		};
+
+		spireset0: spireset {
+			label = "SPI reset";
+			gpios = <&gpio0 6 GPIO_ACTIVE_LOW>;
+		};
+
+		powerreset0: powerreset {
+			label = "Power reset";
+			gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
+		};
+
+		pgood0: pgood {
+			label = "Power good";
+			gpios = <&gpio0 8 GPIO_PULL_DOWN>;
+		};
+
+		arc_rambus_jtag_mux_enable0: arc_rambus_jtag_mux_enable {
+			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+			label = "Enable to select the arc jtag, disable to select rambus";
+		};
+
+		arc_l2_jtag_mux_enable0: arc_l2_jtag_mux_enable {
+			gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+			label = "Enable to select the arc jtag, disable to select l2cpu";
+		};
+	};
+
+	aliases {
+		reset-mcu = &mcureset0;
+		reset-spi = &spireset0;
+		reset-power = &powerreset0;
+		pgood = &pgood0;
+		arc-rambus-jtag-mux-sel = &arc_rambus_jtag_mux_enable0;
+		arc-l2-jtag-mux-sel = &arc_l2_jtag_mux_enable0;
+	};
+};

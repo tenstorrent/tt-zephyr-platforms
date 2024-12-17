@@ -1,0 +1,7 @@
+sample:
+  name: JTAG
+tests:
+  sample.app:
+    build_only: true
+    platform_allow:
+      - tt_blackhole/stm32g0b1xx

@@ -1,0 +1,224 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/g0/stm32g0b1Xe.dtsi>
+#include <st/g0/stm32g0b1c(b-c-e)tx-pinctrl.dtsi>
+
+/ {
+	model = "Tenstorrent Blackhole board";
+	compatible = "tenstorrent,blackhole";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	mcureset {
+		compatible = "gpio-leds";
+		mcureset0: mcureset {
+			label = "MCU reset";
+			gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
+		};
+
+		spireset0: spireset {
+			label = "SPI reset";
+			gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
+		};
+
+		powerreset0: powerreset {
+			label = "Power reset";
+			gpios = <&gpiod 1 GPIO_ACTIVE_LOW>;
+		};
+
+		pgood0: pgood {
+			label = "Power good";
+			gpios = <&gpioc 14 GPIO_PULL_DOWN>;
+		};
+
+		presettrigger0: preset_trigger {
+			label = "PRESET trigger";
+			gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+		};
+
+		i2c_scl: i2cscl {
+			label = "i2c3 scl";
+			gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>;
+		};
+
+		board_fault_led: boardfaultled {
+			label = "Board Fault LED";
+			gpios = <&gpioc 15 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	aliases {
+		die-temp0 = &die_temp;
+		volt-sensor0 = &vref;
+		i2c1 = &i2c1;
+		cm-i2c = &i2c3;
+		reset-mcu = &mcureset0;
+		reset-spi = &spireset0;
+		reset-power = &powerreset0;
+		pgood = &pgood0;
+		preset-trigger = &presettrigger0;
+		i2c3-scl = &i2c_scl;
+
+		bh-smbus = &smbus3;
+		board-fault-led = &board_fault_led;
+	};
+};
+
+&clk_lsi {
+	clock-frequency = <DT_FREQ_K(32)>;
+	status = "okay";
+};
+
+&clk_hsi {
+	clock-frequency = <DT_FREQ_M(16)>;
+	status = "okay";
+};
+
+&pll {
+	clocks = <&clk_hsi>;
+	div-m = <1>;
+	mul-n = <8>;
+	div-r = <2>;
+	div-q = <2>;
+	div-p = <2>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(64)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+};
+
+&i2c3 {
+	pinctrl-0 = <&i2c3_scl_pa7 &i2c3_sda_pb4>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	compatible = "st,tt-stm32-i2c";
+
+	scl-gpios = <&gpioa 7 GPIO_OPEN_DRAIN>;
+	sda-gpios = <&gpiob 4 GPIO_OPEN_DRAIN>;
+
+	bh_arc: i2c@54 {
+		compatible = "zephyr,i2c-target-eeprom";
+		reg = <0x54>;
+		status = "okay";
+	};
+
+	aardvark: eeprom@55 {
+		compatible = "zephyr,i2c-target-eeprom";
+		reg = <0x55>;
+		status = "okay";
+	};
+};
+
+&smbus3 {
+	status = "okay";
+	pinctrl-0 = <&i2c3_scl_pa7 &i2c3_sda_pb4>;
+	pinctrl-names = "default";
+	compatible = "st,tt-stm32-smbus";
+
+	bh_cm: smbus3@54 {
+		reg = <0x54>;
+		status = "okay";
+	};
+};
+
+/* This GPIO hog is required for the SPI flash mux to work at startup */
+&gpiob {
+	status = "okay";
+
+	spi-flash-mux0 {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
+&spi1 {
+	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pb3
+			 &spi1_miso_pa11 &spi1_mosi_pa12>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	flash1: flash@0 {
+		/* base properties */
+		compatible = "micron,mt35xu512", "jedec,spi-nor";
+		status = "okay";
+
+		/* spi-device properties */
+		reg = <0>;
+		 /*
+		  * Note: the stm32 driver only works with clock in range [250000, 31999999] Hz.
+		  * However, on scrappy, with the current clock configuration, we have only been able to
+		  * get up to 8 Mhz (7999999 Hz). Possible clock misconfiguration? Even on a nucleo,
+		  * I'm able to get spi flash to operate at 32 MHz (31999999 Hz). It could potentially
+		  * be the level shifters contributing insertion loss?
+		  */
+		spi-max-frequency = <7999999>;
+		spi-cpol;
+		spi-cpha;
+
+		/* jedec,spi-nor properties */
+		size = <DT_SIZE_M(512)>; /* Size in bits */
+
+		/* jedec,spi-nor-common properties */
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <30000>;
+
+		/* jedec,jesd216 properties */
+		sfdp-bfp = [
+			e5 20 8a ff  ff ff ff 1f  00 00 00 00  00 00 00 00
+			ee ff ff ff  ff ff 00 00  ff ff 00 00  0c 20 11 d8
+			0f 52 00 00  39 61 99 00  87 8e 03 d3  ac a1 27 3d
+			7a 75 7a 75  fb bd d5 5c  00 00 70 ff  81 50 f8 a1
+			2f cb 27 8b  00 00 04 01  00 06 01 00  ff ff ff 8e
+			00 00 00 00  00 00 00 00  00 00 00 00
+		];
+		jedec-id = [2c 5b 1a];
+	};
+};
+
+&flash0 {
+	/* TODO:
+	 * Move slot1_partition to spi flash.
+	 * Ensure main flash erase size agrees with minimal subsector erase size of SPI flash,
+	 * i.e. 4096 bytes. Currently sectors are 2048 bytes on stm32g071rb and this value is
+	 * likely hard-coded in several places.
+	 */
+	/* erase-block-size = <4096>; */
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(48)>;
+			read-only;
+		};
+
+		slot0_partition: partition@c000 {
+			label = "image-0";
+			reg = <0x0000c000 (DT_SIZE_K(226) + DT_SIZE_K(6))>;
+		};
+
+		slot1_partition: partition@46000 {
+			label = "image-1";
+			reg = <0x00046000 DT_SIZE_K(226)>;
+		};
+	};
+};

@@ -1,0 +1,7 @@
+tests:
+  libraries.tenstorrent.msgqueue:
+    tags:
+      - msgqueue
+      - tenstorrent
+    platform_allow:
+      - qemu_arc/qemu_arc_hs

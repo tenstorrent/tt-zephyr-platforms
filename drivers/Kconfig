@@ -1,0 +1,3 @@
+rsource "jtag/Kconfig"
+rsource "i2c/Kconfig"
+rsource "smbus/Kconfig"

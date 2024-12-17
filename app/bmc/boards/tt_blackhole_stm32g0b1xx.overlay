@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	aliases {
+#if 0
+		/* potentially for later consideration */
+		mcuboot-button0 = &button1;
+		mcuboot-led0 = &blue_led;
+#endif
+	};
+
+	jtag0 {
+		compatible = "zephyr,jtag-gpio";
+		status = "okay";
+		tck-gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
+		tdi-gpios = <&gpiod 3 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpiod 2 GPIO_PULL_UP>;
+		tms-gpios = <&gpiob 9 GPIO_ACTIVE_HIGH>;
+		trst-gpios = <&gpiod 0 GPIO_ACTIVE_LOW>;
+		port-write-cycles = <2>;
+	};
+};

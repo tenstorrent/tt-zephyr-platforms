@@ -1,0 +1,79 @@
+# path: <relpath>
+#   The relative path from the root of the zephyr module to the patch file
+#   Patches are merged in lexicographical order for a given component
+# sha256sum: <sha256>
+#   The sha256sum of the patch file
+# module: <relpath>
+#   The name of the module we are patching. This is effectively a pathname
+#   relative to the west project directory (usually ~/zephyrproject)
+# author: <string>
+#   The person who introduced the patch into this repository
+# email: <email>
+#   The email of the person who introduced the patch into this repository
+# date: <iso-8601-date, e.g. 2024-05-15 or 20240515>
+#   The date the patch file was introduced into this repository
+# upstreamable: <bool>
+#   Whether or not the patch can be upstreamed, for whatever reason
+# merge-pr: <url>
+#   Link to the upstream PR, if the patch should eventually be merged
+# issue: <url>
+#   Upstream Issue, if it exists
+# merge-status:
+#   Merge status - only true once the patch has been merged
+# merge-commit: <sha1>
+#   Merge commit, in whichever branch that is relevant to this repository
+#   (can be merged into multiple branches)
+# merge-date: <iso-8601-date, e.g. 2024-05-15 or 20240515>
+#   Merge date, in whichever branch that is relevant to this repository
+#   (can be merged into multiple branches). If the merge commit is empty,
+#   then this can be interpreted as the expected merge date
+# apply-command: <string>
+#   The command used to apply the patch, if empty, the default command used
+#   is "git apply <patch>" within the component directory
+# comments: <string>
+
+patches:
+  - path: zephyr/run-tests-with-rtt-console.patch
+    sha256sum: b31234f315266a3c39cae410f06332dcc1301fbabb5ad136d3ccacfbf1277e2e
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2024-07-25
+    upstreamable: False
+    merge-pr: {}
+    issue: {}
+    merge-status: False
+    merge-commit: {}
+    merge-date: {}
+    apply-command: {}
+    comments: |
+      It's unlikely that we will upstream this patch unless we want to put our
+      board definitions in Zephyr's main repo. It's something we can revisit at a
+      later date.
+  - path: zephyr/twister-rtt-support.patch
+    sha256sum: 51066686835afa6a8318fceaa3b1ee0255bf031a5ae8fda13f77066fbbfd4afa
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2024-11-24
+    upstreamable: True
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/81837
+    issue: {}
+    merge-status: False
+    merge-commit: {}
+    merge-date: {}
+    apply-command: {}
+    comments: |
+      This works. It might go through a few more rounds of review though. No sense in delaying.
+  - path: zephyr/multiple_icntl.patch
+    sha256sum: 380c5af0b32d12f4491f9811c77317caf3136ed7e58fb9ed5bacf21b77c9b904
+    module: zephyr
+    date: 2024-06-14
+    comments: |
+      This patch allows multiple interrupt comtrollers to be used in the ARC architecture.
+  - path: zephyr/move-bss-to-end.patch
+    sha256sum: 00e42e5d89f68f8b07e355821cfcf492faa2f96b506bbe87a9b35a823fd719cb
+    module: zephyr
+    date: 2024-10-10
+    comments: |
+      This patch moves BSS and noinit sections to the end.

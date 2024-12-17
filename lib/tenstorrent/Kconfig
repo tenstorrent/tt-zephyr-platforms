@@ -1,0 +1,8 @@
+# Copyright (c) 2024, Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+rsource "bh_arc/Kconfig"
+rsource "banner/Kconfig"
+rsource "boot_fs/Kconfig"
+rsource "fwupdate/Kconfig"
+rsource "jtag_bootrom/Kconfig"

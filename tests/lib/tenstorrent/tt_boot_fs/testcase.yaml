@@ -1,0 +1,4 @@
+tests:
+  lib.tenstorrent.boot_fs:
+    platform_allow:
+      - qemu_x86

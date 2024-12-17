@@ -1,0 +1,20 @@
+# Copyright (c) 2024 Tenstorrent, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: 595d81a941c5bdcb67d7d33c9125d0aba2194a6a
+      import:
+        name-allowlist:
+          - cmsis
+          - hal_stm32
+          - mbedtls
+          - mcuboot
+          - nanopb
+          - segger
