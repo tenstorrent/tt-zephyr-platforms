@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "reg.h"
 
 #define RESET_UNIT_REFCLK_CNT_LO_REG_ADDR 0x800300E0

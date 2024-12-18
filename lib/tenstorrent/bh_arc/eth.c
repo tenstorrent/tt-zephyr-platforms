@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <zephyr/kernel.h>
 #include "serdes_eth.h"
 #include "noc2axi.h"

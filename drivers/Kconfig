@@ -1,3 +1,6 @@
+#  Copyright (C) 2024 Tenstorrent AI ULC
+#  SPDX-License-Identifier: Apache-2.0
+
 rsource "jtag/Kconfig"
 rsource "i2c/Kconfig"
 rsource "smbus/Kconfig"

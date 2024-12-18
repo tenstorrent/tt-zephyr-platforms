@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include "dw_apb_i2c.h"

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "avs.h"
 
 #include <zephyr/sys/util.h>
@@ -238,4 +244,3 @@ AVSStatus AVSReadSystemInputCurrent(uint16_t *response) {
   // Input Current (A) = VIINSEN / (RSHUNT x CSA_gain)
   // where RSHUNT is the input current sense resistor, and CSA_gain is the gain of the current sense amplifier.
 }
-

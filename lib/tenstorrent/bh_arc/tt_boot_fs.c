@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <tt_boot_fs.h>

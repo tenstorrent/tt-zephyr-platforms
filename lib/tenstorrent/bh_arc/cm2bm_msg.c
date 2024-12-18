@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  * @file cm2bm_msg.c
  * @brief CMFW to BMFW message handling

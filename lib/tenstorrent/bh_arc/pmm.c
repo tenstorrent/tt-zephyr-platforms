@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024, Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "reg.h"
 
 #define PMM_BLOCK_PMM_CTRL_REG_ADDR    0x80400004
