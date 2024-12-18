@@ -1,6 +1,6 @@
 # BLACKHOLE FIRMWARE
 
-[![Run tests with twister](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/twister.yaml/badge.svg)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/twister.yaml)
+[![CI](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml/badge.svg)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml)
 
 Welcome to TT-Zephyr-Platforms!
 
