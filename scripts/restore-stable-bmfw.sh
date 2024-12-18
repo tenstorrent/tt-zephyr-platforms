@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024, Tenstorrent AI ULC
+# Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
