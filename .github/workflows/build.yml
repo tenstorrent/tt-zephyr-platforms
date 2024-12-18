@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        #os: [ubuntu-22.04, macos-13, macos-14, windows-2022]
+        os: [ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: tt-zephyr-platforms
+          toolchains: arm-zephyr-eabi:riscv64-zephyr-elf:x86_64-zephyr-elf:arc-zephyr-elf
+
+      - name: Setup optional modules
+        working-directory: tt-zephyr-platforms
+        run: |
+          west config manifest.group-filter -- +optional
+          west update
+
+      - name: Apply patches
+        working-directory: tt-zephyr-platforms
+        run: |
+          if [ -d "zephyr/patches" ] && [ -f zephyr/patches.yml ]; then
+            wget -O /tmp/apply_patches.py \
+              https://gist.githubusercontent.com/cfriedt/daf78e7779b55362594834d89714d246/raw/e1a5d0e77f6dfdb1b9edc09593a2806d6a49ef7a/apply_patches.py
+            chmod +x /tmp/apply_patches.py
+            /tmp/apply_patches.py -b zephyr/patches -l zephyr/patches.yml -w ..
+          fi
+
+      - name: Build BMC firmware
+        working-directory: tt-zephyr-platforms
+        shell: bash
+        run: |
+          mkdir -p /tmp/build/bmc
+          west build --sysbuild -p -b tt_blackhole/stm32g0b1xx app/bmc
+
+      - name: Build SMC firmware
+        working-directory: tt-zephyr-platforms
+        shell: bash
+        run: |
+          west build -p -b tt_blackhole/tt_blackhole/smc app/smc
+
+      - name: Run tests in QEMU
+        working-directory: tt-zephyr-platforms
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            EXTRA_TWISTER_FLAGS="--short-build-path -O/tmp/twister-out"
+          fi
+          west twister -i --retry-failed=3 -T tests -T samples $EXTRA_TWISTER_FLAGS
