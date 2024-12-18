@@ -1,4 +1,4 @@
-# BLACKHOLE FIRMWARE
+# TT-ZEPHYR-PLATFORMS 
 
 [![CI](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml/badge.svg)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml)
 
