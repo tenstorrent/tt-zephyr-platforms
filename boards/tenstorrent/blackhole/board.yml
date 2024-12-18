@@ -1,6 +1,6 @@
 boards:
 - name: tt_blackhole
-  full_name: Tenstorrent Blackhole Scrappy board
+  full_name: Tenstorrent Blackhole board
   vendor: tenstorrent
   socs:
     - name: stm32g0b1xx

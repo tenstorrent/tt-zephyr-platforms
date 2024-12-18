@@ -430,9 +430,9 @@ uint32_t InitHW() {
   PLLInit();
 
   // Initialize the serdes based on board type and asic location - data will be in fw_table
-  // Scrappy: PCIe1 x16
-  // BHx1: PCIe0 x16
-  // BHx2: Left (CPU1) PCIe1 x8, Right (CPU0) PCIe0 x8
+  // p100: PCIe1 x16
+  // p150: PCIe0 x16
+  // p300: Left (CPU1) PCIe1 x8, Right (CPU0) PCIe0 x8
   // BH UBB: PCIe1 x8
   SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP8);
   if (get_fw_table()->pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED &&

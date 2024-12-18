@@ -160,11 +160,8 @@
 		/* spi-device properties */
 		reg = <0>;
 		 /*
-		  * Note: the stm32 driver only works with clock in range [250000, 31999999] Hz.
-		  * However, on scrappy, with the current clock configuration, we have only been able to
-		  * get up to 8 Mhz (7999999 Hz). Possible clock misconfiguration? Even on a nucleo,
-		  * I'm able to get spi flash to operate at 32 MHz (31999999 Hz). It could potentially
-		  * be the level shifters contributing insertion loss?
+		  * TODO: the stm32 driver works with clock in range [250000, 31999999] Hz. Bump this
+		  * back up to 32 Mhz as a separate change later.
 		  */
 		spi-max-frequency = <7999999>;
 		spi-cpol;
