@@ -1,8 +1,10 @@
 # BLACKHOLE FIRMWARE
 
-[![Pipeline Status](https://yyz-gitlab.local.tenstorrent.com/syseng-platform/tt-zephyr-platforms/badges/main/pipeline.svg)](https://yyz-gitlab.local.tenstorrent.com/syseng-platform/tt-zephyr-platforms/-/pipelines)
+[![Run tests with twister](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/twister.yaml/badge.svg)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/twister.yaml)
 
-Welcome to Blackhole Firmware!
+Welcome to TT-Zephyr-Platforms!
+
+This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
 
 ## Getting Started
 
@@ -17,7 +19,7 @@ all Python dependencies, and the Zephyr SDK are already installed and activated.
 ```shell
 # Create a west workspace
 MODULE=tt-zephyr-platforms
-west init -m git@yyz-gitlab.local.tenstorrent.com:syseng-platform/$MODULE.git ~/$MODULE-work
+west init -m https://github.com/tenstorrent/tt-zephyr-platforms.git ~/$MODULE-work
 cd ~/$MODULE-work
 
 # Enable optional modules
@@ -26,11 +28,8 @@ west config manifest.group-filter -- +optional
 # Fetch Zephyr modules
 west update
 
-# Get script to apply patches, and apply patches (this will eventually be a west sub-command)
-wget -O /tmp/apply_patches.py \
-  https://yyz-gitlab.local.tenstorrent.com/-/snippets/80/raw/main/apply_patches.py
-chmod +x /tmp/apply_patches.py
-/tmp/apply_patches.py -b $MODULE.git/zephyr/patches -l $MODULE.git/zephyr/patches.yml -w .
+# Apply local patches
+west apply_patches -b $MODULE.git/zephyr/patches -l $MODULE.git/zephyr/patches.yml -w .
 
 # Create project symlink
 mkdir -p modules && ln -sf $PWD/$MODULE.git modules/$MODULE
