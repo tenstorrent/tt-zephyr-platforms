@@ -173,7 +173,6 @@ int main(void)
     LOG_DBG("Bootrom workaround successfully applied");
   }
 
-  LOG_DBG("This is the " CONFIG_TT_MAIN_APP_IMAGE_VARIANT " image\n");
   LOG_DBG("BMFW VERSION " APP_VERSION_STRING "\n");
 
   // No mechanism for getting bl version... yet

@@ -3,18 +3,14 @@
 
 source "Kconfig.zephyr"
 
-menu "Tenstorrent BMFW Main App"
-
-config TT_MAIN_APP_IMAGE_VARIANT
-	string "Tenstorrent BMFW app variant"
-	default "primary"
+menu "Tenstorrent BMC Main App"
 
 config TT_ASSEMBLY_TEST
 	bool "Output additional debug if we are running in a test environment"
 	default n
 
 module = TT_MAIN
-module-str = "Tenstorrent BMFW main app"
+module-str = "Tenstorrent BMC main app"
 source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
 
 endmenu
