@@ -507,14 +507,8 @@ static const struct gpio_dt_spec reset_mcu = GPIO_DT_SPEC_GET(DT_ALIAS(reset_mcu
 static const struct gpio_dt_spec reset_spi = GPIO_DT_SPEC_GET(DT_ALIAS(reset_spi), gpios);
 static const struct gpio_dt_spec reset_power = GPIO_DT_SPEC_GET(DT_ALIAS(reset_power), gpios);
 static const struct gpio_dt_spec pgood = GPIO_DT_SPEC_GET(DT_ALIAS(pgood), gpios);
-#if (IS_ENABLED(CONFIG_BOARD_ORION_CB) || IS_ENABLED(CONFIG_BOARD_ORION_CB_1))
-static const struct gpio_dt_spec arc_rambus_jtag_mux_sel =
-  GPIO_DT_SPEC_GET(DT_ALIAS(arc_rambus_jtag_mux_sel), gpios);
-static const struct gpio_dt_spec arc_l2_jtag_mux_sel =
-  GPIO_DT_SPEC_GET(DT_ALIAS(arc_l2_jtag_mux_sel), gpios);
-#endif
 
-#if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#ifdef CONFIG_JTAG_LOAD_ON_PRESET
 static const struct gpio_dt_spec preset_trigger = GPIO_DT_SPEC_GET(DT_ALIAS(preset_trigger), gpios);
 
 static bool arc_reset = false;
@@ -624,12 +618,7 @@ int jtag_bootrom_setup(void)
 
 int jtag_bootrom_init(void)
 {
-  int ret = false;
-
-#if (IS_ENABLED(CONFIG_BOARD_ORION_CB) || IS_ENABLED(CONFIG_BOARD_ORION_CB_1))
-  ret = gpio_pin_configure_dt(&arc_rambus_jtag_mux_sel, GPIO_OUTPUT_ACTIVE) ||
-        gpio_pin_configure_dt(&arc_l2_jtag_mux_sel, GPIO_OUTPUT_ACTIVE);
-#endif
+  int ret = 0;
 
   ret |= gpio_pin_configure_dt(&reset_mcu, GPIO_OUTPUT_ACTIVE) ||
          gpio_pin_configure_dt(&reset_spi, GPIO_OUTPUT_ACTIVE) ||
@@ -639,7 +628,7 @@ int jtag_bootrom_init(void)
     return ret;
   }
 
-#if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#ifdef CONFIG_JTAG_LOAD_ON_PRESET
   ret = gpio_pin_configure_dt(&preset_trigger, GPIO_INPUT);
   if (ret) {
     return ret;
@@ -666,7 +655,7 @@ int jtag_bootrom_init(void)
 
 int jtag_bootrom_patch_offset(const uint32_t *patch, size_t patch_len, const uint32_t start_addr)
 {
-#if IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
   jtag_bitbang_reset();
 
   // HALT THE ARC CORE!!!!!
@@ -695,7 +684,7 @@ int jtag_bootrom_patch_offset(const uint32_t *patch, size_t patch_len, const uin
 
   jtag_axiwrite(BH_RESET_BASE + 0x60, 0xF3);
 
-#if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#ifdef CONFIG_JTAG_LOAD_ON_PRESET
   workaround_applied = true;
 #endif
 
@@ -737,7 +726,7 @@ int jtag_bootrom_verify(const uint32_t *patch, size_t patch_len)
 
 void jtag_bootrom_soft_reset_arc(void)
 {
-#if IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
   uint32_t arc_misc_cntl = 0;
 
   jtag_bitbang_reset();
