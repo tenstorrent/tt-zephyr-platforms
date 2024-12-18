@@ -8,7 +8,7 @@ This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com
 
 ## Getting Started
 
-For those completely new to Zephyr, plase refer to the
+For those completely new to Zephyr, please refer to the
 [Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html).
 
 The remainder of these instructions assume that system requirements, a Python virtual environment,
