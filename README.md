@@ -29,7 +29,7 @@ west config manifest.group-filter -- +optional
 west update
 
 # Apply local patches
-west apply_patches -b $MODULE.git/zephyr/patches -l $MODULE.git/zephyr/patches.yml -w .
+west patch apply
 
 # Create project symlink
 mkdir -p modules && ln -sf $PWD/$MODULE.git modules/$MODULE
