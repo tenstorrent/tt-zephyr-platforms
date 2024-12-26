@@ -436,16 +436,15 @@ index 9b39791e1ee..a6755f535ae 100644
          self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
  
      def read_version(self):
-@@ -398,11 +408,15 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-         if command in ('attach', 'debug'):
-             self.run_server_and_client(server_cmd, gdb_cmd)
+@@ -398,11 +403,14 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+                 server_proc.terminate()
+                 server_proc.wait()
          elif command == 'rtt':
 +            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
 +                                'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
 +
              self.print_rttserver_message()
 -            server_proc = self.popen_ignore_int(server_cmd)
-+
 +            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
              try:
                  # run the binary with gdb, set up the rtt server (runs to completion)

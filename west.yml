@@ -6,13 +6,10 @@ manifest:
     - name: zephyrproject-rtos
       url-base: https://github.com/zephyrproject-rtos
 
-  self:
-      west-commands: scripts/west-commands.yml
-
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: 595d81a941c5bdcb67d7d33c9125d0aba2194a6a
+      revision: fdf0ec2e5f9cbdc76d86f64df6100b19ca30c48d
       import:
         name-allowlist:
           - cmsis
