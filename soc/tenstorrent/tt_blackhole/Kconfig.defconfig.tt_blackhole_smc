@@ -48,6 +48,10 @@ config ARC_EARLY_SOC_INIT
 config SPI_DW
 	default y
 
+# SPI DW instance requires word aligned access
+config SPI_DW_ACCESS_WORD_ONLY
+	default y if SPI_DW
+
 config 2ND_LVL_ISR_TBL_OFFSET
 	default 142
 
