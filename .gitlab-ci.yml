@@ -45,7 +45,7 @@ run-bmc-tests:
     twister \
       -i \
       --retry-failed 3 \
-      -p tt_blackhole/tt_blackhole_bmc \
+      -p tt_blackhole/tt_blackhole/bmc \
       --device-testing --west-flash --flash-before --west-runner jlink \
       --device-serial-pty rtt \
       -s samples/hello_world/sample.basic.helloworld.rtt \
