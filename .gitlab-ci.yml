@@ -4,7 +4,7 @@ include:
 build-bmc:
   extends: .west
   script: |
-    west build --sysbuild -p -b tt_blackhole/stm32g0b1xx ../modules/tt-zephyr-platforms/app/bmc
+    west build --sysbuild -p -b tt_blackhole/tt_blackhole/bmc ../modules/tt-zephyr-platforms/app/bmc
   tags:
   - syseng-core-8
 
@@ -28,7 +28,7 @@ run-bmc-tests:
   extends: .twister
   variables:
     # below, BOARD refers to a directory name which cannot contain the '/' character (weird quirk of HWMv2 naming and output directories)
-    BOARD: 'tt_blackhole_stm32g0b1xx'
+    BOARD: 'tt_blackhole_tt_blackhole_bmc'
     AFTER_SCRIPT: "${WEST_WORKSPACE}/modules/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
   script: |
     # This needs to be added to the gitlab runner
@@ -45,7 +45,7 @@ run-bmc-tests:
     twister \
       -i \
       --retry-failed 3 \
-      -p tt_blackhole/stm32g0b1xx \
+      -p tt_blackhole/tt_blackhole_bmc \
       --device-testing --west-flash --flash-before --west-runner jlink \
       --device-serial-pty rtt \
       -s samples/hello_world/sample.basic.helloworld.rtt \
