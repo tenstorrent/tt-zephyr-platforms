@@ -31,9 +31,6 @@ west update
 # Apply local patches
 west patch apply
 
-# Create project symlink
-mkdir -p modules && ln -sf $PWD/$MODULE.git modules/$MODULE
-
 # Go to the main Zephyr directory
 cd zephyr
 source zephyr-env.sh
@@ -50,7 +47,7 @@ Please download and install it.
 BOARD=tt_blackhole/stm32g0b1xx
 BOARD_SANITIZED=tt_blackhole_stm32g0b1xx
 
-west build --sysbuild -p -S rtt-console -b $BOARD ../modules/$MODULE/app/bmc
+west build --sysbuild -p -S rtt-console -b $BOARD ../$MODULE.git/app/bmc
 # In a separate terminal run 'JLinkRTTClient'
 # Flash mcuboot and the app
 west flash -r jlink
@@ -101,7 +98,7 @@ BOARD=tt_blackhole/tt_blackhole/smc
 # lsusb -v ...
 # SERIAL="..."
 
-west build -p -S rtt-console -b $BOARD ../modules/$MODULE/app/smc
+west build -p -S rtt-console -b $BOARD ../$MODULE.git/app/smc
 # Flash mcuboot and the app
 west flash -r openocd --cmd-pre-init "adapter serial $SERIAL"
 # Attach a debugger
