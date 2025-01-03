@@ -5,4 +5,4 @@ tests:
     sysbuild: true
     build_only: true
     platform_allow:
-      - tt_blackhole/stm32g0b1xx
+      - tt_blackhole/bmc

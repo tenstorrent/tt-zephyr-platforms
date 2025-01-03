@@ -49,7 +49,7 @@ jobs:
         working-directory: tt-zephyr-platforms
         shell: bash
         run: |
-          west build --sysbuild -p -b tt_blackhole/stm32g0b1xx app/bmc
+          west build --sysbuild -p -b tt_blackhole/tt_blackhole/bmc app/bmc
 
       - name: Build SMC firmware
         working-directory: tt-zephyr-platforms

@@ -44,8 +44,8 @@ Please download and install it.
 **Build, flash, and attach to the target with `west`**
 ```shell
 # Set up a convenience variable for BMC FW
-BOARD=tt_blackhole/stm32g0b1xx
-BOARD_SANITIZED=tt_blackhole_stm32g0b1xx
+BOARD=tt_blackhole/tt_blackhole/bmc
+BOARD_SANITIZED=tt_blackhole_tt_blackhole_bmc
 
 west build --sysbuild -p -S rtt-console -b $BOARD ../$MODULE.git/app/bmc
 # In a separate terminal run 'JLinkRTTClient'
