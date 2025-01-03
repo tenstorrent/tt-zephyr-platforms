@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef _TT_BOOT_FS_H_
 #define _TT_BOOT_FS_H_
 

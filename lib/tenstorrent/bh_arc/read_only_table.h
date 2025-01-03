@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef READ_ONLY_TABLE_H
 #define READ_ONLY_TABLE_H
 

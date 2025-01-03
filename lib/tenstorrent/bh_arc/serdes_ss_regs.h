@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef SERDES_SS_REGS_H
 #define SERDES_SS_REGS_H
 

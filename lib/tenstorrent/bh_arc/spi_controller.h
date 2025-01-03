@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef SPI_CONTROLLER_H
 #define SPI_CONTROLLER_H
 

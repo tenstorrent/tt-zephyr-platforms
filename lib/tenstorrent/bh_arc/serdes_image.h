@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef LATEST_SERDES_IMAGE_H
 #define LATEST_SERDES_IMAGE_H
 #include <stdint.h>

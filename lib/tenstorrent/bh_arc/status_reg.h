@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Scratch registers used for status and error reporting
 #ifndef STATUS_REG_H
 #define STATUS_REG_H
