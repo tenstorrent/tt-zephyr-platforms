@@ -17,7 +17,7 @@ index 1bcb7db62f2..986f3235e5f 100644
 +  sample.basic.helloworld: {}
 +  sample.basic.helloworld.rtt:
 +    platform_allow:
-+      - tt_blackhole/stm32g0b1xx
++      - tt_blackhole/tt_blackhole/bmc
 +    required_snippets:
 +      - rtt-console
 +    tags:
@@ -54,6 +54,6 @@ index a19a51485d1..8352932a8db 100644
 +      - mcuboot
 +      - rtt
 +    platform_allow:
-+      - tt_blackhole/stm32g0b1xx
++      - tt_blackhole/tt_blackhole/bmc
 +    required_snippets:
 +      - rtt-console

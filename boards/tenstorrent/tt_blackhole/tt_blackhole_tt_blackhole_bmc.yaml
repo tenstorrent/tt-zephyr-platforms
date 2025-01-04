@@ -1,4 +1,4 @@
-identifier: tt_blackhole/bmc
+identifier: tt_blackhole/tt_blackhole/bmc
 name: Tenstorrent Blackhole board (BMC)
 type: mcu
 arch: arm

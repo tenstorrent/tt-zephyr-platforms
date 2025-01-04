@@ -1,6 +1,6 @@
 patches:
   - path: zephyr/run-tests-with-rtt-console.patch
-    sha256sum: b31234f315266a3c39cae410f06332dcc1301fbabb5ad136d3ccacfbf1277e2e
+    sha256sum: a1f930e6e2fe4fec5d4ba4c748369da0be0e7b80b456cf929c6cc81bf969ddf0
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com

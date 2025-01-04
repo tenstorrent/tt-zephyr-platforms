@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 choice BOOTLOADER
-	default BOOTLOADER_MCUBOOT
+	default BOOTLOADER_NONE
 endchoice
 
 choice BOOT_SIGNATURE_TYPE
