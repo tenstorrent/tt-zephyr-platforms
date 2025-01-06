@@ -76,13 +76,6 @@ partitions {
 		read-only;
 	};
 
-	bmfw: partition@4c000 {
-		label = "bmfw";
-		reg = <0x4c000 DT_SIZE_K(64)>;
-		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
-		read-only;
-	};
-
 	flshinfo: partition@59000 {
 		label = "flshinfo";
 		reg = <0x59000 DT_SIZE_K(4)>;
@@ -110,5 +103,16 @@ partitions {
 		reg = <0x10000000 DT_SIZE_K(76)>;
 		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 		read-only;
+	};
+
+	/*
+	 * At the end since it's the only one required by DMC
+	 *
+	 * (512 * 1024 * 1024 / 8) - (440 * 1024) = 66658304 = 0x3f92000
+	 */
+	slot1_partition: partition@3f92000 {
+		label = "bmfw";
+		reg = <0x3f92000 DT_SIZE_K(440)>;
+		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 	};
 };
