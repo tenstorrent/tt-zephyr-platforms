@@ -934,10 +934,10 @@ def _generate_bootfs_yaml(
 
     for partition in partitions_node.children.values():
         # Galaxy does not have BM firmware
-        if args.board == "galaxy" and partition.label == "bmfw":
+        if args.board == "galaxy" and partition.label == "slot1_partition":
             continue
         # P300 right chip does not have BM firmware
-        if name[-5:] == "right" and partition.label == "bmfw":
+        if name[-5:] == "right" and partition.label == "slot1_partition":
             continue
         # P300 does not have origcfg
         if args.board == "p300" and partition.label == "origcfg":
@@ -963,7 +963,7 @@ def _generate_bootfs_yaml(
                 "binary": path,
                 "executable": not read_only,
             }
-        elif label == "bmfw":
+        elif label == "slot1_partition":
             image_entry = {
                 "name": label,
                 "padto": size,

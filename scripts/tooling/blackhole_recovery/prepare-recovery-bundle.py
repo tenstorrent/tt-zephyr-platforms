@@ -112,8 +112,8 @@ def generate_recovery_assets(boardname, board_data, outdir):
             ih = IntelHex()
             # At 0x0, place the tt-boot-fs. This will be written to eeprom.
             ih.loadfile(bootfs_hex, format="hex")
-            if "bmfw" in bootfs.entries:
-                dmfw = bootfs.entries["bmfw"].data
+            if "slot1_partition" in bootfs.entries:
+                dmfw = bootfs.entries["slot1_partition"].data
                 # Place mcuboot at 0x800_0000, which is the start of DMC flash
                 ih.loadfile(
                     dmc_build_dir / "mcuboot" / "zephyr" / "zephyr.hex", format="hex"
