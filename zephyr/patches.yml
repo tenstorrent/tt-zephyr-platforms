@@ -25,6 +25,16 @@ patches:
     date: 2024-10-10
     comments: |
       This patch moves BSS and noinit sections to the end.
+  - path: modules/hal/stm32/use-4k-page-size-for-stm32-flash.patch
+    sha256sum: 8235505c94a81ebff7f001ea1ef3e797cf3e5a5f23c371100b086016cd7f0e36
+    module: modules/hal/stm32
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-01-06
+    comments: |
+      This patch changes the page size for STM32 flash from 2k to 4k. It's required in order
+      to allow mcuboot to swap pages between external SPI flash and internal BMC flash on
+      Blackhole cards.
   - path: zephyr/check-compliance.patch
     sha256sum: bdd0c965027561dfefee35225d4443462509cbe1c8cad8921c1621d4757fdf61
     module: zephyr

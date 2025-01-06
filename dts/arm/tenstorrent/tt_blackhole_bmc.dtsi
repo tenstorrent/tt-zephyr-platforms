@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <st/g0/stm32g0b1Xe.dtsi>
+#include <st/g0/stm32g0b1c(b-c-e)tx-pinctrl.dtsi>
+
 / {
 	chip0: chip0 {
 		compatible = "tenstorrent,bh-chip";
@@ -133,6 +136,27 @@
 	};
 };
 
+&flash0 {
+	erase-block-size = <4096>;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(64)>;
+			read-only;
+		};
+
+		slot0_partition: partition@10000 {
+			label = "image-0";
+			reg = <0x00010000 (DT_SIZE_K(440) + DT_SIZE_K(8))>;
+		};
+	};
+};
+
 &spi1 {
 	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pb3
 			 &spi1_miso_pa11 &spi1_mosi_pa12>;
@@ -160,37 +184,17 @@
 		t-enter-dpd = <3000>;
 		t-exit-dpd = <30000>;
 		jedec-id = [20 bb 20];
-	};
-};
 
-&flash0 {
-	/* TODO:
-	 * Move slot1_partition to spi flash.
-	 * Ensure main flash erase size agrees with minimal subsector erase size of SPI flash,
-	 * i.e. 4096 bytes. Currently sectors are 2048 bytes on stm32g071rb and this value is
-	 * likely hard-coded in several places.
-	 */
-	/* erase-block-size = <4096>; */
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 DT_SIZE_K(48)>;
-			read-only;
-		};
-
-		slot0_partition: partition@c000 {
-			label = "image-0";
-			reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
-		};
-
-		slot1_partition: partition@46000 {
-			label = "image-1";
-			reg = <0x00046000 (DT_SIZE_K(230))>;
+			slot1_partition: partition@5000 {
+				label = "image-1";
+				reg = <0x5000 DT_SIZE_K(440)>;
+			};
+			/* Extra 8 kiB reserved */
 		};
 	};
 };
