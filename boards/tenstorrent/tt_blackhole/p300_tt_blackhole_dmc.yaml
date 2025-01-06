@@ -17,4 +17,5 @@ supported:
   - adc
   - i2c
   - dma
+  - spi
 vendor: tenstorrent
