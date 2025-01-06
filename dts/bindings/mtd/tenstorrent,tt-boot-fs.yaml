@@ -11,6 +11,7 @@ properties:
   flash-device-size:
     type: int
     required: true
+  # would be best to remove this in favour of erase-block-size in the parent
   flash-block-size:
     type: int
     required: true
