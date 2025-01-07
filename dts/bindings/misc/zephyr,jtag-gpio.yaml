@@ -1,5 +1,3 @@
-# Copyright (c) 2019 Phytec Messtechnik GmbH
-# Copyright (c) 2023 Nordic Semiconductor ASA
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -47,3 +45,9 @@ properties:
       Number of processor cycles for I/O Port write operations.For example, the
       GPIO clock may be different from the CPU clock. This can usually be
       found in the SoC documentation.
+
+  tck-delay:
+    type: int
+    default: 1
+    description: |
+      Number of microseconds to wait between clock pulses.

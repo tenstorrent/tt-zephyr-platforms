@@ -1,4 +1,4 @@
-add_subdirectory_ifdef(CONFIG_JTAG_DRIVER jtag)
+add_subdirectory_ifdef(CONFIG_JTAG jtag)
 add_subdirectory_ifdef(CONFIG_TT_I2C_DRIVER i2c)
 add_subdirectory_ifdef(CONFIG_RESET reset)
 add_subdirectory_ifdef(CONFIG_TT_SMBUS_DRIVER smbus)

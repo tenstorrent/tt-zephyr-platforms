@@ -199,26 +199,26 @@ static ALWAYS_INLINE void jtag_bitbang_reset()
 
 static ALWAYS_INLINE void jtag_bitbang_update_ir(uint32_t count, uint64_t data)
 {
-  // Select IR scan
+  /* Select IR scan */
   SET_TMS();
   jtag_bitbang_tick(2);
 
-  // Capture IR
+  /* Capture IR */
   CLR_TMS();
   jtag_bitbang_tick(1);
 
-  // Shift IR
+  /* Shift IR */
   for (; count > 1; --count, data >>= 1) {
     IF_TDI(data & 0x1);
     jtag_bitbang_tick(1);
   }
 
-  // Exit IR
+  /* Exit IR */
   SET_TMS();
   IF_TDI(data & 0x1);
   jtag_bitbang_tick(1);
 
-  // Select DR scan
+  /* Select DR scan */
   SET_TMS();
   jtag_bitbang_tick(2);
 }
@@ -233,14 +233,14 @@ static ALWAYS_INLINE uint64_t jtag_bitbang_xfer_dr(uint32_t count, uint64_t data
   uint64_t starting_count = count;
   uint64_t data_out = 0;
 
-  // DR Scan
+  /* DR Scan */
   CLR_TMS();
   jtag_bitbang_tick(1);
 
-  // Capture DR
+  /* Capture DR */
   jtag_bitbang_tick(1);
 
-  // Shift DR
+  /* Shift DR */
   for (; count > 1; --count, data_in >>= 1) {
     IF_TDI(data_in & 0x1);
     if (capture) {
@@ -256,20 +256,20 @@ static ALWAYS_INLINE uint64_t jtag_bitbang_xfer_dr(uint32_t count, uint64_t data
   }
   jtag_bitbang_tick(1);
 
-  // Exit DR
+  /* Exit DR */
   jtag_bitbang_tick(1);
 
   if (idle) {
-    // Update DR
+    /* Update DR */
     CLR_TMS();
     jtag_bitbang_tick(1);
 
-    // Idle
+    /* Idle */
   } else {
-    // Update DR
+    /* Update DR */
     jtag_bitbang_tick(1);
 
-    // DR scan
+    /* DR scan */
   }
 
   if (capture) {
@@ -300,7 +300,7 @@ static ALWAYS_INLINE void jtag_bitbang_update_dr(uint32_t count, uint64_t data_i
   (void)jtag_bitbang_xfer_dr(count, data_in, false, false);
 }
 
-uint32_t jtag_bitbang_read_id()
+uint32_t jtag_bootrom_read_id(void)
 {
   uint32_t tap_addr = 6;
   jtag_bitbang_update_ir(24, tap_addr);
@@ -326,13 +326,13 @@ static int jtag_bitbang_init(void)
   volatile uint32_t *TDI_SPEED = (volatile uint32_t *)TDI_REG + 2;
   volatile uint32_t *TDO_SPEED = (volatile uint32_t *)TDO_REG + 2;
   volatile uint32_t *TMS_SPEED = (volatile uint32_t *)TMS_REG + 2;
-  // volatile uint32_t *TRST_SPEED = (volatile uint32_t *)TRST_REG + 2;
+  /* volatile uint32_t *TRST_SPEED = (volatile uint32_t *)TRST_REG + 2; */
 
   *TCK_SPEED = *TCK_SPEED | (0b11 << (TCK.pin * 2));
   *TDI_SPEED = *TDI_SPEED | (0b11 << (TDI.pin * 2));
   *TDO_SPEED = *TDO_SPEED | (0b11 << (TDO.pin * 2));
   *TMS_SPEED = *TMS_SPEED | (0b11 << (TMS.pin * 2));
-  // *TRST_SPEED = *TRST_SPEED | (0b11 << (TRST.pin * 2));
+  /* *TRST_SPEED = *TRST_SPEED | (0b11 << (TRST.pin * 2)); */
 #endif /* CONFIG_JTAG_USE_MMAPPED_IO */
 
   return 0;
@@ -417,14 +417,7 @@ static ALWAYS_INLINE uint32_t jtag_rd_tensix_sm_rtap_tdr(uint32_t tdr_addr)
   return SIBSHIFT(jtag_bitbang_capture_dr(TENSIX_TDRLEN_SIBLEN_PLUS_1, 0));
 }
 
-void jtag_req_clear()
-{
-  jtag_setup_access(TENSIX_SM_RTAP);
-
-  jtag_wr_tensix_sm_rtap_tdr_idle(2, AXI_CNTL_CLEAR);
-}
-
-bool jtag_axiread(uint32_t addr, uint32_t *result)
+bool jtag_bootrom_axiread(uint32_t addr, uint32_t *result)
 {
   jtag_setup_access(TENSIX_SM_RTAP);
 
@@ -435,14 +428,14 @@ bool jtag_axiread(uint32_t addr, uint32_t *result)
   uint32_t axi_status = 1;
   for (int i = 0; i < 1000; ++i) {
     axi_status = jtag_rd_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR);
-    // FIXME(drosen): This reports back a fail, but things seem to work
+    /* FIXME(drosen): This reports back a fail, but things seem to work */
     break;
     if ((axi_status & 0xF) != 0) {
       break;
     }
   }
 
-  // Read data
+  /* Read data */
   uint32_t axi_rddata = jtag_rd_tensix_sm_rtap_tdr_idle(ARC_AXI_DATA_TDR);
 
   *result = axi_rddata;
@@ -458,49 +451,52 @@ static bool jtag_axiwrite(uint32_t addr, uint32_t value)
 
   jtag_wr_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR, AXI_CNTL_WRITE);
 
-  // Upper 16 bits contain write status; if first bit 1 then we passed otherwsie
-  // fail
+  /* Upper 16 bits contain write status; if first bit 1 then we passed otherwsie */
+  /* fail */
   return ((jtag_rd_tensix_sm_rtap_tdr_idle(ARC_AXI_CONTROL_STATUS_TDR) >> 16) & 1) != 1;
 }
 
 bool jtag_axiwait(uint32_t addr)
 {
-  // If we are using the emulated driver then always return true
-  if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)) {
-    return true;
-  }
+	/* If we are using the emulated driver then always return true */
+	if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)) {
+		return true;
+	}
 
-  jtag_bitbang_reset();
+	jtag_bitbang_reset();
 
-  jtag_setup_access(TENSIX_SM_RTAP);
+	jtag_setup_access(TENSIX_SM_RTAP);
 
-  jtag_wr_tensix_sm_rtap_tdr(ARC_AXI_ADDR_TDR, addr);
+	jtag_wr_tensix_sm_rtap_tdr(ARC_AXI_ADDR_TDR, addr);
 
-  uint32_t axi_cntl = 1 << 31;                                      // Read
-  jtag_wr_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR, axi_cntl); // Trigger read
+	uint32_t axi_cntl = 1 << 31;                                      /* Read */
 
-  uint32_t axi_status;
-  for (int i = 0; i < 3; ++i) {
-    axi_status = jtag_rd_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR);
-    if ((axi_status & 0xF) == 1) {
-      break;
-    }
-  }
+	jtag_wr_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR, axi_cntl); /* Trigger read */
 
-  jtag_rd_tensix_sm_rtap_tdr_idle(ARC_AXI_DATA_TDR);
+	uint32_t axi_status;
 
-  return (axi_status & 0xF) == 1;
+	for (int i = 0; i < 3; ++i) {
+		axi_status = jtag_rd_tensix_sm_rtap_tdr(ARC_AXI_CONTROL_STATUS_TDR);
+		if ((axi_status & 0xF) == 1) {
+			break;
+		}
+	}
+
+	jtag_rd_tensix_sm_rtap_tdr_idle(ARC_AXI_DATA_TDR);
+
+	return (axi_status & 0xF) == 1;
 }
 
 uint32_t jtag_bitbang_wait_for_id()
 {
-  volatile uint32_t reset_id;
-  do {
-    jtag_bitbang_reset();
-    reset_id = jtag_bitbang_read_id();
-  } while (reset_id != 0x138A5);
+	volatile uint32_t reset_id;
 
-  return reset_id;
+	do {
+		jtag_bitbang_reset();
+		reset_id = jtag_bootrom_read_id();
+	} while (reset_id != 0x138A5);
+
+	return reset_id;
 }
 
 static const struct gpio_dt_spec reset_mcu = GPIO_DT_SPEC_GET(DT_ALIAS(reset_mcu), gpios);
@@ -566,11 +562,11 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 }
 
 static struct gpio_callback preset_cb_data;
-#endif // IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
 int jtag_bootrom_setup(void)
 {
-  // Only check for pgood if we aren't emulating
+  /* Only check for pgood if we aren't emulating */
 #if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
   while (!gpio_pin_get_dt(&pgood)) {
   }
@@ -581,7 +577,7 @@ int jtag_bootrom_setup(void)
 
   int ret = jtag_bitbang_init();
   if (ret) {
-    // LOG_ERR("Failed to initialize DAP controller, %d", ret);
+    /* LOG_ERR("Failed to initialize DAP controller, %d", ret); */
     return ret;
   }
 
@@ -642,13 +638,15 @@ int jtag_bootrom_init(void)
   gpio_init_callback(&preset_cb_data, gpio_asic_reset_callback, BIT(preset_trigger.pin));
   gpio_add_callback(preset_trigger.port, &preset_cb_data);
 
-  // Active LOW, so will be false if high
+  /* Active LOW, so will be false if high */
   if (!gpio_pin_get_dt(&preset_trigger)) {
-    // If the preset trigger started high, then we came out of reset with the system thinking that
-    // pcie is ready to go. We need to forcibly apply the workaround to ensure this remains true.
+    /* If the preset trigger started high, then we came out of reset with the system
+     * thinking that pcie is ready to go. We need to forcibly apply the workaround to
+     * ensure this remains true.
+     */
     reset_asap = true;
   }
-#endif // IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
   return 0;
 }
@@ -656,36 +654,37 @@ int jtag_bootrom_init(void)
 int jtag_bootrom_patch_offset(const uint32_t *patch, size_t patch_len, const uint32_t start_addr)
 {
 #ifdef CONFIG_JTAG_LOAD_BOOTROM
-  jtag_bitbang_reset();
+	jtag_bitbang_reset();
 
-  // HALT THE ARC CORE!!!!!
-  uint32_t arc_misc_cntl = 0;
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	/* HALT THE ARC CORE!!!!! */
+	uint32_t arc_misc_cntl = 0;
 
-  arc_misc_cntl |= (0b1111 << 4);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
-  // Reset it back to zero
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
-  arc_misc_cntl &= ~(0b1111 << 4);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
-  // Enable gpio trien
-  jtag_axiwrite(BH_RESET_BASE + 0x1A0, 0xff00);
+	arc_misc_cntl |= (0b1111 << 4);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	/* Reset it back to zero */
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	arc_misc_cntl &= ~(0b1111 << 4);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
 
-  // Write to postcode
-  jtag_axiwrite(BH_RESET_BASE + 0x60, 0xF2);
+	/* Enable gpio trien */
+	jtag_axiwrite(BH_RESET_BASE + 0x1A0, 0xff00);
 
-  CYCLES_ENTRY();
-  for (int i = 0; i < patch_len; ++i) {
-    // ICCM start addr is 0
-    jtag_axiwrite(start_addr + (i * 4), patch[i]);
-  }
-  CYCLES_EXIT();
+	/* Write to postcode */
+	jtag_axiwrite(BH_RESET_BASE + 0x60, 0xF2);
 
-  jtag_axiwrite(BH_RESET_BASE + 0x60, 0xF3);
+	CYCLES_ENTRY();
+	for (int i = 0; i < patch_len; ++i) {
+		/* ICCM start addr is 0 */
+		jtag_axiwrite(start_addr + (i * 4), patch[i]);
+	}
+	CYCLES_EXIT();
+
+	jtag_axiwrite(BH_RESET_BASE + 0x60, 0xF3);
 
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-  workaround_applied = true;
+	workaround_applied = true;
 #endif
 
 #endif
@@ -695,79 +694,80 @@ int jtag_bootrom_patch_offset(const uint32_t *patch, size_t patch_len, const uin
 
 int jtag_bootrom_verify(const uint32_t *patch, size_t patch_len)
 {
-  if (!IS_ENABLED(CONFIG_JTAG_VERIFY_WRITE)) {
-    return 0;
-  }
+	if (!IS_ENABLED(CONFIG_JTAG_VERIFY_WRITE)) {
+		return 0;
+	}
 
-  /* Confirmed matching */
-  for (int i = 0; i < patch_len; ++i) {
-    // ICCM start addr is 0
-    uint32_t readback = 0;
-    if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)) {
-      jtag_bootrom_emul_axiread(i * 4, &readback);
-    } else {
-      jtag_axiread(i * 4, &readback);
-    }
+	/* Confirmed matching */
+	for (int i = 0; i < patch_len; ++i) {
+		/* ICCM start addr is 0 */
+		uint32_t readback = 0;
 
-    if (patch[i] != readback) {
-      printk("Bootcode mismatch at %03x. expected: %08x actual: %08x ¯\\_(ツ)_/¯\n", i * 4,
-             patch[i], readback);
+		if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)) {
+			jtag_bootrom_emul_axiread(i * 4, &readback);
+		} else {
+			jtag_bootrom_axiread(i * 4, &readback);
+		}
 
-      jtag_axiwrite(BH_RESET_BASE + 0x60, 0x6);
+		if (patch[i] != readback) {
+			printk("Bootcode mismatch at %03x. expected: %08x actual: %08x "
+			       "¯\\_(ツ)_/¯\n", i * 4, patch[i], readback);
 
-      return 1;
-    }
-  }
+			jtag_axiwrite(BH_RESET_BASE + 0x60, 0x6);
 
-  printk("Bootcode write verified! \\o/\n");
+			return 1;
+		}
+	}
 
-  return 0;
+	printk("Bootcode write verified! \\o/\n");
+
+	return 0;
 }
 
 void jtag_bootrom_soft_reset_arc(void)
 {
 #ifdef CONFIG_JTAG_LOAD_BOOTROM
-  uint32_t arc_misc_cntl = 0;
+	uint32_t arc_misc_cntl = 0;
 
-  jtag_bitbang_reset();
+	jtag_bitbang_reset();
 
-  // HALT THE ARC CORE!!!!!
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	/* HALT THE ARC CORE!!!!! */
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
-  arc_misc_cntl |= (0b1111 << 4);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
-  // Reset it back to zero
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
-  arc_misc_cntl &= ~(0b1111 << 4);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	arc_misc_cntl |= (0b1111 << 4);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	/* Reset it back to zero */
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	arc_misc_cntl &= ~(0b1111 << 4);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
 
-  // Write reset_vector (rom_memory[0])
-  jtag_axiwrite(BH_ROM_BASE, 0x84);
+	/* Write reset_vector (rom_memory[0]) */
+	jtag_axiwrite(BH_ROM_BASE, 0x84);
 
-  // Toggle soft-reset
-  // ARC_MISC_CNTL.soft_reset (12th bit)
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	/* Toggle soft-reset */
+	/* ARC_MISC_CNTL.soft_reset (12th bit) */
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
-  // Set to 1
-  arc_misc_cntl = arc_misc_cntl | (1 << 12);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	/* Set to 1 */
+	arc_misc_cntl = arc_misc_cntl | (1 << 12);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
 
-  jtag_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
-  // Set to 0
-  arc_misc_cntl = arc_misc_cntl & ~(1 << 12);
-  jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
+	jtag_bootrom_axiread(BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	/* Set to 0 */
+	arc_misc_cntl = arc_misc_cntl & ~(1 << 12);
+	jtag_axiwrite(BH_RESET_BASE + 0x100, arc_misc_cntl);
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-  arc_reset = true;
+	arc_reset = true;
 #endif
 #endif
 }
 
 void jtag_bootrom_teardown(void)
 {
-  // Just one more for good luck
+  /* Just one more for good luck */
   jtag_bitbang_reset();
 
   jtag_bitbang_teardown();
-  // should be possible to call jtag_teardown(), but the dt device does not seem to exposed
-  // jtag_teardown(DEVICE_DT_GET_OR_NULL(DT_INST(0, zephyr_jtag_gpio)));
+  /* should be possible to call jtag_teardown(), but the dt device does not seem to exposed */
+  /* jtag_teardown(DEVICE_DT_GET_OR_NULL(DT_INST(0, zephyr_jtag_gpio))); */
 }
