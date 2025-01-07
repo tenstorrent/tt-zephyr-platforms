@@ -4,21 +4,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/ztest.h>
+#include <zephyr/drivers/gpio.h>
 #include <stdlib.h>
 
 #include <tenstorrent/jtag_bootrom.h>
-#include <zephyr/ztest.h>
 #include <zephyr/drivers/jtag.h>
 
-static const struct device *JTAG = DEVICE_DT_GET(DT_PATH(jtag0));
+static struct bh_chip test_chip = {.config = {
+					   .jtag = DEVICE_DT_GET(DT_PATH(jtag)),
+					   .asic_reset = GPIO_DT_SPEC_GET(DT_PATH(mcureset), gpios),
+					   .spi_reset = GPIO_DT_SPEC_GET(DT_PATH(spireset), gpios),
+					   .pgood = GPIO_DT_SPEC_GET(DT_PATH(pgood), gpios),
+				   }};
 
 ZTEST(jtag_bootrom, test_jtag_bootrom)
 {
 	const uint32_t *const patch = (const uint32_t *)get_bootcode();
 	const size_t patch_len = get_bootcode_len();
 
-	zassert_ok(jtag_bootrom_patch(patch, patch_len));
-	zassert_ok(jtag_bootrom_verify(patch, patch_len));
+	zassert_ok(jtag_bootrom_patch(&test_chip, patch, patch_len));
+	zassert_ok(jtag_bootrom_verify(test_chip.config.jtag, patch, patch_len));
 }
 
 static void before(void *arg)
@@ -29,10 +35,11 @@ static void before(void *arg)
 	__aligned(sizeof(uint32_t)) uint8_t *sram = malloc(get_bootcode_len() * sizeof(uint8_t));
 	const size_t patch_len = get_bootcode_len();
 
-	zassert_ok(jtag_bootrom_setup());
+	zassert_ok(jtag_bootrom_init(&test_chip));
+	zassert_ok(jtag_bootrom_reset_asic(&test_chip));
 
-	if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul) && IS_ENABLED(CONFIG_JTAG_VERIFY_WRITE)) {
-		jtag_emul_setup(JTAG, (uint32_t *)sram, patch_len);
+	if (IS_ENABLED(CONFIG_JTAG_EMUL)) {
+		jtag_emul_setup(test_chip.config.jtag, (uint32_t *)sram, patch_len);
 	}
 }
 
@@ -40,7 +47,7 @@ static void after(void *arg)
 {
 	ARG_UNUSED(arg);
 
-	jtag_bootrom_teardown();
+	jtag_bootrom_teardown(&test_chip);
 }
 
 ZTEST_SUITE(jtag_bootrom, NULL, NULL, before, after, NULL);

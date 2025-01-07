@@ -22,6 +22,8 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
 
+#include <tenstorrent/bh_chip.h>
+
 #ifndef IMAGE_MAGIC
 #define IMAGE_MAGIC 0x96f3b83d
 #endif
@@ -36,15 +38,50 @@ LOG_MODULE_REGISTER(tt_fwupdate, CONFIG_TT_FWUPDATE_LOG_LEVEL);
 static tt_boot_fs boot_fs;
 
 #ifdef CONFIG_BOARD_QEMU_X86
-#define FLASH0_NODE       DT_INST(0, zephyr_sim_flash)
-#define FLASH1_NODE       FLASH0_NODE
+#define FLASH0_NODE DT_INST(0, zephyr_sim_flash)
+#define FLASH1_NODE FLASH0_NODE
+
+static const struct device *const flash1_dev = DEVICE_DT_GET(FLASH1_NODE);
 /* For testing, we construct a fake image in slot0_partition, which may not be at offset 0 */
 #define TT_BOOT_FS_OFFSET DT_REG_ADDR(DT_NODELABEL(storage_partition))
 #else
-#define FLASH0_NODE       DT_NODELABEL(flash)  /* "flash" (NOT "flash0") is internal flash */
-#define FLASH1_NODE       DT_NODELABEL(flash1) /* flash1 is SPI flash */
+#define FLASH0_NODE       DT_NODELABEL(flash) /* "flash" (NOT "flash0") is internal flash */
+
+static const struct device *flash1_dev;
+static struct gpio_dt_spec spi_mux;
+
 /* The external SPI flash is not partitioned, so the image begins at 0 */
 #define TT_BOOT_FS_OFFSET 0
+
+int tt_fwupdate_init(const struct device *dev, struct gpio_dt_spec mux)
+{
+  int ret;
+
+  flash1_dev = dev;
+  spi_mux = mux;
+
+  if (spi_mux.port != NULL) {
+    ret = gpio_pin_configure_dt(&spi_mux, GPIO_OUTPUT_INACTIVE);
+    if (ret != 0) {
+      return ret;
+    }
+  }
+
+  return 0;
+}
+
+int tt_fwupdate_complete()
+{
+  int ret;
+  if (spi_mux.port != NULL) {
+    ret = gpio_pin_set_dt(&spi_mux, 1);
+    if (ret != 0) {
+      return ret;
+    }
+  }
+
+  return 0;
+}
 #endif
 
 /* minimum size for an erase (this should be available from DT */
@@ -53,7 +90,7 @@ static tt_boot_fs boot_fs;
 #define WRITE_BLOCK_SIZE 8
 
 static const struct device *const flash0_dev = DEVICE_DT_GET(FLASH0_NODE);
-static const struct device *const flash1_dev = DEVICE_DT_GET(FLASH1_NODE);
+// Should just be an enable on the flash/spi
 
 static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
 {

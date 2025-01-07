@@ -30,44 +30,32 @@
 	};
 
 	mcureset {
-		compatible = "gpio-leds";
-		mcureset0: mcureset {
-			label = "MCU reset";
-			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
-		};
-
-		spireset0: spireset {
-			label = "SPI reset";
-			gpios = <&gpio0 6 GPIO_ACTIVE_LOW>;
-		};
-
-		powerreset0: powerreset {
-			label = "Power reset";
-			gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
-		};
-
-		pgood0: pgood {
-			label = "Power good";
-			gpios = <&gpio0 8 GPIO_PULL_DOWN>;
-		};
-
-		arc_rambus_jtag_mux_enable0: arc_rambus_jtag_mux_enable {
-			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
-			label = "Enable to select the arc jtag, disable to select rambus";
-		};
-
-		arc_l2_jtag_mux_enable0: arc_l2_jtag_mux_enable {
-			gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
-			label = "Enable to select the arc jtag, disable to select l2cpu";
-		};
+	       compatible = "zephyr,gpio-line";
+	       label = "ASIC reset line";
+	       gpios = <&gpio0 5 GPIO_PULL_DOWN>;
 	};
 
-	aliases {
-		reset-mcu = &mcureset0;
-		reset-spi = &spireset0;
-		reset-power = &powerreset0;
-		pgood = &pgood0;
-		arc-rambus-jtag-mux-sel = &arc_rambus_jtag_mux_enable0;
-		arc-l2-jtag-mux-sel = &arc_l2_jtag_mux_enable0;
+	spireset {
+	       compatible = "zephyr,gpio-line";
+	       label = "Spi reset line";
+	       gpios = <&gpio0 6 GPIO_PULL_DOWN>;
+	};
+
+	pgood {
+	       compatible = "zephyr,gpio-line";
+	       label = "Power good indicator";
+	       gpios = <&gpio0 8 GPIO_PULL_DOWN>;
+	};
+
+	arc_rambus_jtag_mux_sel: arc_rambus_jtag_mux_enable {
+	       label = "Enable to select the arc jtag, disable to select rambus";
+	       compatible = "zephyr,gpio-line";
+	       gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+	};
+
+	arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
+	       label = "Enable to select the arc jtag, disable to select l2cpu";
+	       compatible = "zephyr,gpio-line";
+	       gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
 	};
 };

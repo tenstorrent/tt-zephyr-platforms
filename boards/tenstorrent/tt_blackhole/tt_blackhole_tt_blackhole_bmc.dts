@@ -18,63 +18,58 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 
-	mcureset {
-		compatible = "gpio-leds";
-		mcureset0: mcureset {
-			label = "MCU reset";
-			gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
-		};
+	chip0: chip0 {
+		compatible = "tenstorrent,bh-chip";
 
-		spireset0: spireset {
-			label = "SPI reset";
-			gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
-		};
-
-		powerreset0: powerreset {
-			label = "Power reset";
-			gpios = <&gpiod 1 GPIO_ACTIVE_LOW>;
-		};
-
-		pgood0: pgood {
-			label = "Power good";
-			gpios = <&gpioc 14 GPIO_PULL_DOWN>;
-		};
-
-		presettrigger0: preset_trigger {
-			label = "PRESET trigger";
+		asic_reset {
+			compatible = "zephyr,gpio-line";
+			label = "Line to asic reset";
 			gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		};
 
-		i2c_scl: i2cscl {
-			label = "i2c3 scl";
-			gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>;
+		spi_reset {
+			compatible = "zephyr,gpio-line";
+			label = "Line to spi reset";
+			gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
 		};
 
-		board_fault_led: boardfaultled {
-			label = "Board Fault LED";
-			gpios = <&gpioc 15 GPIO_ACTIVE_HIGH>;
+		pgood {
+			compatible = "zephyr,gpio-line";
+			label = "Power good indicator";
+			gpios = <&gpioc 14 GPIO_PULL_DOWN>;
 		};
+
+		jtag0: jtag {
+			compatible = "zephyr,jtag-gpio";
+			port-write-cycles = <2>;
+		};
+
+		flash = <&flash1>;
+		spi_mux {
+			compatible = "zephyr,gpio-line";
+			label = "Line to spi mux, drive low to enable bmfw -> eeprom";
+			gpios = <&gpiob 5 GPIO_ACTIVE_LOW>;
+		};
+
+		arc = <&chip0_arc>;
 	};
 
-	jtag0: jtag0 {
-		compatible = "zephyr,jtag-gpio";
-		port-write-cycles = <2>;
+	preset_trigger {
+		compatible = "zephyr,gpio-line";
+		label = "Input from PCIe card edge triggering an asic reset";
+		gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
 	};
 
-	aliases {
-		die-temp0 = &die_temp;
-		volt-sensor0 = &vref;
-		i2c1 = &i2c1;
-		cm-i2c = &i2c3;
-		reset-mcu = &mcureset0;
-		reset-spi = &spireset0;
-		reset-power = &powerreset0;
-		pgood = &pgood0;
-		preset-trigger = &presettrigger0;
-		i2c3-scl = &i2c_scl;
+	board_fault_led {
+		compatible = "zephyr,gpio-line";
+		label = "LED Output to board fault indicator";
+		gpios = <&gpioc 15 GPIO_ACTIVE_HIGH>;
+	};
 
-		bh-smbus = &smbus3;
-		board-fault-led = &board_fault_led;
+	chips {
+		compatible = "tenstorrent,bh-chips";
+		chips = <&chip0>;
+		primary = <0>;
 	};
 };
 
@@ -130,24 +125,11 @@
 
 &smbus3 {
 	status = "okay";
-	pinctrl-0 = <&i2c3_scl_pa7 &i2c3_sda_pb4>;
-	pinctrl-names = "default";
 	compatible = "st,tt-stm32-smbus";
 
-	bh_cm: smbus3@54 {
-		reg = <0x54>;
-		status = "okay";
-	};
-};
-
-/* This GPIO hog is required for the SPI flash mux to work at startup */
-&gpiob {
-	status = "okay";
-
-	spi-flash-mux0 {
-		gpio-hog;
-		gpios = <5 GPIO_ACTIVE_HIGH>;
-		output-high;
+	chip0_arc: bh_arc@A {
+		compatible = "tenstorrent,bh-arc";
+		reg = <0xA>;
 	};
 };
 
@@ -159,15 +141,11 @@
 
 	flash1: flash@0 {
 		/* base properties */
-		compatible = "micron,mt35xu512", "jedec,spi-nor";
+		compatible = "jedec,spi-nor";
 		status = "okay";
 
 		/* spi-device properties */
 		reg = <0>;
-		 /*
-		  * TODO: the stm32 driver works with clock in range [250000, 31999999] Hz. Bump this
-		  * back up to 32 Mhz as a separate change later.
-		  */
 		spi-max-frequency = <7999999>;
 		spi-cpol;
 		spi-cpha;
@@ -181,15 +159,7 @@
 		t-exit-dpd = <30000>;
 
 		/* jedec,jesd216 properties */
-		sfdp-bfp = [
-			e5 20 8a ff  ff ff ff 1f  00 00 00 00  00 00 00 00
-			ee ff ff ff  ff ff 00 00  ff ff 00 00  0c 20 11 d8
-			0f 52 00 00  39 61 99 00  87 8e 03 d3  ac a1 27 3d
-			7a 75 7a 75  fb bd d5 5c  00 00 70 ff  81 50 f8 a1
-			2f cb 27 8b  00 00 04 01  00 06 01 00  ff ff ff 8e
-			00 00 00 00  00 00 00 00  00 00 00 00
-		];
-		jedec-id = [2c 5b 1a];
+		jedec-id = [20 bb 20];
 	};
 };
 
@@ -215,12 +185,12 @@
 
 		slot0_partition: partition@c000 {
 			label = "image-0";
-			reg = <0x0000c000 (DT_SIZE_K(226) + DT_SIZE_K(6))>;
+			reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
 		};
 
 		slot1_partition: partition@46000 {
 			label = "image-1";
-			reg = <0x00046000 DT_SIZE_K(226)>;
+			reg = <0x00046000 (DT_SIZE_K(230))>;
 		};
 	};
 };

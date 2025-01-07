@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: TT STM32 Gpio control
+
+compatible: "zephyr,gpio-line"
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+  label:
+    type: string
+    description: |
+      Human readable string describing the line. It can be used by an
+      application to identify this line or to retrieve its number/index
+      (i.e. child node number) on the parent device.

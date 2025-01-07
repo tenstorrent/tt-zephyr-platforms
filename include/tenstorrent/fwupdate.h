@@ -8,11 +8,34 @@
 #define TENSTORRENT_FWUPDATE_H_
 
 #include <stdbool.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
 
 #include <tenstorrent/tt_boot_fs.h>
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef CONFIG_BOARD_QEMU_X86
+/**
+ * @brief Set the external flash device and set the passed spi mux (if not null) to allow
+ * communication with the spi
+ *
+ * @param dev The pointer to the external flash device to use.
+ * @param mux The spi mux to set and disable on start and completion of the fw update operations.
+ *
+ * @retval 0 on success, if the spi mux was able to be set
+ */
+int tt_fwupdate_init(const struct device *dev, struct gpio_dt_spec mux);
+
+/**
+ * @brief Called on the completion of the fwupdate operation, disables the spi mux if initialized in
+ * `tt_fwupdate_init`
+ *
+ * @retval 0 on success, if the spi mux was able to be set
+ */
+int tt_fwupdate_complete();
 #endif
 
 /**

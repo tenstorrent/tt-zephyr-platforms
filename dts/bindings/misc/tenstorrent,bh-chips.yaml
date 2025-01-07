@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: TT Bh Chip reference
+
+compatible: "tenstorrent,bh-chips"
+
+properties:
+  chips:
+    type: phandles
+    required: true
+  primary:
+    type: int
+    required: true

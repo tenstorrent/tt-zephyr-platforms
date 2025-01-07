@@ -4,6 +4,7 @@
 config TT_JTAG_BOOTROM
 	bool "Use JTAG to load bootrom"
 	depends on JTAG
+	depends on TT_BH_CHIP
 	depends on GPIO
 	help
 	  Use JTAG to load bootrom.

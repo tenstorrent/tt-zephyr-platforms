@@ -9,7 +9,6 @@
 	compatible = "tenstorrent,blackhole";
 };
 
-
 &jtag0 {
 	tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
 	tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;

@@ -3,13 +3,12 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <stdlib.h>
 
 #include <app_version.h>
 #include <tenstorrent/bist.h>
 #include <tenstorrent/fwupdate.h>
-#include <tenstorrent/jtag_bootrom.h>
-#include <tenstorrent/tt_smbus.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
@@ -19,42 +18,28 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 
+#include <tenstorrent/tt_smbus.h>
+#include <tenstorrent/bh_chip.h>
+#include <tenstorrent/bh_arc.h>
+#include <tenstorrent/jtag_bootrom.h>
+
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
-static const struct gpio_dt_spec reset_spi = GPIO_DT_SPEC_GET(DT_ALIAS(reset_spi), gpios);
+struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), chips, INIT_CHIP)};
 
-static const struct device *const bh_smbus = DEVICE_DT_GET_OR_NULL(DT_ALIAS(bh_smbus));
+#if BH_CHIP_PRIMARY_INDEX >= BH_CHIP_COUNT
+#error "Primary chip out of range"
+#endif
+
 static const struct gpio_dt_spec board_fault_led =
-	GPIO_DT_SPEC_GET_OR(DT_ALIAS(board_fault_led), gpios, {0});
-
-typedef struct bmStaticInfo {
-	/* Non-zero for valid data */
-	/* Allows for breaking changes */
-	uint32_t version;
-	uint32_t bl_version;
-	uint32_t app_version;
-} __packed bmStaticInfo;
-
-typedef struct cm2bmMessage {
-	uint8_t msg_id;
-	uint8_t seq_num;
-	uint32_t data;
-} __packed cm2bmMessage;
-
-typedef struct cm2bmAck {
-	uint8_t msg_id;
-	uint8_t seq_num;
-} __packed cm2bmAck;
-
-union cm2bmAckWire {
-	cm2bmAck f;
-	uint16_t val;
-};
+	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
 
 int update_fw(void)
 {
 	/* To get here we are already running known good fw */
 	int ret;
+
+	const struct gpio_dt_spec reset_spi = BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.spi_reset;
 
 	ret = gpio_pin_configure_dt(&reset_spi, GPIO_OUTPUT_ACTIVE);
 	if (ret < 0) {
@@ -95,88 +80,28 @@ int update_fw(void)
 	return ret;
 }
 
-void bmfw_handle_smbus(bool *send_version_info, bmStaticInfo *static_info)
-{
-
-	k_sleep(K_MSEC(20));
-
-	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-		/* Blink the light every half second or so */
-		k_sleep(K_MSEC(500 - 20));
-		gpio_pin_toggle_dt(&board_fault_led);
-	}
-
-	if (*send_version_info || was_arc_reset()) {
-		if (was_arc_reset()) {
-			/* Allow retry on failure */
-			*send_version_info = true;
-			handled_arc_reset();
-		}
-		struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
-
-		K_SPINLOCK(&reset_lock) {
-			int ret = smbus_block_write(bh_smbus, 0xA, 0x20,
-						    sizeof(bmStaticInfo),
-						    (uint8_t *)static_info);
-			if (ret == 0) {
-				*send_version_info = false;
-			}
-		}
-		k_yield();
-	}
-
-	cm2bmMessage message = {0};
-	uint8_t count;
-
-	int ret;
-	{
-		struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
-
-		K_SPINLOCK(&reset_lock) {
-			ret = smbus_block_read(bh_smbus, 0xA, 0x10, &count,
-					       (uint8_t *)&message);
-		}
-		k_yield();
-	}
-
-	if (ret == 0 && message.msg_id != 0) {
-		cm2bmAck ack = {0};
-
-		ack.msg_id = message.msg_id;
-		ack.seq_num = message.seq_num;
-		union cm2bmAckWire wire_ack;
-
-		wire_ack.f = ack;
-		smbus_word_data_write(bh_smbus, 0xA, 0x11, wire_ack.val);
-
-		switch (message.msg_id) {
-		case 0x1:
-			switch (message.data) {
-			case 0x0:
-				jtag_bootrom_reset(true);
-				*send_version_info = true;
-				/* Wait 800ms before allowing another reset + 200ms
-				 * = 1s between resets
-				 */
-				k_sleep(K_MSEC(800));
-				break;
-			case 0x3:
-				/* Trigger reboot; will reset asic and reload bmfw
-				 */
-				if (IS_ENABLED(CONFIG_REBOOT)) {
-					sys_reboot(SYS_REBOOT_COLD);
-				}
-				break;
-			}
-			break;
-		}
-	}
-}
-
 int main(void)
 {
 	int ret;
 	int bist_rc;
+
+	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
+		/* Only try to update from the primary chip spi */
+		ret = tt_fwupdate_init(BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.flash,
+				       BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.spi_mux);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (chip->config.arc.smbus.bus == NULL) {
+			continue;
+		}
+
+		tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
+					     &((&chip->data)->bus_cancel_flag));
+	}
 
 	bist_rc = 0;
 	if (IS_ENABLED(CONFIG_TT_BIST)) {
@@ -193,42 +118,37 @@ int main(void)
 			if (bist_rc < 0) {
 				LOG_ERR("Firmware update was unsuccessful and will be rolled-back "
 					"after bmfw reboot.");
-				/*
-				 * This probably represents a firmware regression that managed to go
-				 * undetected through developer-level testing, on-diff testing, CI,
-				 * and soak-testing.
-				 */
 				if (IS_ENABLED(CONFIG_REBOOT)) {
 					sys_reboot(SYS_REBOOT_COLD);
 				}
 				return EXIT_FAILURE;
 			}
 
-			/* BIST successful, so confirm fwupdate */
 			ret = tt_fwupdate_confirm();
 			if (ret < 0) {
 				LOG_ERR("%s() failed: %d", "tt_fwupdate_confirm", ret);
-				/* This represents a serious problem - could not write to internal
-				 * SoC flash, etc
-				 */
 				return EXIT_FAILURE;
 			}
 		}
 	}
 
-	/* Should only happen if EXIT_FAILURE is returned; otherwise will reboot */
 	ret = update_fw();
 	if (ret != 0) {
 		return ret;
 	}
 
-	/* IMPORTANT - turn off the SPI Mux select line so that CMFW can read SPI flash */
-	const struct device *const spi_mux_gpio_dev = DEVICE_DT_GET(DT_NODELABEL(gpiob));
-	gpio_pin_t spi_mux_gpio_pin = 5; /* DT_GPIO_HOG_PIN_BY_IDX() does not seem to work */
+	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
+		ret = tt_fwupdate_complete();
+		if (ret != 0) {
+			return ret;
+		}
+	}
 
-	ret = gpio_pin_set(spi_mux_gpio_dev, spi_mux_gpio_pin, 0);
-	if (ret < 0) {
-		LOG_DBG("%s() failed: %d", "gpio_pin_set", ret);
+	/* Force all spi_muxes back to arc control */
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (chip->config.spi_mux.port != NULL) {
+			gpio_pin_configure_dt(&chip->config.spi_mux, GPIO_OUTPUT_ACTIVE);
+		}
 	}
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
@@ -236,16 +156,18 @@ int main(void)
 	}
 
 	if (IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)) {
-		ret = jtag_bootrom_init();
-		if (ret != 0) {
-			LOG_ERR("%s() failed: %d", "jtag_bootrom_init", ret);
-			return ret;
-		}
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			ret = jtag_bootrom_init(chip);
+			if (ret != 0) {
+				LOG_ERR("%s() failed: %d", "jtag_bootrom_init", ret);
+				return ret;
+			}
 
-		ret = jtag_bootrom_reset(false);
-		if (ret != 0) {
-			LOG_ERR("%s() failed: %d", "jtag_bootrom_reset", ret);
-			return ret;
+			ret = jtag_bootrom_reset_sequence(chip, false);
+			if (ret != 0) {
+				LOG_ERR("%s() failed: %d", "jtag_bootrom_reset", ret);
+				return ret;
+			}
 		}
 
 		LOG_DBG("Bootrom workaround successfully applied");
@@ -257,21 +179,58 @@ int main(void)
 	bmStaticInfo static_info =
 		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
-	if (bh_smbus != NULL) {
-		bool send_version_info = true;
+	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
+		gpio_pin_set_dt(&board_fault_led, 0);
+	}
 
-		/* Set cancel flag for i2c commands */
-		int *bus_abort = jtag_bootrom_disable_bus();
-
-		tt_smbus_stm32_set_abort_ptr(bh_smbus, bus_abort);
+	while (1) {
+		k_sleep(K_MSEC(20));
 
 		if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-			gpio_pin_set_dt(&board_fault_led, 0);
+			/* Blink the light every half second or so */
+			k_sleep(K_MSEC(500 - 20));
+			gpio_pin_toggle_dt(&board_fault_led);
 		}
 
-		while (1) {
-			bmfw_handle_smbus(&send_version_info, &static_info);
+		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
+		 */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.arc_just_reset) {
+				if (bh_chip_set_static_info(chip, &static_info) == 0) {
+					chip->data.arc_just_reset = false;
+				}
+			}
 		}
+
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			cm2bmMessageRet msg = bh_chip_get_cm2bm_message(chip);
+			if (msg.ret == 0) {
+				cm2bmMessage message = msg.msg;
+				switch (message.msg_id) {
+				case 0x1:
+					switch (message.data) {
+					case 0x0:
+						jtag_bootrom_reset_sequence(chip, true);
+						break;
+					case 0x3:
+						/* Trigger reboot; will reset asic and reload bmfw
+						 */
+						if (IS_ENABLED(CONFIG_REBOOT)) {
+							sys_reboot(SYS_REBOOT_COLD);
+						}
+						break;
+					}
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Really only matters if running without security... but
+		 * cm should register that it is on the pcie bus and therefore can be an update
+		 * candidate. If chips that are on the bus see that an update has been requested
+		 * they can update?
+		 */
 	}
 
 	return EXIT_SUCCESS;
