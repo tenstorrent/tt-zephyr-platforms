@@ -1,2 +1,0 @@
-add_subdirectory_ifdef(CONFIG_DAP dap)
-add_subdirectory_ifdef(CONFIG_JTAG jtag)

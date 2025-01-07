@@ -3,7 +3,6 @@
 
 rsource "drivers/Kconfig"
 rsource "lib/Kconfig"
-rsource "subsys/Kconfig"
 
 menu "Tenstorrent App Configuration"
 

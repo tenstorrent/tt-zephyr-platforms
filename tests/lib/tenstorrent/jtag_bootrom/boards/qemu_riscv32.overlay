@@ -18,7 +18,7 @@
 		#gpio-cells = <2>;
 	};
 
-	jtag0: jtag {
+	jtag0: jtag0 {
 		compatible = "zephyr,jtag-gpio";
 		status = "okay";
 		tck-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;

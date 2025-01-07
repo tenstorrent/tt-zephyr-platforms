@@ -18,6 +18,11 @@
 extern "C" {
 #endif
 
+#ifdef CONFIG_JTAG_EMUL
+int jtag_emul_setup(const struct device *dev, uint32_t *buf, size_t buf_len);
+int jtag_emul_axi_read32(const struct device *dev, uint32_t addr, uint32_t *value);
+#endif
+
 typedef int (*jtag_setup_api_t)(const struct device *dev);
 typedef int (*jtag_teardown_api_t)(const struct device *dev);
 

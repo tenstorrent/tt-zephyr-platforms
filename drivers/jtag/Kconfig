@@ -32,5 +32,6 @@ config JTAG_USE_MMAPPED_IO
 	  systems, but may not be supported on all platforms.
 
 rsource "Kconfig.bitbang"
+rsource "Kconfig.emul"
 
 endif # JTAG

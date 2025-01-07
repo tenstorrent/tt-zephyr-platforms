@@ -1,0 +1,10 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config JTAG_EMUL
+	bool "JTAG Port emul driver"
+	depends on JTAG_BITBANG
+	help
+	  Enable the callback to track axi reads and writes using the gpio
+	  emul infra.

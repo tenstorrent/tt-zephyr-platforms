@@ -8,6 +8,8 @@
 #include "jtag_profile_functions.h"
 #include "tenstorrent/bitrev.h"
 
+#include "jtag_priv.h"
+
 #include <stdint.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
@@ -54,27 +56,7 @@ typedef union {
 static uint32_t io_ops;
 #endif
 
-struct jtag_config {
-	struct gpio_dt_spec tck;
-	struct gpio_dt_spec tdo;
-	struct gpio_dt_spec tdi;
-	struct gpio_dt_spec tms;
-	struct gpio_dt_spec trst;
-
-	volatile uint32_t *tck_reg;
-	volatile uint32_t *tdo_reg;
-	volatile uint32_t *tdi_reg;
-	volatile uint32_t *tms_reg;
-	volatile uint32_t *trst_reg;
-
-	uint32_t port_write_cycles;
-	uint32_t tck_delay;
-};
-
-struct jtag_data {
-};
-
-LOG_MODULE_REGISTER(jtag_bootrom, CONFIG_TT_JTAG_BOOTROM_LOG_LEVEL);
+LOG_MODULE_REGISTER(jtag_bitbang, CONFIG_JTAG_LOG_LEVEL);
 
 #ifdef CONFIG_JTAG_USE_MMAPPED_IO
 

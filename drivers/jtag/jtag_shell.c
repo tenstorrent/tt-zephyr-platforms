@@ -69,7 +69,7 @@ static int cmd_jtag_read_id(const struct shell *sh, size_t argc, char **argv, vo
     const struct device *dev = get_jtag_dev(argv[2]);
 
     jtag_read_id(dev, &id);
-    
+
     shell_print(sh, "ID: 0x%08x", id);
 
     return 0;
@@ -80,7 +80,7 @@ static int cmd_jtag_reset(const struct shell *sh, size_t argc, char **argv, void
     const struct device *dev = get_jtag_dev(argv[2]);
 
     jtag_reset(dev);
-    
+
     return 0;
 }
 
