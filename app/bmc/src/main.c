@@ -184,15 +184,6 @@ int main(void)
 	int ret;
 	int bist_rc;
 
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		/* Only try to update from the primary chip spi */
-		ret = tt_fwupdate_init(BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.flash,
-				       BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.spi_mux);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		if (chip->config.arc.smbus.bus == NULL) {
 			continue;
@@ -251,13 +242,6 @@ int main(void)
 	ret = update_fw();
 	if (ret != 0) {
 		return ret;
-	}
-
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		ret = tt_fwupdate_complete();
-		if (ret != 0) {
-			return ret;
-		}
 	}
 
 	/* Force all spi_muxes back to arc control */
