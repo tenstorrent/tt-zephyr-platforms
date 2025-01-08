@@ -3,8 +3,6 @@ sample:
 tests:
   sample.app:
     sysbuild: true
-    extra_configs:
-      - CONFIG_TT_FWUPDATE=n
     platform_allow:
       - tt_blackhole@p100/tt_blackhole/bmc
       - tt_blackhole@p100a/tt_blackhole/bmc

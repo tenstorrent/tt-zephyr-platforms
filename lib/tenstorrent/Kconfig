@@ -11,7 +11,6 @@ rsource "bist/Kconfig"
 rsource "bm_event/Kconfig"
 rsource "boot_fs/Kconfig"
 rsource "fan_ctrl/Kconfig"
-rsource "fwupdate/Kconfig"
 rsource "jtag_bootrom/Kconfig"
 # zephyr-keep-sorted-stop
 
