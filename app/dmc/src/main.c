@@ -12,6 +12,7 @@
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/fwupdate.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/dfu/mcuboot.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
@@ -54,43 +55,14 @@ int update_fw(void)
 	if (ret < 0) {
 		LOG_ERR("%s() failed (could not configure the spi_reset pin): %d",
 			"gpio_pin_configure_dt", ret);
-		return 0;
+		return ret;
 	}
 
 	gpio_pin_set_dt(&reset_spi, 1);
 	k_busy_wait(1000);
 	gpio_pin_set_dt(&reset_spi, 0);
 
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		/*
-		 * Check for and apply a new update, if one exists (we disable reboot here)
-		 * Device Mgmt FW (called bmfw here and elsewhere in this file for historical
-		 * reasons)
-		 */
-		ret = tt_fwupdate("bmfw", false, false);
-		if (ret < 0) {
-			LOG_ERR("%s() failed: %d", "tt_fwupdate", ret);
-			/*
-			 * This might be as simple as no update being found, but it could be due to
-			 * something else - e.g. I/O error, failure to read from external spi,
-			 * failure to write to internal flash, image corruption / crc failure, etc.
-			 */
-			return 0;
-		}
-
-		if (ret == 0) {
-			LOG_DBG("No firmware update required");
-		} else {
-			LOG_INF("Reboot needed in order to apply dmfw update");
-			if (IS_ENABLED(CONFIG_REBOOT)) {
-				sys_reboot(SYS_REBOOT_COLD);
-			}
-		}
-	} else {
-		ret = 0;
-	}
-
-	return ret;
+	return 0;
 }
 
 void process_cm2dm_message(struct bh_chip *chip)
@@ -258,15 +230,6 @@ int main(void)
 	int ret;
 	int bist_rc;
 
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		/* Only try to update from the primary chip spi */
-		ret = tt_fwupdate_init(BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.flash,
-				       BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.spi_mux);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		if (chip->config.arc.smbus.bus == NULL) {
 			continue;
@@ -290,35 +253,28 @@ int main(void)
 		set_fan_speed(35); /* Start fan speed at 35% */
 	}
 
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		if (!tt_fwupdate_is_confirmed()) {
-			if (bist_rc < 0) {
-				LOG_ERR("Firmware update was unsuccessful and will be rolled-back "
-					"after dmfw reboot.");
-				if (IS_ENABLED(CONFIG_REBOOT)) {
-					sys_reboot(SYS_REBOOT_COLD);
-				}
-				return EXIT_FAILURE;
+	if (!boot_is_img_confirmed()) {
+		if (bist_rc < 0) {
+			LOG_ERR("Firmware update was unsuccessful and will be rolled-back "
+				"after dmfw reboot.");
+			if (IS_ENABLED(CONFIG_REBOOT)) {
+				sys_reboot(SYS_REBOOT_COLD);
 			}
-
-			ret = tt_fwupdate_confirm();
-			if (ret < 0) {
-				LOG_ERR("%s() failed: %d", "tt_fwupdate_confirm", ret);
-				return EXIT_FAILURE;
-			}
+			return EXIT_FAILURE;
 		}
+
+		ret = boot_write_img_confirmed();
+		if (ret < 0) {
+			LOG_ERR("%s() failed: %d", "tt_fwupdate_confirm", ret);
+			return EXIT_FAILURE;
+		}
+
+		LOG_INF("Firmware update is confirmed.");
 	}
 
 	ret = update_fw();
 	if (ret != 0) {
 		return ret;
-	}
-
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		ret = tt_fwupdate_complete();
-		if (ret != 0) {
-			return ret;
-		}
 	}
 
 	/* Force all spi_muxes back to arc control */
