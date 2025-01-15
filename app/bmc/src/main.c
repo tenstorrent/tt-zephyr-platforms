@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include <app_version.h>
+#include <tenstorrent/bist.h>
 #include <tenstorrent/fwupdate.h>
 #include <tenstorrent/jtag_bootrom.h>
 #include <tenstorrent/tt_smbus.h>
@@ -18,7 +19,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 
-LOG_MODULE_REGISTER(main, CONFIG_TT_MAIN_LOG_LEVEL);
+LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct gpio_dt_spec reset_spi = GPIO_DT_SPEC_GET(DT_ALIAS(reset_spi), gpios);
 
@@ -49,12 +50,6 @@ union cm2bmAckWire {
   cm2bmAck f;
   uint16_t val;
 };
-
-static inline int tt_bist(void)
-{
-  /* TODO: this should probably be a library - just return success for now */
-  return 0;
-}
 
 int update_fw()
 {

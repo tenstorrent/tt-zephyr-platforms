@@ -22,6 +22,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
+        # FIXME: would be nice to either use the default here or a built-in github environment
+        # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
         path: tt-zephyr-platforms
         fetch-depth: 0
 
@@ -59,6 +61,8 @@ jobs:
         pip install west
 
     - name: west setup
+      # FIXME: would be ideal to use a built-in github environment variable
+      # instead of tt-zephyr-platforms
       run: |
         west init -l tt-zephyr-platforms
 
@@ -87,8 +91,7 @@ jobs:
       run: |
         export ZEPHYR_BASE=$PWD/zephyr
         cd tt-zephyr-platforms
-        # debug
-        ls -la
+        west patch apply
         git log  --pretty=oneline | head -n 10
         # Increase rename limit to allow for large PRs
         git config diff.renameLimit 10000

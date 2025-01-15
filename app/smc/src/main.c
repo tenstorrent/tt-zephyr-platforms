@@ -18,7 +18,7 @@
 #include "dvfs.h"
 #include "fw_table.h"
 
-LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
+LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 int main(void)
 {

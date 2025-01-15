@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_subdirectory_ifdef(CONFIG_TT_BH_ARC bh_arc)
+add_subdirectory_ifdef(CONFIG_TT_BIST bist)
 add_subdirectory_ifdef(CONFIG_TT_BOOT_BANNER banner)
 add_subdirectory_ifdef(CONFIG_TT_BOOT_FS boot_fs)
 add_subdirectory_ifdef(CONFIG_TT_FWUPDATE fwupdate)

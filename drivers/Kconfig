@@ -3,4 +3,5 @@
 
 rsource "jtag/Kconfig"
 rsource "i2c/Kconfig"
+rsource "reset/Kconfig"
 rsource "smbus/Kconfig"

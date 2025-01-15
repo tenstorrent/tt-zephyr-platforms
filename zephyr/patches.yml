@@ -5,7 +5,7 @@ patches:
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
     date: 2024-07-25
-    upstreamable: False
+    upstreamable: false
     comments: |
       It's unlikely that we will upstream this patch unless we want to put our
       board definitions in Zephyr's main repo. It's something we can revisit at a
@@ -35,3 +35,12 @@ patches:
     date: 2024-10-10
     comments: |
       This patch moves BSS and noinit sections to the end.
+  - path: zephyr/check-compliance.patch
+    sha256sum: fec06dc633a7e7fd9c4e45cf9f3805a7e11fd7d54646a8e7bc2eb93e2d52d530
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-01-15
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84054
+    comments: |
+      Fix upstream check_compliance.py to be usable by other modules.
