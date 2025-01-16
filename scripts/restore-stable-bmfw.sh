@@ -48,6 +48,13 @@ if [ "$BOARD" = "" ]; then
   exit 1
 fi
 
+if [ "$BH_FW_DIR" = "" ]; then
+  echo "ERROR: BH_FW_DIR must be set to flash BMC FW back to main"
+  exit 1
+fi
+
+hw_id=$(${BH_FW_DIR}/scripts/get-board-id /opt/tenstorrent/twister/hw-map.yml ${BOARD})
+
 if [ ! -d "/opt/tenstorrent/fw/stable/${BOARD}" ]; then
   echo "Skipping restore, since /opt/tenstorrent/fw/stable/${BOARD} does not exist"
   exit 0
@@ -55,5 +62,5 @@ fi
 
 # Restore known-good firmware to the BMC, so the device re-enumerates on the PCIe bus.
 pciremove
-west flash --skip-rebuild -d "/opt/tenstorrent/fw/stable/${BOARD}"
+west flash --skip-rebuild --dev-id "${hw_id}" -d "/opt/tenstorrent/fw/stable/${BOARD}"
 pcirescan

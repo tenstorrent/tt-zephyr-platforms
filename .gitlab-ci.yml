@@ -6,14 +6,14 @@ build-bmc:
   script: |
     west build --sysbuild -p -b tt_blackhole/tt_blackhole/bmc ../modules/tt-zephyr-platforms/app/bmc
   tags:
-  - syseng-core-8
+    - syseng-core-8
 
 build-smc:
   extends: .west
   script: |
     west build -p -b tt_blackhole/tt_blackhole/smc ../modules/tt-zephyr-platforms/app/smc
   tags:
-  - syseng-core-8
+    - syseng-core-8
 
 run-tests-in-qemu:
   extends: .twister
@@ -27,8 +27,10 @@ run-tests-in-qemu:
 run-bmc-tests:
   extends: .twister
   variables:
-    # below, BOARD refers to a directory name which cannot contain the '/' character (weird quirk of HWMv2 naming and output directories)
+    # below, BOARD refers to a directory name which cannot contain the '/'
+    # character (weird quirk of HWMv2 naming and output directories)
     BOARD: 'tt_blackhole_tt_blackhole_bmc'
+    BH_FW_DIR: "${WEST_WORKSPACE}/modules/${CI_PROJECT_NAME}"
     AFTER_SCRIPT: "${WEST_WORKSPACE}/modules/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
   script: |
     # This needs to be added to the gitlab runner
