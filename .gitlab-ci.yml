@@ -42,14 +42,12 @@ run-bmc-tests:
     # 1. build, flash & run the hello world app
     # 2. perform a full bootloader + fw flash
     # 3. perform a fw update via mcuboot
-    twister \
-      -i \
-      --retry-failed 3 \
-      -p tt_blackhole/tt_blackhole/bmc \
-      --device-testing --west-flash --flash-before --west-runner jlink \
-      --device-serial-pty rtt \
+    ./scripts/twister -i --retry-failed 3 \
+      -p tt_blackhole/tt_blackhole/bmc --device-testing \
+      --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
       -s samples/hello_world/sample.basic.helloworld.rtt \
       -s tests/boot/test_mcuboot/bootloader.mcuboot.rtt
+
   tags:
     - cf-syseng-scrappy
 

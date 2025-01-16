@@ -11,7 +11,7 @@ patches:
       board definitions in Zephyr's main repo. It's something we can revisit at a
       later date.
   - path: zephyr/twister-rtt-support.patch
-    sha256sum: c61b13da7ec8dffd018653eafb8fd67a39cc9a5b024008dea740d06e9d8113bd
+    sha256sum: fbe5d5eb294b6e3a0a2a021239c92fbf962d36b822458200a64d7ca959f716c9
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
