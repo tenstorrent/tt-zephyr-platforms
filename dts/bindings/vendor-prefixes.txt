@@ -11,6 +11,5 @@
 # <vendor-prefix><TAB><Full name of vendor>
 
 # zephyr-keep-sorted-start
-moortec	Moortec Semiconductor Ltd.
-tenstorrent	Tenstorrent Inc.
+tenstorrent	Tenstorrent AI ULC
 # zephyr-keep-sorted-stop
