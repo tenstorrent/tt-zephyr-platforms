@@ -77,7 +77,7 @@ TODO: enable app debug logs
 **Build and run tests on hardware with `twister`**
 ```shell
 twister -i -p $BOARD --device-testing --west-flash \
-  --device-serial-pty=scripts/rtt.py --west-runner jlink \
+  --device-serial-pty rtt --west-runner jlink \
   -s samples/hello_world/sample.basic.helloworld.rtt \
   -s tests/boot/test_mcuboot/bootloader.mcuboot.rtt
 ```
