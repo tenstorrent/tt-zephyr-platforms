@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_JTAG_BOOTROM_AXI_H_
+#define TENSTORRENT_JTAG_BOOTROM_AXI_H_
 
 #include <zephyr/sys/util.h>
 
@@ -14,3 +15,5 @@
 #define ARC_AXI_ADDR_TDR           (2)
 #define ARC_AXI_DATA_TDR           (3)
 #define ARC_AXI_CONTROL_STATUS_TDR (4)
+
+#endif

@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef SOC_TENSTORRENT_TT_BLACKHOLE_SOC_H_
+#define SOC_TENSTORRENT_TT_BLACKHOLE_SOC_H_
 
 /*
  * Note: this file is needed because zephyr/drivers/interrupt_controller/intc_dw.c unconditionally
@@ -25,5 +26,7 @@
 #define DT_N_S_ictl_800d0000_IRQ_IDX_0_VAL_sense 0
 #define DT_N_S_ictl_800e0000_IRQ_IDX_0_VAL_sense 0
 #define DT_N_S_ictl_800f0000_IRQ_IDX_0_VAL_sense 0
+
+#endif
 
 #endif

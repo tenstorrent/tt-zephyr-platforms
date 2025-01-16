@@ -4,7 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_MSG_TYPE_H_
+#define TENSTORRENT_MSG_TYPE_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum msg_type {
   MSG_TYPE_RESERVED_01                     = 0x1,    // reserved to avoid conflict with initial SCRATCH[5] value
@@ -78,3 +83,9 @@ enum msg_type {
   MSG_TYPE_SET_LAST_SERIAL                 = 0xBE,
   MSG_TYPE_EFUSE_BURN                      = 0xBF,
 };
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

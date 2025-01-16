@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2024 Tenstorrent, Inc.
+ * Copyright (c) 2024 Tenstorrent AI ULC
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_POST_CODE_H_
+#define TENSTORRENT_POST_CODE_H_
 
 #include <stdint.h>
 
@@ -35,4 +36,14 @@
 #define POST_CODE_ARG_MSG_QUEUE(i) (POST_CODE_ARG_MSG_QUEUE_START + (i))
 #define POST_CODE_ARC_MSG_HANDLE_DONE 0x3F
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void SetPostCode(uint8_t fw_id, uint16_t post_code);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_FWUPDATE_H_
+#define TENSTORRENT_FWUPDATE_H_
 
 #include <stdbool.h>
 
@@ -96,4 +97,6 @@ int tt_fwupdate_create_test_fs(const char *tag);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

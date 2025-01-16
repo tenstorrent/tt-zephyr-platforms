@@ -5,7 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef SOC_TENSTORRENT_TT_BLACKHOLE_SOC_CTRL_H_
+#define SOC_TENSTORRENT_TT_BLACKHOLE_SOC_CTRL_H_
 
 #if defined(CONFIG_ARC)
 #ifdef _ASMLANGUAGE
@@ -14,4 +15,6 @@
 	sr   r0, [_ARC_V2_LPB_CTRL]
 .endm
 #endif /* _ASMLANGUAGE */
+#endif
+
 #endif

@@ -4,13 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_JTAG_BOOTROM_H_
+#define TENSTORRENT_JTAG_BOOTROM_H_
 
 #include <stddef.h>
 #include <stdint.h>
 
 #include <zephyr/sys/util.h>
 #include <zephyr/spinlock.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 const uint8_t *get_bootcode(void);
 const size_t get_bootcode_len(void);
@@ -40,3 +45,9 @@ void handled_arc_reset(void);
 /* for verification via gpio-emul */
 void jtag_bootrom_emul_setup(const uint32_t *buf, size_t buf_len);
 int jtag_bootrom_emul_axiread(uint32_t addr, uint32_t *value);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

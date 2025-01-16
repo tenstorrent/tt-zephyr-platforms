@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#ifndef TENSTORRENT_MSGQUEUE_H_
+#define TENSTORRENT_MSGQUEUE_H_
 
 #include <stdint.h>
+
 #include <zephyr/sys/iterable_sections.h>
 
 #define NUM_MSG_QUEUES         4
@@ -21,6 +23,10 @@
 
 #define MESSAGE_QUEUE_STATUS_MESSAGE_RECOGNIZED 0xff
 #define MESSAGE_QUEUE_STATUS_SCRATCH_ONLY       0xfe
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct message_queue_header {
 	// 16B for CPU writes, ARC reads
@@ -65,3 +71,9 @@ int msgqueue_request_pop(uint32_t msgqueue_id, struct request *request);
 int msgqueue_response_push(uint32_t msgqueue_id, const struct response *response);
 int msgqueue_response_pop(uint32_t msgqueue_id, struct response *response);
 void init_msgqueue();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
