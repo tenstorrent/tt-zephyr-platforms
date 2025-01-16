@@ -42,7 +42,7 @@
 
 		presettrigger0: preset_trigger {
 			label = "PRESET trigger";
-			gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+			gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		};
 
 		i2c_scl: i2cscl {
