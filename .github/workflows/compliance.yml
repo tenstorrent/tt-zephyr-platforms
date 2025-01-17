@@ -92,7 +92,6 @@ jobs:
         export ZEPHYR_BASE=$PWD/zephyr
         cd tt-zephyr-platforms
         west -v patch apply
-        git log  --pretty=oneline | head -n 10
         # Increase rename limit to allow for large PRs
         git config diff.renameLimit 10000
         $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e Kconfig \
