@@ -53,6 +53,32 @@ run-bmc-tests:
   tags:
     - cf-syseng-scrappy
 
+run-smc-tests:
+  extends: .twister
+  variables:
+    # Since the SMC test run from RAM, we can simply restore the BMFW here,
+    # this will reset the SMC and cause it to load the known good FW on the SPI
+    # flash.
+    BOARD: 'tt_blackhole_tt_blackhole_bmc'
+    BH_FW_DIR: "${WEST_WORKSPACE}/modules/${CI_PROJECT_NAME}"
+    AFTER_SCRIPT: "${WEST_WORKSPACE}/modules/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
+  script: |
+    # This needs to be added to the gitlab runner
+
+    # The '-q' argument to west (which '--device-serial-pty rtt' depends on) was only added to west
+    # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
+    pip install west -U &>/dev/null
+
+    # Ensure that scrappy can
+    # 1. build, flash & run the hello world app
+    ./scripts/twister -i --retry-failed 3 \
+      -p tt_blackhole/tt_blackhole/smc --device-testing \
+      --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+      -s samples/hello_world/sample.basic.helloworld.rtt \
+
+  tags:
+    - cf-syseng-scrappy
+
 # Build and run existing testsuites using Python and pytest
 #
 # In these cases, we are testing that drivers and hardware behave in a manner
