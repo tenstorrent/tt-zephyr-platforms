@@ -91,7 +91,7 @@ jobs:
       run: |
         export ZEPHYR_BASE=$PWD/zephyr
         cd tt-zephyr-platforms
-        west patch apply
+        west -v patch apply
         git log  --pretty=oneline | head -n 10
         # Increase rename limit to allow for large PRs
         git config diff.renameLimit 10000
