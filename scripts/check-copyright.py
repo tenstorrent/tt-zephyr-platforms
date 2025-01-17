@@ -92,7 +92,7 @@ for path in PATHS:
                         other_copyrights += 1
 
             if not found:
-                print(f"Error: {filename} does not have any copyright")
+                print(f"::error file={filename},line=1::missing copyright")
                 error_count += 1
                 no_copyrights += 1
 
