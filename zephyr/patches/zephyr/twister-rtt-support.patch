@@ -397,7 +397,7 @@ Date:   Sun Nov 24 12:24:18 2024 -0500
     Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
 
 diff --git a/scripts/west_commands/runners/openocd.py b/scripts/west_commands/runners/openocd.py
-index 9b39791e1ee..a6755f535ae 100644
+index d97cec1fe1e..e8905765bd3 100644
 --- a/scripts/west_commands/runners/openocd.py
 +++ b/scripts/west_commands/runners/openocd.py
 @@ -54,7 +54,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
@@ -406,33 +406,37 @@ index 9b39791e1ee..a6755f535ae 100644
                   target_handle=DEFAULT_OPENOCD_TARGET_HANDLE,
 -                 rtt_port=DEFAULT_OPENOCD_RTT_PORT):
 +                 rtt_port=DEFAULT_OPENOCD_RTT_PORT,
-+                 rtt_quiet=False):
++                 rtt_quiet=False, rtt_no_reset=False):
          super().__init__(cfg)
 
          if not path.exists(cfg.board_dir):
-@@ -113,6 +114,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -113,6 +114,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
          self.load_arg = [] if no_load else ['-ex', 'load']
          self.target_handle = target_handle
          self.rtt_port = rtt_port
 +        self.rtt_quiet = rtt_quiet
++        self.rtt_no_reset = rtt_no_reset
 
      @classmethod
      def name(cls):
-@@ -184,6 +186,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -184,6 +187,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
                              ''')
          parser.add_argument('--rtt-port', default=DEFAULT_OPENOCD_RTT_PORT,
                              help='openocd rtt port, defaults to 5555')
 +        parser.add_argument('--rtt-quiet', action='store_true',
 +                            help='only output rtt to stdout, not that of subprocesses')
++        parser.add_argument('--rtt-no-reset', action='store_true',
++                            help='skip reset when configuring rtt')
 
 
      @classmethod
-@@ -200,9 +204,12 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -200,9 +207,13 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
              telnet_port=args.telnet_port, gdb_port=args.gdb_port,
              gdb_client_port=args.gdb_client_port, gdb_init=args.gdb_init,
              no_load=args.no_load, target_handle=args.target_handle,
 -            rtt_port=args.rtt_port)
-+            rtt_port=args.rtt_port, rtt_quiet=args.rtt_quiet)
++            rtt_port=args.rtt_port, rtt_quiet=args.rtt_quiet,
++            rtt_no_reset=args.rtt_no_reset)
 
      def print_gdbserver_message(self):
 +        if self.rtt_quiet:
@@ -441,7 +445,7 @@ index 9b39791e1ee..a6755f535ae 100644
          if not self.thread_info_enabled:
              thread_msg = '; no thread info available'
          elif self.supports_thread_info():
-@@ -213,6 +220,9 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -213,6 +224,9 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
                           f'{self.gdb_port}{thread_msg}')
 
      def print_rttserver_message(self):
@@ -451,7 +455,19 @@ index 9b39791e1ee..a6755f535ae 100644
          self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
 
      def read_version(self):
-@@ -398,11 +403,14 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -385,7 +399,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+             # start the internal openocd rtt service via gdb monitor commands
+             gdb_cmd.extend(
+                 ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])
+-            gdb_cmd.extend(['-ex', 'monitor reset run'])
++            if self.rtt_no_reset:
++                gdb_cmd.extend(['-ex', 'monitor resume'])
++            else:
++                gdb_cmd.extend(['-ex', 'monitor reset run'])
+             gdb_cmd.extend(['-ex', 'monitor rtt start'])
+             gdb_cmd.extend(
+                 ['-ex', f'monitor rtt server start {self.rtt_port} 0'])
+@@ -403,11 +420,14 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
                  server_proc.terminate()
                  server_proc.wait()
          elif command == 'rtt':
