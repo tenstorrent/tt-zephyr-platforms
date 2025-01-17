@@ -44,7 +44,7 @@ index d771d93f35e..22944c4e665 100644
          # if we specify a test scenario which is part of a suite directly, do
          # not set testsuite root to default, just point to the test directory
 diff --git a/scripts/pylib/twister/twisterlib/handlers.py b/scripts/pylib/twister/twisterlib/handlers.py
-index eb7d90ddd3e..31a567a8408 100755
+index eb7d90ddd3e..9c27e41a6f9 100755
 --- a/scripts/pylib/twister/twisterlib/handlers.py
 +++ b/scripts/pylib/twister/twisterlib/handlers.py
 @@ -16,6 +16,7 @@ import re
@@ -67,7 +67,7 @@ index eb7d90ddd3e..31a567a8408 100755
              command_extra_args = []
 
              # There are three ways this option is used.
-@@ -706,6 +707,22 @@ class DeviceHandler(Handler):
+@@ -706,6 +707,27 @@ class DeviceHandler(Handler):
 
          return serial_device, ser_pty_process
 
@@ -78,7 +78,12 @@ index eb7d90ddd3e..31a567a8408 100755
 +        rtt_cmd = self._create_command(rtt_cmd, runner, hardware)
 +
 +        with open(serial_pty, 'w') as f:
-+            f.write(f"#!/bin/sh\n{' '.join(rtt_cmd)}\n")
++            f.write("#!/bin/sh\n");
++            for cmd in rtt_cmd:
++                if " " in cmd:
++                    f.write(f"'{cmd}' ")
++                else:
++                    f.write(f"{cmd} ")
 +
 +        st = os.stat(serial_pty)
 +        os.chmod(serial_pty, st.st_mode | stat.S_IEXEC)
@@ -90,7 +95,7 @@ index eb7d90ddd3e..31a567a8408 100755
      def handle(self, harness):
          runner = None
          hardware = self.get_hardware()
-@@ -717,11 +734,17 @@ class DeviceHandler(Handler):
+@@ -717,11 +739,17 @@ class DeviceHandler(Handler):
          runner = hardware.runner or self.options.west_runner
          serial_pty = hardware.serial_pty
 
@@ -111,7 +116,7 @@ index eb7d90ddd3e..31a567a8408 100755
 
          pre_script = hardware.pre_script
          post_flash_script = hardware.post_flash_script
-@@ -738,28 +761,27 @@ class DeviceHandler(Handler):
+@@ -738,28 +766,27 @@ class DeviceHandler(Handler):
          if hardware.flash_with_test:
              flash_timeout += self.get_test_timeout()
 
@@ -159,7 +164,7 @@ index eb7d90ddd3e..31a567a8408 100755
 
          d_log = f"{self.instance.build_dir}/device.log"
          logger.debug(f'Flash command: {command}', )
-@@ -778,7 +800,8 @@ class DeviceHandler(Handler):
+@@ -778,7 +805,8 @@ class DeviceHandler(Handler):
                          flash_error = True
                          with open(d_log, "w") as dlog_fp:
                              dlog_fp.write(stderr.decode())
@@ -169,7 +174,7 @@ index eb7d90ddd3e..31a567a8408 100755
                  except subprocess.TimeoutExpired:
                      logger.warning("Flash operation timed out.")
                      self.terminate(proc)
-@@ -791,7 +814,8 @@ class DeviceHandler(Handler):
+@@ -791,7 +819,8 @@ class DeviceHandler(Handler):
                  dlog_fp.write(stderr.decode())
 
          except subprocess.CalledProcessError:
@@ -179,7 +184,7 @@ index eb7d90ddd3e..31a567a8408 100755
              self.instance.status = TwisterStatus.ERROR
              self.instance.reason = "Device issue (Flash error)"
              flash_error = True
-@@ -802,26 +826,43 @@ class DeviceHandler(Handler):
+@@ -802,26 +831,43 @@ class DeviceHandler(Handler):
                  timeout = script_param.get("post_flash_timeout", timeout)
              self.run_custom_script(post_flash_script, timeout)
 
