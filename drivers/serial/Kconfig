@@ -1,0 +1,12 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Serial drivers"
+
+if SERIAL
+
+rsource "Kconfig.tt_virt"
+
+endif
+
+endmenu
