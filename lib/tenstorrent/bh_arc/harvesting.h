@@ -1,9 +1,19 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef HARVESTING_H
 #define HARVESTING_H
 
 #include <stdint.h>
 #include <stdbool.h>
 #include "spirom_protobufs/fw_table.pb.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   uint16_t tensix_col_enabled; // Bitmap 0-13
@@ -21,5 +31,9 @@ typedef struct {
 extern TileEnable tile_enable;
 
 void CalculateHarvesting(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

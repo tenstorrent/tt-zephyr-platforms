@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef FUNCTIONAL_EFUSE_H
 #define FUNCTIONAL_EFUSE_H
 
@@ -70,6 +76,14 @@
             ZERO_OR_COMPILE_ERROR(FUSE_##fuse_name##_END_BIT - FUSE_##fuse_name##_START_BIT < 32) + \
             ReadFunctionalEfuse(FUSE_##fuse_name##_START_BIT, FUSE_##fuse_name##_END_BIT))
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 uint32_t ReadFunctionalEfuse(uint32_t start_bit, uint32_t end_bit);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
