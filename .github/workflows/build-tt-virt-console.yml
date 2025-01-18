@@ -1,0 +1,16 @@
+name: Build tt-virt-console
+
+on: [pull_request]
+
+jobs:
+  tt_virt_console_job:
+    runs-on: ubuntu-22.04
+    name: Build tt-virt-console
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Run the script
+      run: |
+        g++ -std=c++14 -o bh-arc-console scripts/uart-tt-virt-console/console.cpp
