@@ -1,0 +1,49 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	aliases {
+#if 0
+		/* potentially for later consideration */
+		mcuboot-button0 = &button1;
+		mcuboot-led0 = &blue_led;
+#endif
+	};
+
+	jtag0 {
+		compatible = "zephyr,jtag-gpio";
+		status = "okay";
+		tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
+		tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpiob 1 GPIO_PULL_UP>;
+		tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+		port-write-cycles = <2>;
+	};
+
+};
+
+&spi1 {
+	flash1: flash@0 {
+		/* base properties */
+		compatible = "micron,mt25qu512", "jedec,spi-nor";
+
+		jedec-id = [20 bb 20];
+	};
+};
+
+&flash0 {
+	partitions {
+		slot0_partition: partition@c000 {
+			label = "image-0";
+			reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
+		};
+
+		slot1_partition: partition@46000 {
+			label = "image-1";
+			reg = <0x00046000 (DT_SIZE_K(230))>;
+		};
+	};
+};

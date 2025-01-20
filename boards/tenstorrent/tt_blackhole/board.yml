@@ -2,5 +2,12 @@ boards:
 - name: tt_blackhole
   full_name: Tenstorrent Blackhole board
   vendor: tenstorrent
+  revision:
+    format: number
+    default: "100"
+    exact: true
+    revisions:
+      - name: "100"
+      - name: "150"
   socs:
     - name: tt_blackhole
