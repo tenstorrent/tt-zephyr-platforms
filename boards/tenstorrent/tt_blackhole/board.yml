@@ -3,11 +3,10 @@ boards:
   full_name: Tenstorrent Blackhole board
   vendor: tenstorrent
   revision:
-    format: number
-    default: "100"
-    exact: true
+    format: custom
+    default: "p100"
     revisions:
-      - name: "100"
-      - name: "150"
+      - name: "p100"
+      - name: "p150"
   socs:
     - name: tt_blackhole
