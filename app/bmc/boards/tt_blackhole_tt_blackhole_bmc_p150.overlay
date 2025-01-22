@@ -5,14 +5,6 @@
  */
 
 / {
-	aliases {
-#if 0
-		/* potentially for later consideration */
-		mcuboot-button0 = &button1;
-		mcuboot-led0 = &blue_led;
-#endif
-	};
-
 	jtag0 {
 		compatible = "zephyr,jtag-gpio";
 		status = "okay";
@@ -22,7 +14,6 @@
 		tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
 		port-write-cycles = <2>;
 	};
-
 };
 
 &spi1 {

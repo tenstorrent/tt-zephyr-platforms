@@ -6,7 +6,7 @@ boards:
     format: custom
     default: "p100"
     revisions:
-      - name: "p100"
-      - name: "p150"
+    - name: "p100"
+    - name: "p150"
   socs:
-    - name: tt_blackhole
+  - name: tt_blackhole
