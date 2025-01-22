@@ -18,6 +18,7 @@
 #include "telemetry.h"
 #include "smbus_target.h"
 #include "dvfs.h"
+#include "fan_ctrl.h"
 #include "fw_table.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
@@ -39,6 +40,7 @@ int main(void)
 
 	init_msgqueue();
 	init_telemetry();
+	init_fan_ctrl();
 
 	/* These timers are split out from their init functions since their work tasks have i2c
 	 * conflicts with other init functions

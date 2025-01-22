@@ -104,6 +104,15 @@ void ChipResetRequest(void *arg)
 	IssueChipReset(0);
 }
 
+void UpdateFanSpeedRequest(uint32_t fan_speed)
+{
+	Cm2BmMsg msg = {
+		.msg_id = kCm2BmMsgIdFanSpeedUpdate,
+		.data = fan_speed,
+	};
+	EnqueueCm2BmMsg(&msg);
+}
+
 /* Report the current message and automatically acknowledge it. */
 int32_t ResetBoardByte(uint8_t *data, uint8_t size)
 {

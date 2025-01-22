@@ -11,6 +11,7 @@
 typedef enum {
 	kCm2BmMsgIdNull = 0,
 	kCm2BmMsgIdResetReq = 1,
+	kCm2BmMsgIdFanSpeedUpdate = 2,
 } Cm2BmMsgId;
 
 typedef struct {
@@ -35,6 +36,7 @@ int32_t Cm2BmMsgAckSmbusHandler(const uint8_t *data, uint8_t size);
 int32_t ResetBoardByte(uint8_t *data, uint8_t size);
 
 void ChipResetRequest(void *arg);
+void UpdateFanSpeedRequest(uint32_t fan_speed);
 
 typedef struct bmStaticInfo {
 	/* Non-zero for valid data */

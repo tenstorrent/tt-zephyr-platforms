@@ -149,12 +149,6 @@ int main(void)
 			LOG_ERR("%s() failed: %d", "init_fan", ret);
 			return ret;
 		}
-
-		ret = set_fan_speed(100);
-		if (ret != 0) {
-			LOG_ERR("%s() failed: %d", "set_fan_speed", ret);
-			return ret;
-		}
 	}
 
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {

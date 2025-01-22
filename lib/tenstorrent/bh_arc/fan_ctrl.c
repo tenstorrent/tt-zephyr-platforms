@@ -6,58 +6,109 @@
 
 #include "fan_ctrl.h"
 
-#include "timer.h"
+#include "cm2bm_msg.h"
 #include "dw_apb_i2c.h"
+#include "fw_table.h"
+#include "reg.h"
+#include "telemetry_internal.h"
+#include "telemetry.h"
+#include "timer.h"
 
-#define FAN_CTRL_ADDR   0x2C
-#define FAN_CTRL_MST_ID 2
+#include <zephyr/kernel.h>
+#include <tenstorrent/msgqueue.h>
+#include <tenstorrent/msg_type.h>
 
-/* fan controller commands */
-#define FAN1_CONFIG_1           0x10
-#define FAN1_CONFIG_2A          0x11
-#define FAN1_CONFIG_3           0x13
-#define FAN1_DUTY_CYCLE         0x26
-#define FAN_CTRL_CMD_BYTE_SIZE  1
-#define FAN_CTRL_DATA_BYTE_SIZE 1
+static struct k_timer fan_ctrl_update_timer;
+static struct k_work fan_ctrl_update_worker;
+static int fan_ctrl_update_interval = 5000;
 
-/* The fan controller is MAX6639. It controlls 2 fans, only the first fan is intended to be used. */
-/* The first fan is configured as a 4-wire fan with PWM speed-control input. */
-/* The maximum PMBus clock freq is 100kHz. */
-void FanCtrlInit(void)
+uint32_t fan_table_x1;
+uint32_t fan_table_x2;
+uint32_t fan_table_y1;
+uint32_t fan_table_y2;
+
+uint32_t fan_speed;
+
+float asic_temp;
+float alpha = 0.5; /* TODO: what value of alpha to use? */
+
+static void update_fan_speed(void)
 {
-	I2CInit(I2CMst, FAN_CTRL_ADDR, I2CStandardMode, FAN_CTRL_MST_ID);
-	uint8_t fan_control = 0x2; /* use positive polarity */
+	TelemetryInternalData telemetry_internal_data;
 
-	I2CWriteBytes(FAN_CTRL_MST_ID, FAN1_CONFIG_2A, FAN_CTRL_CMD_BYTE_SIZE, &fan_control,
-		      FAN_CTRL_DATA_BYTE_SIZE);
-	fan_control = 0x83; /* enable PWM manual mode, RPM to max */
-	I2CWriteBytes(FAN_CTRL_MST_ID, FAN1_CONFIG_1, FAN_CTRL_CMD_BYTE_SIZE, &fan_control,
-		      FAN_CTRL_DATA_BYTE_SIZE);
-	fan_control =
-		0x23; /* disable pulse stretching, deassert THERM, set PWM frequency to high */
-	I2CWriteBytes(FAN_CTRL_MST_ID, FAN1_CONFIG_3, FAN_CTRL_CMD_BYTE_SIZE, &fan_control,
-		      FAN_CTRL_DATA_BYTE_SIZE);
-	SetFanSpeed(100);
+	ReadTelemetryInternal(1, &telemetry_internal_data);
+	asic_temp = alpha * telemetry_internal_data.asic_temperature +
+			(1 - alpha) * asic_temp;
+
+	fan_speed = ((fan_table_y2 - fan_table_y1) /
+		(float) (fan_table_x2 - fan_table_x1)) * asic_temp + fan_table_y1;
+	if (fan_speed < fan_table_y1) {
+		fan_speed = fan_table_y1;
+	}
+	if (fan_speed > fan_table_y2) {
+		fan_speed = fan_table_y2;
+	}
+
+	/* Send fan speed to BMFW */
+	UpdateFanSpeedRequest(fan_speed);
 }
 
-/* speed is between 0 to 100 */
-void SetFanSpeed(uint8_t speed)
+static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
+			       struct response *response)
 {
-	I2CInit(I2CMst, FAN_CTRL_ADDR, I2CStandardMode, FAN_CTRL_MST_ID);
-	uint8_t pwm_setting = speed * 1.2; /* fan controller pwm has 120 time slots */
-
-	I2CWriteBytes(FAN_CTRL_MST_ID, FAN1_DUTY_CYCLE, FAN_CTRL_CMD_BYTE_SIZE, &pwm_setting,
-		      FAN_CTRL_DATA_BYTE_SIZE);
+	if (request->data[1] == 0xFFFFFFFF) { /* unforce */
+		k_timer_start(&fan_ctrl_update_timer,
+			      K_MSEC(fan_ctrl_update_interval),
+			      K_MSEC(fan_ctrl_update_interval));
+	} else { /* force */
+		k_timer_stop(&fan_ctrl_update_timer);
+		fan_speed = request->data[1];
+		UpdateFanSpeedRequest(fan_speed);
+	}
+	return 0;
 }
 
-uint8_t GetFanSpeed(void)
+uint32_t GetFanSpeed(void)
 {
-	I2CInit(I2CMst, FAN_CTRL_ADDR, I2CStandardMode, FAN_CTRL_MST_ID);
-	uint8_t pwm_setting;
-
-	I2CReadBytes(FAN_CTRL_MST_ID, FAN1_DUTY_CYCLE, FAN_CTRL_CMD_BYTE_SIZE, &pwm_setting,
-		     FAN_CTRL_DATA_BYTE_SIZE, 0);
-	uint8_t fan_speed = pwm_setting / 1.2; /* convert from pwm setting to fan speed */
-
 	return fan_speed;
 }
+
+static void fan_ctrl_work_handler(struct k_work *work)
+{
+	/* do the processing that needs to be done periodically */
+	update_fan_speed();
+}
+static K_WORK_DEFINE(fan_ctrl_update_worker, fan_ctrl_work_handler);
+
+static void fan_ctrl_timer_handler(struct k_timer *timer)
+{
+	k_work_submit(&fan_ctrl_update_worker);
+}
+static K_TIMER_DEFINE(fan_ctrl_update_timer, fan_ctrl_timer_handler, NULL);
+
+void init_fan_ctrl(void)
+{
+	/* Get fan table */
+	fan_table_x1 = get_fw_table()->fan_table.fan_table_point_x1;
+	fan_table_x2 = get_fw_table()->fan_table.fan_table_point_x2;
+	fan_table_y1 = get_fw_table()->fan_table.fan_table_point_y1;
+	fan_table_y2 = get_fw_table()->fan_table.fan_table_point_y2;
+
+	/* Don't let fan speed default to 0 if fan table uninitialized */
+	if (fan_table_y1 == 0 && fan_table_y2 == 0) {
+		fan_table_y1 = 100;
+		fan_table_y2 = 100;
+	}
+
+	/* Get initial asic temp */
+	TelemetryInternalData telemetry_internal_data;
+
+	ReadTelemetryInternal(1, &telemetry_internal_data);
+	asic_temp = telemetry_internal_data.asic_temperature;
+
+	/* start a periodic timer that expires once every fan_ctrl_update_interval */
+	k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
+		      K_MSEC(fan_ctrl_update_interval));
+}
+
+REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
