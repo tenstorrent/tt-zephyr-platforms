@@ -6,6 +6,7 @@
 
 #include <zephyr/kernel.h>
 
+#include "avs.h"
 #include "telemetry_internal.h"
 #include "pvt.h"
 #include "regulator.h"
@@ -26,8 +27,9 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data) {
   int64_t reftime = last_update_time;
   if (k_uptime_delta(&reftime) >= max_staleness) {
     // Get all dynamically updated values
-    internal_data.vcore_power = GetVcorePower();
-    internal_data.vcore_current = GetVcoreCurrent();
+    internal_data.vcore_voltage = GetVoltage(P0V8_VCORE_ADDR);
+    AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
+    internal_data.vcore_power = internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
     internal_data.asic_temperature = GetAvgChipTemp();
 
     // reftime was updated to the current uptime by the k_uptime_delta() call

@@ -181,11 +181,12 @@ AVSStatus AVSWriteVoutTransRate(uint8_t rise_rate, uint8_t fall_rate, uint8_t ra
   return ReadRxFifo(NULL);
 }
 
-AVSStatus AVSReadCurrent(uint8_t rail_sel, uint32_t *current_in_mA) {
+// Returns current in A
+AVSStatus AVSReadCurrent(uint8_t rail_sel, float *current_in_A) {
   SendCmd(AVS_RD_CMD_DATA, rail_sel, AVS_CMD_CURRENT_READ, AVSRead);
   uint16_t current_in_10mA;
   AVSStatus status = ReadRxFifo(&current_in_10mA);
-  *current_in_mA = current_in_10mA * 10;
+  *current_in_A = current_in_10mA * 0.01f;
   return status;
 }
 

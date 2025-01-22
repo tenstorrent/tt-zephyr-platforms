@@ -36,6 +36,9 @@
 #define POST_CODE_ARG_MSG_QUEUE(i) (POST_CODE_ARG_MSG_QUEUE_START + (i))
 #define POST_CODE_ARC_MSG_HANDLE_DONE 0x3F
 
+#define POST_CODE_TELEMETRY_START 0x40
+#define POST_CODE_TELEMETRY_END   0x41
+
 #ifdef __cplusplus
 extern "C" {
 #endif

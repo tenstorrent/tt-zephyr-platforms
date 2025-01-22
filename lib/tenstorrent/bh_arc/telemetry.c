@@ -24,6 +24,7 @@
 
 #include <zephyr/kernel.h>
 #include <app_version.h>
+#include <tenstorrent/post_code.h>
 
 struct telemetry_entry {
   uint16_t tag;
@@ -94,11 +95,12 @@ static void write_static_telemetry()
 
 static void update_telemetry()
 {
+  SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_START);
   TelemetryInternalData telemetry_internal_data;
   ReadTelemetryInternal(telem_update_interval, &telemetry_internal_data);
 
   // Get all dynamically updated values
-  telemetry[VCORE] = GetVoltage(P0V8_VCORE_ADDR);                                               // reported in mV, will be truncated to uint32_t
+  telemetry[VCORE] = telemetry_internal_data.vcore_voltage;                                     // reported in mV, will be truncated to uint32_t
   telemetry[TDP] = telemetry_internal_data.vcore_power;                                         // reported in W, will be truncated to uint32_t
   telemetry[TDC] = telemetry_internal_data.vcore_current;                                       // reported in A, will be truncated to uint32_t
   telemetry[VDD_LIMITS] = 0x00000000;                                                           // VDD limits - Not Available yet
@@ -118,6 +120,7 @@ static void update_telemetry()
   telemetry[DDR_SPEED] = 0x00000000;                                                             // DDR speed - Not Available yet
   telemetry[FAN_SPEED] = GetFanSpeed();                                                          // Fan speed - reported in percentage
   telemetry[TIMER_HEARTBEAT]++;                                                                  // Incremented every time the timer is called
+  SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }
 
 static void update_tag_table() 

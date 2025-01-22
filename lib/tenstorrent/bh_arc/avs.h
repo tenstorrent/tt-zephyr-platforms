@@ -28,7 +28,7 @@ AVSStatus AVSReadVoltage(uint8_t rail_sel, uint16_t *voltage_in_mV);
 AVSStatus AVSWriteVoltage(uint16_t voltage_in_mV, uint8_t rail_sel);
 AVSStatus AVSReadVoutTransRate(uint8_t rail_sel, uint8_t *rise_rate, uint8_t *fall_rate);
 AVSStatus AVSWriteVoutTransRate(uint8_t rise_rate, uint8_t fall_rate, uint8_t rail_sel);
-AVSStatus AVSReadCurrent(uint8_t rail_sel, uint32_t *current_in_mA);
+AVSStatus AVSReadCurrent(uint8_t rail_sel, float *current_in_A);
 AVSStatus AVSReadTemp(uint8_t rail_sel, float *temp_in_C);
 AVSStatus AVSForceVoltageReset(uint8_t rail_sel);
 AVSStatus AVSReadPowerMode(uint8_t rail_sel, AVSPwrMode *power_mode);

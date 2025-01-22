@@ -45,6 +45,9 @@
 #define PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PORT_LOGIC_SYMBOL_TIMER_FILTER_1_OFF_REG_ADDR      \
   0x0000071C
 #define PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PORT_LOGIC_FILTER_MASK_2_OFF_REG_ADDR 0x00000720
+#define PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES2_REG_REG_ADDR  0x0000009C
+#define PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG_REG_ADDR   \
+  0x000000A0
 
 #define PCIE_SERDES0_ALPHACORE_TLB   0
 #define PCIE_SERDES1_ALPHACORE_TLB   1
@@ -560,6 +563,49 @@ typedef union {
   SERDES_CTRL_PCIE_LANE_OFF_reg_t f;
 } SERDES_CTRL_PCIE_LANE_OFF_reg_u;
 
+typedef struct {
+    uint32_t rsvdp_0 : 1;
+    uint32_t pcie_cap_support_link_speed_vector : 7;
+    uint32_t pcie_cap_cross_link_support : 1;
+    uint32_t rsvdp_9 : 14;
+    uint32_t pcie_cap_retimer_pre_det_support : 1;
+    uint32_t pcie_cap_two_retimers_pre_det_support : 1;
+    uint32_t rsvdp_25 : 6;
+    uint32_t reserved_31_31 : 1;
+} BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES2_REG_reg_t;
+
+typedef union {
+    uint32_t val;
+    BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES2_REG_reg_t f;
+} BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES2_REG_reg_u;
+
+typedef struct {
+    uint32_t pcie_cap_target_link_speed : 4;
+    uint32_t pcie_cap_enter_compliance : 1;
+    uint32_t pcie_cap_hw_auto_speed_disable : 1;
+    uint32_t pcie_cap_sel_deemphasis : 1;
+    uint32_t pcie_cap_tx_margin : 3;
+    uint32_t pcie_cap_enter_modified_compliance : 1;
+    uint32_t pcie_cap_compliance_sos : 1;
+    uint32_t pcie_cap_compliance_preset : 4;
+    uint32_t pcie_cap_curr_deemphasis : 1;
+    uint32_t pcie_cap_eq_cpl : 1;
+    uint32_t pcie_cap_eq_cpl_p1 : 1;
+    uint32_t pcie_cap_eq_cpl_p2 : 1;
+    uint32_t pcie_cap_eq_cpl_p3 : 1;
+    uint32_t pcie_cap_link_eq_req : 1;
+    uint32_t pcie_cap_retimer_pre_det : 1;
+    uint32_t pcie_cap_two_retimers_pre_det : 1;
+    uint32_t pcie_cap_crosslink_resolution : 2;
+    uint32_t rsvdp_26 : 2;
+    uint32_t reserved_28_31 : 4;
+} BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CONTROL2_LINK_STATUS2_REG_reg_t;
+
+typedef union {
+    uint32_t val;
+    BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CONTROL2_LINK_STATUS2_REG_reg_t f;
+} BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CONTROL2_LINK_STATUS2_REG_reg_u;
+
 static inline void WritePcieTlbConfigReg(const uint32_t addr, const uint32_t data) {
   const uint8_t noc_id = 0;
   NOC2AXIWrite32(noc_id, PCIE_TLB_CONFIG_TLB, addr, data);
@@ -715,23 +761,24 @@ static PCIeInitStatus SerdesInit(uint8_t pcie_inst, PCIeDeviceType device_type, 
   return PCIeInitOk;
 }
 
-// TODO: set link speed to SPI max speed
-// static void ForceLinkSpeed() {
-//   BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES2_REG_reg_u link_cap2;
-//   link_cap2.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES2_REG_REG_ADDR);
-//   link_cap2.f.pcie_cap_support_link_speed_vector = 1;
-//   WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES2_REG_REG_ADDR, link_cap2.val);
+static void ForceLinkSpeed(uint8_t max_pcie_speed) {
+  if (max_pcie_speed >= 1 && max_pcie_speed <= 5) {
+    BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES2_REG_reg_u link_cap2;
+    link_cap2.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES2_REG_REG_ADDR);
+    link_cap2.f.pcie_cap_support_link_speed_vector = (1 << max_pcie_speed) - 1;
+    WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES2_REG_REG_ADDR, link_cap2.val);
 
-//   BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES_REG_reg_u link_cap;
-//   link_cap.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES_REG_REG_ADDR);
-//   link_cap.f.pcie_cap_max_link_speed = 1;
-//   WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES_REG_REG_ADDR, link_cap.val);
+    BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES_REG_reg_u link_cap;
+    link_cap.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES_REG_REG_ADDR);
+    link_cap.f.pcie_cap_max_link_speed = max_pcie_speed;
+    WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES_REG_REG_ADDR, link_cap.val);
 
-//   BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CONTROL2_LINK_STATUS2_REG_reg_u link_control2_link_status2;
-//   link_control2_link_status2.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG_REG_ADDR);
-//   link_control2_link_status2.f.pcie_cap_target_link_speed = 1;
-//   WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG_REG_ADDR, link_control2_link_status2.val);
-// }
+    BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CONTROL2_LINK_STATUS2_REG_reg_u link_control2_link_status2;
+    link_control2_link_status2.val = ReadDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG_REG_ADDR);
+    link_control2_link_status2.f.pcie_cap_target_link_speed = max_pcie_speed;
+    WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CONTROL2_LINK_STATUS2_REG_REG_ADDR, link_control2_link_status2.val);
+  }
+}
 
 static void ProgramIatu() {
   // BAR0 iATU programming, map inbound BAR0 access to 0x0, no need to program target addr since default is 0. 
@@ -768,11 +815,10 @@ static void ReducePCIeWidth() {
   WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_LINK_CAPABILITIES_REG_REG_ADDR, link_cap.val);
 }
 
-static void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance) {
+static void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max_pcie_speed) {
   ProgramIatu();
 
-  // TODO: force link speed to SPI max speed
-  // ForceLinkSpeed();
+  ForceLinkSpeed(max_pcie_speed);
 
   // configure BAR0 size to 512MB
   WriteDbiReg(PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_TYPE0_HDR_DBI2_BAR0_MASK_REG_REG_ADDR, 512*1024*1024-1);
@@ -945,7 +991,7 @@ static void SetupSii() {
   WriteSiiReg(PCIE_SII_A_APP_PCIE_CTL_REG_OFFSET, app_pcie_ctl.val);
 }
 
-static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instance, PCIeDeviceType device_type) {
+static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instance, PCIeDeviceType device_type, uint8_t max_pcie_speed) {
   ConfigurePCIeTlbs(pcie_inst);
 
   PCIeInitStatus status = SerdesInit(pcie_inst, device_type, num_serdes_instance);
@@ -953,7 +999,7 @@ static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instanc
     return status;
 
   SetupDbiAccess();
-  CntlInit(pcie_inst, num_serdes_instance);
+  CntlInit(pcie_inst, num_serdes_instance, max_pcie_speed);
 
   SetupSii();
   SetupOutboundTlbs(); // pcie_inst is implied by ConfigurePCIeTlbs
@@ -993,12 +1039,13 @@ static PCIeInitStatus PollForLinkUp(uint8_t pcie_inst) {
 PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_prop_table) {
   uint8_t num_serdes_instance = pci_prop_table->num_serdes;
   PCIeDeviceType device_type = pci_prop_table->pcie_mode - 1; // apply offset to match with definition in pcie.h
+  uint8_t max_pcie_speed = pci_prop_table->max_pcie_speed;
 
   if (device_type == RootComplex) {
     TogglePerst();
   }
 
-  PCIeInitStatus status = PCIeInitComm(pcie_inst, num_serdes_instance, device_type);
+  PCIeInitStatus status = PCIeInitComm(pcie_inst, num_serdes_instance, device_type, max_pcie_speed);
   if (status != PCIeInitOk) {
     return status;
   }
@@ -1013,7 +1060,7 @@ PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_p
 
     // re-initialize PCIe link
     TogglePerst();
-    status = PCIeInitComm(pcie_inst, num_serdes_instance, device_type);
+    status = PCIeInitComm(pcie_inst, num_serdes_instance, device_type, max_pcie_speed);
   }
 
   return status;
