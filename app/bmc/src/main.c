@@ -8,6 +8,7 @@
 
 #include <app_version.h>
 #include <tenstorrent/bist.h>
+#include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/fwupdate.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
@@ -102,6 +103,9 @@ void process_cm2bm_message(struct bh_chip *chip)
 				break;
 			}
 			break;
+		case 0x2:
+			set_fan_speed((uint8_t) message.data & 0xFF);
+			break;
 		}
 	}
 }
@@ -136,6 +140,20 @@ int main(void)
 			LOG_ERR("%s() failed: %d", "tt_bist", bist_rc);
 		} else {
 			LOG_DBG("Built-in self-test succeeded");
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+		ret = init_fan();
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "init_fan", ret);
+			return ret;
+		}
+
+		ret = set_fan_speed(100);
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "set_fan_speed", ret);
+			return ret;
 		}
 	}
 

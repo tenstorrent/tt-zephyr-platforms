@@ -58,5 +58,6 @@ uint8_t GetFanSpeed(void)
 	I2CReadBytes(FAN_CTRL_MST_ID, FAN1_DUTY_CYCLE, FAN_CTRL_CMD_BYTE_SIZE, &pwm_setting,
 		     FAN_CTRL_DATA_BYTE_SIZE, 0);
 	uint8_t fan_speed = pwm_setting / 1.2; /* convert from pwm setting to fan speed */
+
 	return fan_speed;
 }
