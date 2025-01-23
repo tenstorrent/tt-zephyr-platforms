@@ -26,6 +26,7 @@ typedef struct {
 } Cm2BmMsgState;
 
 static Cm2BmMsgState cm2bm_msg_state;
+static bool bmfw_ping_valid;
 K_MSGQ_DEFINE(cm2bm_msg_q, sizeof(Cm2BmMsg), 4, _Alignof(Cm2BmMsg));
 
 int32_t EnqueueCm2BmMsg(const Cm2BmMsg *msg)
@@ -165,6 +166,26 @@ static uint8_t reset_bm_handler(uint32_t msg_code, const struct request *request
 
 REGISTER_MESSAGE(MSG_TYPE_TRIGGER_RESET, reset_bm_handler);
 
+static uint8_t ping_bm_handler(uint32_t msg_code, const struct request *request,
+			       struct response *response)
+{
+	/* Send a ping to the bmfw */
+	Cm2BmMsg msg = {
+		.msg_id = kCm2BmMsgIdPing,
+	};
+
+	bmfw_ping_valid = false;
+	EnqueueCm2BmMsg(&msg);
+	/* Delay to allow BMFW to respond */
+	k_msleep(50);
+
+	/* Encode response from BMFW */
+	response->data[1] = bmfw_ping_valid;
+	return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_PING_BM, ping_bm_handler);
+
 int32_t Bm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 {
 #ifndef CONFIG_TT_SMC_RECOVERY
@@ -181,4 +202,20 @@ int32_t Bm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 #endif
 
 	return -1;
+}
+
+int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size)
+{
+	if (size != 2) {
+		return -1;
+	}
+
+	uint16_t response = *(uint16_t *)data;
+
+	if (response != 0xA5A5) {
+		bmfw_ping_valid = false;
+		return -1;
+	}
+	bmfw_ping_valid = true;
+	return 0;
 }

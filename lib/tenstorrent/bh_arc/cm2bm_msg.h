@@ -12,6 +12,7 @@
 typedef enum {
 	kCm2BmMsgIdNull = 0,
 	kCm2BmMsgIdResetReq = 1,
+	kCm2BmMsgIdPing = 2,
 	kCm2BmMsgIdFanSpeedUpdate = 3,
 } Cm2BmMsgId;
 
@@ -48,5 +49,6 @@ typedef struct bmStaticInfo {
 } __packed bmStaticInfo;
 
 int32_t Bm2CmSendDataHandler(const uint8_t *data, uint8_t size);
+int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size);
 
 #endif
