@@ -5,22 +5,22 @@
  */
 
 / {
-	jtag0 {
-		compatible = "zephyr,jtag-gpio";
-		status = "okay";
-		tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
-		tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
-		tdo-gpios = <&gpiob 1 GPIO_PULL_UP>;
-		tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
-		port-write-cycles = <2>;
-	};
+	model = "Tenstorrent Blackhole board";
+	compatible = "tenstorrent,blackhole";
+};
+
+
+&jtag0 {
+	tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
+	tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+	tdo-gpios = <&gpiob 1 GPIO_PULL_UP>;
+	tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+	trst-gpios = <&gpiod 0 GPIO_ACTIVE_LOW>;
 };
 
 &spi1 {
 	flash1: flash@0 {
-		/* base properties */
 		compatible = "micron,mt25qu512", "jedec,spi-nor";
-
 		jedec-id = [20 bb 20];
 	};
 };
