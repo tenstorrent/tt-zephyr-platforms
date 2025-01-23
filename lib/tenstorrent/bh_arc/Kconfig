@@ -22,3 +22,9 @@ config TT_BH_ARC_NUM_MSG_CODES
 	  The number of message codes
 
 #endif
+
+config TT_SMC_RECOVERY
+	bool "build smc recovery image"
+	default n
+	help
+	  Enable to build smc recovery image.
