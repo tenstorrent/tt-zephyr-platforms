@@ -1,4 +1,4 @@
-# TT-ZEPHYR-PLATFORMS 
+# TT-ZEPHYR-PLATFORMS
 
 [![CI](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml/badge.svg)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/build.yml)
 
@@ -108,6 +108,14 @@ west attach -r openocd --cmd-pre-init "adapter serial $SERIAL"
 TODO: enable app debug logs
 
 TODO: run HW-in-the-loop-tests with `twister`
+
+## Enable Git Hooks for Development
+
+To add git hooks to check your commits and branch prior to pushing to insure
+they do not have any formatting or compliance issues, you can run
+```shell
+tt-zephyr-platforms/scripts/add-git-hooks.sh
+```
 
 ## Further Reading
 
