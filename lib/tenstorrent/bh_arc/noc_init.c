@@ -10,11 +10,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
 #include "noc.h"
 #include "noc2axi.h"
 #include "fw_table.h"
+#include "reg.h"
+#include "harvesting.h"
 
 /* NIU config register indices for Read/WriteNocCfgReg */
 #define NIU_CFG_0			0x0
@@ -428,4 +431,31 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
   struct NocTranslation noc1;
   CopyNoc0ToNoc1(&noc0, &noc1);
   ProgramNocTranslation(&noc1, 1);
+}
+
+void InitNocTranslationFromHarvesting()
+{
+  /* Set up the EP as pcie instance (at 19-24). If there's no EP, it doesn't matter. */
+  unsigned int pcie_instance;
+
+  if (tile_enable.pcie_usage[0] == FwTable_PciPropertyTable_PcieMode_EP) {
+    pcie_instance = 0;
+  } else {
+    pcie_instance = 1;
+  }
+
+  uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
+
+  uint8_t bad_gddr = find_lsb_set(~tile_enable.gddr_enabled);
+  if (bad_gddr == 8) {
+    bad_gddr = NO_BAD_GDDR;
+  }
+
+  /* At least one of 4,5,6 is not enabled. Use the last one not enabled
+     as the one to not skip. Ditto 7,8,9. */
+  uint16_t skip_eth;
+  skip_eth = 1 << (find_msb_set(~tile_enable.eth_enabled & GENMASK(6, 4)) - 1);
+  skip_eth |= 1 << (find_msb_set(~tile_enable.eth_enabled & GENMASK(9, 7)) - 1);
+
+  InitNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
 }
