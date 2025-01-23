@@ -36,7 +36,7 @@ patches:
     comments: |
       This patch moves BSS and noinit sections to the end.
   - path: zephyr/check-compliance.patch
-    sha256sum: fec06dc633a7e7fd9c4e45cf9f3805a7e11fd7d54646a8e7bc2eb93e2d52d530
+    sha256sum: 4b4d4e666c189799c0a82c21c97e6df745489b1cd6c024b55f7aa0bfacc5135c
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
