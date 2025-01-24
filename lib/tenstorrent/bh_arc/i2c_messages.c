@@ -13,30 +13,30 @@
 #define BYTE_GET(v, b) FIELD_GET(0xFFu << ((b) * 8), (v))
 
 /*
-Request Buffer
-|   | 0            | 1           | 2        | 3             |
-|---|--------------|-------------|----------|---------------|
-| 0 | MSG          | I2C Line ID | Slave ID | # write bytes |
-| 1 | # read bytes | unused      | unused   | unused        |
-| 2 | Write Data (24B)                                      |
-| 3 |                                                       |
-| 4 |                                                       |
-| 5 |                                                       |
-| 6 |                                                       |
-| 7 |                                                       |
-
-Response Buffer
-|   | 0            | 1           | 2        | 3             |
-|---|--------------|-------------|----------|---------------|
-| 0 | status       | unused      | unused   | unused        |
-| 1 | Read Data (28B)                                       |
-| 2 |                                                       |
-| 3 |                                                       |
-| 4 |                                                       |
-| 5 |                                                       |
-| 6 |                                                       |
-| 7 |                                                       |
-*/
+ * Request Buffer
+ * |   | 0            | 1           | 2        | 3             |
+ * |---|--------------|-------------|----------|---------------|
+ * | 0 | MSG          | I2C Line ID | Slave ID | # write bytes |
+ * | 1 | # read bytes | unused      | unused   | unused        |
+ * | 2 | Write Data (24B)                                      |
+ * | 3 |                                                       |
+ * | 4 |                                                       |
+ * | 5 |                                                       |
+ * | 6 |                                                       |
+ * | 7 |                                                       |
+ *
+ * Response Buffer
+ * |   | 0            | 1           | 2        | 3             |
+ * |---|--------------|-------------|----------|---------------|
+ * | 0 | status       | unused      | unused   | unused        |
+ * | 1 | Read Data (28B)                                       |
+ * | 2 |                                                       |
+ * | 3 |                                                       |
+ * | 4 |                                                       |
+ * | 5 |                                                       |
+ * | 6 |                                                       |
+ * | 7 |                                                       |
+ */
 
 static uint8_t i2c_message_handler(uint32_t msg_code, const struct request *request,
 				   struct response *response)

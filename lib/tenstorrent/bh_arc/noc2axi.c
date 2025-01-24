@@ -130,7 +130,8 @@ void NOC2AXIMulticastTlbSetup(const uint8_t ring, const uint8_t tlb_num, const u
 }
 
 /* Broadcast to all unharvested Tensix. Requires NocInit to be called first to set up broadcast
- * disables. */
+ * disables.
+ */
 /* Then we can just broadcast to the entire NOC, skipping ARC's own column to workaround this bug:
  */
 /* https://yyz-gitlab.local.tenstorrent.com/tenstorrent/syseng/-/issues/3401#note_191646 */

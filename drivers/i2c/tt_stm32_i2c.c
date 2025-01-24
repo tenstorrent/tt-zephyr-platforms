@@ -601,9 +601,9 @@ void tt_stm32_i2c_smbalert_disable(const struct device *dev)
 		STM32_I2C_IRQ_HANDLER_FUNCTION(index).bitrate =                                    \
 			DT_INST_PROP(index, clock_frequency),                                      \
 		.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),                                     \
-		IF_ENABLED(CONFIG_TT_I2C_STM32_SELECT_GPIOS,                                                   \
+		IF_ENABLED(CONFIG_TT_I2C_STM32_SELECT_GPIOS,                                       \
 	       (.scl = GPIO_DT_SPEC_INST_GET_OR(index, scl_gpios, {0}),                            \
-		.sda = GPIO_DT_SPEC_INST_GET_OR(index, sda_gpios, {0}),)) .timings =                     \
+		.sda = GPIO_DT_SPEC_INST_GET_OR(index, sda_gpios, {0}),)) .timings =               \
 						    (const struct tt_i2c_config_timing *)          \
 							    i2c_timings_##index,                   \
 				    .n_timings = ARRAY_SIZE(i2c_timings_##index),                  \

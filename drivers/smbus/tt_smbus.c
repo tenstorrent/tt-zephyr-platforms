@@ -356,11 +356,11 @@ end_transfer:
 	tt_stm32_i2c_stop_transfer(config->i2c_dev);
 
 	/*
-	if (ret) {
-	  i2c_recover_bus(config->i2c_dev);
-	  return ret;
-	}
-	*/
+	 * if (ret) {
+	 *   i2c_recover_bus(config->i2c_dev);
+	 *   return ret;
+	 * }
+	 */
 
 	if (!ret) {
 		pec = Crc8(pec, *count);

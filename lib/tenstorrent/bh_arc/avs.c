@@ -154,11 +154,13 @@ void AVSInit(void)
 
 	avs_cfg_1.val = APB2AVSBUS_AVS_CFG_1_REG_DEFAULT;
 	/* gate all clocks entering AVS clock mux - do this before changeing the clock divider
-	 * settings. */
+	 * settings.
+	 */
 	avs_cfg_1.f.turn_off_all_premux_clocks = 1;
 	WriteReg(APB2AVSBUS_AVS_CFG_1_REG_ADDR, avs_cfg_1.val);
 	/* use divided version of APB clock as AVS clock, and set the divider value to get a clock
-	 * of 20MHz. */
+	 * of 20MHz.
+	 */
 	avs_cfg_1.f.clk_divider_value = DIV_ROUND_UP(GetAPBCLK(), AVSCLK_FREQ_MHZ);
 	avs_cfg_1.f.avs_clock_select = 1;
 	WriteReg(APB2AVSBUS_AVS_CFG_1_REG_ADDR, avs_cfg_1.val);
@@ -279,8 +281,10 @@ AVSStatus AVSReadSystemInputCurrent(uint16_t *response)
 	/* The raw ADC data is decoded to determine the VIINSEN voltage: */
 	/* VIINSEN (V) = [(ADC in decimal) x 1.1064+43] x 0.001173 – 0.05 */
 	/* The actual input current depends on how the current signal is converted to a voltage at
-	 * the IINSEN pin. In the case of the MAX20816 EV Kit, */
+	 * the IINSEN pin. In the case of the MAX20816 EV Kit,
+	 */
 	/* Input Current (A) = VIINSEN / (RSHUNT x CSA_gain) */
 	/* where RSHUNT is the input current sense resistor, and CSA_gain is the gain of the current
-	 * sense amplifier. */
+	 * sense amplifier.
+	 */
 }

@@ -15,7 +15,7 @@ __aligned(sizeof(uint32_t)) static const uint8_t bootcode[] = {
 /* discarded if no zephyr,gpio-emul exists or if CONFIG_JTAG_VERIFY_WRITE=n */
 __aligned(sizeof(uint32_t)) static uint8_t sram[sizeof(bootcode)];
 
-const uint8_t *get_bootcode()
+const uint8_t *get_bootcode(void)
 {
 	return bootcode;
 }

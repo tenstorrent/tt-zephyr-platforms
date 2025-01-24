@@ -51,7 +51,7 @@ uint32_t ConvertFloatToTelemetry(float value)
 {
 	/* Convert float to signed int 16.16 format */
 
-	/* Handle error conditon */
+	/* Handle error condition */
 	if (value == FLT_MAX || value == -FLT_MAX) {
 		return 0x80000000;
 	}
@@ -117,11 +117,13 @@ static void update_telemetry(void)
 	telemetry[THM_LIMITS] = 0x00000000;      /* THM limits - Not Available yet */
 	telemetry[ASIC_TEMPERATURE] = ConvertFloatToTelemetry(
 		telemetry_internal_data.asic_temperature); /* ASIC temperature - reported in signed
-							      int 16.16 format */
+							    * int 16.16 format
+							    */
 	telemetry[VREG_TEMPERATURE] = 0x000000;            /* VREG temperature - need I2C line */
 	telemetry[BOARD_TEMPERATURE] = 0x000000;           /* Board temperature - need I2C line */
 	telemetry[AICLK] = GetAICLK(); /* first 16 bits - MAX ASIC FREQ (Not Available yet) , lower
-					  16 bits - current AICLK */
+					* 16 bits - current AICLK
+					*/
 	telemetry[AXICLK] = GetAXICLK();
 	telemetry[ARCCLK] = GetARCCLK();
 	telemetry[L2CPUCLK0] = GetL2CPUCLK(0);
@@ -130,7 +132,8 @@ static void update_telemetry(void)
 	telemetry[L2CPUCLK3] = GetL2CPUCLK(3);
 	telemetry[ETH_LIVE_STATUS] =
 		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
-			       retrain_status - Not Available yet */
+			     * retrain_status - Not Available yet
+			     */
 	telemetry[DDR_STATUS] = 0x00000000;   /* DDR status - Not Available yet */
 	telemetry[DDR_SPEED] = 0x00000000;    /* DDR speed - Not Available yet */
 	telemetry[FAN_SPEED] = GetFanSpeed(); /* Fan speed - reported in percentage */
@@ -192,7 +195,8 @@ static void telemetry_timer_handler(struct k_timer *timer)
 }
 
 /* Zephyr timer object submits a work item to the system work queue whose thread performs the task
- * on a periodic basis. */
+ * on a periodic basis.
+ */
 /* See:
  * https://docs.zephyrproject.org/latest/kernel/services/timing/timers.html#using-a-timer-expiry-function
  */
@@ -216,10 +220,11 @@ void init_telemetry(void)
 
 void StartTelemetryTimer(void)
 {
-	/* Start the timer to update the dynamic telemetry values */
-	/* Duration (time interval before the timer expires for the first time) and  */
-	/* Period (time interval between all timer expirations after the first one) are both set to
-	 * telem_update_interval */
+	/* Start the timer to update the dynamic telemetry values
+	 * Duration (time interval before the timer expires for the first time) and
+	 * Period (time interval between all timer expirations after the first one)
+	 * are both set to telem_update_interval
+	 */
 	k_timer_start(&telem_update_timer, K_MSEC(telem_update_interval),
 		      K_MSEC(telem_update_interval));
 }

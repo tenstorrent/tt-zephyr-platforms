@@ -12,7 +12,7 @@ message FwTable {
   ChipLimits chip_limits = 2;
   FeatureEnable feature_enable = 3;
   FanTable fan_table = 4;
-  DramTable dram_table = 5; 
+  DramTable dram_table = 5;
   ChipHarvestingTable chip_harvesting_table = 6;
   PciPropertyTable pci0_property_table = 7;
   PciPropertyTable pci1_property_table = 8;
@@ -48,14 +48,14 @@ message FwTable {
     uint32 fan_table_point_y1 = 3;
     uint32 fan_table_point_y2 = 4;
   }
-  
+
   message DramTable {
     uint32 dram_mask = 1;
     bool dram_mask_en = 2;
   }
 
   message ChipHarvestingTable {
-    uint32 soft_harvesting_en = 1; 
+    uint32 soft_harvesting_en = 1;
     uint32 soft_harvesting = 2;
   }
 

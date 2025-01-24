@@ -72,7 +72,8 @@ int tt_boot_fs_add_file(tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd, uint8_t *image
 	tt_boot_fs->hal_spi_write_f(curr_fd_addr, sizeof(tt_boot_fs_fd), (uint8_t *)&fd);
 
 	/* Now copy total image size from image_data_src pointer into the SPI device address
-	 * specified */
+	 * specified
+	 */
 	/* Total image size = image_size + signature_size (security) + padding (future work) */
 	uint32_t total_image_size = fd.flags.f.image_size + fd.security_flags.f.signature_size;
 
@@ -88,7 +89,8 @@ tt_checksum_res_t calculate_and_compare_checksum(uint8_t *data, uint32_t num_byt
 {
 	if (!skip_checksum) {
 		/* Always read 1 fewer word, and handle the 4 possible alignment cases outside the
-		 * loop */
+		 * loop
+		 */
 		const uint32_t num_dwords = (num_bytes / sizeof(uint32_t)) - 1;
 
 		uint32_t calculated_checksum = 0;

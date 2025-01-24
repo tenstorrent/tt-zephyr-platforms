@@ -374,7 +374,8 @@ void I2CReset(void)
 }
 
 /* Generalized transaction function called by I2CWriteBytes and I2CReadBytes, implements SMBUS write
- * bytes and read bytes protocols, returns TX_ABRT error if any, otherwise returns 0. */
+ * bytes and read bytes protocols, returns TX_ABRT error if any, otherwise returns 0.
+ */
 uint32_t I2CTransaction(uint32_t id, const uint8_t *write_data, uint32_t write_len,
 			uint8_t *read_data, uint32_t read_len)
 {
@@ -391,8 +392,10 @@ uint32_t I2CTransaction(uint32_t id, const uint8_t *write_data, uint32_t write_l
 
 	uint32_t ic_error = 0;
 
-	if (read_len == 0) { /* Only waits for TX done if it's a transaction that only writes data
-				and doesn't read data */
+	/* Only waits for TX done if it's a transaction that only writes data
+	 * and doesn't read data
+	 */
+	if (read_len == 0) {
 		ic_error = WaitAllTxDone(id);
 	}
 
@@ -420,7 +423,8 @@ uint32_t I2CWriteBytes(uint32_t id, uint16_t command, uint32_t command_byte_size
 		       uint8_t *p_write_buf, uint32_t data_byte_size)
 {
 	/* Combines command and data into a single buffer prior to calling the I2CTransaction
-	 * function, which treates the combined buffer as a single transaction. */
+	 * function, which treats the combined buffer as a single transaction.
+	 */
 	uint32_t combined_buf_size = command_byte_size + data_byte_size;
 	uint8_t combined_buf[combined_buf_size];
 
@@ -449,10 +453,9 @@ void SetI2CSlaveCallbacks(uint32_t id, const struct i2c_target_callbacks *cb)
 	i2c_target_config[id].callbacks = cb;
 }
 /*
-Keep calling this function in a loop as an alternative to interrupt-based I2C slave handling
-
-It uses the Zephyr i2c target callback API.
-*/
+ * Keep calling this function in a loop as an alternative to interrupt-based I2C slave handling
+ * It uses the Zephyr i2c target callback API.
+ */
 void PollI2CSlave(uint32_t id)
 {
 	const struct i2c_target_callbacks *cb = i2c_target_config[id].callbacks;

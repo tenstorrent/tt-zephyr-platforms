@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config TT_BOOT_BANNER
-    bool "Print Tenstorrent's boot banner"
-    depends on !BOOT_BANNER
-    select PRINTK
-    select EARLY_CONSOLE  
-    help
-      Print Tenstorrent's boot banner instead of Zephyr's boot banner.
+	bool "Print Tenstorrent's boot banner"
+	depends on !BOOT_BANNER
+	select PRINTK
+	select EARLY_CONSOLE
+	help
+	  Print Tenstorrent's boot banner instead of Zephyr's boot banner.

@@ -181,7 +181,8 @@ void I2CSetVoltage(uint32_t slave_addr, float voltage_in_mv)
 		      VOUT_COMMAND_DATA_BYTE_SIZE);
 
 	/* 100us to flush the tx of i2c + 150us to cover voltage switch from 0.65V to 0.95V with
-	 * 50us of margin */
+	 * 50us of margin
+	 */
 	WaitUs(250);
 }
 

@@ -106,12 +106,14 @@ static inline void ArcDumpIsrVects(void)
 static inline void ArcSetIsrVect(uint32_t volatile intvec, volatile uint32_t intvec_num)
 {
 	/*# intvbase_preset --- This sets the upper 22 bits of the interrupt vector base
-	 * configuration  */
+	 * configuration
+	 */
 	/* register, VECBASE_AC_BUILD.  On reset, that register is loaded into the interrupt vector
-	 * base  */
-	/*address register, INT_VECTOR_BASE.  Because this value is the upper 22 bits,  */
-	/*the vector base is aligned to a 1K-byte boundary. */
-	/*-intvbase_preset 0x20_0000 */
+	 * base
+	 */
+	/* address register, INT_VECTOR_BASE.  Because this value is the upper 22 bits,  */
+	/* the vector base is aligned to a 1K-byte boundary. */
+	/* -intvbase_preset 0x20_0000 */
 	uint32_t volatile *p_reg;
 
 	p_reg = (uint32_t volatile *)(ArcReadAux(ARC_AUX_INT_VECTOR_BASE));
@@ -121,19 +123,19 @@ static inline void ArcSetIsrVect(uint32_t volatile intvec, volatile uint32_t int
 	p_reg[temp] = intvec;
 	/* Reference only.
 	 * __asm__ __volatile__ (
-	 *     "mov r1 %[intv]\n" // get the vec pointer in r1
-	 *     "mov r2,[r1]\n"    // mov the pointer content into r2
+	 *      "mov r1 %[intv]\n" // get the vec pointer in r1
+	 *      "mov r2,[r1]\n"    // mov the pointer content into r2
 	 *
-	 *     "mov r1,%[addr]\n"  // mov INT_VECTOR_BASE addr into r1
-	 *     "lr r3,[r1]\n"      // load from aux INT_VECTOR_BASE addr into r1
+	 *      "mov r1,%[addr]\n"  // mov INT_VECTOR_BASE addr into r1
+	 *      "lr r3,[r1]\n"      // load from aux INT_VECTOR_BASE addr into r1
 	 *
-	 *     "st r2,[r3,%[offset]]\n" // store the new value into the vector location.
-	 *     : // no output
-	 *     : [intv] "r" (intvec),
-	 *       [offset] "r" (intvec_num),
-	 *       [addr] "I" (ARC_AUX_INT_VECTOR_BASE)
-	 *     : "r1", "r2", "r3", "cc"
-	 *     );
+	 *      "st r2,[r3,%[offset]]\n" // store the new value into the vector location.
+	 *      : // no output
+	 *      : [intv] "r" (intvec),
+	 *        [offset] "r" (intvec_num),
+	 *        [addr] "I" (ARC_AUX_INT_VECTOR_BASE)
+	 *      : "r1", "r2", "r3", "cc"
+	 *      );
 	 */
 }
 

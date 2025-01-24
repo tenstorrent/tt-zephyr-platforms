@@ -206,7 +206,8 @@ void EepromSetup(void)
 			eeprom.read_cmd.wait_cycles = 8;
 
 			/* These dummy cycles do not match with MT25 spec, needed only for QUAD DDR
-			 * as the first 4b read was incorrect. */
+			 * as the first 4b read was incorrect.
+			 */
 			eeprom.read_status_cmd.wait_cycles = 8;
 		} else {
 			eeprom.read_cmd.code = MT25_QUAD_INPUT_OUTPUT_FAST_READ;
@@ -378,7 +379,8 @@ static void SpiProgramSector(uint32_t address, const uint8_t *data, uint32_t num
 static bool NeedErase(const uint8_t *new_data, const uint8_t *old_data, uint32_t size)
 {
 	/* Program can only clear bits, so if new_data has a bit set that is not in old_data, we
-	 * must erase */
+	 * must erase
+	 */
 	for (uint32_t i = 0; i < size; i++) {
 		if (new_data[i] & ~old_data[i]) {
 			return true;

@@ -170,7 +170,8 @@ static const PLLSettings kPLLInitialSettings[PLL_COUNT] = {
 	{.pll_cntl_1 = {.f.refdiv = 2,
 			.f.postdiv = 0,
 			.f.fbdiv = 128},      /* 3200 MHz. Use VCO >= 2650 MHz:
-						 https://tenstorrent.atlassian.net/browse/SYS-777 */
+					       * https://tenstorrent.atlassian.net/browse/SYS-777
+					       */
 	 .pll_cntl_2 = {.f.ctrl_bus1 = 0x18}, /* FOUT4PHASEEN, FOUTPOSTDIVEN bits asserted */
 	 .pll_cntl_3 = {.f.ctrl_bus5 = 1},
 	 .pll_cntl_5 = {.f.postdiv0 = 3,  /* = AICLK - 800 MHz */
@@ -187,7 +188,8 @@ static const PLLSettings kPLLInitialSettings[PLL_COUNT] = {
 	 .pll_cntl_3 = {.f.ctrl_bus5 = 1},
 	 .pll_cntl_5 = {.f.postdiv0 = 5,  /* ARCCLK - 800 MHz */
 			.f.postdiv1 = 4,  /* AXICLK - 960 MHz to saturate PCIE DMA BW:
-					     https://tenstorrent.atlassian.net/browse/SYS-737 */
+					   * https://tenstorrent.atlassian.net/browse/SYS-737
+					   */
 			.f.postdiv2 = 23, /* APBCLK - 100 MHz */
 			.f.postdiv3 = 0}, /* Disabled */
 	 .use_postdiv = {.f.pll_use_postdiv0 = 1,

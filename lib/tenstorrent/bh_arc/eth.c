@@ -100,22 +100,21 @@ uint32_t GetEthSel(void)
 		eth_sel |= BIT(10) | BIT(11);
 	}
 
-	/* If eth_disable_mask_en is set then make sure the diabled eths are not enabled */
+	/* If eth_disable_mask_en is set then make sure the disabled eths are not enabled */
 	if (get_fw_table()->eth_property_table.eth_disable_mask_en) {
 		eth_sel &= ~get_fw_table()->eth_property_table.eth_disable_mask;
 	}
 
 	/* Make sure to send the mux_sel information as well so the ETH can configure itself
-	 * correctly to SerDes lanes */
-	/* This is mainly for edge cases where a mux_sel enabled ETH is forcefilly disabled by the
-	 * eth_disable_mask */
-	/* e.g. if pcie0 mux_sel is 0b00, ETH4 goes to SerDes 3 Lane 3:0, ETH5 goes to SerDes 3 Lane
-	 * 7:4 */
-	/*      but eth_disable_mask is 0b10000, then ETH4 is disabled and only ETH5 is enabled via
-	 * eth_sel, */
-	/*      at which point it becomes ambiguous which SerDes lane ETH5 should be connected to
-	 * (3:0 or 7:4?) */
-	/*      having the mux_sel information will allow ETH5 to disambiguate this */
+	 * correctly to SerDes lanes
+	 * This is mainly for edge cases where a mux_sel enabled ETH is forcefilly disabled by the
+	 * eth_disable_mask
+	 * e.g. if pcie0 mux_sel is 0b00, ETH4 goes to SerDes 3 Lane 3:0, ETH5 goes to SerDes 3 Lane
+	 * 7:4 but eth_disable_mask is 0b10000, then ETH4 is disabled and only ETH5 is enabled via
+	 * eth_sel, at which point it becomes ambiguous which SerDes lane ETH5 should be connected
+	 * to (3:0 or 7:4?)
+	 * having the mux_sel information will allow ETH5 to disambiguate this
+	 */
 	return (pcie1_misc_cntl3_reg.f.mux_sel << 24) | (pcie_misc_cntl3_reg.f.mux_sel << 16) |
 	       eth_sel;
 }
@@ -173,13 +172,15 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *fw_cfg_image, uint32
 
 	/* Pass in some board/chip specific data for ETH to use */
 	/* InitHW -> InitEth -> LoadEthFwCfg comes before init_telemtry, so cannot simply call for
-	 * telemetry data here */
+	 * telemetry data here
+	 */
 	fw_cfg_32b[32] = get_pcb_type();
 	fw_cfg_32b[33] = get_asic_location();
 	fw_cfg_32b[34] = get_read_only_table()->board_id >> 32;
 	fw_cfg_32b[35] = get_read_only_table()->board_id & 0xFFFFFFFF;
 	/* Split the 48-bit MAC address into 2 24-bit values, separated by organisation ID and
-	 * device ID */
+	 * device ID
+	 */
 	uint64_t mac_addr_base = GetMacAddressBase();
 
 	fw_cfg_32b[36] = (mac_addr_base >> 24) & 0xFFFFFF;

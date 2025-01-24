@@ -146,24 +146,24 @@ uint8_t NocToPhysY(uint8_t ny, uint8_t noc_id)
 }
 
 /*
-Physical Layout of GDDR NOC Nodes:
-- gIpJ = gddr inst I, noc2axi port J
-- O*14 = 14 other (non-GDDR) NOC nodes
-- Bottom left is physical (0,0)
-
-g3p2 O*14 g7p0
-g3p1 O*14 g7p1
-g3p0 O*14 g7p2
-g2p2 O*14 g6p0
-g2p1 O*14 g6p1
-g2p0 O*14 g6p2
-g1p2 O*14 g5p0
-g1p1 O*14 g5p1
-g1p0 O*14 g5p2
-g0p2 O*14 g4p0
-g0p1 O*14 g4p1
-g0p0 O*14 g4p2
-*/
+ * Physical Layout of GDDR NOC Nodes:
+ * - gIpJ = gddr inst I, noc2axi port J
+ * - O*14 = 14 other (non-GDDR) NOC nodes
+ * - Bottom left is physical (0,0)
+ *
+ * g3p2 O*14 g7p0
+ * g3p1 O*14 g7p1
+ * g3p0 O*14 g7p2
+ * g2p2 O*14 g6p0
+ * g2p1 O*14 g6p1
+ * g2p0 O*14 g6p2
+ * g1p2 O*14 g5p0
+ * g1p1 O*14 g5p1
+ * g1p0 O*14 g5p2
+ * g0p2 O*14 g4p0
+ * g0p1 O*14 g4p1
+ * g0p0 O*14 g4p2
+ */
 void GetGddrNocCoords(uint8_t gddr_inst, uint8_t noc2axi_port, uint8_t noc_id, uint8_t *x,
 		      uint8_t *y)
 {

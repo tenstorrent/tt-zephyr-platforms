@@ -148,7 +148,7 @@ static void tt_stm32_i2c_enable_transfer_interrupts(const struct device *dev, bo
 /* StateMachine */
 /* During sending */
 /*  1.TXIS flag is set after each byte transmission, afer the 9th SCL pulse when the ACK is */
-/*  recieved. */
+/*  received. */
 /*    The flag is cleared when I@C-TXDR register is written with the next byte to be transferred */
 /*    - NOTE: TXIE bit must be set in the I2C_CR1 REG. */
 /*  2. Things get more complicated when we are sending more than 255 bytes (or want to make our */
@@ -158,7 +158,7 @@ static void tt_stm32_i2c_enable_transfer_interrupts(const struct device *dev, bo
 /*  limit.... */
 /*    1. TCR is set and the SCL line is set low until we have written a new non-zero value to NBYTES
  */
-/*  3. If a NACK is recieved */
+/*  3. If a NACK is received */
 /*    - Then if RELOAD=0; */
 
 static void tt_stm32_i2c_event(const struct device *dev)
@@ -167,7 +167,7 @@ static void tt_stm32_i2c_event(const struct device *dev)
 	struct tt_i2c_stm32_data *data = dev->data;
 	I2C_TypeDef *i2c = cfg->i2c;
 
-	/* Recieved external abort signal */
+	/* Received external abort signal */
 	if (data->current.abort != NULL && *data->current.abort) {
 		LL_I2C_GenerateStopCondition(i2c);
 		goto end_i2c;
@@ -421,7 +421,7 @@ static void tt_stm32_i2c_msg_setup(const struct device *dev, uint16_t slave, boo
 		/* Also need to configure HEAD10R here (leaving out for now) */
 		/* but this indicates in the case of a 10 bit address read if the complete address
 		 */
-		/* sequece needs to be set. */
+		/* sequence needs to be set. */
 	} else {
 		LL_I2C_SetMasterAddressingMode(i2c, LL_I2C_ADDRESSING_MODE_7BIT);
 		LL_I2C_SetSlaveAddr(i2c, (uint32_t)slave << 1);
@@ -449,17 +449,16 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 	const uint32_t i2c_stm32_maxchunk = 255U;
 
 	/* In order to support the case where we might want to handle reads that requre us to make a
+	 * decision based on a read for example SMBus BlockRead require that restart is set in order
+	 * to send an address + start
 	 */
-	/* decision based on a read for example SMBus BlockRead require that restart is set in order
-	 * to */
-	/* send an address + start */
 	bool restart = (msg.flags & I2C_MSG_RESTART) != 0;
 
 	/* To ensure that we are not expecting to reprogram address or reload settings do some
-	 * validation */
-	/* Based on the reference, because we are setting NBYTE we will always send a NACK even if
-	 * we */
-	/* don't reload the buffer. */
+	 * validation
+	 * Based on the reference, because we are setting NBYTE we will always send a NACK even if
+	 * we don't reload the buffer.
+	 */
 	bool needs_reload = msg.len > i2c_stm32_maxchunk;
 
 	if (!restart && needs_reload && LL_I2C_IsEnabledReloadMode(i2c)) {

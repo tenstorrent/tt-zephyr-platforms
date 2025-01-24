@@ -32,7 +32,7 @@ int load_flash_info_table(uint8_t *buffer_space, uint32_t buffer_size)
 	if (!status) {
 		/* Clear the table since a failed decode can leave it in an inconsistent state */
 		memset(&flash_info_table, 0, sizeof(flash_info_table));
-		/* Return -1 that should propogate up the stack */
+		/* Return -1 that should propagate up the stack */
 		return -1;
 	}
 

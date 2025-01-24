@@ -83,11 +83,11 @@ uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t num_bytes)
 	}
 
 	switch (num_bytes % 4) {
-#if 0
-      case 3: cksum += *data_as_dwords & 0x000000ff; break;
-      case 2: cksum += *data_as_dwords & 0x0000ffff; break;
-      case 1: cksum += *data_as_dwords & 0x00ffffff; break;
-#endif
+	/*
+	 * case 3: cksum += *data_as_dwords & 0x000000ff; break;
+	 * case 2: cksum += *data_as_dwords & 0x0000ffff; break;
+	 * case 1: cksum += *data_as_dwords & 0x00ffffff; break;
+	 */
 	case 0:
 		cksum += *data_as_dwords & 0xffffffff;
 		break;

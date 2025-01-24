@@ -88,13 +88,15 @@ static void EnableOverlayCg(uint8_t tlb_index, uint8_t px, uint8_t py)
 		volatile uint32_t *regs = GetTlbWindowAddr(ring, tlb_index, overlay_regs_base);
 
 		/* Set stream[0].STREAM_PERF_CONFIG.CLOCK_GATING_EN = 1, leave other fields at
-		 * defaults. */
+		 * defaults.
+		 */
 		regs[STREAM_PERF_CONFIG_REG_INDEX] |= 1u << CLOCK_GATING_EN;
 	}
 }
 
 /* This function requires that NOC translation is disabled (or identity) on both NOCs for the ARC
- * node. */
+ * node.
+ */
 static void ProgramBroadcastExclusion(uint16_t disabled_tensix_columns)
 {
 	/* ROUTER_CFG_1,2 are a 64-bit mask for column broadcast disable */
@@ -142,7 +144,8 @@ void NocInit(void)
 {
 	uint32_t niu_cfg_0_updates =
 		BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF); /* noc2axi tile header double-write feature
-							 disable, ignored on all other nodes */
+						       * disable, ignored on all other nodes
+						       */
 
 	uint32_t router_cfg_0_updates = 0xF << 8; /* max backoff exp */
 
@@ -231,8 +234,8 @@ static void CopyNoc0ToNoc1(const struct NocTranslation *noc0, struct NocTranslat
 	}
 }
 
-	/* https://tenstorrent.sharepoint.com/:x:/r/sites/SOC/
-	 * Blackhole%20Documents/Blackhole%20-%20NOC%20Co-ordinates.xlsx?
+	/* https://tenstorrent.sharepoint.com/:x:/r/sites/SOC/Blackhole%20Documents/
+	 * Blackhole%20-%20NOC%20Co-ordinates.xlsx?
 	 * d=w449397eff6fc48abaed13762398c30dd&csf=1&web=1&e=G4HRZp
 	 */
 	/* X coordinate of tensix_with_l1[i][j] (for all j) and tt_eth_ss[i] */
@@ -257,9 +260,10 @@ static void CopyBytesSkipIndices(uint8_t *out, const uint8_t *in, size_t count, 
 }
 
 /* NOC Overlay needs a "logical coordinate" for each node.
-   We can't derive this from the translation tables alone because there may be many unintentional
-   aliases for each node. But within the given pre-translation coordinate box, there must not be any
-   aliases. */
+ * We can't derive this from the translation tables alone because there may be many unintentional
+ * aliases for each node. But within the given pre-translation coordinate box, there must not be any
+ * aliases.
+ */
 static void ApplyLogicalCoords(struct NocTranslation *nt, uint8_t post_x_start,
 			       uint8_t post_y_start, uint8_t post_x_end, uint8_t post_y_end,
 			       uint8_t pre_x_start, uint8_t pre_y_start, uint8_t pre_x_end,
@@ -306,7 +310,8 @@ static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned int 
 	}
 
 	/* Because there's no embedded identity map, we must ensure that the very last
-	   step is enabling translation for ARC. */
+	 * step is enabling translation for ARC.
+	 */
 
 	const unsigned int arc_x = 8;
 	const unsigned int arc_y = (noc_id == 0) ? 0 : NOC0_Y_TO_NOC1(0);
@@ -363,13 +368,15 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 	MakeIdentity(&noc0);
 
 	/* Block column translations on PCIE and ethernet rows. Column translations will only affect
-	 * the Tensix rows. */
+	 * the Tensix rows.
+	 */
 	noc0.translate_row_mask[0] |= BIT(0) | BIT(1);
 
 	/* Tensix
-	   bad_tensix_cols is a bitmap of i as in tensix_with_l1[i][j].
-	   We want to fill out the tensix NOC columns (1-7, 10-16) in increasing order, except
-	   skipping the disabled columns which will be moved to the end. */
+	 * bad_tensix_cols is a bitmap of i as in tensix_with_l1[i][j].
+	 * We want to fill out the tensix NOC columns (1-7, 10-16) in increasing order, except
+	 * skipping the disabled columns which will be moved to the end.
+	 */
 
 	const unsigned int num_tensix_cols = ARRAY_SIZE(kTensixEthNoc0X);
 
@@ -403,7 +410,8 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 	}
 
 	/* This assumes that there are no more than 7 bad columns.
-	   It only updates cols 10-16 and never looks back into cols 1-7. */
+	 * It only updates cols 10-16 and never looks back into cols 1-7.
+	 */
 	for (unsigned int noc_x = 16; noc_x >= 10 && bad_tensix_cols; noc_x--) {
 		unsigned int bad_tensix_lsb = LSB_GET(bad_tensix_cols);
 
@@ -446,7 +454,8 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 	ApplyLogicalCoords(&noc0, 9, 0, 9, 11, 17, 12, 17, 23);
 
 	/* PCIE
-	   19-24 => 2-0 or 11-0, whichever is in use as the endpoint. */
+	 * 19-24 => 2-0 or 11-0, whichever is in use as the endpoint.
+	 */
 	unsigned int pcie_x = pcie_instance ? 11 : 2;
 
 	noc0.translate_table_x[19] = pcie_x;
@@ -455,22 +464,25 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 	ApplyLogicalCoords(&noc0, pcie_x, 0, pcie_x, 0, 19, 24, 19, 24);
 
 	/* Ethernet
-	   20-25..31-25 => X-1 where X is rearranged to give a predictable mapping from NOC
-	   coordinate to SERDES. */
+	 * 20-25..31-25 => X-1 where X is rearranged to give a predictable mapping from NOC
+	 * coordinate to SERDES.
+	 */
 	noc0.translate_table_y[25] = 1;
 	CopyBytesSkipIndices(noc0.translate_table_x + 20, kTensixEthNoc0X, 12, skip_eth);
 	ApplyLogicalCoords(&noc0, 1, 1, 7, 1, 20, 25, 31, 25);
 	ApplyLogicalCoords(&noc0, 10, 1, 16, 1, 20, 25, 31, 25);
 
 	/* L2CPU
-	   8-26,27,28,29 => 8-3,9,5,7
-	   This puts l2cpu_ss_inst[i]-P1 in order by i. */
+	 * 8-26,27,28,29 => 8-3,9,5,7
+	 * This puts l2cpu_ss_inst[i]-P1 in order by i.
+	 */
 	memcpy(noc0.translate_table_y + 26, kL2CpuNoc0Y, ARRAY_SIZE(kL2CpuNoc0Y));
 	/* L2CPU are on row X=8 which is same pre/post translated */
 	ApplyLogicalCoords(&noc0, 8, 3, 8, 9, 8, 26, 8, 29);
 
 	/* Security
-	   8-30 => 8-2 */
+	 * 8-30 => 8-2
+	 */
 	noc0.translate_table_y[30] = 2;
 	ApplyLogicalCoords(&noc0, 8, 2, 8, 2, 8, 30, 8, 30);
 
@@ -478,7 +490,8 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 }
 
 /* This function assumes that NOC translation is disabled (or identity on 17x12) for the ARC node
- * when called. */
+ * when called.
+ */
 void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, uint8_t bad_gddr,
 			uint16_t skip_eth)
 {
@@ -514,7 +527,8 @@ void InitNocTranslationFromHarvesting(void)
 	}
 
 	/* At least one of 4,5,6 is not enabled. Use the last one not enabled
-	   as the one to not skip. Ditto 7,8,9. */
+	 * as the one to not skip. Ditto 7,8,9.
+	 */
 	uint16_t skip_eth;
 
 	skip_eth = 1 << (find_msb_set(~tile_enable.eth_enabled & GENMASK(6, 4)) - 1);
@@ -526,7 +540,8 @@ void InitNocTranslationFromHarvesting(void)
 static void DisableArcNocTranslation(void)
 {
 	/* Program direct rather than relying on NOC loopback, because we
-	   don't know what the pre-translation ARC coordinates are. */
+	 * don't know what the pre-translation ARC coordinates are.
+	 */
 	const uint32_t kNoc0RegBase = 0x80050000;
 	const uint32_t kNoc1RegBase = 0x80058000;
 	const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;

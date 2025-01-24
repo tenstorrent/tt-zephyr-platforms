@@ -30,7 +30,8 @@
 
 /* this should probably be pulled from Devicetree */
 #define RESET_UNIT_OFFSET_ADDR            0x30000
-#define RESET_UNIT_START_ADDR             ((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
+#define RESET_UNIT_START_ADDR             \
+	((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
 #define RESET_UNIT_ARC_MISC_CNTL_REG_ADDR 0x80030100
 
 typedef struct {

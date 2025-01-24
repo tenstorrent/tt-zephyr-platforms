@@ -313,12 +313,11 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		if (pec != rcv_pec) {
 			smbus_data.state = kSmbusStateWaitIdle;
 			return -1;
-		} else {
-			int32_t ret = curr_cmd->handler.rcv_handler(smbus_data.received_data,
-								    smbus_data.blocksize);
-			smbus_data.state = kSmbusStateWaitIdle;
-			return ret;
 		}
+		int32_t ret = curr_cmd->handler.rcv_handler(smbus_data.received_data,
+							    smbus_data.blocksize);
+		smbus_data.state = kSmbusStateWaitIdle;
+		return ret;
 	} else {
 		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
 			 0xc2de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));

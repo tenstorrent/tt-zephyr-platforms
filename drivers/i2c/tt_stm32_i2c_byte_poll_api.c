@@ -212,11 +212,11 @@ int i2c_scl_high(struct tt_i2c_bitbang *context)
 		}
 
 		/* What if we never timed out
-		if (sys_timepoint_expired(timeout)) {
-		  LOG_ERR("TIMEOUT Waiting for clock to stop stretching");
-		  return -ETIMEDOUT;
-		}
-		*/
+		 *if (sys_timepoint_expired(timeout)) {
+		 *  LOG_ERR("TIMEOUT Waiting for clock to stop stretching");
+		 *  return -ETIMEDOUT;
+		 *}
+		 */
 	} while (i2c_get_scl(context) == 0);
 
 	return 0;
@@ -234,7 +234,8 @@ int i2c_start(struct tt_i2c_bitbang *context)
 		i2c_set_scl(context, 0);
 		i2c_delay(context->delays[T_LOW]);
 		/* NOTE(drosen): I don't need to handle clock stretching here... but I'm feeling
-		 * paranoid today */
+		 * paranoid today
+		 */
 		ret = i2c_scl_high(context);
 		if (ret) {
 			return ret;
@@ -256,7 +257,8 @@ int i2c_repeated_start(struct tt_i2c_bitbang *context)
 
 	i2c_set_sda(context, 1);
 	/* NOTE(drosen): I don't need to handle clock stretching here... but I'm feeling paranoid
-	 * today */
+	 * today
+	 */
 	ret = i2c_scl_high(context);
 	if (ret) {
 		return ret;
@@ -279,7 +281,8 @@ int i2c_stop(struct tt_i2c_bitbang *context)
 	i2c_delay(context->delays[T_LOW]);
 
 	/* NOTE(drosen): I don't need to handle clock stretching here... but I'm feeling paranoid
-	 * today */
+	 * today
+	 */
 	ret = i2c_scl_high(context);
 	if (ret) {
 		return ret;
@@ -478,8 +481,8 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 
 		/* Start failed, go to finish... */
 		/* NOTE(drosen): I might want to look into what bus reset condition would be
-		 * appropriate for */
-		/* this failure. */
+		 * appropriate for this failure.
+		 */
 		if (start_ret) {
 			ret = start_ret;
 			goto finish;
@@ -496,11 +499,13 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 			goto finish;
 		} else if (!ack) {
 			/* If we don't get an ack when starting it's probably safe to assume that
-			 * the endpoint isn't */
+			 * the endpoint isn't
+			 */
 			/* on the bus. Not getting an ACK during a restart is probably a bigger
-			 * problem... */
+			 * problem...
+			 */
 			if (!start) {
-				LOG_ERR("No ACK recieved while writing addr");
+				LOG_ERR("No ACK received while writing addr");
 			} else {
 				/* Easy way of not printing too often */
 				expected_error = true;
@@ -523,7 +528,8 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 			}
 			*buf++ = (uint8_t)byte;
 			/* I want to support writing multiple messages back-to-back without a
-			 * restart. */
+			 * restart.
+			 */
 			/* So I only want to send the NACK on the final continue message. */
 			int rc = i2c_write_bit(context, (buf == buf_end) && !cont);
 
@@ -541,7 +547,7 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 				ret = ack;
 				goto finish;
 			} else if (!ack) {
-				LOG_ERR("No ACK recieved while writing buffer");
+				LOG_ERR("No ACK received while writing buffer");
 				goto finish; /* No ACK received */
 			}
 		}

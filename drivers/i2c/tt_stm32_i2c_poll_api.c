@@ -108,8 +108,8 @@ int tt_stm32_i2c_configure_timing(const struct device *dev, uint32_t clock)
 
 /* StateMachine */
 /* During sending */
-/*  1.TXIS flag is set after each byte transmission, afer the 9th SCL pulse when the ACK is */
-/*  recieved. */
+/*  1.TXIS flag is set after each byte transmission, after the 9th SCL pulse when the ACK is */
+/*  received. */
 /*    The flag is cleared when I@C-TXDR register is written with the next byte to be transferred */
 /*    - NOTE: TXIE bit must be set in the I2C_CR1 REG. */
 /*  2. Things get more complicated when we are sending more than 255 bytes (or want to make our */
@@ -119,7 +119,7 @@ int tt_stm32_i2c_configure_timing(const struct device *dev, uint32_t clock)
 /*  limit.... */
 /*    1. TCR is set and the SCL line is set low until we have written a new non-zero value to NBYTES
  */
-/*  3. If a NACK is recieved */
+/*  3. If a NACK is received */
 /*    - Then if RELOAD=0; */
 
 static inline int check_errors(const struct device *dev, const char *funcname)
@@ -226,7 +226,7 @@ static void tt_stm32_i2c_msg_setup(const struct device *dev, uint16_t slave, boo
 		/* Also need to configure HEAD10R here (leaving out for now) */
 		/* but this indicates in the case of a 10 bit address read if the complete address
 		 */
-		/* sequece needs to be set. */
+		/* sequence needs to be set. */
 	} else {
 		LL_I2C_SetMasterAddressingMode(i2c, LL_I2C_ADDRESSING_MODE_7BIT);
 		LL_I2C_SetSlaveAddr(i2c, (uint32_t)slave << 1);
@@ -411,7 +411,8 @@ int tt_stm32_i2c_send_message(const struct device *dev, uint16_t slave, struct i
 	}
 
 	/* Invalid condition we must be in reload mode if we aren't sending a start at the beginning
-	 * of */
+	 * of
+	 */
 	/* our message. */
 	if (!restart && !LL_I2C_IsEnabledReloadMode(i2c)) {
 		msg_abort(dev);

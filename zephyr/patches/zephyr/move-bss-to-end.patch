@@ -5,7 +5,7 @@ index a7751d96119..fa4383e6ac7 100644
 @@ -180,29 +180,6 @@ SECTIONS {
  	_app_smem_rom_start = LOADADDR(_APP_SMEM_SECTION_NAME);
  #endif /* CONFIG_USERSPACE */
- 
+
 -	SECTION_DATA_PROLOGUE(_BSS_SECTION_NAME,(NOLOAD),) {
 -		MPU_MIN_SIZE_ALIGN
 -		/*
@@ -30,7 +30,7 @@ index a7751d96119..fa4383e6ac7 100644
 -#include <zephyr/linker/common-noinit.ld>
 -
  	GROUP_START(DATA_REGION)
- 
+
  	SECTION_DATA_PROLOGUE(_DATA_SECTION_NAME,,) {
 @@ -210,6 +187,7 @@ SECTIONS {
  /* when XIP, .text is in ROM, but vector table must be at start of .data */
@@ -41,9 +41,9 @@ index a7751d96119..fa4383e6ac7 100644
  		*(".data.*")
  		*(".kernel.*")
 @@ -244,6 +222,28 @@ SECTIONS {
- 
+
  	__data_region_end = .;
- 
+
 +	SECTION_DATA_PROLOGUE(_BSS_SECTION_NAME,(NOLOAD),) {
 +		MPU_MIN_SIZE_ALIGN
 +		/*
@@ -68,4 +68,4 @@ index a7751d96119..fa4383e6ac7 100644
 +
  	MPU_MIN_SIZE_ALIGN
  	/* Define linker symbols */
- 
+

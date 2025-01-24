@@ -669,7 +669,8 @@ static inline void SetupDbiAccess(void)
 	noc_tlb_data_reg.f.dbi = 1;
 	WriteSiiReg(PCIE_NOC_TLB_DATA_REG_OFFSET(DBI_PCIE_TLB_ID), noc_tlb_data_reg.val);
 	/* flush out NOC_TLB_DATA register so that subsequent dbi writes are mapped to the correct
-	 * location */
+	 * location
+	 */
 	ReadSiiReg(PCIE_NOC_TLB_DATA_REG_OFFSET(DBI_PCIE_TLB_ID));
 }
 
@@ -865,7 +866,8 @@ static void ForceLinkSpeed(uint8_t max_pcie_speed)
 static void ProgramIatu(void)
 {
 	/* BAR0 iATU programming, map inbound BAR0 access to 0x0, no need to program target addr
-	 * since default is 0.  */
+	 * since default is 0.
+	 */
 	BH_PCIE_DWC_PCIE_USP_PF0_ATU_CAP_IATU_REGION_CTRL_2_OFF_INBOUND_0_reg_u iatu_region_ctrl_2;
 
 	iatu_region_ctrl_2.val = 0;
@@ -998,7 +1000,8 @@ static void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max
 		    aspm_ctrl_off.val);
 
 	/* Disable ASPMs: https://tenstorrent.atlassian.net/browse/SYS-663,
-	 * https://tenstorrent.atlassian.net/browse/SYS-717 */
+	 * https://tenstorrent.atlassian.net/browse/SYS-717
+	 */
 	BH_PCIE_DWC_PCIE_USP_PF0_PCIE_CAP_HDL_PATH_F20946C1_LINK_CAPABILITIES_REG_reg_u link_cap;
 
 	link_cap.val = ReadDbiReg(
@@ -1035,7 +1038,8 @@ static void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max
 			gen3_related_off.f.rate_shadow_sel = rate_shadow_sel;
 			gen3_related_off.f.usp_send_8gt_eq_ts2_disable =
 				1; /* this fixes the gen4-gen5 eq failure in compliance test
-				      TD_2_11: https://tenstorrent.atlassian.net/browse/SYS-758 */
+				    * TD_2_11: https://tenstorrent.atlassian.net/browse/SYS-758
+				    */
 			WriteDbiReg(
 				PCIE_DBI_USP_A_BH_PCIE_DWC_PCIE_USP_PF0_PORT_LOGIC_GEN3_RELATED_OFF_REG_ADDR,
 				gen3_related_off.val);
@@ -1048,7 +1052,8 @@ static void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max
 		gen3_eq_control_off.f.gen3_eq_pset_req_vec = 0x3E0;
 		gen3_eq_control_off.f.gen3_eq_fb_mode =
 			0x1; /* disable directional mode:
-				https://tenstorrent.atlassian.net/browse/SYS-524 */
+			      * https://tenstorrent.atlassian.net/browse/SYS-524
+			      */
 		gen3_eq_control_off.f.gen3_eq_phase23_exit_mode =
 			0x1; /* exit to EQ phase3 after EQ phase2 timeout */
 		WriteDbiReg(
@@ -1180,7 +1185,8 @@ static void SetupInboundTlbs(void)
 static void SetupSii(void)
 {
 	/* For GEN4 lane margining, spec requires app_margining_ready = 1 and
-	 * app_margining_software_ready = 0 */
+	 * app_margining_software_ready = 0
+	 */
 	PCIE_SII_APP_PCIE_CTL_reg_u app_pcie_ctl;
 
 	app_pcie_ctl.val = PCIE_SII_APP_PCIE_CTL_REG_DEFAULT;

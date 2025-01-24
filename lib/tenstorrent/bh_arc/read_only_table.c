@@ -43,7 +43,7 @@ int load_read_only_table(uint8_t *buffer_space, uint32_t buffer_size)
 	if (!status) {
 		/* Clear the table since a failed decode can leave it in an inconsistent state */
 		memset(&read_only_table, 0, sizeof(read_only_table));
-		/* Return -1 that should propogate up the stack */
+		/* Return -1 that should propagate up the stack */
 		return -1;
 	}
 

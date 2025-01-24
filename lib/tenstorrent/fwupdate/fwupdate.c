@@ -274,7 +274,7 @@ int tt_fwupdate_confirm(void)
 		}
 	}
 
-	LOG_INF("Firmware udpate is confirmed.");
+	LOG_INF("Firmware update is confirmed.");
 
 	return 0;
 }
@@ -359,7 +359,8 @@ int tt_fwupdate_validate_image(const tt_boot_fs_fd *fd)
 	}
 
 	/* Ensure that IMAGE_MAGIC is found in the first 4 bytes of the image, otherwise it will not
-	 * be bootable */
+	 * be bootable
+	 */
 	LOG_DBG("reading mcuboot header from %s offset %x", flash1_dev->name, fd->spi_addr);
 	rc = flash_read(flash1_dev, fd->spi_addr, cksum_buf, 4);
 	if (rc < 0) {

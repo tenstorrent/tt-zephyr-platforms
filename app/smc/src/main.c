@@ -41,8 +41,8 @@ int main(void)
 	init_telemetry();
 
 	/* These timers are split out from their init functions since their work tasks have i2c
-	 * conflicts */
-	/* with other init functions */
+	 * conflicts with other init functions
+	 */
 	/* Consider moving init before main (using Zephyr SYS_INIT()) to be pre ISR enablement */
 	StartTelemetryTimer();
 	if (dvfs_enabled) {

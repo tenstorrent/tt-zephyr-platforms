@@ -13,7 +13,7 @@ void ArcDmaConfig(void)
 	uint32_t reg = 0;
 
 	reg = (0xf << 4);                 /* Set LBU read transaction limit to max */
-	reg = (0x4 << 8);                 /* Set max burst lenght to 16 (max supported) */
+	reg = (0x4 << 8);                 /* Set max burst length to 16 (max supported) */
 	ArcWriteAux(DMA_S_CTRL_AUX, reg); /* Apply settings above */
 }
 
@@ -40,12 +40,12 @@ void ArcDmaNext(const void *p_src, void *p_dst, uint32_t len, uint32_t attr)
 
 uint32_t ArcDmaGetHandle(void)
 {
-	return (ArcReadAux(DMA_C_HANDLE_AUX));
+	return ArcReadAux(DMA_C_HANDLE_AUX);
 }
 
 uint32_t ArcDmaPollBusy(void)
 {
-	return (ArcReadAux(DMA_C_STAT_AUX));
+	return ArcReadAux(DMA_C_STAT_AUX);
 }
 
 void ArcDmaClearDone(uint32_t handle)

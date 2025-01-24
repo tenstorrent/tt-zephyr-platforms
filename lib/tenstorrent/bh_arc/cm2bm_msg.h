@@ -22,12 +22,12 @@ typedef struct {
 	uint8_t msg_id;
 	uint8_t seq_num;
 	uint32_t data;
-} __attribute__((packed)) Cm2BmSmbusReqMsg;
+} __packed Cm2BmSmbusReqMsg;
 
 typedef struct {
 	uint8_t msg_id;
 	uint8_t seq_num;
-} __attribute__((packed)) Cm2BmSmbusAckMsg;
+} __packed Cm2BmSmbusAckMsg;
 
 int32_t EnqueueCm2BmMsg(const Cm2BmMsg *msg);
 int32_t Cm2BmMsgReqSmbusHandler(uint8_t *data, uint8_t size);
@@ -42,7 +42,7 @@ typedef struct bmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
-} __attribute__((packed)) bmStaticInfo;
+} __packed bmStaticInfo;
 
 int32_t Bm2CmSendDataHandler(const uint8_t *data, uint8_t size);
 

@@ -33,18 +33,18 @@ typedef struct bmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
-} __attribute__((packed)) bmStaticInfo;
+} __packed bmStaticInfo;
 
 typedef struct cm2bmMessage {
 	uint8_t msg_id;
 	uint8_t seq_num;
 	uint32_t data;
-} __attribute__((packed)) cm2bmMessage;
+} __packed cm2bmMessage;
 
 typedef struct cm2bmAck {
 	uint8_t msg_id;
 	uint8_t seq_num;
-} __attribute__((packed)) cm2bmAck;
+} __packed cm2bmAck;
 
 union cm2bmAckWire {
 	cm2bmAck f;
@@ -131,7 +131,8 @@ int main(void)
 			if (ret < 0) {
 				LOG_ERR("%s() failed: %d", "tt_fwupdate_confirm", ret);
 				/* This represents a serious problem - could not write to internal
-				 * SoC flash, etc */
+				 * SoC flash, etc
+				 */
 				return EXIT_FAILURE;
 			}
 		}
@@ -249,7 +250,8 @@ int main(void)
 						jtag_bootrom_reset(true);
 						send_version_info = true;
 						/* Wait 800ms before allowing another reset + 200ms
-						 * = 1s between resets */
+						 * = 1s between resets
+						 */
 						k_sleep(K_MSEC(800));
 						break;
 					case 0x3:

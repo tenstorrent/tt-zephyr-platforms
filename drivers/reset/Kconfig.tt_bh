@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config RESET_TT_BH
-    bool "Tenstorrent Blackhole reset controller"
-    default y
-    depends on DT_HAS_TENSTORRENT_BLACKHOLE_RESET_ENABLED
-    help
-      This option enables the Tenstorrent Blackhole reset controller.
+	bool "Tenstorrent Blackhole reset controller"
+	default y
+	depends on DT_HAS_TENSTORRENT_BLACKHOLE_RESET_ENABLED
+	help
+	  This option enables the Tenstorrent Blackhole reset controller.

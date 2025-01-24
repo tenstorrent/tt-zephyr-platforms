@@ -1,12 +1,12 @@
 #include <mem.h>
 
 / {
-    chosen {
-        zephyr,code-partition = &slot0_partition;
-    };
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+	};
 
-    aliases {
-    };
+	aliases {
+	};
 };
 
 &sim_flash {
