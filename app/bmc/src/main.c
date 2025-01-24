@@ -95,6 +95,84 @@ int update_fw(void)
 	return ret;
 }
 
+void bmfw_handle_smbus(bool *send_version_info, bmStaticInfo *static_info)
+{
+
+	k_sleep(K_MSEC(20));
+
+	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
+		/* Blink the light every half second or so */
+		k_sleep(K_MSEC(500 - 20));
+		gpio_pin_toggle_dt(&board_fault_led);
+	}
+
+	if (*send_version_info || was_arc_reset()) {
+		if (was_arc_reset()) {
+			/* Allow retry on failure */
+			*send_version_info = true;
+			handled_arc_reset();
+		}
+		struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
+
+		K_SPINLOCK(&reset_lock) {
+			int ret = smbus_block_write(bh_smbus, 0xA, 0x20,
+						    sizeof(bmStaticInfo),
+						    (uint8_t *)static_info);
+			if (ret == 0) {
+				*send_version_info = false;
+			}
+		}
+		k_yield();
+	}
+
+	cm2bmMessage message = {0};
+	uint8_t count;
+
+	int ret;
+	{
+		struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
+
+		K_SPINLOCK(&reset_lock) {
+			ret = smbus_block_read(bh_smbus, 0xA, 0x10, &count,
+					       (uint8_t *)&message);
+		}
+		k_yield();
+	}
+
+	if (ret == 0 && message.msg_id != 0) {
+		cm2bmAck ack = {0};
+
+		ack.msg_id = message.msg_id;
+		ack.seq_num = message.seq_num;
+		union cm2bmAckWire wire_ack;
+
+		wire_ack.f = ack;
+		smbus_word_data_write(bh_smbus, 0xA, 0x11, wire_ack.val);
+
+		switch (message.msg_id) {
+		case 0x1:
+			switch (message.data) {
+			case 0x0:
+				jtag_bootrom_reset(true);
+				*send_version_info = true;
+				/* Wait 800ms before allowing another reset + 200ms
+				 * = 1s between resets
+				 */
+				k_sleep(K_MSEC(800));
+				break;
+			case 0x3:
+				/* Trigger reboot; will reset asic and reload bmfw
+				 */
+				if (IS_ENABLED(CONFIG_REBOOT)) {
+					sys_reboot(SYS_REBOOT_COLD);
+				}
+				break;
+			}
+			break;
+		}
+	}
+}
+
 int main(void)
 {
 	int ret;
@@ -192,79 +270,7 @@ int main(void)
 		}
 
 		while (1) {
-			k_sleep(K_MSEC(20));
-
-			if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-				/* Blink the light every half second or so */
-				k_sleep(K_MSEC(500 - 20));
-				gpio_pin_toggle_dt(&board_fault_led);
-			}
-
-			if (send_version_info || was_arc_reset()) {
-				if (was_arc_reset()) {
-					/* Allow retry on failure */
-					send_version_info = true;
-					handled_arc_reset();
-				}
-				struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
-
-				K_SPINLOCK(&reset_lock) {
-					int ret = smbus_block_write(bh_smbus, 0xA, 0x20,
-								    sizeof(bmStaticInfo),
-								    (uint8_t *)&static_info);
-					if (ret == 0) {
-						send_version_info = false;
-					}
-				}
-				k_yield();
-			}
-
-			cm2bmMessage message = {0};
-			uint8_t count;
-
-			int ret;
-			{
-				struct k_spinlock reset_lock = jtag_bootrom_reset_lock();
-
-				K_SPINLOCK(&reset_lock) {
-					ret = smbus_block_read(bh_smbus, 0xA, 0x10, &count,
-							       (uint8_t *)&message);
-				}
-				k_yield();
-			}
-
-			if (ret == 0 && message.msg_id != 0) {
-				cm2bmAck ack = {0};
-
-				ack.msg_id = message.msg_id;
-				ack.seq_num = message.seq_num;
-				union cm2bmAckWire wire_ack;
-
-				wire_ack.f = ack;
-				smbus_word_data_write(bh_smbus, 0xA, 0x11, wire_ack.val);
-
-				switch (message.msg_id) {
-				case 0x1:
-					switch (message.data) {
-					case 0x0:
-						jtag_bootrom_reset(true);
-						send_version_info = true;
-						/* Wait 800ms before allowing another reset + 200ms
-						 * = 1s between resets
-						 */
-						k_sleep(K_MSEC(800));
-						break;
-					case 0x3:
-						/* Trigger reboot; will reset asic and reload bmfw
-						 */
-						if (IS_ENABLED(CONFIG_REBOOT)) {
-							sys_reboot(SYS_REBOOT_COLD);
-						}
-						break;
-					}
-					break;
-				}
-			}
+			bmfw_handle_smbus(&send_version_info, &static_info);
 		}
 	}
 
