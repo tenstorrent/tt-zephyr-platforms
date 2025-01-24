@@ -9,21 +9,21 @@
 #include <stdint.h>
 
 typedef enum {
-  AVSOk                  = 0,
-  AVSResourceUnavailable = 1, // retry
-  AVSBadCrc              = 2, // retry
-  AVSGoodCrcBadData      = 3, // no retry
+	AVSOk = 0,
+	AVSResourceUnavailable = 1, /* retry */
+	AVSBadCrc = 2,              /* retry */
+	AVSGoodCrcBadData = 3,      /* no retry */
 } AVSStatus;
 
 typedef enum {
-  AVSPwrModeMaxEff = 0,
-  AVSPwrModeMaxPower = 3,
+	AVSPwrModeMaxEff = 0,
+	AVSPwrModeMaxPower = 3,
 } AVSPwrMode;
 
-#define AVS_VCORE_RAIL 0
+#define AVS_VCORE_RAIL  0
 #define AVS_VCOREM_RAIL 1
 
-void AVSInit();
+void AVSInit(void);
 AVSStatus AVSReadVoltage(uint8_t rail_sel, uint16_t *voltage_in_mV);
 AVSStatus AVSWriteVoltage(uint16_t voltage_in_mV, uint8_t rail_sel);
 AVSStatus AVSReadVoutTransRate(uint8_t rail_sel, uint8_t *rise_rate, uint8_t *fall_rate);

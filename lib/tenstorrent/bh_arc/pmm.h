@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 void MailboxWrite(uint8_t data, uint8_t busy, uint8_t flag0, uint8_t flag1, uint8_t flag2,
-                  uint8_t flag3, uint8_t node_type, uint8_t y, uint8_t x);
+		  uint8_t flag3, uint8_t node_type, uint8_t y, uint8_t x);
 void ClearPMMStatus(void);
 void EnablePMM(void);
 void DisablePMM(void);

@@ -8,8 +8,8 @@
 
 #include "spirom_protobufs/fw_table.pb.h"
 
-// Function declarations
+/* Function declarations */
 int load_fw_table(uint8_t *buffer_space, uint32_t buffer_size);
-const FwTable* get_fw_table(void);
+const FwTable *get_fw_table(void);
 
-#endif // FW_TABLE_H
+#endif /* FW_TABLE_H */

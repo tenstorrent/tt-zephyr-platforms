@@ -29,41 +29,41 @@
 #define APB_BASE_ADDR 0x80000000
 
 /* this should probably be pulled from Devicetree */
-#define RESET_UNIT_OFFSET_ADDR 0x30000
-#define RESET_UNIT_START_ADDR  ((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
+#define RESET_UNIT_OFFSET_ADDR            0x30000
+#define RESET_UNIT_START_ADDR             ((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
 #define RESET_UNIT_ARC_MISC_CNTL_REG_ADDR 0x80030100
 
 typedef struct {
-  uint32_t run: 4;
-  uint32_t halt: 4;
-  uint32_t rsvd_0: 4;
-  uint32_t soft_reset: 1;
-  uint32_t dbg_cache_rst: 1;
-  uint32_t mbus_clkdis: 1;
-  uint32_t dbus_clkdis: 1;
-  uint32_t irq0_trig: 4;
-  uint32_t rsvd_1: 11;
-  uint32_t self_reset: 1;
+	uint32_t run: 4;
+	uint32_t halt: 4;
+	uint32_t rsvd_0: 4;
+	uint32_t soft_reset: 1;
+	uint32_t dbg_cache_rst: 1;
+	uint32_t mbus_clkdis: 1;
+	uint32_t dbus_clkdis: 1;
+	uint32_t irq0_trig: 4;
+	uint32_t rsvd_1: 11;
+	uint32_t self_reset: 1;
 } RESET_UNIT_ARC_MISC_CNTL_reg_t;
 
 typedef union {
-  uint32_t val;
-  RESET_UNIT_ARC_MISC_CNTL_reg_t f;
+	uint32_t val;
+	RESET_UNIT_ARC_MISC_CNTL_reg_t f;
 } RESET_UNIT_ARC_MISC_CNTL_reg_u;
 
 #define RESET_UNIT_ARC_MISC_CNTL_REG_DEFAULT (0x00000000)
 
-// Describes a single message queue.
+/* Describes a single message queue. */
 struct message_queue {
 	struct message_queue_header header;
 	struct request request_queue[MSG_QUEUE_SIZE];
 	struct response response_queue[MSG_QUEUE_SIZE];
 };
 
-// All the message queues in the system.
+/* All the message queues in the system. */
 static struct message_queue message_queues[NUM_MSG_QUEUES];
 
-// All message handlers
+/* All message handlers */
 static void *message_handlers[CONFIG_TT_BH_ARC_NUM_MSG_CODES];
 
 __attribute__((used)) static const uintptr_t message_queue_info[] = {
@@ -181,7 +181,7 @@ int msgqueue_response_pop(uint32_t msgqueue_id, struct response *response)
 static bool start_next_message(struct message_queue *queue, uint32_t *request_rptr_out,
 			       uint32_t *response_wptr_out)
 {
-	// Queue pointers are double-wrapped so equal means empty, differ by size means full.
+	/* Queue pointers are double-wrapped so equal means empty, differ by size means full. */
 
 	uint32_t request_wptr = queue->header.request_queue_wptr;
 	uint32_t request_rptr = queue->header.request_queue_rptr;
@@ -190,8 +190,8 @@ static bool start_next_message(struct message_queue *queue, uint32_t *request_rp
 		return false;
 	}
 
-	// Don't accept a request unless there's a response queue slot.
-	// We must not block and we don't want to hold onto the response.
+	/* Don't accept a request unless there's a response queue slot. */
+	/* We must not block and we don't want to hold onto the response. */
 	uint32_t response_wptr = queue->header.response_queue_wptr;
 	uint32_t response_rptr = queue->header.response_queue_rptr;
 
@@ -220,7 +220,7 @@ static bool command_writes_serial(const struct request *request)
 static void advance_serial(struct message_queue *queue, const struct request *request)
 {
 	if (!command_writes_serial(request)) {
-		queue->header.last_serial++; // This just wraps.
+		queue->header.last_serial++; /* This just wraps. */
 	}
 }
 
@@ -236,6 +236,7 @@ static void process_l2_message_queue(const struct request *request, struct respo
 
 	msgqueue_request_handler_t handler = message_handlers[msg_code];
 	uint8_t exit_code = handler(msg_code, request, response);
+
 	response->data[0] |= exit_code;
 }
 
@@ -247,7 +248,7 @@ static void handle_set_last_serial(struct message_queue *queue, const struct req
 static void handle_test(struct message_queue *queue, const struct request *request,
 			struct response *response)
 {
-	// MSG_TYPE_TEST is a scratch-style message that we want to extend with extra info.
+	/* MSG_TYPE_TEST is a scratch-style message that we want to extend with extra info. */
 	response->data[0] = 0;
 	response->data[1] = request->data[1] + 1;
 	response->data[2] = queue->header.last_serial + 1;
@@ -297,16 +298,18 @@ static void process_message_queue(struct message_queue *queue)
 	}
 }
 
-void clear_msg_irq() {
+void clear_msg_irq(void)
+{
 #ifdef CONFIG_BOARD_TT_BLACKHOLE
-  RESET_UNIT_ARC_MISC_CNTL_reg_u arc_misc_cntl = {.val = ReadReg(RESET_UNIT_ARC_MISC_CNTL_REG_ADDR)};
-  arc_misc_cntl.f.irq0_trig = 0;
-  WriteReg(RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, arc_misc_cntl.val);
+	RESET_UNIT_ARC_MISC_CNTL_reg_u arc_misc_cntl = {
+		.val = ReadReg(RESET_UNIT_ARC_MISC_CNTL_REG_ADDR)};
+	arc_misc_cntl.f.irq0_trig = 0;
+	WriteReg(RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, arc_misc_cntl.val);
 #endif
 }
 
 /* Run all messages in all queues. */
-void process_message_queues()
+void process_message_queues(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_MSG_HANDLE_START);
 	for (unsigned int i = 0; i < NUM_MSG_QUEUES; i++) {
@@ -325,18 +328,19 @@ void msgqueue_register_handler(uint32_t msg_code, msgqueue_request_handler_t han
 	message_handlers[msg_code] = handler;
 }
 
-static void prepare_msg_queue()
+static void prepare_msg_queue(void)
 {
-	// clear message queue headers
-	for (unsigned int i = 0; i < NUM_MSG_QUEUES; i++)
+	/* clear message queue headers */
+	for (unsigned int i = 0; i < NUM_MSG_QUEUES; i++) {
 		memset(&message_queues[i].header, 0, sizeof(message_queues[i].header));
+	}
 
-	// populate address of message queue info
-	WriteReg(STATUS_MSG_Q_INFO_REG_ADDR, (uint32_t) message_queue_info);
+	/* populate address of message queue info */
+	WriteReg(STATUS_MSG_Q_INFO_REG_ADDR, (uint32_t)message_queue_info);
 }
 
 #ifndef MSG_QUEUE_TEST
-static int register_interrupt_handlers()
+static int register_interrupt_handlers(void)
 {
 	STRUCT_SECTION_FOREACH(msgqueue_handler, item) {
 		msgqueue_register_handler(item->msg_type, item->handler);
@@ -367,10 +371,11 @@ void init_msgqueue(void)
 {
 	prepare_msg_queue();
 #ifdef CONFIG_BOARD_TT_BLACKHOLE
-        IRQ_CONNECT(IRQNUM_ARC_MISC_CNTL_IRQ0, 0, msgqueue_interrupt_handler, NULL, 0);
-        irq_enable(IRQNUM_ARC_MISC_CNTL_IRQ0);
+	IRQ_CONNECT(IRQNUM_ARC_MISC_CNTL_IRQ0, 0, msgqueue_interrupt_handler, NULL, 0);
+	irq_enable(IRQNUM_ARC_MISC_CNTL_IRQ0);
 
-	volatile STATUS_BOOT_STATUS0_reg_u *boot_status0 = (volatile STATUS_BOOT_STATUS0_reg_u *)STATUS_BOOT_STATUS0_REG_ADDR;
+	volatile STATUS_BOOT_STATUS0_reg_u *boot_status0 =
+		(volatile STATUS_BOOT_STATUS0_reg_u *)STATUS_BOOT_STATUS0_REG_ADDR;
 	boot_status0->f.msg_queue_ready = 1;
 #endif
 }

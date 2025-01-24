@@ -13,9 +13,9 @@
 #define NUM_PD 16
 
 typedef enum {
-  ReadOk = 0,
-  SampleFault = 1,
-  IncorrectSampleType = 2,
+	ReadOk = 0,
+	SampleFault = 1,
+	IncorrectSampleType = 2,
 } ReadStatus;
 
 void CATInit(void);

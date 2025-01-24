@@ -23,18 +23,21 @@ static TelemetryInternalData internal_data;
  * @param max_staleness Maximum time interval in milliseconds since the last update
  * @param data Pointer to the TelemetryInternalData struct to fill with the values
  */
-void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data) {
-  int64_t reftime = last_update_time;
-  if (k_uptime_delta(&reftime) >= max_staleness) {
-    // Get all dynamically updated values
-    internal_data.vcore_voltage = GetVoltage(P0V8_VCORE_ADDR);
-    AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
-    internal_data.vcore_power = internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
-    internal_data.asic_temperature = GetAvgChipTemp();
+void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
+{
+	int64_t reftime = last_update_time;
 
-    // reftime was updated to the current uptime by the k_uptime_delta() call
-    last_update_time = reftime;
-  }
+	if (k_uptime_delta(&reftime) >= max_staleness) {
+		/* Get all dynamically updated values */
+		internal_data.vcore_voltage = GetVoltage(P0V8_VCORE_ADDR);
+		AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
+		internal_data.vcore_power =
+			internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
+		internal_data.asic_temperature = GetAvgChipTemp();
 
-  *data = internal_data;
+		/* reftime was updated to the current uptime by the k_uptime_delta() call */
+		last_update_time = reftime;
+	}
+
+	*data = internal_data;
 }

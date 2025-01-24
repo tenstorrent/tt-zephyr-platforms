@@ -34,7 +34,7 @@ bool jtag_axiwait(uint32_t addr)
 	return !jtag_axi_read32(JTAG, addr, &value);
 }
 
-uint32_t jtag_bitbang_wait_for_id()
+uint32_t jtag_bitbang_wait_for_id(void)
 {
 	uint32_t reset_id;
 
@@ -54,9 +54,9 @@ static const struct gpio_dt_spec pgood = GPIO_DT_SPEC_GET(DT_ALIAS(pgood), gpios
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
 static const struct gpio_dt_spec preset_trigger = GPIO_DT_SPEC_GET(DT_ALIAS(preset_trigger), gpios);
 
-static bool arc_reset = false;
-static bool workaround_applied = false;
-static bool reset_asap = false;
+static bool arc_reset;
+static bool workaround_applied;
+static bool reset_asap;
 static struct k_spinlock reset_lock;
 
 bool jtag_bootrom_needs_reset(void)
@@ -113,7 +113,7 @@ static struct gpio_callback preset_cb_data;
 
 int jtag_bootrom_setup(void)
 {
-  /* Only check for pgood if we aren't emulating */
+	/* Only check for pgood if we aren't emulating */
 #if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
 	while (!gpio_pin_get_dt(&pgood)) {
 	}

@@ -8,8 +8,8 @@
 
 #include "spirom_protobufs/flash_info.pb.h"
 
-// Function declarations
+/* Function declarations */
 int load_flash_info_table(uint8_t *buffer_space, uint32_t buffer_size);
-const FlashInfoTable* get_flash_info_table(void);
+const FlashInfoTable *get_flash_info_table(void);
 
-#endif // FLASH_INFO_TABLE_H
+#endif /* FLASH_INFO_TABLE_H */

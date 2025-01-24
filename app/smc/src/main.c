@@ -24,42 +24,43 @@ LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 int main(void)
 {
-  SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
-  printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
+	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
 
-  InitFW();
-  InitHW();
+	InitFW();
+	InitHW();
 
-  if (get_fw_table()->feature_enable.aiclk_ppm_en) {
-    // DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled
-    // We currently don't have plans to implement L2CPUCLK PPM,
-    // so currently, dvfs_enable == aiclk_ppm_enable
-    InitDVFS();
-  }
+	if (get_fw_table()->feature_enable.aiclk_ppm_en) {
+		/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled */
+		/* We currently don't have plans to implement L2CPUCLK PPM, */
+		/* so currently, dvfs_enable == aiclk_ppm_enable */
+		InitDVFS();
+	}
 
-  init_msgqueue();
-  init_telemetry();
+	init_msgqueue();
+	init_telemetry();
 
-  // These timers are split out from their init functions since their work tasks have i2c conflicts
-  // with other init functions
-  // Consider moving init before main (using Zephyr SYS_INIT()) to be pre ISR enablement
-  StartTelemetryTimer();
-  if (dvfs_enabled) {
-    StartDVFSTimer();
-  }
+	/* These timers are split out from their init functions since their work tasks have i2c
+	 * conflicts */
+	/* with other init functions */
+	/* Consider moving init before main (using Zephyr SYS_INIT()) to be pre ISR enablement */
+	StartTelemetryTimer();
+	if (dvfs_enabled) {
+		StartDVFSTimer();
+	}
 
-  while (1) {
-    PollSmbusTarget();
-    k_yield();
-  }
+	while (1) {
+		PollSmbusTarget();
+		k_yield();
+	}
 
-  return 0;
+	return 0;
 }
 
 #define FW_VERSION_SEMANTIC APPVERSION
-#define FW_VERSION_DATE 0x00000000
-#define FW_VERSION_LOW 0x00000000
-#define FW_VERSION_HIGH 0x00000000
+#define FW_VERSION_DATE     0x00000000
+#define FW_VERSION_LOW      0x00000000
+#define FW_VERSION_HIGH     0x00000000
 
-uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) =
-  {FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};
+uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) = {
+	FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};

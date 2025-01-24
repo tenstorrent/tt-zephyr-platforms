@@ -9,9 +9,10 @@
 #include <stdint.h>
 
 typedef enum {
-  StopOnFull = 0,
-  RollOver = 1,
+	StopOnFull = 0,
+	RollOver = 1,
 } TraceBufferMode;
 
-void DebugTraceInit(TraceBufferMode trace_buffer_mode, uint32_t trace_buffer_addr, uint32_t trace_buffer_size);
+void DebugTraceInit(TraceBufferMode trace_buffer_mode, uint32_t trace_buffer_addr,
+		    uint32_t trace_buffer_size);
 #endif

@@ -30,7 +30,8 @@ int jtag_bootrom_verify(const uint32_t *patch, size_t patch_len);
 void jtag_bootrom_soft_reset_arc(void);
 void jtag_bootrom_teardown(void);
 
-ALWAYS_INLINE int jtag_bootrom_patch(const uint32_t *patch, size_t patch_len) {
+ALWAYS_INLINE int jtag_bootrom_patch(const uint32_t *patch, size_t patch_len)
+{
 	return jtag_bootrom_patch_offset(patch, patch_len, 0);
 }
 

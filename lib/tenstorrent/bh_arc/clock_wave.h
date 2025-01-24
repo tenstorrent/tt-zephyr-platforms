@@ -7,8 +7,8 @@
 #define CLOCK_WAVE_H
 
 typedef enum {
-  ZeroSkewClk = 0,
-  ClockWave = 1,
+	ZeroSkewClk = 0,
+	ClockWave = 1,
 } ClockingScheme;
 
 void SwitchClkScheme(ClockingScheme clk_scheme);

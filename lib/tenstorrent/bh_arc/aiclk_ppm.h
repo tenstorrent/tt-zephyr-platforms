@@ -9,30 +9,30 @@
 #include <stdint.h>
 
 typedef enum {
-  kAiclkArbMaxFmax,
-  kAiclkArbMaxTDP,
-  kAiclkArbMaxFastTDC,
-  kAiclkArbMaxTDC,
-  kAiclkArbMaxThm,
-  kAiclkArbMaxVoltage,
-  kAiclkArbMaxCount,
+	kAiclkArbMaxFmax,
+	kAiclkArbMaxTDP,
+	kAiclkArbMaxFastTDC,
+	kAiclkArbMaxTDC,
+	kAiclkArbMaxThm,
+	kAiclkArbMaxVoltage,
+	kAiclkArbMaxCount,
 } AiclkArbMax;
 
 typedef enum {
-  kAiclkArbMinFmin,
-  kAiclkArbMinBusy,
-  kAiclkArbMinCount,
+	kAiclkArbMinFmin,
+	kAiclkArbMinBusy,
+	kAiclkArbMinCount,
 } AiclkArbMin;
 
 typedef struct {
-  uint32_t curr_freq; // in MHz
-  uint32_t targ_freq; // in MHz
-  uint32_t boot_freq; // in MHz
-  uint32_t fmax; // in MHz
-  uint32_t fmin; // in MHz
-  uint32_t forced_freq; // in MHz, a value of zero means disabled.
-  float arbiter_max[kAiclkArbMaxCount];
-  float arbiter_min[kAiclkArbMinCount];
+	uint32_t curr_freq;   /* in MHz */
+	uint32_t targ_freq;   /* in MHz */
+	uint32_t boot_freq;   /* in MHz */
+	uint32_t fmax;        /* in MHz */
+	uint32_t fmin;        /* in MHz */
+	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
+	float arbiter_max[kAiclkArbMaxCount];
+	float arbiter_min[kAiclkArbMinCount];
 } AiclkPPM;
 
 extern AiclkPPM aiclk_ppm;

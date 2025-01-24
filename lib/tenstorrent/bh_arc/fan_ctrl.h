@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 
-void FanCtrlInit();
+void FanCtrlInit(void);
 void SetFanSpeed(uint8_t speed);
-uint8_t GetFanSpeed();
+uint8_t GetFanSpeed(void);
 
 #endif

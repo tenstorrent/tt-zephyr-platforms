@@ -500,17 +500,17 @@ static int jtag_bitbang_init(const struct device *dev)
 	return 0;
 }
 
-#define JTAG_BB_GPIOS_GET_REG(n, gpios)                                        \
+#define JTAG_BB_GPIOS_GET_REG(n, gpios)                                                            \
 	COND_CODE_1(DT_INST_NODE_HAS_PROP(n, gpios),                           \
 		(INT_TO_POINTER(DT_REG_ADDR(DT_PHANDLE(DT_DRV_INST(n), gpios)))), (NULL))
 
-#define JTAG_BB_DEVICE_DEFINE(n)                                               \
-	static const struct jtag_config jtag_bitbang_config_##n = {            \
-		.tck = GPIO_DT_SPEC_INST_GET(n, tck_gpios),                    \
-		.tdi = GPIO_DT_SPEC_INST_GET(n, tdi_gpios),                    \
-		.tdo = GPIO_DT_SPEC_INST_GET(n, tdo_gpios),                    \
-		.tms = GPIO_DT_SPEC_INST_GET(n, tms_gpios),                    \
-		.trst = GPIO_DT_SPEC_INST_GET_OR(n, trst_gpios, {0}),          \
+#define JTAG_BB_DEVICE_DEFINE(n)                                                                   \
+	static const struct jtag_config jtag_bitbang_config_##n = {                                \
+		.tck = GPIO_DT_SPEC_INST_GET(n, tck_gpios),                                        \
+		.tdi = GPIO_DT_SPEC_INST_GET(n, tdi_gpios),                                        \
+		.tdo = GPIO_DT_SPEC_INST_GET(n, tdo_gpios),                                        \
+		.tms = GPIO_DT_SPEC_INST_GET(n, tms_gpios),                                        \
+		.trst = GPIO_DT_SPEC_INST_GET_OR(n, trst_gpios, {0}),                              \
 		COND_CODE_1(CONFIG_JTAG_USE_MMAPPED_IO,                        \
 		(.tck_reg = JTAG_BB_GPIOS_GET_REG(n, tck_gpios),               \
 		 .tdi_reg = JTAG_BB_GPIOS_GET_REG(n, tdi_gpios),               \
@@ -518,12 +518,12 @@ static int jtag_bitbang_init(const struct device *dev)
 		 .tms_reg = JTAG_BB_GPIOS_GET_REG(n, tms_gpios),               \
 		 .port_write_cycles = DT_INST_PROP(n, port_write_cycles),      \
 		 .tck_delay = DT_INST_PROP(n, tck_delay),),                    \
-		())};                                                          \
-                                                                               \
-	static struct jtag_data jtag_bitbang_data_##n;                         \
-                                                                               \
-	DEVICE_DT_INST_DEFINE(n, jtag_bitbang_init, NULL, &jtag_bitbang_data_##n, \
-			      &jtag_bitbang_config_##n, POST_KERNEL, CONFIG_JTAG_INIT_PRIO, \
+		())};                         \
+                                                                                                   \
+	static struct jtag_data jtag_bitbang_data_##n;                                             \
+                                                                                                   \
+	DEVICE_DT_INST_DEFINE(n, jtag_bitbang_init, NULL, &jtag_bitbang_data_##n,                  \
+			      &jtag_bitbang_config_##n, POST_KERNEL, CONFIG_JTAG_INIT_PRIO,        \
 			      &jtag_bitbang_api);
 
 DT_INST_FOREACH_STATUS_OKAY(JTAG_BB_DEVICE_DEFINE)

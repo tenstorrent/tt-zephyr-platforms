@@ -36,34 +36,34 @@ static const uint64_t eight_bytes = 0x2424373742427373;
 
 ZTEST(tt_boot_fs, test_tt_boot_fs_cksum)
 {
-  uint32_t cksum;
+	uint32_t cksum;
 
-  static const struct harness_data {
-    uint32_t expect;
-    const uint8_t *data;
-    size_t size;
-  } harness[] = {
-    {0, NULL, 0},
-    {0, one_byte, 0},
+	static const struct harness_data {
+		uint32_t expect;
+		const uint8_t *data;
+		size_t size;
+	} harness[] = {
+		{0, NULL, 0},
+		{0, one_byte, 0},
 #if 0
     {0x00000042, one_byte, 1},
     {0x00004242, two_bytes, 2},
     {0x00000073, three_bytes, 3},
 #endif
-    {0x42427373, (uint8_t *)&four_bytes, 4},
+		{0x42427373, (uint8_t *)&four_bytes, 4},
 #if 0
     {0x4284e6e6, five_bytes, 5},
     {0x4242e6e6, six_bytes, 6},
     {0x424273e6, seven_bytes, 7},
 #endif
-    {0x6666aaaa, (uint8_t *)&eight_bytes, 8},
-  };
+		{0x6666aaaa, (uint8_t *)&eight_bytes, 8},
+	};
 
-  ARRAY_FOR_EACH_PTR(harness, it) {
-    cksum = tt_boot_fs_cksum(0, it->data, it->size);
-    zassert_equal(it->expect, cksum, "%d: expected: %08x actual: %08x", it - harness, it->expect,
-                  cksum);
-  }
+	ARRAY_FOR_EACH_PTR(harness, it) {
+		cksum = tt_boot_fs_cksum(0, it->data, it->size);
+		zassert_equal(it->expect, cksum, "%d: expected: %08x actual: %08x", it - harness,
+			      it->expect, cksum);
+	}
 }
 
 ZTEST_SUITE(tt_boot_fs, NULL, NULL, NULL, NULL, NULL);

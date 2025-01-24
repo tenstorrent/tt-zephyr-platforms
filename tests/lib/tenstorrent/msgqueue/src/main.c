@@ -9,7 +9,8 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-static uint8_t msgqueue_handler_73(uint32_t msg_code, const struct request *req, struct response *rsp)
+static uint8_t msgqueue_handler_73(uint32_t msg_code, const struct request *req,
+				   struct response *rsp)
 {
 	BUILD_ASSERT(MSG_TYPE_SHIFT % 8 == 0);
 	rsp->data[1] = req->data[0];
