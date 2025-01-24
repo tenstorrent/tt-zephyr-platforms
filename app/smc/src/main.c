@@ -9,7 +9,9 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+
 #include "init.h"
+#include "init_common.h"
 #include "reg.h"
 #include "status_reg.h"
 #include "telemetry_internal.h"

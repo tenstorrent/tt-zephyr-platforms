@@ -22,6 +22,7 @@ zephyr_library_sources(
   gddr.c
   harvesting.c
   i2c_messages.c
+  init_common.c
   msgqueue.c
   noc_init.c
   noc.c

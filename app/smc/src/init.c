@@ -14,22 +14,17 @@
 #include "avs.h"
 #include "cat.h"
 #include "reg.h"
+#include "init_common.h"
 #include "regulator.h"
 #include "status_reg.h"
 #include "pll.h"
 #include "pvt.h"
 #include "pcie.h"
 #include "noc.h"
-#include "noc2axi.h"
 #include "noc_init.h"
-#include "arc_dma.h"
 #include "tt_boot_fs.h"
-#include "spi_controller.h"
-#include "spi_eeprom.h"
 #include "gddr.h"
 #include "smbus_target.h"
-#include "cm2bm_msg.h"
-#include "irqnum.h"
 #include "serdes_eth.h"
 #include "eth.h"
 #include "gddr.h"
@@ -39,138 +34,7 @@
 #include "flash_info_table.h"
 #include "harvesting.h"
 
-#define RESET_UNIT_GLOBAL_RESET_REG_ADDR 0x80030000
-#define RESET_UNIT_ETH_RESET_REG_ADDR    0x80030008
-#define RESET_UNIT_DDR_RESET_REG_ADDR    0x80030010
-#define RESET_UNIT_L2CPU_RESET_REG_ADDR  0x80030014
-
-#define RESET_UNIT_TENSIX_RESET_0_REG_ADDR 0x80030020
-#define RESET_UNIT_TENSIX_RESET_1_REG_ADDR 0x80030024
-#define RESET_UNIT_TENSIX_RESET_2_REG_ADDR 0x80030028
-#define RESET_UNIT_TENSIX_RESET_3_REG_ADDR 0x8003002C
-#define RESET_UNIT_TENSIX_RESET_4_REG_ADDR 0x80030030
-#define RESET_UNIT_TENSIX_RESET_5_REG_ADDR 0x80030034
-#define RESET_UNIT_TENSIX_RESET_6_REG_ADDR 0x80030038
-#define RESET_UNIT_TENSIX_RESET_7_REG_ADDR 0x8003003C
-
-#define RESET_UNIT_TENSIX_RISC_RESET_0_REG_ADDR 0x80030040
-
-typedef struct {
-  uint32_t system_reset_n: 1;
-  uint32_t noc_reset_n: 1;
-  uint32_t rsvd_0: 5;
-  uint32_t refclk_cnt_en: 1;
-  uint32_t pcie_reset_n: 2;
-  uint32_t rsvd_1: 3;
-  uint32_t ptp_reset_n_refclk: 1;
-} RESET_UNIT_GLOBAL_RESET_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_GLOBAL_RESET_reg_t f;
-} RESET_UNIT_GLOBAL_RESET_reg_u;
-
-#define RESET_UNIT_GLOBAL_RESET_REG_DEFAULT (0x00000080)
-
-typedef struct {
-  uint32_t eth_reset_n: 14;
-  uint32_t rsvd_0: 2;
-  uint32_t eth_risc_reset_n: 14;
-} RESET_UNIT_ETH_RESET_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_ETH_RESET_reg_t f;
-} RESET_UNIT_ETH_RESET_reg_u;
-
-#define RESET_UNIT_ETH_RESET_REG_DEFAULT (0x00000000)
-
-typedef struct {
-  uint32_t tensix_reset_n: 32;
-} RESET_UNIT_TENSIX_RESET_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_TENSIX_RESET_reg_t f;
-} RESET_UNIT_TENSIX_RESET_reg_u;
-
-#define RESET_UNIT_TENSIX_RESET_REG_DEFAULT (0x00000000)
-
-typedef struct {
-  uint32_t ddr_reset_n: 8;
-  uint32_t ddr_risc_reset_n: 24;
-} RESET_UNIT_DDR_RESET_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_DDR_RESET_reg_t f;
-} RESET_UNIT_DDR_RESET_reg_u;
-
-#define RESET_UNIT_DDR_RESET_REG_DEFAULT (0x00000000)
-
-typedef struct {
-  uint32_t l2cpu_reset_n: 4;
-  uint32_t l2cpu_risc_reset_n: 4;
-} RESET_UNIT_L2CPU_RESET_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_L2CPU_RESET_reg_t f;
-} RESET_UNIT_L2CPU_RESET_reg_u;
-
-#define RESET_UNIT_L2CPU_RESET_REG_DEFAULT (0x00000000)
-
-#define SCRATCHPAD_SIZE 0x10000
-static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __attribute__((aligned(4)));
-
-typedef enum {
-  kHwInitNotStarted = 0,
-  kHwInitStarted = 1,
-  kHwInitDone = 2,
-  kHwInitError = 3,
-} HWInitStatus;
-
-static int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst) {
-  SpiBlockRead(addr, size, dst);
-  return TT_BOOT_FS_OK;
-}
-
-static void InitSpiFS() {
-  // Toggle SPI reset to clear state left by bootcode
-  SpiControllerReset();
-
-  EepromSetup();
-  tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
-  SpiBufferSetup();
-}
-
-static void DeassertTileResets() {
-  RESET_UNIT_GLOBAL_RESET_reg_u global_reset = {.val = RESET_UNIT_GLOBAL_RESET_REG_DEFAULT};
-  global_reset.f.noc_reset_n = 1;
-  global_reset.f.system_reset_n = 1;
-  global_reset.f.pcie_reset_n = 3;
-  global_reset.f.ptp_reset_n_refclk = 1;
-  WriteReg(RESET_UNIT_GLOBAL_RESET_REG_ADDR, global_reset.val);
-
-  RESET_UNIT_ETH_RESET_reg_u eth_reset = {.val = RESET_UNIT_ETH_RESET_REG_DEFAULT};
-  eth_reset.f.eth_reset_n = 0x3fff;
-  WriteReg(RESET_UNIT_ETH_RESET_REG_ADDR, eth_reset.val);
-
-  RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = {.val = RESET_UNIT_TENSIX_RESET_REG_DEFAULT};
-  tensix_reset.f.tensix_reset_n = 0xffffffff;
-  // There are 8 instances of these tensix reset registers
-  for (uint32_t i = 0; i < 8; i++) {
-    WriteReg(RESET_UNIT_TENSIX_RESET_0_REG_ADDR + i * 4, tensix_reset.val);
-  }
-
-  RESET_UNIT_DDR_RESET_reg_u ddr_reset = {.val = RESET_UNIT_DDR_RESET_REG_DEFAULT};
-  ddr_reset.f.ddr_reset_n = 0xff;
-  WriteReg(RESET_UNIT_DDR_RESET_REG_ADDR, ddr_reset.val);
-
-  RESET_UNIT_L2CPU_RESET_reg_u l2cpu_reset = {.val = RESET_UNIT_L2CPU_RESET_REG_DEFAULT};
-  l2cpu_reset.f.l2cpu_reset_n = 0xf;
-  WriteReg(RESET_UNIT_L2CPU_RESET_REG_ADDR, l2cpu_reset.val);
-}
+static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 // Assert soft reset for all RISC-V cores
 // L2CPU is skipped due to JIRA issues BH-25 and BH-28
@@ -224,16 +88,6 @@ static void DeassertRiscvResets() {
   ddr_reset.val = ReadReg(RESET_UNIT_DDR_RESET_REG_ADDR);
   ddr_reset.f.ddr_risc_reset_n = 0xffffff;
   WriteReg(RESET_UNIT_DDR_RESET_REG_ADDR, ddr_reset.val);
-}
-
-static void InitResetInterrupt(uint8_t pcie_inst) {
-  if (pcie_inst == 0) {
-    IRQ_CONNECT(IRQNUM_PCIE0_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE0_ERR_INTR, 0);
-    irq_enable(IRQNUM_PCIE0_ERR_INTR);
-  } else if (pcie_inst == 1) {
-    IRQ_CONNECT(IRQNUM_PCIE1_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE1_ERR_INTR, 0);
-    irq_enable(IRQNUM_PCIE1_ERR_INTR);
-  }
 }
 
 static void InitMrisc() {
@@ -369,19 +223,6 @@ static void EthInit() {
     LoadEthFwCfg(eth_inst, ring, large_sram_buffer, fw_size);
     ReleaseEthReset(eth_inst, ring);
   }
-}
-
-uint32_t InitFW() {
-  WriteReg(STATUS_FW_VERSION_REG_ADDR, APPVERSION);
-
-  // Initialize ARC DMA
-  ArcDmaConfig();
-  ArcDmaInitCh(0, 0, 15);
-
-  // Initialize SPI EEPROM and the filesystem
-  InitSpiFS();
-
-  return 0;
 }
 
 // Returns 0 on success, non-zero on failure
