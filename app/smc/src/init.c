@@ -12,6 +12,7 @@
 #include <tenstorrent/post_code.h>
 
 #include "avs.h"
+#include "cat.h"
 #include "reg.h"
 #include "regulator.h"
 #include "status_reg.h"

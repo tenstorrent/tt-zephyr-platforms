@@ -20,7 +20,6 @@
 #include "telemetry.h"
 
 #define PVT_CNTL_IRQ_EN_REG_ADDR                   0x80080040
-#define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR 0x80030168
 #define PVT_CNTL_TS_00_IRQ_ENABLE_REG_ADDR         0x800800C0
 #define PVT_CNTL_PD_00_IRQ_ENABLE_REG_ADDR         0x80080340
 #define PVT_CNTL_VM_00_IRQ_ENABLE_REG_ADDR         0x80080A00
@@ -64,7 +63,6 @@
 // therm_trip temperature in degrees C
 #define ALARM_A_THERM_TRIP_TEMP 83
 #define ALARM_B_THERM_TRIP_TEMP 95
-#define CAT_THERM_TRIP_TEMP 100
 
 #define TS_HYSTERESIS_DELTA 5
 
@@ -103,21 +101,6 @@ typedef enum {
   ValidData = 0,
   AnalogueAccess = 1,
 } SampleType;
-
-typedef struct {
-  uint32_t trim_code: 6;
-  uint32_t rsvd_0: 1;
-  uint32_t enable: 1;
-  uint32_t pll_therm_trip_bypass_catmon_en: 1;
-  uint32_t pll_therm_trip_bypass_thermb_en: 1;
-} RESET_UNIT_CATMON_THERM_TRIP_CNTL_reg_t;
-
-typedef union {
-  uint32_t val;
-  RESET_UNIT_CATMON_THERM_TRIP_CNTL_reg_t f;
-} RESET_UNIT_CATMON_THERM_TRIP_CNTL_reg_u;
-
-#define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_DEFAULT (0x00000318)
 
 typedef struct {
   uint32_t tmr_irq_enable: 1;
@@ -271,28 +254,6 @@ static float DoutToFreq(uint16_t dout)
 static uint16_t TempToDout(float temp)
 {
   return (uint16_t)(((temp - 83.09f) / 262.5f + 0.5f) * 4096);
-}
-
-static uint8_t TempToTrimCode(float temp)
-{
-  return (uint8_t)((194 - temp) / 4);
-}
-
-void CATInit() {
-  GpioDisableOutput(GPIO_THERM_TRIP);
-  RESET_UNIT_CATMON_THERM_TRIP_CNTL_reg_u cat_cntl;
-  cat_cntl.val = RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_DEFAULT;
-  cat_cntl.f.trim_code = TempToTrimCode(CAT_THERM_TRIP_TEMP);
-  cat_cntl.f.enable = 1;
-  cat_cntl.f.pll_therm_trip_bypass_catmon_en = 0;
-  cat_cntl.f.pll_therm_trip_bypass_thermb_en = 0;
-  WriteReg(RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR, cat_cntl.val);
-  // CAT therm_trip value is undefined during power up, so disable PLL bypass and therm_trip GPIO 
-  Wait(5 * WAIT_1US);
-  GpioEnableOutput(GPIO_THERM_TRIP);
-  cat_cntl.f.pll_therm_trip_bypass_catmon_en = 1;
-  cat_cntl.f.pll_therm_trip_bypass_thermb_en = 1;
-  WriteReg(RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR, cat_cntl.val);
 }
 
 // setup 4 sources of interrupts for each type of sensor:
