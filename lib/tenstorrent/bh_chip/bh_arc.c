@@ -9,6 +9,7 @@
 int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count, uint8_t *output)
 {
 	int ret;
+
 	if (dev->enable.port != NULL) {
 		gpio_pin_set_dt(&dev->enable, 1);
 	}
@@ -25,6 +26,7 @@ int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input)
 {
 	int ret;
+
 	if (dev->enable.port != NULL) {
 		gpio_pin_set_dt(&dev->enable, 1);
 	}

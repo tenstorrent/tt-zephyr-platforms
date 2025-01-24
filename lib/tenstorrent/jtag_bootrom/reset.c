@@ -32,39 +32,40 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
 	const size_t patch_len = get_bootcode_len();
 
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-  if (force_reset) {
-    chip->data.needs_reset = true;
-  }
+	if (force_reset) {
+		chip->data.needs_reset = true;
+	}
 #endif
 
-  int ret = jtag_bootrom_reset_asic(chip);
-  if (ret) {
-    return ret;
-  }
+	int ret = jtag_bootrom_reset_asic(chip);
 
 	if (ret) {
 		return ret;
 	}
 
-  jtag_bootrom_patch_offset(chip, patch, patch_len, 0x80);
+	if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul) && IS_ENABLED(CONFIG_JTAG_VERIFY_WRITE)) {
+		jtag_bootrom_emul_setup((uint32_t *)sram, patch_len);
+	}
 
-  if (jtag_bootrom_verify(chip->config.jtag, patch, patch_len) != 0) {
-    printk("Bootrom verification failed\n");
-  }
+	jtag_bootrom_patch_offset(chip, patch, patch_len, 0x80);
 
-  bh_chip_cancel_bus_transfer_set(chip);
+	if (jtag_bootrom_verify(chip->config.jtag, patch, patch_len) != 0) {
+		printk("Bootrom verification failed\n");
+	}
+
+	bh_chip_cancel_bus_transfer_set(chip);
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-  k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-  if (chip->data.needs_reset) {
-    jtag_bootrom_soft_reset_arc(chip);
-  }
-  k_mutex_unlock(&chip->data.reset_lock);
+	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
+	if (chip->data.needs_reset) {
+		jtag_bootrom_soft_reset_arc(chip);
+	}
+	k_mutex_unlock(&chip->data.reset_lock);
 #else
-  jtag_bootrom_soft_reset_arc(chip);
+	jtag_bootrom_soft_reset_arc(chip);
 #endif
-  bh_chip_cancel_bus_transfer_clear(chip);
+	bh_chip_cancel_bus_transfer_clear(chip);
 
-  jtag_bootrom_teardown(chip);
+	jtag_bootrom_teardown(chip);
 
 	return 0;
 }

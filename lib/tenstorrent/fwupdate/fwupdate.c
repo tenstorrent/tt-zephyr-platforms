@@ -55,32 +55,33 @@ static struct gpio_dt_spec spi_mux;
 
 int tt_fwupdate_init(const struct device *dev, struct gpio_dt_spec mux)
 {
-  int ret;
+	int ret;
 
-  flash1_dev = dev;
-  spi_mux = mux;
+	flash1_dev = dev;
+	spi_mux = mux;
 
-  if (spi_mux.port != NULL) {
-    ret = gpio_pin_configure_dt(&spi_mux, GPIO_OUTPUT_INACTIVE);
-    if (ret != 0) {
-      return ret;
-    }
-  }
+	if (spi_mux.port != NULL) {
+		ret = gpio_pin_configure_dt(&spi_mux, GPIO_OUTPUT_INACTIVE);
+		if (ret != 0) {
+			return ret;
+		}
+	}
 
-  return 0;
+	return 0;
 }
 
-int tt_fwupdate_complete()
+int tt_fwupdate_complete(void)
 {
-  int ret;
-  if (spi_mux.port != NULL) {
-    ret = gpio_pin_set_dt(&spi_mux, 1);
-    if (ret != 0) {
-      return ret;
-    }
-  }
+	int ret;
 
-  return 0;
+	if (spi_mux.port != NULL) {
+		ret = gpio_pin_set_dt(&spi_mux, 1);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	return 0;
 }
 #endif
 
@@ -90,7 +91,7 @@ int tt_fwupdate_complete()
 #define WRITE_BLOCK_SIZE 8
 
 static const struct device *const flash0_dev = DEVICE_DT_GET(FLASH0_NODE);
-// Should just be an enable on the flash/spi
+/* Should just be an enable on the flash/spi */
 
 static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
 {

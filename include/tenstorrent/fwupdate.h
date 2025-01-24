@@ -35,7 +35,7 @@ int tt_fwupdate_init(const struct device *dev, struct gpio_dt_spec mux);
  *
  * @retval 0 on success, if the spi mux was able to be set
  */
-int tt_fwupdate_complete();
+int tt_fwupdate_complete(void);
 #endif
 
 /**

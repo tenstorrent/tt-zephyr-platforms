@@ -80,6 +80,32 @@ int update_fw(void)
 	return ret;
 }
 
+void process_cm2bm_message(struct bh_chip *chip)
+{
+	cm2bmMessageRet msg = bh_chip_get_cm2bm_message(chip);
+
+	if (msg.ret == 0) {
+		cm2bmMessage message = msg.msg;
+
+		switch (message.msg_id) {
+		case 0x1:
+			switch (message.data) {
+			case 0x0:
+				jtag_bootrom_reset_sequence(chip, true);
+				break;
+			case 0x3:
+				/* Trigger reboot; will reset asic and reload bmfw
+				 */
+				if (IS_ENABLED(CONFIG_REBOOT)) {
+					sys_reboot(SYS_REBOOT_COLD);
+				}
+				break;
+			}
+			break;
+		}
+	}
+}
+
 int main(void)
 {
 	int ret;
@@ -203,26 +229,7 @@ int main(void)
 		}
 
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			cm2bmMessageRet msg = bh_chip_get_cm2bm_message(chip);
-			if (msg.ret == 0) {
-				cm2bmMessage message = msg.msg;
-				switch (message.msg_id) {
-				case 0x1:
-					switch (message.data) {
-					case 0x0:
-						jtag_bootrom_reset_sequence(chip, true);
-						break;
-					case 0x3:
-						/* Trigger reboot; will reset asic and reload bmfw
-						 */
-						if (IS_ENABLED(CONFIG_REBOOT)) {
-							sys_reboot(SYS_REBOOT_COLD);
-						}
-						break;
-					}
-					break;
-				}
-			}
+			process_cm2bm_message(chip);
 		}
 
 		/*

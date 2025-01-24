@@ -20,18 +20,18 @@ typedef struct bmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
-} __attribute__((packed)) bmStaticInfo;
+} __packed bmStaticInfo;
 
 typedef struct cm2bmMessage {
 	uint8_t msg_id;
 	uint8_t seq_num;
 	uint32_t data;
-} __attribute__((packed)) cm2bmMessage;
+} __packed cm2bmMessage;
 
 typedef struct cm2bmAck {
 	uint8_t msg_id;
 	uint8_t seq_num;
-} __attribute__((packed)) cm2bmAck;
+} __packed cm2bmAck;
 
 union cm2bmAckWire {
 	cm2bmAck f;

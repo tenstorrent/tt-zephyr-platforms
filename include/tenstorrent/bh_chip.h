@@ -44,7 +44,7 @@ struct bh_chip_data {
 	bool workaround_applied;
 
 	/*
-	 * Flag set when need to send or recieve 1 time info to chip.
+	 * Flag set when need to send or receive 1 time info to chip.
 	 * Could be used for static data or config of peripherals.
 	 */
 	bool arc_just_reset;
@@ -58,15 +58,16 @@ struct bh_chip {
 };
 
 #define DT_PHANDLE_OR_CHILD(node_id, name)                                                         \
-	COND_CODE_1(DT_NODE_HAS_PROP(node_id, name), (DT_PHANDLE(node_id, name)),                        \
-              (DT_CHILD(node_id, name)))
+	COND_CODE_1(DT_NODE_HAS_PROP(node_id, name), (DT_PHANDLE(node_id, name)),                 \
+	      (DT_CHILD(node_id, name)))
 
 #define HAS_DT_PHANDLE_OR_CHILD(node_id, name) DT_NODE_EXISTS(DT_PHANDLE_OR_CHILD(node_id, name))
 #define BH_CHIP_COUNT                          DT_PROP_LEN_OR(DT_PATH(chips), chips, 0)
 extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 
 #define MAKE_STRUCT_FIELD(n) .n
-#define INIT_STRAP(n)        MAKE_STRUCT_FIELD(DT_NODE_FULL_NAME_TOKEN(n)) = GPIO_DT_SPEC_GET(n, gpios),
+#define INIT_STRAP(n)        MAKE_STRUCT_FIELD(DT_NODE_FULL_NAME_TOKEN(n)) = \
+	GPIO_DT_SPEC_GET(n, gpios),
 
 #define INIT_CHIP(n, prop, idx)                                                                    \
 	{                                                                                          \
@@ -89,11 +90,11 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 			.pgood = GPIO_DT_SPEC_GET(                                                 \
 				DT_PHANDLE_OR_CHILD(DT_PHANDLE_BY_IDX(n, prop, idx), pgood),       \
 				gpios),                                                            \
-			.strapping = {COND_CODE_1(                                                                 \
-          HAS_DT_PHANDLE_OR_CHILD(DT_PHANDLE_BY_IDX(n, prop, idx), strapping),                     \
-          (DT_FOREACH_CHILD(DT_PHANDLE_OR_CHILD(DT_PHANDLE_BY_IDX(n, prop, idx), strapping),       \
-                            INIT_STRAP)),                                                          \
-          ())},                                    \
+			.strapping = {COND_CODE_1(                                                 \
+	  HAS_DT_PHANDLE_OR_CHILD(DT_PHANDLE_BY_IDX(n, prop, idx), strapping),                     \
+	  (DT_FOREACH_CHILD(DT_PHANDLE_OR_CHILD(DT_PHANDLE_BY_IDX(n, prop, idx), strapping),       \
+			    INIT_STRAP)),                                                          \
+	  ())},                                    \
 				},                                                                 \
 				.data =                                                            \
 					{                                                          \

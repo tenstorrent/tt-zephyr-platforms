@@ -33,9 +33,11 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 
 	if (output.ret == 0 && output.msg.msg_id != 0) {
 		cm2bmAck ack = {0};
+
 		ack.msg_id = output.msg.msg_id;
 		ack.seq_num = output.msg.seq_num;
 		union cm2bmAckWire wire_ack;
+
 		wire_ack.f = ack;
 		output.ack = ack;
 		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc, 0x11, wire_ack.val);
@@ -49,6 +51,7 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
 {
 	int ret;
+
 	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_block_write(&chip->config.arc, 0x20, sizeof(bmStaticInfo),
 				      (uint8_t *)info);

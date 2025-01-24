@@ -28,14 +28,16 @@ bool jtag_axiwait(const struct device *dev, uint32_t addr)
 
 	jtag_reset(dev);
 
-	// Returns true on g2g
+	/* Returns true on g2g */
 	uint32_t value = 0;
+
 	return !jtag_axi_read32(dev, addr, &value);
 }
 
 void jtag_bitbang_wait_for_id(const struct device *dev)
 {
 	uint32_t reset_id = 0;
+
 	while (true) {
 		jtag_reset(dev);
 		jtag_read_id(dev, &reset_id);
@@ -93,17 +95,18 @@ int jtag_bootrom_reset_asic(const struct bh_chip *chip)
 	bh_chip_assert_spi_reset(chip);
 
 	int ret = jtag_setup(chip->config.jtag);
+
 	if (ret) {
 		return ret;
 	}
 
-	// k_sleep(K_MSEC(1));
+	/* k_sleep(K_MSEC(1)); */
 	k_busy_wait(1000);
 
 	bh_chip_deassert_asic_reset(chip);
 	bh_chip_deassert_spi_reset(chip);
 
-	// k_sleep(K_MSEC(2));
+	/* k_sleep(K_MSEC(2)); */
 	k_busy_wait(2000);
 
 	jtag_reset(chip->config.jtag);
@@ -156,14 +159,14 @@ int jtag_bootrom_init(struct bh_chip *chip)
 	gpio_init_callback(&preset_cb_data, gpio_asic_reset_callback, BIT(preset_trigger.pin));
 	gpio_add_callback(preset_trigger.port, &preset_cb_data);
 
-	// Active LOW, so will be false if high
+	/* Active LOW, so will be false if high */
 	if (!gpio_pin_get_dt(&preset_trigger)) {
-		// If the preset trigger started high, then we came out of reset with the system
-		// thinking that pcie is ready to go. We need to forcibly apply the workaround to
-		// ensure this remains true.
+		/* If the preset trigger started high, then we came out of reset with the system */
+		/* thinking that pcie is ready to go. We need to forcibly apply the workaround to */
+		/* ensure this remains true. */
 		chip->data.needs_reset = true;
 	}
-#endif // IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
 	return 0;
 }
@@ -176,21 +179,22 @@ int jtag_bootrom_patch_offset(struct bh_chip *chip, const uint32_t *patch, size_
 
 	jtag_reset(dev);
 
-	// HALT THE ARC CORE!!!!!
+	/* HALT THE ARC CORE!!!!! */
 	uint32_t arc_misc_cntl = 0;
+
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
 	arc_misc_cntl |= (0b1111 << 4);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
-	// Reset it back to zero
+	/* Reset it back to zero */
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
 	arc_misc_cntl &= ~(0b1111 << 4);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
 
-	// Enable gpio trien
+	/* Enable gpio trien */
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x1A0, 0xff00);
 
-	// Write to postcode
+	/* Write to postcode */
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x60, 0xF2);
 
 	jtag_axi_block_write(dev, start_addr, patch, patch_len);
@@ -211,7 +215,7 @@ int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t 
 
 	/* Confirmed matching */
 	for (int i = 0; i < patch_len; ++i) {
-		// ICCM start addr is 0
+		/* ICCM start addr is 0 */
 		uint32_t readback = 0;
 #ifdef CONFIG_JTAG_EMUL
 		jtag_emul_axi_read32(dev, i * 4, &readback);
@@ -243,29 +247,29 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 
 	jtag_reset(dev);
 
-	// HALT THE ARC CORE!!!!!
+	/* HALT THE ARC CORE!!!!! */
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
 	arc_misc_cntl |= (0b1111 << 4);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
-	// Reset it back to zero
+	/* Reset it back to zero */
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
 	arc_misc_cntl &= ~(0b1111 << 4);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
 
-	// Write reset_vector (rom_memory[0])
+	/* Write reset_vector (rom_memory[0]) */
 	jtag_axi_write32(dev, BH_ROM_BASE, 0x84);
 
-	// Toggle soft-reset
-	// ARC_MISC_CNTL.soft_reset (12th bit)
+	/* Toggle soft-reset */
+	/* ARC_MISC_CNTL.soft_reset (12th bit) */
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
 
-	// Set to 1
+	/* Set to 1 */
 	arc_misc_cntl = arc_misc_cntl | (1 << 12);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
 
 	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
-	// Set to 0
+	/* Set to 0 */
 	arc_misc_cntl = arc_misc_cntl & ~(1 << 12);
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
 
@@ -276,7 +280,7 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 
 void jtag_bootrom_teardown(const struct bh_chip *chip)
 {
-	// Just one more for good luck
+	/* Just one more for good luck */
 	jtag_reset(chip->config.jtag);
 	jtag_teardown(chip->config.jtag);
 }
