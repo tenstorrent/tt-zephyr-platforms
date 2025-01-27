@@ -194,3 +194,24 @@
 		};
 	};
 };
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	ina228: ina228@40 {
+		compatible = "ti,ina228";
+		reg = <0x40>;
+		status = "okay";
+		/* max_current / (2^19) */
+		current-lsb-microamps = <210>;
+		rshunt-micro-ohms = <1000>;
+	};
+};
+
+&smbus1 {
+	compatible = "st,tt-stm32-smbus";
+	status = "okay";
+};
