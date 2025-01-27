@@ -13,6 +13,8 @@ jobs:
   hardware-smoke-test:
     if: github.repository_owner == 'tenstorrent'
     runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    env:
+      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
@@ -21,11 +23,119 @@ jobs:
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
         - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
-      options:
-        - '--device /dev/tenstorrent'
-        - '--device /dev/bus/usb'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # FIXME: would be nice to either use the default here or a built-in github environment
+          # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
           path: tt-zephyr-platforms
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Rebase onto the target branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          cd tt-zephyr-platforms
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          git remote -v
+          # Update the remote ref
+          git fetch origin
+          # Ensure there's no merge commits in the PR
+          if [ $(git rev-list --merges --count origin/${BASE_REF}..) -ne 0 ]; then
+            echo "::error ::Merge commits not allowed, rebase instead"
+            exit 1
+          fi
+          rm -fr ".git/rebase-apply"
+          rm -fr ".git/rebase-merge"
+          git rebase origin/${BASE_REF}
+          git clean -f -d
+          # debug
+          git log  --pretty=oneline | head -n 10
+
+      - name: Install west
+        run: |
+          pip install west
+
+      - name: west setup
+        # FIXME: would be ideal to use a built-in github environment variable
+        # instead of tt-zephyr-platforms
+        run: |
+          west init -l tt-zephyr-platforms
+
+      - name: Setup Zephyr modules
+        run: |
+          west config manifest.group-filter -- +optional
+          west update
+
+          # need to install protoc manually here, for some reason
+          pip install -r zephyr/scripts/requirements.txt
+          pip install protobuf grpcio-tools
+
+      - name: Apply patches
+        run: |
+          west -v patch apply
+
+      - name: run-bmc-tests
+        working-directory: zephyr
+        env:
+          # below, BOARD refers to a directory name which cannot contain the '/'
+          # character (weird quirk of HWMv2 naming and output directories)
+          BOARD: 'tt_blackhole_tt_blackhole_bmc'
+          BH_FW_DIR: "${{ github.workspace }}/tt-zephyr-platforms"
+          AFTER_SCRIPT: "${{ github.workspace }}/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
+        run: |
+          # This needs to be added to the github runner
+          export PATH=$PATH:/opt/SEGGER/JLink/
+
+          # The '-q' argument to west (which '--device-serial-pty rtt' depends on) was only added to west
+          # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
+          pip install west -U &>/dev/null
+
+          # Ensure that scrappy can
+          # 1. build, flash & run the hello world app
+          # 2. perform a full bootloader + fw flash
+          # 3. perform a fw update via mcuboot
+          ./scripts/twister -i --retry-failed 3 \
+            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -s samples/hello_world/sample.basic.helloworld.rtt \
+            -s tests/boot/test_mcuboot/bootloader.mcuboot.rtt
+
+      - name: run-smc-tests
+        working-directory: zephyr
+        env:
+          # below, BOARD refers to a directory name which cannot contain the '/'
+          # character (weird quirk of HWMv2 naming and output directories)
+          BOARD: 'tt_blackhole_tt_blackhole_bmc'
+          BH_FW_DIR: "${{ github.workspace }}/tt-zephyr-platforms"
+          AFTER_SCRIPT: "${{ github.workspace }}/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
+        run: |
+          # This needs to be added to the github runner
+
+          # The '-q' argument to west (which '--device-serial-pty rtt' depends on) was only added to west
+          # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
+          pip install west -U &>/dev/null
+
+          # Ensure that scrappy can
+          # build, flash & run the hello world app
+          ./scripts/twister -i --retry-failed 3 \
+            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -s samples/hello_world/sample.basic.helloworld.rtt \
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean up patched Zephyr repo
+          west patch clean
+          # Cleanup the checked out repo, we can leave everything else
+          rm -rf tt-zephyr-platforms
+          rm -rf .west
