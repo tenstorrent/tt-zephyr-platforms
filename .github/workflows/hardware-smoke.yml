@@ -1,0 +1,31 @@
+name: Hardware Smoke Tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  hardware-smoke-test:
+    if: github.repository_owner == 'tenstorrent'
+    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/SEGGER:/opt/SEGGER
+        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
+        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+      options:
+        - '--device /dev/tenstorrent'
+        - '--device /dev/bus/usb'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
