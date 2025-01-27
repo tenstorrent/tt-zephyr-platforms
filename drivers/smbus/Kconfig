@@ -5,6 +5,7 @@
 menuconfig TT_SMBUS_DRIVER
 	bool "stm32 smbus driver with some customizations [EXPERIMENTAL]"
 	select EXPERIMENTAL
+	select CRC
 
 if TT_SMBUS_DRIVER
 
