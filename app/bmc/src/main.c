@@ -103,8 +103,10 @@ void process_cm2bm_message(struct bh_chip *chip)
 				break;
 			}
 			break;
-		case 0x2:
-			set_fan_speed((uint8_t) message.data & 0xFF);
+		case 0x3:
+			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+				set_fan_speed((uint8_t)message.data & 0xFF);
+			}
 			break;
 		}
 	}

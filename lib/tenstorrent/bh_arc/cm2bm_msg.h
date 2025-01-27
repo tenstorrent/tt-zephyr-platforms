@@ -12,7 +12,7 @@
 typedef enum {
 	kCm2BmMsgIdNull = 0,
 	kCm2BmMsgIdResetReq = 1,
-	kCm2BmMsgIdFanSpeedUpdate = 2,
+	kCm2BmMsgIdFanSpeedUpdate = 3,
 } Cm2BmMsgId;
 
 typedef struct {
