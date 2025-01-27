@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-22.04
     name: Copyright Check
     steps:
-    - name: Checkout the code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Run the script
-      run: |
-        ./scripts/check-copyright.py
+      - name: Checkout the code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run the script
+        run: |
+          ./scripts/check-copyright.py
