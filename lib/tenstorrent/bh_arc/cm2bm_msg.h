@@ -7,6 +7,7 @@
 #define CM2BM_MSG_H
 
 #include <stdint.h>
+#include <zephyr/toolchain.h>
 
 typedef enum {
 	kCm2BmMsgIdNull = 0,
