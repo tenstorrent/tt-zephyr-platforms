@@ -4,10 +4,12 @@ name: Compliance Checks
 on:
   pull_request:
     types:
-    - edited
-    - opened
-    - reopened
-    - synchronize
+      - opened
+      - reopened
+      - synchronize
+      - edited
+    branches:
+      - main
 
 jobs:
   check_compliance:

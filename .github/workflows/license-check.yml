@@ -1,6 +1,13 @@
 name: Scancode
 
-on: [pull_request]
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
 
 jobs:
   scancode_job:
