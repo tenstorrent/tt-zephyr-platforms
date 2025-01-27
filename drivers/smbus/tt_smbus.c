@@ -14,6 +14,7 @@
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/crc.h>
 
 LOG_MODULE_REGISTER(tt_stm32_smbus, CONFIG_SMBUS_LOG_LEVEL);
 
@@ -178,28 +179,16 @@ static int tt_smbus_stm32_byte_read(const struct device *dev, uint16_t periph_ad
 static int tt_smbus_stm32_byte_data_write(const struct device *dev, uint16_t periph_addr,
 					  uint8_t command, uint8_t byte)
 {
+	/* Address byte needs to be included */
+	uint8_t pec_src[] = {periph_addr << 1 | 0, /* I2C_WRITE_BIT */
+			     command, byte};
+	uint8_t pec = crc8(pec_src, sizeof(pec_src), 0x07, 0, false);
+
 	const struct tt_smbus_stm32_config *config = dev->config;
-	uint8_t buffer[] = {
-		command,
-		byte,
-	};
+
+	uint8_t buffer[] = {command, byte, pec};
 
 	return i2c_write(config->i2c_dev, buffer, ARRAY_SIZE(buffer), periph_addr);
-}
-
-static uint8_t Crc8(uint8_t crc, uint8_t data)
-{
-	uint8_t i;
-
-	crc = crc ^ data;
-	for (i = 0; i < 8; i++) {
-		if (crc & 0x80) {
-			crc = (crc << 1) ^ 0x07;
-		} else {
-			crc <<= 1;
-		}
-	}
-	return crc;
 }
 
 static int tt_smbus_stm32_byte_data_read(const struct device *dev, uint16_t periph_addr,
@@ -220,11 +209,17 @@ static int tt_smbus_stm32_byte_data_read(const struct device *dev, uint16_t peri
 static int tt_smbus_stm32_word_data_write(const struct device *dev, uint16_t periph_addr,
 					  uint8_t command, uint16_t word)
 {
+	/* Address byte needs to be included */
+	uint8_t pec_src[] = {periph_addr << 1 | 0, /* I2C_WRITE_BIT */
+			     command, (uint8_t)word & 0xFF, (uint8_t)(word >> 8) & 0xFF};
+	uint8_t pec = crc8(pec_src, sizeof(pec_src), 0x07, 0, false);
+
 	const struct tt_smbus_stm32_config *config = dev->config;
-	uint8_t buffer[sizeof(command) + sizeof(word)];
+	uint8_t buffer[sizeof(command) + sizeof(word) + sizeof(pec)];
 
 	buffer[0] = command;
 	sys_put_le16(word, buffer + 1);
+	buffer[3] = pec;
 
 	return i2c_write(config->i2c_dev, buffer, ARRAY_SIZE(buffer), periph_addr);
 }
@@ -262,16 +257,12 @@ static int tt_smbus_stm32_pcall(const struct device *dev, uint16_t periph_addr, 
 static int tt_smbus_stm32_block_write(const struct device *dev, uint16_t periph_addr,
 				      uint8_t command, uint8_t count, uint8_t *buf)
 {
+	uint8_t pec_src[] = {                      /* Address byte needs to be included */
+			     periph_addr << 1 | 0, /* I2C_WRITE_BIT */
+			     command, count};
+	uint8_t pec = crc8(pec_src, sizeof(pec_src), 0x07, 0, false);
 
-	uint8_t pec = 0;
-
-	pec = Crc8(pec, periph_addr << 1 |
-				0 /* I2C_WRITE_BIT */); /* Address byte needs to be included */
-	pec = Crc8(pec, command);
-	pec = Crc8(pec, count);
-	for (int i = 0; i < count; i++) {
-		pec = Crc8(pec, buf[i]);
-	}
+	pec = crc8(buf, count, 0x07, pec, false);
 
 	const struct tt_smbus_stm32_config *config = dev->config;
 	struct i2c_msg messages[] = {
@@ -304,11 +295,9 @@ static int tt_smbus_stm32_block_read(const struct device *dev, uint16_t periph_a
 				     uint8_t command, uint8_t *count, uint8_t *buf)
 {
 	int ret;
-	uint8_t pec = 0;
-
-	pec = Crc8(pec,
-		   periph_addr << 1 | 1 /* I2C_READ_BIT */); /* Address byte needs to be included */
-	pec = Crc8(pec, command);
+	uint8_t pec_src[] = {periph_addr << 1 | 1, /* I2C_READ_BIT */
+			     command};
+	uint8_t pec = crc8(pec_src, sizeof(pec_src), 0x07, 0, false);
 
 	const struct tt_smbus_stm32_config *config = dev->config;
 	uint8_t pec_value = 0;
@@ -363,10 +352,8 @@ end_transfer:
 	 */
 
 	if (!ret) {
-		pec = Crc8(pec, *count);
-		for (int i = 0; i < *count; i++) {
-			pec = Crc8(pec, buf[i]);
-		}
+		pec = crc8(count, sizeof(*count), 0x07, pec, false);
+		pec = crc8(buf, *count, 0x07, pec, false);
 
 		if (pec != pec_value) {
 			return -EINVAL;
