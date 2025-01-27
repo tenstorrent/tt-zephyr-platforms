@@ -6,12 +6,12 @@
 
 #include <stdint.h>
 
-#define FAN_CTRL_ADDR           0x2C
-#define GLOBAL_CONFIG           0x04
-#define FAN1_CONFIG_1           0x10
-#define FAN1_CONFIG_2A          0x11
-#define FAN1_CONFIG_3           0x13
-#define FAN1_DUTY_CYCLE         0x26
+#define FAN_CTRL_ADDR   0x2C
+#define GLOBAL_CONFIG   0x04
+#define FAN1_CONFIG_1   0x10
+#define FAN1_CONFIG_2A  0x11
+#define FAN1_CONFIG_3   0x13
+#define FAN1_DUTY_CYCLE 0x26
 
 /**
  * @brief Fan controller initialization sequence.

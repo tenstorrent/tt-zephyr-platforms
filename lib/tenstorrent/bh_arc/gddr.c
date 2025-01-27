@@ -12,9 +12,11 @@
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
-#define MRISC_SETUP_TLB       0
+#define MRISC_SETUP_TLB       13
 #define MRISC_L1_ADDR         (1ULL << 37)
 #define MRISC_FW_CFG_OFFSET   0x3C00
+
+static gddr_telemetry_table_t telemetry;
 
 volatile uint32_t *SetupMriscL1Tlb(uint8_t gddr_inst)
 {
@@ -23,6 +25,25 @@ volatile uint32_t *SetupMriscL1Tlb(uint8_t gddr_inst)
 	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
 	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
 	return GetTlbWindowAddr(0, MRISC_SETUP_TLB, MRISC_L1_ADDR);
+}
+
+uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
+	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_L1_ADDR + addr);
+}
+
+void read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
+{
+	telemetry.telemetry_table_version = MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR);
+	uint32_t dram_temp = MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + 4);
+
+	telemetry.dram_temperature_top = (uint16_t)(dram_temp & 0xFFFF);
+	telemetry.dram_temperature_bottom = (uint16_t)((dram_temp >> 16) & 0xFFFF);
+	*gddr_telemetry = telemetry;
 }
 
 void ReleaseMriscReset(uint8_t gddr_inst)

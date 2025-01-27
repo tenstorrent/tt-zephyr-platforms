@@ -9,7 +9,9 @@
 #include "cm2bm_msg.h"
 #include "dw_apb_i2c.h"
 #include "fw_table.h"
+#include "gddr.h"
 #include "reg.h"
+#include "status_reg.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "timer.h"
@@ -22,15 +24,34 @@ static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
 static int fan_ctrl_update_interval = 1000;
 
-uint32_t fan_speed; // in PWM for now
+uint32_t fan_speed; /* In PWM for now*/
 uint16_t max_gddr_temp;
 float max_asic_temp;
 float alpha = 0.5;
 
+static uint16_t read_max_gddr_temp(void)
+{
+	uint16_t max_temp = 0;
+	gddr_telemetry_table_t telemetry;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
+		read_gddr_telemetry_table(gddr_inst, &telemetry);
+
+		if (telemetry.dram_temperature_bottom > max_temp) {
+			max_temp = telemetry.dram_temperature_bottom;
+		}
+		if (telemetry.dram_temperature_top > max_temp) {
+			max_temp = telemetry.dram_temperature_top;
+		}
+	}
+
+	return max_temp;
+}
+
 static uint32_t fan_curve(float max_asic_temp, uint16_t max_gddr_temp)
 {
-	// P150 fan curve
-	// uint32_t fan_rpm[10] = {1800, 1990, 2170, 2400, 2650, 2885, 3155, 3440, 4800, 5380};
+	/* P150 fan curve */
+	/* uint32_t fan_rpm[10] = {1800, 1990, 2170, 2400, 2650, 2885, 3155, 3440, 4800, 5380}; */
 	uint32_t fan_pwm[10] = {35, 40, 45, 50, 55, 60, 65, 70, 90, 100};
 	uint16_t gddr_temps[9] = {46, 52, 59, 64, 68, 71, 74, 77, 80};
 	float asic_temps[9] = {52.0, 56.0, 60.0, 65.0, 70.0, 74.0, 80.0, 85.0, 92.0};
@@ -50,17 +71,17 @@ static uint32_t fan_curve(float max_asic_temp, uint16_t max_gddr_temp)
 	return (fan_speed1 > fan_speed2) ? fan_speed1 : fan_speed2;
 }
 
-static void update_fan_speed()
+static void update_fan_speed(void)
 {
 	TelemetryInternalData telemetry_internal_data;
 
 	ReadTelemetryInternal(1, &telemetry_internal_data);
-	max_asic_temp = alpha * telemetry_internal_data.asic_temperature + (1 - alpha) * max_asic_temp;
-	max_gddr_temp = 0;
+	max_asic_temp =
+		alpha * telemetry_internal_data.asic_temperature + (1 - alpha) * max_asic_temp;
+	max_gddr_temp = read_max_gddr_temp(); /* TODO alpha filtering for GDDR temp */
 
 	fan_speed = fan_curve(max_asic_temp, max_gddr_temp);
 
-	// Send fan speed to BMFW
 	UpdateFanSpeedRequest(fan_speed);
 }
 static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
