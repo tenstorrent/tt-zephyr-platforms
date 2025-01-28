@@ -2,11 +2,15 @@ sample:
   description: Tenstorrent Blackhole Chip Management Firmware
   name: bh-cmfw
 common:
-  build_only: true
   platform_allow:
     - tt_blackhole/tt_blackhole/smc
 tests:
   app.default: {}
+  app.e2e-smoke:
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/e2e-smoke.py
   app.debug:
     extra_overlay_confs:
       - debug.conf
