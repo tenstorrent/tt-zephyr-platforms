@@ -1,0 +1,134 @@
+name: Hardware Long Tests
+
+# Run long tests once nightly, at 00:00
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+
+jobs:
+  hardware-metal-test:
+    if: github.repository_owner == 'tenstorrent'
+    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    env:
+      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/SEGGER:/opt/SEGGER
+        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
+        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Log Test SHA
+        working-directory: tt-zephyr-platforms
+        run: |
+          # debug
+          git log  --pretty=oneline | head -n 10
+
+      - name: Install west
+        run: |
+          pip install west
+
+      - name: west setup
+        # FIXME: would be ideal to use a built-in github environment variable
+        # instead of tt-zephyr-platforms
+        run: |
+          west init -l tt-zephyr-platforms
+
+      - name: Setup Zephyr modules
+        run: |
+          west config manifest.group-filter -- +optional
+          west update
+
+          # need to install protoc manually here, for some reason
+          pip install -r zephyr/scripts/requirements.txt
+          pip install protobuf grpcio-tools
+
+      - name: Apply patches
+        run: |
+          west -v patch apply
+
+      - name: Checkout pyluwen
+        uses: actions/checkout@v4
+        with:
+          repository: tenstorrent/luwen
+          path: luwen
+
+      - name: Build pyluwen
+        run: |
+          # Setup cargo, since we run with a different $HOME
+          HOME=/root . /root/.cargo/env
+          # Install maturin for build (we already have cargo)
+          pip install maturin
+          cd luwen/crates/pyluwen
+          maturin build --release
+          pip install ../../target/wheels/*
+
+      - name: Flash Firmware
+        run: |
+          # This needs to be added to the github runner
+          export PATH=$PATH:/opt/SEGGER/JLink/
+
+          # TODO: ideally we would use one twister command to build and
+          # flash BMC and SMC firmware, but since each chip uses a separate
+          # debug adapter this doesn't work. For now, just flash BMC
+          # then run twister with SMC firmware
+          ./scripts/twister -i --retry-failed 3 \
+            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -s app/bmc/sample.app \
+            -T ../tt-zephyr-platforms -ll DEBUG
+          # Run E2E test to verify BMC and SMC firmware boot, and that
+          # the SMC firmware sets up PCIe and ARC messages
+          ./scripts/twister -i --retry-failed 3 \
+            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -s app/smc/app.e2e-smoke \
+            -T ../tt-zephyr-platforms -ll DEBUG
+
+      - name: Run Metal Tests
+        run: >
+          REPO_OWNER="tenstorrent"
+          REPO_NAME="tt-metal"
+          API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases"
+          TAG_NAME=$(curl -s "$API_URL" | jq -r '.[0].tag_name')
+          git clone https://github.com/tenstorrent/tt-metal.git
+          echo "Latest release tag: $TAG_NAME"
+          git clone --branch "$TAG_NAME" --depth 1 "https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+          echo "Cloned ${REPO_NAME} at tag ${TAG_NAME}"
+          cd tt-metal
+          git submodule update --init --recursive
+          git lfs pull
+          # Build metal
+          export ARCH_NAME=blackhole
+          export TT_METAL_HOME=`pwd`
+          export PYTHONPATH=`pwd`
+          ./build_metal.sh --build-tests --build-programming-examples
+          source ./create_venv.sh
+          # Run metal tests
+          tests/scripts/run_cpp_unit_tests.sh
+          TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean up patched Zephyr repo
+          west patch clean
+          # Clean out metal
+          rm -rf tt-metal
+          # Cleanup the checked out repo, we can leave everything else
+          rm -rf tt-zephyr-platforms
+          rm -rf .west
