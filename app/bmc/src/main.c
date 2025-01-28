@@ -218,7 +218,7 @@ int main(void)
 		LOG_DBG("Bootrom workaround successfully applied");
 	}
 
-	LOG_DBG("BMFW VERSION " APP_VERSION_STRING "\n");
+	printk("BMFW VERSION " APP_VERSION_STRING "\n");
 
 	/* No mechanism for getting bl version... yet */
 	bmStaticInfo static_info =

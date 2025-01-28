@@ -3,6 +3,10 @@ sample:
 tests:
   sample.app:
     sysbuild: true
-    build_only: true
     platform_allow:
-      - tt_blackhole/bmc
+      - tt_blackhole/tt_blackhole/bmc
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - "BMFW VERSION (.*)"
