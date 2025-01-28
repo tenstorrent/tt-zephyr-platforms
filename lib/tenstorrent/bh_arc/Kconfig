@@ -21,6 +21,11 @@ config TT_BH_ARC_NUM_MSG_CODES
 	help
 	  The number of message codes
 
+config TT_BH_ARC_FAN_CTRL_ALPHA
+	int "Fan control alpha value"
+	default 50
+	help
+		Value of alpha for filtering fan curve input temp
 #endif
 
 config TT_SMC_RECOVERY

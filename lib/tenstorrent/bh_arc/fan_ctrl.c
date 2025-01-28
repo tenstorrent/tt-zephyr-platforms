@@ -27,7 +27,7 @@ static int fan_ctrl_update_interval = 1000;
 uint32_t fan_speed; /* In PWM for now*/
 uint16_t max_gddr_temp;
 float max_asic_temp;
-float alpha = 0.5;
+float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
 
 static uint16_t read_max_gddr_temp(void)
 {
