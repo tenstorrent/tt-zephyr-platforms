@@ -323,6 +323,10 @@ static int tt_smbus_stm32_block_read(const struct device *dev, uint16_t periph_a
 	if (ret) {
 		goto end_transfer;
 	}
+	if (*count > 32) {
+		ret = -ENOBUFS;
+		goto end_transfer;
+	}
 	ret = tt_stm32_i2c_send_message(config->i2c_dev, periph_addr,
 					(struct i2c_msg){
 						.buf = buf,

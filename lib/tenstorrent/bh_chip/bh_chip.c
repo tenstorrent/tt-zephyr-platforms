@@ -7,6 +7,7 @@
 #include <tenstorrent/bh_chip.h>
 
 #include <zephyr/kernel.h>
+#include <string.h>
 
 void bh_chip_cancel_bus_transfer_set(struct bh_chip *dev)
 {
@@ -25,11 +26,13 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 		.ack_ret = -1,
 	};
 	uint8_t count = sizeof(output.msg);
+	uint8_t buf[32]; /* Max block counter per API */
 
 	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 
 	output.ret =
-		bharc_smbus_block_read(&chip->config.arc, 0x10, &count, (uint8_t *)&output.msg);
+		bharc_smbus_block_read(&chip->config.arc, 0x10, &count, buf);
+	memcpy(&output.msg, buf, sizeof(output.msg));
 
 	if (output.ret == 0 && output.msg.msg_id != 0) {
 		cm2bmAck ack = {0};
