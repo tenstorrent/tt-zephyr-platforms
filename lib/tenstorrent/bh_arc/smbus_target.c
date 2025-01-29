@@ -318,11 +318,13 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 							    smbus_data.blocksize);
 		smbus_data.state = kSmbusStateWaitIdle;
 		return ret;
+	} else {
+		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
+			 0xc2de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
+		smbus_data.state = kSmbusStateWaitIdle;
+		return -1;
 	}
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
-		 0xc2de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
-	smbus_data.state = kSmbusStateWaitIdle;
-	return -1;
+	return 0;
 }
 
 static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
