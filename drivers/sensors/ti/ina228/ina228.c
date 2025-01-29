@@ -388,7 +388,7 @@ static const struct sensor_driver_api ina228_driver_api = {
 		       DT_INST_PROP(inst, rshunt_micro_ohms) / 10000000ULL,                        \
 		.config = (DT_INST_ENUM_IDX(inst, adc_conversion_delay) << 6) |                    \
 			  (DT_INST_PROP(inst, shunt_temp_comp_en) << 5) |                      \
-			  (DT_INST_ENUM_IDX(inst, high_precision) << 4),                           \
+			  (DT_INST_PROP(inst, high_precision) << 4),                           \
 		.adc_config = (DT_INST_ENUM_IDX(inst, adc_mode) << 12) |                           \
 			      (DT_INST_ENUM_IDX(inst, vbus_conversion_time_us) << 9) |             \
 			      (DT_INST_ENUM_IDX(inst, vshunt_conversion_time_us) << 6) |           \

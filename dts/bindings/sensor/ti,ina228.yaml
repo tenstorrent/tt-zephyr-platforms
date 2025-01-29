@@ -1,5 +1,5 @@
 #
-# Copyright 2021 Grinn
+# Copyright (c) 2025 Tenstorrent AI ULC
 #
 # SPDX - License - Identifier : Apache - 2.0
 #
@@ -87,11 +87,9 @@ properties:
     enum: [1, 4, 16, 64, 128, 256, 512, 1024]
 
   high-precision:
-    type: int
+    type: boolean
     description: |
       Enable high precision mode (4x the resolution).
-    default: 0
-    enum: [0, 1]
 
   adc-conversion-delay:
     type: int
