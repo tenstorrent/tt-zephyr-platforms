@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_library()

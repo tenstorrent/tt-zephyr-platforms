@@ -35,24 +35,24 @@ properties:
     description: |
       ADC channel conversion configuration.
       Default is the power-on reset value.
-    default: "Temperature, bus, and shunt voltage continuous"
+    default: "temp_vbus_vshunt_cont"
     enum:
-      - "Shutdown single shot"
-      - "Bus Voltage single shot"
-      - "Shunt Voltage single shot"
-      - "Bus and Shunt Voltage single shot"
-      - "Temperature Single shot"
-      - "Temperature and bus voltage single shot"
-      - "Temperature and shunt voltage single shot"
-      - "Temperature, bus, and shunt voltage single shot"
-      - "Shutdown continuous"
-      - "Bus voltage continuous"
-      - "Shunt voltage continuous"
-      - "Bus and shunt voltage continuous"
-      - "Temperature continuous"
-      - "Temperature and bus voltage continuous"
-      - "Temperature and shunt voltage continuous"
-      - "Temperature, bus, and shunt voltage continuous"
+      - "shutdown_single_shot"
+      - "vbus_single_shot"
+      - "vshunt_single_shot"
+      - "vbus_vshunt_single_shot"
+      - "temp_single_shot"
+      - "temp_vbus_single_shot"
+      - "temp_vshunt_single_shot"
+      - "temp_vbus_vshunt_single_shot"
+      - "shutdown_cont"
+      - "vbus_cont"
+      - "vshunt_cont"
+      - "vbus_vshunt_cont"
+      - "temp_cont"
+      - "temp_vbus_cont"
+      - "temp_vshunt_cont"
+      - "temp_vbus_vshunt_cont"
 
   vbus-conversion-time-us:
     type: int
@@ -116,8 +116,6 @@ properties:
            500, 502, 504, 506, 508, 510]
 
   shunt-temp-comp-en:
-    type: int
+    type: boolean
     description: |
       Enables temperature compensation of an external shunt.
-    default: 0
-    enum: [0, 1]

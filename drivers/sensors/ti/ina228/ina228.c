@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 NXP
+ * Copyright (c) 2025 Tenstorrent AI ULC
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -216,7 +216,6 @@ static int ina228_read_data(const struct device *dev)
 			return ret;
 		}
 	}
-
 #ifdef CONFIG_INA228_VSHUNT
 	if ((data->chan == SENSOR_CHAN_ALL) || (data->chan == SENSOR_CHAN_VSHUNT)) {
 		ret = ina228_reg_read_24(&config->bus, INA228_REG_VSHUNT, &data->shunt_voltage);
@@ -388,7 +387,7 @@ static const struct sensor_driver_api ina228_driver_api = {
 		.cal = INA228_SHUNT_CAL_SCALING * DT_INST_PROP(inst, current_lsb_microamps) *      \
 		       DT_INST_PROP(inst, rshunt_micro_ohms) / 10000000ULL,                        \
 		.config = (DT_INST_ENUM_IDX(inst, adc_conversion_delay) << 6) |                    \
-			  (DT_INST_ENUM_IDX(inst, shunt_temp_comp_en) << 5) |                      \
+			  (DT_INST_PROP(inst, shunt_temp_comp_en) << 5) |                      \
 			  (DT_INST_ENUM_IDX(inst, high_precision) << 4),                           \
 		.adc_config = (DT_INST_ENUM_IDX(inst, adc_mode) << 12) |                           \
 			      (DT_INST_ENUM_IDX(inst, vbus_conversion_time_us) << 9) |             \

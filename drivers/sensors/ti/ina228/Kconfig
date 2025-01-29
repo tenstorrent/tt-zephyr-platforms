@@ -1,6 +1,6 @@
 # INA228 Power/Energy/Charge Monitor
 
-# Copyright 2024 NXP
+# Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -17,7 +17,7 @@ config INA228
 	  Enable driver for INA228 Power/Energy/Charge Monitor
 
 config INA228_VSHUNT
-	bool "INA226 VShunt Measurement Enable"
+	bool "INA228 VShunt Measurement Enable"
 	depends on DT_HAS_TI_INA228_ENABLED
 	help
 	  Enable shunt voltage measurement for INA228.
