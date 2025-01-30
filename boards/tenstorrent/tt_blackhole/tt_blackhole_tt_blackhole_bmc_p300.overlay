@@ -1,0 +1,239 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Left chip is local (comes up in non bifercation mode) this is referred to as chip1
+ * in the schematics
+ * Right chip is remote, and is referred to as chip0
+ */
+
+/ {
+	model = "Tenstorrent Blackhole p300 board";
+	compatible = "tenstorrent,blackhole,p300";
+
+	chip1: chip1 {
+		compatible = "tenstorrent,bh-chip";
+
+		asic_reset {
+			compatible = "zephyr,gpio-line";
+			label = "Line to asic reset";
+			gpios = <&gpiob 1 GPIO_ACTIVE_LOW>;
+		};
+
+		spi_reset {
+			compatible = "zephyr,gpio-line";
+			label = "Line to SPI reset";
+			gpios = <&gpioc 8 GPIO_ACTIVE_LOW>;
+		};
+
+		pgood {
+			compatible = "zephyr,gpio-line";
+			label = "PGOOD signal for asic 1";
+			gpios = <&gpioc 5 GPIO_PULL_DOWN>;
+		};
+
+		therm_trip {
+			compatible = "zephyr,gpio-line";
+			label = "Thermal trip indicator";
+			gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+		};
+
+		jtag {
+			compatible = "zephyr,jtag-gpio";
+			status = "okay";
+			tck-gpios = <&gpiod 9 GPIO_ACTIVE_HIGH>;
+			tdi-gpios = <&gpiod 10 GPIO_ACTIVE_HIGH>;
+			tdo-gpios = <&gpiod 11 GPIO_ACTIVE_HIGH>;
+			tms-gpios = <&gpiod 12 GPIO_ACTIVE_HIGH>;
+			port-write-cycles = <2>;
+			tck-delay = <1>;
+		};
+
+		strapping {
+			gpio6 {
+				compatible = "zephyr,gpio-line";
+				label = "GPIO pin representing strap gpio6";
+				gpios = <&chip1_strapping 4 GPIO_ACTIVE_HIGH>;
+			};
+		};
+
+		flash = <&chip1_flash>;
+		spi_mux {
+			compatible = "zephyr,gpio-line";
+			label = "Line to spi mux, drive low to enable bmfw -> eeprom";
+			gpios = <&gpiob 6 GPIO_ACTIVE_LOW>;
+		};
+
+		arc = <&chip1_arc>;
+	};
+
+	arc_jtag_mux {
+		compatible = "zephyr,gpio-line";
+		label = "Line to SYS JTAG mux, drive low to enable bmfw -> eeprom";
+		gpios = <&gpiod 13 GPIO_ACTIVE_HIGH>;
+	};
+
+	sys_jtag_mux {
+		compatible = "zephyr,gpio-line";
+		label = "Line to SYS JTAG mux, drive low to enable bmfw -> eeprom";
+		gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
+	};
+
+	chips {
+		compatible = "tenstorrent,bh-chips";
+		chips = <&chip0 &chip1>;
+		primary = <1>;
+	};
+
+	/*
+	 * Chip 1
+	 * sck: PA6
+	 * SO PC2
+	 * SI: PC3
+	 * RST: pc8
+	 * CS: pb12
+	 */
+	chip1_spi {
+		compatible = "zephyr,spi-bitbang";
+		status = "okay";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		clk-gpios = <&gpioa 6 GPIO_ACTIVE_HIGH>;
+		mosi-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+		miso-gpios = <&gpioc 3 0>;
+		cs-gpios = <&gpiob 12 GPIO_ACTIVE_LOW>;
+
+		chip1_flash: flash@0 {
+			/* base properties */
+			compatible = "jedec,spi-nor";
+			status = "okay";
+
+			/* spi-device properties */
+			reg = <0>;
+			spi-max-frequency = <7999999>;
+			spi-cpol;
+			spi-cpha;
+
+			/* jedec,spi-nor properties */
+			size = <DT_SIZE_M(512)>; /* Size in bits */
+
+			/* jedec,spi-nor-common properties */
+			has-dpd;
+			t-enter-dpd = <3000>;
+			t-exit-dpd = <30000>;
+
+			jedec-id = [20 bb 20];
+		};
+	};
+};
+
+/*
+ * Chip 0
+ * nss: PA4 CS (spi1_nss_pa4)
+ * SO PA11 (spi1_miso_pa11)
+ * SI PA12 (spi1_mosi_pa12)
+ * RST PC7
+ * SCK: pb3 (spi1_sck_pb3)
+ */
+&chip0 {
+	compatible = "tenstorrent,bh-chip";
+
+	asic_reset {
+		compatible = "zephyr,gpio-line";
+		label = "Line to asic reset";
+		gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
+	};
+
+	jtag {
+		compatible = "zephyr,jtag-gpio";
+		status = "okay";
+		tck-gpios = <&gpiod 5 GPIO_ACTIVE_HIGH>;
+		tdi-gpios = <&gpiod 6 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpiod 7 GPIO_ACTIVE_HIGH>;
+		tms-gpios = <&gpiod 8 GPIO_ACTIVE_HIGH>;
+		port-write-cycles = <2>;
+		tck-delay = <1>;
+	};
+
+	flash = <&flash1>;
+
+	arc = <&chip0_arc>;
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	compatible = "st,tt-stm32-i2c";
+
+	scl-gpios = <&gpioa 9 GPIO_OPEN_DRAIN>;
+	sda-gpios = <&gpioa 10 GPIO_OPEN_DRAIN>;
+
+	chip0_strapping: strapping_expander@20 {
+		compatible = "nxp,pca9555";
+		status = "okay";
+
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		reg = <0x20>;
+		gpio-controller;
+	};
+};
+
+/*
+ * On the p300 the location of the chip0_arc was changed from smbus3 to smbus1 and the chip1
+ * ARC is now located on smbus3. In order to avoid confusion by assigning chip0_arc to chip1 I
+ * deleted it and defined both chip0_arc and chip1_arc on their respective busses.
+ */
+/delete-node/ &chip0_arc;
+
+/*
+ * I2C1_SW_EN is F8
+ * I2C1 is I2C1
+ * I2C1 is Chip0
+ */
+&smbus1 {
+	status = "okay";
+	compatible = "st,tt-stm32-smbus";
+
+	chip0_arc: bh_arc@A {
+		compatible = "tenstorrent,bh-arc";
+		reg = <0xA>;
+
+		gpios = <&gpiof 8 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&i2c3 {
+	status = "okay";
+
+	chip1_strapping: strapping_expander@20 {
+		compatible = "nxp,pca9555";
+		status = "okay";
+
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		reg = <0x20>;
+		gpio-controller;
+	};
+};
+
+/*
+ * I2C0_SW_EN is F9
+ * I2C0 is I2C3
+ * I2C0 is Chip1
+ */
+&smbus3 {
+	chip1_arc: bh_arc@A {
+		compatible = "tenstorrent,bh-arc";
+		reg = <0xA>;
+
+		gpios = <&gpiof 9 GPIO_ACTIVE_LOW>;
+	};
+};
