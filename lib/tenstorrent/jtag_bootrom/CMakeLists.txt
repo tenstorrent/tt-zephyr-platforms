@@ -11,7 +11,7 @@ set(gen_dir ${ZEPHYR_BINARY_DIR}/misc/generated)
 
 generate_inc_file_for_target(
     ${ZEPHYR_CURRENT_LIBRARY}
-    ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/nano_bootcode.bin
+    ${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_nano_bootcode.bin
     ${gen_dir}/bootcode.h
 )
 

@@ -21,7 +21,7 @@ boards:
   - boards
 
 blobs:
-  - path: nano_bootcode.bin
+  - path: tt_blackhole_nano_bootcode.bin
     sha256: 15923a962b3e36c30332fc06f171a139b5c43e672d253bd7a1abda387201108d
     type: img
     version: '0.1'
