@@ -29,7 +29,6 @@ config TT_BH_ARC_FAN_CTRL_ALPHA
 
 config TT_BH_ARC_FAN_CTRL_GDDR_TEMP
 	bool "Use GDDR temp as fan curve input"
-	default n
 	help
 		Enable to use GDDR temp in fan speed calculation
 #endif
