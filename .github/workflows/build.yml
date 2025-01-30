@@ -47,6 +47,16 @@ jobs:
         run: |
           west -v patch apply
 
+      - name: Verify binary blobs
+        working-directory: tt-zephyr-platforms
+        run: |
+          # Note: this does not fetch blobs from the associated URL if they are already present,
+          # which is what we want, but it does verify that the sha256 matches that of the blob.
+          # Note: As of zephyr commit 50f6142497770e9b6d84112ef11dcb6115c01dcb, west blobs fetch
+          # does not exit with proper error status if the sha256 does not match, so we need to
+          # first apply a patch (performed above) to fix it!
+          west blobs fetch
+
       - name: Build BMC firmware (P100)
         working-directory: tt-zephyr-platforms
         shell: bash
