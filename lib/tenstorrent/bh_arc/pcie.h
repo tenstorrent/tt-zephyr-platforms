@@ -26,6 +26,9 @@ typedef enum {
 #define PCIE_LOGICAL_Y       0
 #define PCIE_DBI_REG_TLB     14
 
+PCIeInitStatus SerdesInit(uint8_t pcie_inst, PCIeDeviceType device_type,
+			  uint8_t num_serdes_instance);
+
 PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_prop_table);
 
 static inline void WriteDbiReg(const uint32_t addr, const uint32_t data)

@@ -11,8 +11,6 @@
 #include "reg.h"
 #include "noc2axi.h"
 #include "timer.h"
-#include "arc_dma.h"
-#include "serdes_image.h"
 #include "read_only_table.h"
 #include "fw_table.h"
 #include "gpio.h"
@@ -73,19 +71,7 @@
 #define SERDES_SS_0_A_REG_MAP_BASE_ADDR 0xFFFFFFFFE0000000LL
 #define PCIE_SII_A_REG_MAP_BASE_ADDR    0xFFFFFFFFF0000000LL
 
-#define RESET_UNIT_PCIE_MISC_CNTL_3_REG_ADDR         0x8003009C
-#define RESET_UNIT_PCIE1_MISC_CNTL_3_REG_ADDR        0x8003050C
-#define RESET_UNIT_PCIE_MISC_CNTL_2_REG_ADDR         0x80030098
-#define RESET_UNIT_PCIE1_MISC_CNTL_2_REG_ADDR        0x80030508
 #define RESET_UNIT_PCIE_RESET_REG_ADDR               0x80030004
-#define CMN_A_switchclk_dbe_cmn_REG_OFFSET           0x000001A8
-#define SERDES_CTRL_A_PCIE_LANE_OFF_REG_OFFSET       0x00000218
-#define SERDES_CTRL_A_SERDES_SOFT_RESET_REG_OFFSET   0x0000020C
-#define SERDES_CTRL_A_SERDES_COMMON_STATE_REG_OFFSET 0x00000204
-#define SERDES_CTRL_PCIE_LANE_OFF_REG_DEFAULT        0x00000000
-#define RESET_UNIT_PCIE_MISC_CNTL3_REG_DEFAULT       0x00000000
-#define RESET_UNIT_PCIE_MISC_CNTL2_REG_DEFAULT       0x00000000
-#define RESET_UNIT_PCIE_RESET_REG_DEFAULT            0x00000000
 #define PCIE_SII_A_NOC_TLB_DATA_62__REG_OFFSET       0x0000022C
 #define PCIE_SII_A_NOC_TLB_DATA_0__REG_OFFSET        0x00000134
 #define PCIE_SII_A_APP_PCIE_CTL_REG_OFFSET           0x0000005C
@@ -736,99 +722,6 @@ static void ConfigurePCIeTlbs(uint8_t pcie_inst)
 	NOC2AXITlbSetup(ring, PCIE_DBI_REG_TLB, ring0_logic_x, ring0_logic_y, DBI_ADDR);
 	NOC2AXITlbSetup(ring, PCIE_TLB_CONFIG_TLB, ring0_logic_x, ring0_logic_y,
 			PCIE_TLB_CONFIG_ADDR);
-}
-
-static inline PCIeInitStatus LoadSerdesFirmware(const uint8_t serdes_inst)
-{
-	const uint8_t noc_id = 0;
-	const uint8_t img_tlb =
-		(serdes_inst == 0) ? PCIE_SERDES0_ALPHACORE_TLB : PCIE_SERDES1_ALPHACORE_TLB;
-	const uint32_t *serdes_img_src = (uint32_t *)PCIE_SERDES_IMG_ADDR;
-	uint32_t *serdes_img_dst =
-		(uint32_t *)GetTlbWindowAddr(noc_id, img_tlb, PCIE_SERDES_SRAM_OFFSET);
-	const uint32_t serdes_img_size = PCIE_SERDES_IMG_SIZE;
-
-	/* Switch Serdes SRAM clock to APB clock for faster loads */
-	CMN_SWITCHCLK_DBE_CMN_reg_u switchclk_dbe_cmn_reg;
-
-	switchclk_dbe_cmn_reg.val =
-		ReadSerdesAlphaCoreReg(serdes_inst, CMN_A_switchclk_dbe_cmn_REG_OFFSET);
-	switchclk_dbe_cmn_reg.f.master_apb_sel_nt = 1;
-	WriteSerdesAlphaCoreReg(serdes_inst, CMN_A_switchclk_dbe_cmn_REG_OFFSET,
-				switchclk_dbe_cmn_reg.val);
-
-	bool dma_pass = ArcDmaTransfer(serdes_img_src, serdes_img_dst, serdes_img_size);
-
-	/* Return Serdes SRAM clock to default clock */
-	switchclk_dbe_cmn_reg.f.master_apb_sel_nt = 0;
-	WriteSerdesAlphaCoreReg(serdes_inst, CMN_A_switchclk_dbe_cmn_REG_OFFSET,
-				switchclk_dbe_cmn_reg.val);
-
-	if (!dma_pass) {
-		return PCIeSerdesFWLoadTimeout;
-	}
-
-	return PCIeInitOk;
-}
-
-static inline void SerdesConfigWrite(uint8_t serdes_inst)
-{
-	uint32_t serdes_regs_count = ARRAY_SIZE(serdes_regs);
-
-	WriteSerdesCtrlReg(serdes_inst, SERDES_CTRL_A_SERDES_SOFT_RESET_REG_OFFSET, 0x000001ff);
-	for (uint32_t id = 0; id < serdes_regs_count; id++) {
-		WriteSerdesAlphaCoreReg(serdes_inst, serdes_regs[id][0], serdes_regs[id][1]);
-	}
-	WriteSerdesCtrlReg(serdes_inst, SERDES_CTRL_A_SERDES_COMMON_STATE_REG_OFFSET, 0x00000200);
-	WriteSerdesCtrlReg(serdes_inst, SERDES_CTRL_A_SERDES_COMMON_STATE_REG_OFFSET, 0x00010200);
-}
-
-static PCIeInitStatus SerdesInit(uint8_t pcie_inst, PCIeDeviceType device_type,
-				 uint8_t num_serdes_instance)
-{
-	/* turn off unused lanes in serdes1 */
-	if (num_serdes_instance == 1) {
-		SERDES_CTRL_PCIE_LANE_OFF_reg_u pcie_lane_off;
-
-		pcie_lane_off.val = SERDES_CTRL_PCIE_LANE_OFF_REG_DEFAULT;
-		pcie_lane_off.f.pcie_lane_off = 0xff;    /* turn off all lanes */
-		pcie_lane_off.f.phy_status_source = 0x3; /* use external source */
-		WriteSerdesCtrlReg(1, SERDES_CTRL_A_PCIE_LANE_OFF_REG_OFFSET, pcie_lane_off.val);
-	}
-
-	PCIeInitStatus status;
-
-	for (uint8_t serdes_inst = 0; serdes_inst < num_serdes_instance; serdes_inst++) {
-		status = LoadSerdesFirmware(serdes_inst);
-		if (status != PCIeInitOk) {
-			return status;
-		}
-		SerdesConfigWrite(serdes_inst);
-	}
-
-	if (num_serdes_instance == 2) {
-		/* force SERDES1 to use SERDES0 pclk if both instances enabled */
-		RESET_UNIT_PCIE_MISC_CNTL3_reg_u pcie_misc_cntl3_reg;
-
-		pcie_misc_cntl3_reg.val = RESET_UNIT_PCIE_MISC_CNTL3_REG_DEFAULT;
-		pcie_misc_cntl3_reg.f.master_sel_1 = 2;
-		uint32_t pcie_misc_cntl_3_addr = (pcie_inst == 0)
-							 ? RESET_UNIT_PCIE_MISC_CNTL_3_REG_ADDR
-							 : RESET_UNIT_PCIE1_MISC_CNTL_3_REG_ADDR;
-		WriteReg(pcie_misc_cntl_3_addr, pcie_misc_cntl3_reg.val);
-	}
-
-	/* De-assert PCIe controller reset */
-	RESET_UNIT_PCIE_MISC_CNTL2_reg_u pcie_misc_cntl2_reg;
-
-	pcie_misc_cntl2_reg.val = RESET_UNIT_PCIE_MISC_CNTL2_REG_DEFAULT;
-	pcie_misc_cntl2_reg.f.device_type = device_type;
-	pcie_misc_cntl2_reg.f.power_up_rst_n = 1;
-	uint32_t pcie_misc_cntl_2_addr = (pcie_inst == 0) ? RESET_UNIT_PCIE_MISC_CNTL_2_REG_ADDR
-							  : RESET_UNIT_PCIE1_MISC_CNTL_2_REG_ADDR;
-	WriteReg(pcie_misc_cntl_2_addr, pcie_misc_cntl2_reg.val);
-
-	return PCIeInitOk;
 }
 
 static void ForceLinkSpeed(uint8_t max_pcie_speed)
