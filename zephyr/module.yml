@@ -21,6 +21,24 @@ boards:
   - boards
 
 blobs:
+  - path: tt_blackhole_erisc.bin
+    sha256: 641b27703ad39b55277b53015acbd7981dc1ccfccc1a77b51d460688bf8e8468
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc.bin"
+    description: "Ethernet FW"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_erisc_params.bin
+    sha256: 1e690e36a26100ca61f5e7e8edb1533f421d9e51aaf2a44b4519b0a21ae7e53a
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
+    description: "Ethernet FW parameters"
+    doc-url: https://tenstorrent.com
   - path: tt_blackhole_nano_bootcode.bin
     sha256: 15923a962b3e36c30332fc06f171a139b5c43e672d253bd7a1abda387201108d
     type: img
