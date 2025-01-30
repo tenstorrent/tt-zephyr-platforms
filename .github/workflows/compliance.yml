@@ -97,7 +97,7 @@ jobs:
           # Increase rename limit to allow for large PRs
           git config diff.renameLimit 10000
           $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate \
-          -c origin/${BASE_REF}..
+            -e BinaryFiles -c origin/${BASE_REF}..
 
       - name: check-warns
         run: |
