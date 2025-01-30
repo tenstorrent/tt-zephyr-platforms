@@ -49,12 +49,10 @@ void jtag_bitbang_wait_for_id(const struct device *dev)
 	}
 }
 
-#if (IS_ENABLED(CONFIG_BOARD_ORION_CB) || IS_ENABLED(CONFIG_BOARD_ORION_CB_1))
-static const struct gpio_dt_spec arc_rambus_jtag_mux_sel =
-	GPIO_DT_SPEC_GET(DT_NODELABEL(arc_rambus_jtag_mux_sel), gpios);
-static const struct gpio_dt_spec arc_l2_jtag_mux_sel =
-	GPIO_DT_SPEC_GET(DT_NODELABEL(arc_l2_jtag_mux_sel), gpios);
-#endif
+static const __maybe_unused struct gpio_dt_spec arc_rambus_jtag_mux_sel =
+	GPIO_DT_SPEC_GET_OR(DT_NODELABEL(arc_rambus_jtag_mux_sel), gpios, {0});
+static const __maybe_unused struct gpio_dt_spec arc_l2_jtag_mux_sel =
+	GPIO_DT_SPEC_GET_OR(DT_NODELABEL(arc_l2_jtag_mux_sel), gpios, {0});
 
 #if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
 static const struct gpio_dt_spec preset_trigger = GPIO_DT_SPEC_GET(DT_PATH(preset_trigger), gpios);
@@ -130,10 +128,13 @@ int jtag_bootrom_init(struct bh_chip *chip)
 {
 	int ret = false;
 
-#if (IS_ENABLED(CONFIG_BOARD_ORION_CB) || IS_ENABLED(CONFIG_BOARD_ORION_CB_1))
-	ret = gpio_pin_configure_dt(&arc_rambus_jtag_mux_sel, GPIO_OUTPUT_ACTIVE) ||
-	      gpio_pin_configure_dt(&arc_l2_jtag_mux_sel, GPIO_OUTPUT_ACTIVE);
-#endif
+	if (DT_NODE_EXISTS(DT_NODELABEL(arc_rambus_jtag_mux_sel))) {
+		ret |= gpio_pin_configure_dt(&arc_rambus_jtag_mux_sel, GPIO_OUTPUT_ACTIVE);
+	}
+
+	if (DT_NODE_EXISTS(DT_NODELABEL(arc_l2_jtag_mux_sel))) {
+		ret |= gpio_pin_configure_dt(&arc_l2_jtag_mux_sel, GPIO_OUTPUT_ACTIVE);
+	}
 
 	ret |= gpio_pin_configure_dt(&chip->config.pgood, GPIO_INPUT);
 	if (ret) {
