@@ -39,6 +39,24 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
     description: "Ethernet FW parameters"
     doc-url: https://tenstorrent.com
+  - path: tt_blackhole_gddr_init.bin
+    sha256: c7cca750e738a2bf53b0c29dada42b2fdc44b6ff5759edb95c70370e7e6718a4
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
+    description: "Memory Controller FW"
+    doc-url: https://tenstorrent.com
+  - path: tt_blackhole_gddr_params.bin
+    sha256: 2ff26b5bb0a7e37adf0ee8d93bbd5ab7df7ee11ebf37f601dcc28f731b94c672
+    type: img
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params.bin"
+    description: "Memory Controller FW parameters"
+    doc-url: https://tenstorrent.com
   - path: tt_blackhole_nano_bootcode.bin
     sha256: 15923a962b3e36c30332fc06f171a139b5c43e672d253bd7a1abda387201108d
     type: img
