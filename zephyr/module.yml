@@ -22,7 +22,7 @@ boards:
 
 blobs:
   - path: nano_bootcode.bin
-    sha256: 1762aad22a96465563d9b88bbd4ec6ddb7a2f13f68a2c33068492fa1cf612143
+    sha256: 15923a962b3e36c30332fc06f171a139b5c43e672d253bd7a1abda387201108d
     type: img
     version: '0.1'
     license-path: zephyr/blobs/license.txt
