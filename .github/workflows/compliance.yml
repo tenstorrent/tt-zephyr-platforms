@@ -96,7 +96,7 @@ jobs:
           west -v patch apply
           # Increase rename limit to allow for large PRs
           git config diff.renameLimit 10000
-          $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e Kconfig \
+          $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate \
           -c origin/${BASE_REF}..
 
       - name: check-warns
