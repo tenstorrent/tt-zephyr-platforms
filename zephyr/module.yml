@@ -69,7 +69,7 @@ blobs:
   - path: tt_blackhole_gddr_init.bin
     sha256: c7cca750e738a2bf53b0c29dada42b2fdc44b6ff5759edb95c70370e7e6718a4
     type: img
-    version: '0.1'
+    version: '2.4'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
@@ -78,7 +78,7 @@ blobs:
   - path: tt_blackhole_gddr_params.bin
     sha256: 2ff26b5bb0a7e37adf0ee8d93bbd5ab7df7ee11ebf37f601dcc28f731b94c672
     type: img
-    version: '0.1'
+    version: '2.4'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params.bin"
