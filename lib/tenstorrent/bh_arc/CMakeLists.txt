@@ -1,9 +1,6 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-zephyr_library_named(libpciesd)
-zephyr_library_sources(pcie_priv.c)
-
 zephyr_library_named(bh_arc)
 zephyr_include_directories(.)
 zephyr_library_sources_ifndef(
@@ -57,7 +54,7 @@ zephyr_library_sources(
   tt_boot_fs.c
 )
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
-zephyr_library_link_libraries(libpciesd)
+zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)

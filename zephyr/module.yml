@@ -39,6 +39,15 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
     description: "Ethernet FW parameters"
     doc-url: https://tenstorrent.com
+  - path: tt_blackhole_libpciesd.a
+    sha256: a5d4a4cbb7c85d8bdce8bc78d2fd128d3c4cf688b73589873032b2219057f66b
+    type: lib
+    version: '0.1'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_libpciesd.a"
+    description: "PCIe SerDes FW and parameters"
+    doc-url: https://tenstorrent.com
   - path: tt_blackhole_serdes_eth_fwreg.bin
     sha256: 15b31ca6ee1840b9307d333a23dba6067e84bedfa1e8c27b17ddcd3182fdf247
     type: img
