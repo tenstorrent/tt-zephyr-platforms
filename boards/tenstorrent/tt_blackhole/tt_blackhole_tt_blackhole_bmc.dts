@@ -24,7 +24,7 @@
 		asic_reset {
 			compatible = "zephyr,gpio-line";
 			label = "Line to asic reset";
-			gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
 		};
 
 		spi_reset {
@@ -57,7 +57,7 @@
 	preset_trigger {
 		compatible = "zephyr,gpio-line";
 		label = "Input from PCIe card edge triggering an asic reset";
-		gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+		gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	};
 
 	board_fault_led {
