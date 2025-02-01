@@ -90,6 +90,6 @@ blobs:
     version: '0.1'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
-          raw/refs/heads/main/zephyr/blobs/nano_bootcode.bin"
+          raw/refs/heads/main/zephyr/blobs/tt_blackhole_nano_bootcode.bin"
     description: "Modified bootrom to boot Blackhole"
     doc-url: https://tenstorrent.com
