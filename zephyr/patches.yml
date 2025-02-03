@@ -11,7 +11,7 @@ patches:
       the platform supports RTT. This requires "twister-rtt-support.patch" as well, which adds the
       "--device-serial rtt" option to twister.
   - path: zephyr/twister-rtt-support.patch
-    sha256sum: a4af55eb1a3db89ec1eb5a793cf4e2963b73e1373c227eddb4bc1a72df5ebecd
+    sha256sum: 274d6d4013abd62091749f9a3255279530e22205fd678f4b182a74e32eca439d
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -36,7 +36,7 @@ patches:
     comments: |
       This patch moves BSS and noinit sections to the end.
   - path: zephyr/check-compliance.patch
-    sha256sum: 4b4d4e666c189799c0a82c21c97e6df745489b1cd6c024b55f7aa0bfacc5135c
+    sha256sum: e2a63d638bfae051c5058dce4d663c1928deecb3a2dc717e5408b8da69375850
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com

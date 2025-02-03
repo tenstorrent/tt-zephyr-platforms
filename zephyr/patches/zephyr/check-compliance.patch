@@ -1,44 +1,57 @@
 diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index 397edd09d35..81983c4b4a8 100755
+index 8dd4fc5db12..3060b3f1a54 100755
 --- a/scripts/ci/check_compliance.py
 +++ b/scripts/ci/check_compliance.py
-@@ -212,7 +212,7 @@ class CheckPatch(ComplianceTest):
-         if not os.path.exists(checkpatch):
-             self.skip(f'{checkpatch} not found')
-
+@@ -140,6 +140,7 @@ class ComplianceTest:
+         # always restored form the element tree, the subclass is lost upon
+         # restoring
+         self.fmtd_failures = []
++        self.path_hint = "<git-top>"
+ 
+     def _result(self, res, text):
+         res.text = text.rstrip()
+@@ -225,7 +226,7 @@ class CheckPatch(ComplianceTest):
+             cmd = [checkpatch]
+ 
+         cmd.extend(['--mailback', '--no-tree', '-'])
 -        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE),
 +        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE, '--', ':!*.diff', ':!*.patch'),
                                  stdout=subprocess.PIPE,
                                  cwd=GIT_TOP)
          try:
-@@ -251,7 +251,7 @@ class BoardYmlCheck(ComplianceTest):
+@@ -264,7 +265,6 @@ class BoardYmlCheck(ComplianceTest):
      """
      name = "BoardYml"
      doc = "Check the board.yml file format"
 -    path_hint = "<zephyr-base>"
-+    path_hint = "<git-top>"
-
+ 
      def check_board_file(self, file, vendor_prefixes):
          """Validate a single board file."""
-@@ -332,7 +332,7 @@ class DevicetreeBindingsCheck(ComplianceTest):
+@@ -303,7 +303,6 @@ class ClangFormatCheck(ComplianceTest):
+     """
+     name = "ClangFormat"
+     doc = "See https://docs.zephyrproject.org/latest/contribute/guidelines.html#clang-format for more details."
+-    path_hint = "<git-top>"
+ 
+     def run(self):
+         exe = f"clang-format-diff.{'exe' if platform.system() == 'Windows' else 'py'}"
+@@ -345,7 +344,6 @@ class DevicetreeBindingsCheck(ComplianceTest):
      """
      name = "DevicetreeBindings"
      doc = "See https://docs.zephyrproject.org/latest/build/dts/bindings.html for more details."
 -    path_hint = "<zephyr-base>"
-+    path_hint = "<git-top>"
-
+ 
      def run(self, full=True):
          dts_bindings = self.parse_dt_bindings()
-@@ -369,7 +369,7 @@ class KconfigCheck(ComplianceTest):
+@@ -382,7 +380,6 @@ class KconfigCheck(ComplianceTest):
      """
      name = "Kconfig"
      doc = "See https://docs.zephyrproject.org/latest/build/kconfig/tips.html for more details."
 -    path_hint = "<zephyr-base>"
-+    path_hint = "<git-top>"
-
-     def run(self, full=True, no_modules=False, filename="Kconfig", hwm=None):
-         self.no_modules = no_modules
-@@ -996,6 +996,7 @@ flagged.
+ 
+     # Top-level Kconfig file. The path can be relative to srctree (ZEPHYR_BASE).
+     FILENAME = "Kconfig"
+@@ -991,6 +988,7 @@ flagged.
          "MCUBOOT_CLEANUP_ARM_CORE", # Used in (sysbuild-based) test
          "MCUBOOT_DOWNGRADE_PREVENTION", # but symbols are defined in MCUboot
                                          # itself.
@@ -46,25 +59,15 @@ index 397edd09d35..81983c4b4a8 100755
          "MCUBOOT_LOG_LEVEL_INF",
          "MCUBOOT_LOG_LEVEL_WRN",        # Used in example adjusting MCUboot
                                          # config,
-@@ -1054,7 +1055,7 @@ class KconfigBasicCheck(KconfigCheck):
+@@ -1132,7 +1130,6 @@ class Nits(ComplianceTest):
      """
-     name = "KconfigBasic"
-     doc = "See https://docs.zephyrproject.org/latest/build/kconfig/tips.html for more details."
--    path_hint = "<zephyr-base>"
-+    path_hint = "<git-top>"
+     name = "Nits"
+     doc = "See https://docs.zephyrproject.org/latest/contribute/guidelines.html#coding-style for more details."
+-    path_hint = "<git-top>"
 
      def run(self):
-         super().run(full=False)
-@@ -1067,7 +1068,7 @@ class KconfigBasicNoModulesCheck(KconfigCheck):
-     """
-     name = "KconfigBasicNoModules"
-     doc = "See https://docs.zephyrproject.org/latest/build/kconfig/tips.html for more details."
--    path_hint = "<zephyr-base>"
-+    path_hint = "<git-top>"
-     def run(self):
-         super().run(full=False, no_modules=True)
-
-@@ -1201,7 +1202,7 @@ class GitDiffCheck(ComplianceTest):
+         # Loop through added/modified files
+@@ -1237,7 +1234,7 @@ class GitDiffCheck(ComplianceTest):
          for shaidx in get_shas(COMMIT_RANGE):
              # Ignore non-zero return status code
              # Reason: `git diff --check` sets the return code to the number of offending lines

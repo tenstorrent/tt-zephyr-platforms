@@ -301,10 +301,10 @@ Date:   Sun Nov 24 12:34:22 2024 -0500
     Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
 
 diff --git a/scripts/west_commands/runners/jlink.py b/scripts/west_commands/runners/jlink.py
-index cd2ea3e8d67..3e86c1b99ed 100644
+index 00438ba6e5d..5309689108b 100644
 --- a/scripts/west_commands/runners/jlink.py
 +++ b/scripts/west_commands/runners/jlink.py
-@@ -58,6 +58,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -89,6 +89,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
                   gdb_host='',
                   gdb_port=DEFAULT_JLINK_GDB_PORT,
                   rtt_port=DEFAULT_JLINK_RTT_PORT,
@@ -312,7 +312,7 @@ index cd2ea3e8d67..3e86c1b99ed 100644
                   tui=False, tool_opt=None):
          super().__init__(cfg)
          self.file = cfg.file
-@@ -81,6 +82,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -112,6 +113,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
          self.tui_arg = ['-tui'] if tui else []
          self.loader = loader
          self.rtt_port = rtt_port
@@ -320,7 +320,7 @@ index cd2ea3e8d67..3e86c1b99ed 100644
 
          self.tool_opt = []
          if tool_opt is not None:
-@@ -143,6 +145,8 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -174,6 +176,8 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
                              help='RTT client, default is JLinkRTTClient')
          parser.add_argument('--rtt-port', default=DEFAULT_JLINK_RTT_PORT,
                              help=f'jlink rtt port, defaults to {DEFAULT_JLINK_RTT_PORT}')
@@ -329,7 +329,7 @@ index cd2ea3e8d67..3e86c1b99ed 100644
 
          parser.set_defaults(reset=False)
 
-@@ -161,9 +165,13 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -192,9 +196,13 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
                                   gdb_host=args.gdb_host,
                                   gdb_port=args.gdb_port,
                                   rtt_port=args.rtt_port,
@@ -343,7 +343,7 @@ index cd2ea3e8d67..3e86c1b99ed 100644
          if not self.thread_info_enabled:
              thread_msg = '; no thread info available'
          elif self.supports_thread_info:
-@@ -174,6 +182,9 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -205,6 +213,9 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
                           f'{self.gdb_port}{thread_msg}')
 
      def print_rttserver_message(self):
@@ -353,12 +353,12 @@ index cd2ea3e8d67..3e86c1b99ed 100644
          self.logger.info(f'J-Link RTT server running on port {self.rtt_port}')
 
      @property
-@@ -286,21 +297,15 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
+@@ -317,10 +328,14 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
              self.print_gdbserver_message()
              self.check_call(server_cmd)
          elif command == 'rtt':
 +            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
-+                                'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
++                          'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
 +
              self.print_gdbserver_message()
              self.print_rttserver_message()
@@ -367,19 +367,8 @@ index cd2ea3e8d67..3e86c1b99ed 100644
 +            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
 +            time.sleep(1)
              try:
--                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
--                # wait for the port to be open
--                while server_proc.poll() is None:
--                    try:
--                        sock.connect(('localhost', self.rtt_port))
--                        break
--                    except ConnectionRefusedError:
--                        time.sleep(0.1)
--                sock.shutdown(socket.SHUT_RDWR)
--                time.sleep(0.1)
-                 self.run_telnet_client('localhost', self.rtt_port)
-             except Exception as e:
-                 self.logger.error(e)
+                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                 # wait for the port to be open
 commit 0bc7e1d7e904b11a4ac87b9ec27fe4211554139e
 Author: Chris Friedt <cfriedt@tenstorrent.com>
 Date:   Sun Nov 24 12:24:18 2024 -0500
