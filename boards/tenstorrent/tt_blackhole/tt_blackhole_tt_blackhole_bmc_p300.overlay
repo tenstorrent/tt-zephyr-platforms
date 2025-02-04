@@ -132,6 +132,14 @@
 	};
 };
 
+&gpiob {
+	spi-flash-mux1 {
+		gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
 /*
  * Chip 0
  * nss: PA4 CS (spi1_nss_pa4)
