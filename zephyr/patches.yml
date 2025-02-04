@@ -44,13 +44,3 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84054
     comments: |
       Fix upstream check_compliance.py to be usable by other modules.
-  - path: zephyr/west-blobs-fail-on-checksum-error.patch
-    sha256sum: bec00bc7eea7b43a9077a4dfb2a159190a16b9afa2cc469089b0a35fef38aa86
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-01-30
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84930
-    upstreamable: true
-    comments: |
-      Fix upstream blobs.py to return an error when the sha256 checksum does not match.
