@@ -7,11 +7,7 @@
 #include "fan_ctrl.h"
 
 #include "cm2bm_msg.h"
-#include "dw_apb_i2c.h"
-#include "fw_table.h"
 #include "gddr.h"
-#include "reg.h"
-#include "status_reg.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "timer.h"
@@ -19,6 +15,12 @@
 #include <zephyr/kernel.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
+
+#ifdef CONFIG_ZTEST
+#define STATIC
+#else
+#define STATIC static
+#endif
 
 static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
@@ -48,7 +50,7 @@ static uint16_t read_max_gddr_temp(void)
 	return max_temp;
 }
 
-static uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
+STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
 {
 	/* P150 fan curve */
 	/* uint32_t fan_rpm[10] = {1800, 1990, 2170, 2400, 2650, 2885, 3155, 3440, 4800, 5380}; */
@@ -89,6 +91,7 @@ static void update_fan_speed(void)
 
 	UpdateFanSpeedRequest(fan_speed);
 }
+
 static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
