@@ -147,25 +147,32 @@ int jtag_bootrom_init(struct bh_chip *chip)
 	}
 
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-	ret = gpio_pin_configure_dt(&preset_trigger, GPIO_INPUT);
-	if (ret) {
-		return ret;
-	}
+	if (chip == &BH_CHIPS[BH_CHIP_PRIMARY_INDEX]) {
+		ret = gpio_pin_configure_dt(&preset_trigger, GPIO_INPUT);
+		if (ret) {
+			return ret;
+		}
 
-	ret = gpio_pin_interrupt_configure_dt(&preset_trigger, GPIO_INT_EDGE_TO_INACTIVE);
-	if (ret) {
-		return ret;
-	}
+		ret = gpio_pin_interrupt_configure_dt(&preset_trigger, GPIO_INT_EDGE_TO_INACTIVE);
+		if (ret) {
+			return ret;
+		}
 
-	gpio_init_callback(&preset_cb_data, gpio_asic_reset_callback, BIT(preset_trigger.pin));
-	gpio_add_callback(preset_trigger.port, &preset_cb_data);
+		gpio_init_callback(&preset_cb_data, gpio_asic_reset_callback,
+				   BIT(preset_trigger.pin));
+		gpio_add_callback(preset_trigger.port, &preset_cb_data);
 
-	/* Active LOW, so will be false if high */
-	if (!gpio_pin_get_dt(&preset_trigger)) {
-		/* If the preset trigger started high, then we came out of reset with the system */
-		/* thinking that pcie is ready to go. We need to forcibly apply the workaround to */
-		/* ensure this remains true. */
-		chip->data.needs_reset = true;
+		/* Active LOW, so will be false if high */
+		if (!gpio_pin_get_dt(&preset_trigger)) {
+			/* If the preset trigger started high, then we came out of reset with the
+			 * system
+			 */
+			/* thinking that pcie is ready to go. We need to forcibly apply the
+			 * workaround to
+			 * ensure this remains true.
+			 */
+			chip->data.needs_reset = true;
+		}
 	}
 #endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
