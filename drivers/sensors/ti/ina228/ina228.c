@@ -49,9 +49,7 @@ struct ina228_data {
 	uint32_t bus_voltage;
 	uint32_t power;
 	uint16_t temp;
-#ifdef CONFIG_INA228_VSHUNT
 	int32_t shunt_voltage;
-#endif
 	enum sensor_channel chan;
 };
 
@@ -161,17 +159,19 @@ static int ina228_channel_get(const struct device *dev, enum sensor_channel chan
 		micro_s32_to_sensor_value(val,
 					  INA228_POWER_SCALING(data->power * config->current_lsb));
 		break;
-#ifdef CONFIG_INA228_VSHUNT
 	case SENSOR_CHAN_VSHUNT:
-		if (config->adc_config & INA228_ADC_RANGE) {
-			micro_s32_to_sensor_value(
-				val, INA228_SHUNT_VOLTAGE_TO_nV_1(data->shunt_voltage >> 4));
+		if (IS_ENABLED(CONFIG_INA228_VSHUNT)) {
+			if (config->adc_config & INA228_ADC_RANGE) {
+				micro_s32_to_sensor_value(val, INA228_SHUNT_VOLTAGE_TO_nV_1(
+								       data->shunt_voltage >> 4));
+			} else {
+				micro_s32_to_sensor_value(val, INA228_SHUNT_VOLTAGE_TO_nV_0(
+								       data->shunt_voltage >> 4));
+			}
 		} else {
-			micro_s32_to_sensor_value(
-				val, INA228_SHUNT_VOLTAGE_TO_nV_0(data->shunt_voltage >> 4));
+			return -ENOTSUP;
 		}
 		break;
-#endif
 	default:
 		return -ENOTSUP;
 	}
@@ -216,15 +216,17 @@ static int ina228_read_data(const struct device *dev)
 			return ret;
 		}
 	}
-#ifdef CONFIG_INA228_VSHUNT
-	if ((data->chan == SENSOR_CHAN_ALL) || (data->chan == SENSOR_CHAN_VSHUNT)) {
-		ret = ina228_reg_read_24(&config->bus, INA228_REG_VSHUNT, &data->shunt_voltage);
-		if (ret < 0) {
-			LOG_ERR("Failed to read shunt voltage");
-			return ret;
+
+	if (IS_ENABLED(CONFIG_INA228_VSHUNT)) {
+		if ((data->chan == SENSOR_CHAN_ALL) || (data->chan == SENSOR_CHAN_VSHUNT)) {
+			ret = ina228_reg_read_24(&config->bus, INA228_REG_VSHUNT,
+						 &data->shunt_voltage);
+			if (ret < 0) {
+				LOG_ERR("Failed to read shunt voltage");
+				return ret;
+			}
 		}
 	}
-#endif
 
 	return 0;
 }
@@ -235,9 +237,7 @@ static int ina228_sample_fetch(const struct device *dev, enum sensor_channel cha
 
 	if (chan != SENSOR_CHAN_ALL && chan != SENSOR_CHAN_VOLTAGE && chan != SENSOR_CHAN_CURRENT &&
 	    chan != SENSOR_CHAN_POWER &&
-#ifdef CONFIG_INA228_VSHUNT
-	    chan != SENSOR_CHAN_VSHUNT &&
-#endif
+	    (IS_ENABLED(CONFIG_INA228_VSHUNT) ? chan != SENSOR_CHAN_VSHUNT : true) &&
 	    chan != SENSOR_CHAN_DIE_TEMP) {
 		return -ENOTSUP;
 	}
@@ -258,7 +258,6 @@ static int ina228_attr_set(const struct device *dev, enum sensor_channel chan,
 		return ina228_reg_write(&config->bus, INA228_REG_CONFIG, data);
 	case SENSOR_ATTR_CALIBRATION:
 		return ina228_reg_write(&config->bus, INA228_REG_SHUNT_CAL, data);
-	/* TODO: set ADC_CONFIG attr? */
 	default:
 		LOG_ERR("INA228 attribute not supported.");
 		return -ENOTSUP;
@@ -387,8 +386,8 @@ static const struct sensor_driver_api ina228_driver_api = {
 		.cal = INA228_SHUNT_CAL_SCALING * DT_INST_PROP(inst, current_lsb_microamps) *      \
 		       DT_INST_PROP(inst, rshunt_micro_ohms) / 10000000ULL,                        \
 		.config = (DT_INST_ENUM_IDX(inst, adc_conversion_delay) << 6) |                    \
-			  (DT_INST_PROP(inst, shunt_temp_comp_en) << 5) |                      \
-			  (DT_INST_PROP(inst, high_precision) << 4),                           \
+			  (DT_INST_PROP(inst, shunt_temp_comp_en) << 5) |                          \
+			  (DT_INST_PROP(inst, high_precision) << 4),                               \
 		.adc_config = (DT_INST_ENUM_IDX(inst, adc_mode) << 12) |                           \
 			      (DT_INST_ENUM_IDX(inst, vbus_conversion_time_us) << 9) |             \
 			      (DT_INST_ENUM_IDX(inst, vshunt_conversion_time_us) << 6) |           \

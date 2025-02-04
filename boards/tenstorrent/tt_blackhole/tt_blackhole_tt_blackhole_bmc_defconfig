@@ -26,9 +26,6 @@ CONFIG_SPI=y
 # enable flash
 CONFIG_FLASH=y
 
-# enable sensor
-CONFIG_SENSOR=y
-
 # enable external spi flash
 CONFIG_SPI_NOR=y
 CONFIG_SPI_NOR_FLASH_LAYOUT_PAGE_SIZE=4096

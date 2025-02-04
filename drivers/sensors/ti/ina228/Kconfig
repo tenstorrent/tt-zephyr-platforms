@@ -18,7 +18,7 @@ config INA228
 
 config INA228_VSHUNT
 	bool "INA228 VShunt Measurement Enable"
-	depends on DT_HAS_TI_INA228_ENABLED
+	depends on INA228
 	help
 	  Enable shunt voltage measurement for INA228.
 
