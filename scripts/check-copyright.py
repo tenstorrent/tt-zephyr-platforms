@@ -5,8 +5,8 @@
 
 import glob
 import os
+import pathspec
 import re
-import subprocess
 import sys
 
 # Only check the first N lines of each file
@@ -52,9 +52,9 @@ PATHS = {
     "**/*.sh",
 }
 
-exclude_dirs = subprocess.check_output(
-    ["git", "check-ignore"] + os.listdir(), encoding="utf-8"
-).splitlines()
+spec = None
+with open(".gitignore", "r") as f:
+    spec = pathspec.GitIgnoreSpec.from_lines(f.readlines())
 
 num_files = 0
 error_count = 0
@@ -69,7 +69,7 @@ for path in PATHS:
             # at least on macOS, this script cannot read itself ¯\_(ツ)_/¯
             continue
 
-        if any(filename.startswith(dir) for dir in exclude_dirs):
+        if spec.match_file(filename):
             # don't check files ignored by git
             continue
 
