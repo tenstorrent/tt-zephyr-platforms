@@ -449,15 +449,12 @@ index d97cec1fe1e..e8905765bd3 100644
          self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
 
      def read_version(self):
-@@ -385,7 +399,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -385,7 +399,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
              # start the internal openocd rtt service via gdb monitor commands
              gdb_cmd.extend(
                  ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])
 -            gdb_cmd.extend(['-ex', 'monitor reset run'])
-+            if self.rtt_no_reset:
-+                gdb_cmd.extend(['-ex', 'monitor resume'])
-+            else:
-+                gdb_cmd.extend(['-ex', 'monitor reset run'])
++            gdb_cmd.extend(['-ex', 'monitor resume'])
              gdb_cmd.extend(['-ex', 'monitor rtt start'])
              gdb_cmd.extend(
                  ['-ex', f'monitor rtt server start {self.rtt_port} 0'])
