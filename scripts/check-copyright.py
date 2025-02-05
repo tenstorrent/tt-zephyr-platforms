@@ -5,7 +5,6 @@
 
 import glob
 import os
-import pathspec
 import re
 import sys
 
@@ -52,9 +51,16 @@ PATHS = {
     "**/*.sh",
 }
 
-spec = None
-with open(".gitignore", "r") as f:
-    spec = pathspec.GitIgnoreSpec.from_lines(f.readlines())
+# Set of dirs to exclude from check
+EXCLUDE_DIRS = {"build/**", "twister-out*/**"}
+
+
+def is_excluded(filename):
+    for pattern in EXCLUDE_DIRS:
+        if glob.fnmatch.fnmatch(filename, pattern):
+            return True
+    return False
+
 
 num_files = 0
 error_count = 0
@@ -69,8 +75,8 @@ for path in PATHS:
             # at least on macOS, this script cannot read itself ¯\_(ツ)_/¯
             continue
 
-        if spec.match_file(filename):
-            # don't check files ignored by git
+        if is_excluded(filename):
+            # don't check files in generated dirs
             continue
 
         with open(filename, "r") as f:
