@@ -520,7 +520,7 @@ void InitNocTranslationFromHarvesting(void)
 
 	uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
 
-	uint8_t bad_gddr = find_lsb_set(~tile_enable.gddr_enabled);
+	uint8_t bad_gddr = find_lsb_set(~(uint32_t)tile_enable.gddr_enabled) - 1;
 
 	if (bad_gddr == 8) {
 		bad_gddr = NO_BAD_GDDR;
