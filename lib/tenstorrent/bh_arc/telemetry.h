@@ -50,6 +50,7 @@
 #define TAG_ENABLED_GDDR         36
 #define TAG_ENABLED_L2CPU        37
 #define TAG_PCIE_USAGE           38
+#define TAG_INPUT_CURRENT		 39
 
 /* Enums are subject to updates */
 typedef enum {
@@ -101,6 +102,7 @@ typedef enum {
 	/* MISC */
 	FAN_SPEED,
 	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
+	INPUT_CURRENT,
 
 	/* Tile enablement/harvesting information */
 	ENABLED_TENSIX_COL,

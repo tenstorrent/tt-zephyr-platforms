@@ -27,6 +27,7 @@ typedef struct {
 
 static Cm2BmMsgState cm2bm_msg_state;
 static bool bmfw_ping_valid;
+static uint32_t current;
 K_MSGQ_DEFINE(cm2bm_msg_q, sizeof(Cm2BmMsg), 4, _Alignof(Cm2BmMsg));
 
 int32_t EnqueueCm2BmMsg(const Cm2BmMsg *msg)
@@ -218,4 +219,21 @@ int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size)
 	}
 	bmfw_ping_valid = true;
 	return 0;
+}
+
+int32_t Bm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
+{
+	if (size != 4) {
+		return -1;
+	}
+
+	current = *(uint32_t *)data;
+
+	return 0;
+}
+
+/* TODO: Put these somewhere else? */
+uint32_t GetInputCurrent(void)
+{
+	return current;
 }

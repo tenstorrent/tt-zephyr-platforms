@@ -175,6 +175,12 @@ static SmbusConfig smbus_config = {
 
 					  .rcv_handler = &Bm2CmPingHandler,
 				  }},
+		[0x22] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockWrite,
+			  .expected_blocksize = 4,
+			  .handler = {
+					  .rcv_handler = &Bm2CmSendCurrentHandler
+			  }},
 		[0xD8] = {
 
 				.valid = 1,

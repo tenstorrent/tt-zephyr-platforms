@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cm2bm_msg.h"
 #include "fan_ctrl.h"
 #include "fw_table.h"
 #include "harvesting.h"
@@ -135,6 +136,8 @@ static void update_telemetry(void)
 	telemetry[DDR_STATUS] = 0x00000000;   /* DDR status - Not Available yet */
 	telemetry[DDR_SPEED] = 0x00000000;    /* DDR speed - Not Available yet */
 	telemetry[FAN_SPEED] = GetFanSpeed(); /* Fan speed - reported in percentage */
+	telemetry[INPUT_CURRENT] =
+		GetInputCurrent(); /* Input current - reported in A in signed int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++;         /* Incremented every time the timer is called */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }
@@ -178,7 +181,8 @@ static void update_tag_table(void)
 	tag_table[34] = (struct telemetry_entry){TAG_ENABLED_GDDR, ENABLED_GDDR};
 	tag_table[35] = (struct telemetry_entry){TAG_ENABLED_L2CPU, ENABLED_L2CPU};
 	tag_table[36] = (struct telemetry_entry){TAG_PCIE_USAGE, PCIE_USAGE};
-	tag_table[37] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[37] = (struct telemetry_entry){TAG_INPUT_CURRENT, INPUT_CURRENT};
+	tag_table[38] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */
