@@ -6,6 +6,7 @@
 #ifndef TELEMETRY_H
 #define TELEMETRY_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define TELEMETRY_VERSION 0x00000100 /* v0.1.0 - Please update when changes are made */
@@ -51,6 +52,7 @@
 #define TAG_ENABLED_L2CPU        37
 #define TAG_PCIE_USAGE           38
 #define TAG_INPUT_CURRENT		 39
+#define TAG_NOC_TRANSLATION      40
 
 /* Enums are subject to updates */
 typedef enum {
@@ -110,6 +112,7 @@ typedef enum {
 	ENABLED_GDDR,
 	ENABLED_L2CPU,
 	PCIE_USAGE,
+	NOC_TRANSLATION,
 
 	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
 } Telemetry;
@@ -118,5 +121,6 @@ void init_telemetry(uint32_t app_version);
 uint32_t ConvertFloatToTelemetry(float value);
 void StartTelemetryTimer(void);
 void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version);
+void UpdateTelemetryNocTranslation(bool translation_enabled);
 
 #endif

@@ -20,6 +20,7 @@
 #include "fw_table.h"
 #include "reg.h"
 #include "harvesting.h"
+#include "telemetry.h"
 
 /* NIU config register indices for Read/WriteNocCfgReg */
 #define NIU_CFG_0                    0x0
@@ -505,6 +506,8 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 
 	CopyNoc0ToNoc1(&noc0, &noc1);
 	ProgramNocTranslation(&noc1, 1);
+
+	UpdateTelemetryNocTranslation(true);
 }
 
 void InitNocTranslationFromHarvesting(void)
@@ -572,6 +575,8 @@ static void ClearNocTranslation(void)
 
 	ProgramNocTranslation(&all_zeroes, 0);
 	ProgramNocTranslation(&all_zeroes, 1);
+
+	UpdateTelemetryNocTranslation(false);
 }
 
 static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct request *req,

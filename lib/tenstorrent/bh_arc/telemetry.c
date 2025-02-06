@@ -95,6 +95,7 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[ENABLED_L2CPU] = tile_enable.l2cpu_enabled;
 	telemetry[PCIE_USAGE] =
 		((tile_enable.pcie_usage[1] & 0x3) << 2) | (tile_enable.pcie_usage[0] & 0x3);
+	/* telemetry[NOC_TRANSLATION] assumes zero-init, see also UpdateTelemetryNocTranslation. */
 }
 
 static void update_telemetry(void)
@@ -182,7 +183,8 @@ static void update_tag_table(void)
 	tag_table[35] = (struct telemetry_entry){TAG_ENABLED_L2CPU, ENABLED_L2CPU};
 	tag_table[36] = (struct telemetry_entry){TAG_PCIE_USAGE, PCIE_USAGE};
 	tag_table[37] = (struct telemetry_entry){TAG_INPUT_CURRENT, INPUT_CURRENT};
-	tag_table[38] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[38] = (struct telemetry_entry){TAG_NOC_TRANSLATION, NOC_TRANSLATION};
+	tag_table[39] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */
@@ -207,9 +209,6 @@ static K_TIMER_DEFINE(telem_update_timer, telemetry_timer_handler, NULL);
 
 void init_telemetry(uint32_t app_version)
 {
-	/* Initialize the telemetry struct to all 0's by default */
-	memset(&telemetry_table, 0, sizeof(telemetry_table));
-
 	update_tag_table();
 	write_static_telemetry(app_version);
 	/* fill the dynamic values once before starting timed updates */
@@ -235,4 +234,10 @@ void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version)
 {
 	telemetry[BM_BL_FW_VERSION] = bl_version;
 	telemetry[BM_APP_FW_VERSION] = app_version;
+}
+
+void UpdateTelemetryNocTranslation(bool translation_enabled)
+{
+	/* Note that this may be called before init_telemetry. */
+	telemetry[NOC_TRANSLATION] = translation_enabled;
 }
