@@ -3,36 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "init.h"
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <zephyr/kernel.h>
-#include <app_version.h>
-#include <tenstorrent/post_code.h>
-
 #include "avs.h"
 #include "cat.h"
-#include "reg.h"
+#include "dvfs.h"
+#include "eth.h"
+#include "fan_ctrl.h"
+#include "flash_info_table.h"
+#include "fw_table.h"
+#include "gddr.h"
+#include "harvesting.h"
 #include "init_common.h"
-#include "regulator.h"
-#include "status_reg.h"
-#include "pll.h"
-#include "pvt.h"
-#include "pcie.h"
 #include "noc.h"
 #include "noc_init.h"
-#include "tt_boot_fs.h"
-#include "gddr.h"
-#include "smbus_target.h"
-#include "serdes_eth.h"
-#include "eth.h"
-#include "gddr.h"
-#include "tensix_cg.h"
-#include "fw_table.h"
+#include "pcie.h"
+#include "pll.h"
+#include "pvt.h"
 #include "read_only_table.h"
-#include "flash_info_table.h"
-#include "harvesting.h"
+#include "reg.h"
+#include "regulator.h"
+#include "serdes_eth.h"
+#include "smbus_target.h"
+#include "status_reg.h"
+#include "telemetry.h"
+#include "telemetry_internal.h"
+#include "tensix_cg.h"
+#include "tt_boot_fs.h"
+
+#include <stdint.h>
+
+#include <app_version.h>
+#include <tenstorrent/msgqueue.h>
+#include <tenstorrent/post_code.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
 
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
@@ -239,7 +242,7 @@ static void EthInit(void)
 }
 
 /* Returns 0 on success, non-zero on failure */
-uint32_t InitHW(void)
+static uint32_t InitHW(void)
 {
 	/* Write a status register indicating HW init progress */
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
@@ -252,15 +255,21 @@ uint32_t InitHW(void)
 
 	/* Load FW config, Read Only and Flash Info tables from SPI filesystem */
 	/* TODO: Add some kind of error handling if the load fails */
-	load_fw_table(large_sram_buffer, SCRATCHPAD_SIZE);
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		load_fw_table(large_sram_buffer, SCRATCHPAD_SIZE);
+	}
 	load_read_only_table(large_sram_buffer, SCRATCHPAD_SIZE);
-	load_flash_info_table(large_sram_buffer, SCRATCHPAD_SIZE);
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		load_flash_info_table(large_sram_buffer, SCRATCHPAD_SIZE);
+	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
 	/* Enable CATMON for early thermal protection */
 	CATInit();
 
-	CalculateHarvesting();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		CalculateHarvesting();
+	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP3);
 	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
@@ -272,22 +281,29 @@ uint32_t InitHW(void)
 	PLLInit();
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
-	/* Enable Process + Voltage + Thermal monitors */
-	PVTInit();
 
-	/* Initialize NOC so we can broadcast to all Tensixes */
-	NocInit();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		/* Enable Process + Voltage + Thermal monitors */
+		PVTInit();
+
+		/* Initialize NOC so we can broadcast to all Tensixes */
+		NocInit();
+	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP6);
-	/* Assert Soft Reset for ERISC, MRISC Tensix (skip L2CPU due to bug) */
-	AssertSoftResets();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		/* Assert Soft Reset for ERISC, MRISC Tensix (skip L2CPU due to bug) */
+		AssertSoftResets();
+	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
-	/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
-	PLLAllBypass();
-	/* Deassert RISC reset from reset_unit */
-	DeassertRiscvResets();
-	PLLInit();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
+		PLLAllBypass();
+		/* Deassert RISC reset from reset_unit */
+		DeassertRiscvResets();
+		PLLInit();
+	}
 
 	/* Initialize the serdes based on board type and asic location - data will be in fw_table */
 	/* p100: PCIe1 x16 */
@@ -295,42 +311,66 @@ uint32_t InitHW(void)
 	/* p300: Left (CPU1) PCIe1 x8, Right (CPU0) PCIe0 x8 */
 	/* BH UBB: PCIe1 x8 */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP8);
-	if (get_fw_table()->pci0_property_table.pcie_mode !=
-		    FwTable_PciPropertyTable_PcieMode_DISABLED &&
-	    PCIeInitOk == PCIeInit(0, &get_fw_table()->pci0_property_table)) {
+
+	FwTable_PciPropertyTable pci0_property_table;
+	FwTable_PciPropertyTable pci1_property_table;
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		pci0_property_table = (FwTable_PciPropertyTable){
+			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
+			.num_serdes = 2,
+		};
+		pci1_property_table = (FwTable_PciPropertyTable){
+			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
+			.num_serdes = 2,
+		};
+	} else {
+		pci0_property_table = get_fw_table()->pci0_property_table;
+		pci1_property_table = get_fw_table()->pci1_property_table;
+	}
+
+	if ((pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) &&
+	    (PCIeInitOk == PCIeInit(0, &pci0_property_table))) {
 		InitResetInterrupt(0);
 	}
 
-	if (get_fw_table()->pci1_property_table.pcie_mode !=
-		    FwTable_PciPropertyTable_PcieMode_DISABLED &&
-	    PCIeInitOk == PCIeInit(1, &get_fw_table()->pci1_property_table)) {
+	if ((pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) &&
+	    (PCIeInitOk == PCIeInit(1, &pci1_property_table))) {
 		InitResetInterrupt(1);
 	}
 
 	/* TODO: Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
-	InitMrisc();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		InitMrisc();
+	}
 
 	/* TODO: Load ERISC (Ethernet RISC) FW to all ethernets (8 of them) */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPA);
-	SerdesEthInit();
-	EthInit();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		SerdesEthInit();
+		EthInit();
+	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPB);
 	InitSmbusTarget();
 
 	/* Initiate AVS interface and switch vout control to AVSBus */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
-	AVSInit();
-	SwitchVoutControl(AVSVoutCommand);
-
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
-	if (get_fw_table()->feature_enable.cg_en) {
-		EnableTensixCG();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		AVSInit();
+		SwitchVoutControl(AVSVoutCommand);
 	}
 
-	if (get_fw_table()->feature_enable.noc_translation_en) {
-		InitNocTranslationFromHarvesting();
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		if (get_fw_table()->feature_enable.cg_en) {
+			EnableTensixCG();
+		}
+
+		if (get_fw_table()->feature_enable.noc_translation_en) {
+			InitNocTranslationFromHarvesting();
+		}
 	}
 
 	/* Indicate successful HW Init */
@@ -340,3 +380,15 @@ uint32_t InitHW(void)
 
 	return 0;
 }
+
+#ifdef CONFIG_TT_BH_ARC_SYSINIT
+static int tt_bh_arc_init(void)
+{
+	InitFW();
+	InitHW();
+
+	return 0;
+}
+
+SYS_INIT(tt_bh_arc_init, APPLICATION, 99);
+#endif /* CONFIG_TT_BH_ARC_SYSINIT */

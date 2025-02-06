@@ -3,23 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "smbus_target.h"
+
+#include <stdint.h>
+
 #include <app_version.h>
-#include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
-#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-
-#include "init.h"
-#include "init_common.h"
-#include "reg.h"
-#include "status_reg.h"
-#include "telemetry_internal.h"
-#include "telemetry.h"
-#include "smbus_target.h"
-#include "dvfs.h"
-#include "fan_ctrl.h"
-#include "fw_table.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -28,27 +19,30 @@ int main(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
 
-	InitFW();
-	InitHW();
-
-	if (get_fw_table()->feature_enable.aiclk_ppm_en) {
-		/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled */
-		/* We currently don't have plans to implement L2CPUCLK PPM, */
-		/* so currently, dvfs_enable == aiclk_ppm_enable */
-		InitDVFS();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		if (get_fw_table()->feature_enable.aiclk_ppm_en) {
+			/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled */
+			/* We currently don't have plans to implement L2CPUCLK PPM, */
+			/* so currently, dvfs_enable == aiclk_ppm_enable */
+			InitDVFS();
+		}
 	}
 
 	init_msgqueue();
-	init_telemetry();
-	init_fan_ctrl();
 
-	/* These timers are split out from their init functions since their work tasks have i2c
-	 * conflicts with other init functions
-	 */
-	/* Consider moving init before main (using Zephyr SYS_INIT()) to be pre ISR enablement */
-	StartTelemetryTimer();
-	if (dvfs_enabled) {
-		StartDVFSTimer();
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		init_telemetry();
+		init_fan_ctrl();
+
+		/* These timers are split out from their init functions since their work tasks have
+		 * i2c conflicts with other init functions.
+		 *
+		 * Note: The above issue would be solved by using Zephyr's driver model.
+		 */
+		StartTelemetryTimer();
+		if (dvfs_enabled) {
+			StartDVFSTimer();
+		}
 	}
 
 	while (1) {

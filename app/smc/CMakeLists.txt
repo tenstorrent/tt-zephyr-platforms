@@ -9,9 +9,6 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C)
 
-# HACK - we shouldn't need to do this.
-# We do this to get generated protobuf header files from bh_arc
-# Somehow the normal sources and headers are made available but not the build ones
 target_link_libraries(app PRIVATE bh_arc)
-target_sources(app PRIVATE src/main.c src/init.c)
+target_sources(app PRIVATE src/main.c)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/tenstorrent/bh_arc)

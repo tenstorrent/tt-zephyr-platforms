@@ -11,6 +11,7 @@ tests:
     harness_config:
       pytest_root:
         - pytest/e2e-smoke.py
-  app.debug:
+  app.recovery:
+    build_only: true
     extra_overlay_confs:
-      - debug.conf
+      - recovery.conf

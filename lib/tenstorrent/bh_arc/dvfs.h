@@ -6,6 +6,8 @@
 #ifndef DVFS_H
 #define DVFS_H
 
+#include <stdbool.h>
+
 extern bool dvfs_enabled;
 
 void InitDVFS(void);

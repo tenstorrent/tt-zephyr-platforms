@@ -35,6 +35,12 @@ config TT_BH_ARC_FAN_CTRL_GDDR_TEMP
 
 config TT_SMC_RECOVERY
 	bool "build smc recovery image"
-	default n
 	help
 	  Enable to build smc recovery image.
+
+config TT_BH_ARC_SYSINIT
+	bool "Perform bh_arc FW and HW init prior to main()"
+	help
+	  Initialize blackhole firmware and hardware prior to starting the application.
+
+	  This allows our library drivers to work better with Zephyr's driver model.
