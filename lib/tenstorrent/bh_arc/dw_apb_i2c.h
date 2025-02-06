@@ -29,7 +29,7 @@ uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf);
 uint32_t I2CTransaction(uint32_t id, const uint8_t *write_data, uint32_t write_len,
 			uint8_t *read_data, uint32_t read_len);
 uint32_t I2CWriteBytes(uint32_t id, uint16_t command, uint32_t command_byte_size,
-		       uint8_t *p_write_buf, uint32_t data_byte_size);
+		       const uint8_t *p_write_buf, uint32_t data_byte_size);
 uint32_t I2CReadBytes(uint32_t id, uint16_t command, uint32_t command_byte_size,
 		      uint8_t *p_read_buf, uint32_t data_byte_size, uint8_t flip_bytes);
 void SetI2CSlaveCallbacks(uint32_t id, const struct i2c_target_callbacks *cb);

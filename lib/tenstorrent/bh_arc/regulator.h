@@ -32,4 +32,5 @@ void SetVoltage(uint32_t slave_addr, float voltage_in_mv);
 float GetVcoreCurrent(void);
 float GetVcorePower(void);
 void SwitchVoutControl(VoltageCmdSource source);
+void RegulatorInit(void);
 #endif

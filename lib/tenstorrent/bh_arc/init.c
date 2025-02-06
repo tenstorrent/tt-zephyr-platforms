@@ -357,6 +357,7 @@ static int InitHW(void)
 	/* Initiate AVS interface and switch vout control to AVSBus */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		RegulatorInit();
 		AVSInit();
 		SwitchVoutControl(AVSVoutCommand);
 	}
