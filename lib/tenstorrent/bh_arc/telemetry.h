@@ -112,7 +112,7 @@ typedef enum {
 	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
 } Telemetry;
 
-void init_telemetry(void);
+void init_telemetry(uint32_t app_version);
 uint32_t ConvertFloatToTelemetry(float value);
 void StartTelemetryTimer(void);
 void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version);

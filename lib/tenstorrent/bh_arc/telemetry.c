@@ -4,27 +4,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "telemetry.h"
+#include "fan_ctrl.h"
+#include "fw_table.h"
+#include "harvesting.h"
+#include "pll.h"
+#include "pvt.h"
+#include "read_only_table.h"
+#include "reg.h"
+#include "regulator.h"
 #include "status_reg.h"
+#include "telemetry.h"
+#include "telemetry_internal.h"
 
-#include <math.h>  /* for floor */
 #include <float.h> /* for FLT_MAX */
+#include <math.h>  /* for floor */
 #include <stdint.h>
 #include <string.h>
 
-#include "telemetry_internal.h"
-#include "pll.h"
-#include "pvt.h"
-#include "reg.h"
-#include "regulator.h"
-#include "fan_ctrl.h"
-#include "read_only_table.h"
-#include "fw_table.h"
-#include "harvesting.h"
-
-#include <zephyr/kernel.h>
-#include <app_version.h>
 #include <tenstorrent/post_code.h>
+#include <zephyr/kernel.h>
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -67,7 +65,7 @@ uint32_t ConvertFloatToTelemetry(float value)
 	return ret_value;
 }
 
-static void write_static_telemetry(void)
+static void write_static_telemetry(uint32_t app_version)
 {
 	telemetry_table.version =
 		TELEMETRY_VERSION; /* v0.1.0 - Please update when changes are made */
@@ -86,7 +84,7 @@ static void write_static_telemetry(void)
 	telemetry[BM_APP_FW_VERSION] = 0x00000000;
 	telemetry[BM_BL_FW_VERSION] = 0x00000000;
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
-	telemetry[CM_FW_VERSION] = APPVERSION;
+	telemetry[CM_FW_VERSION] = app_version;
 	telemetry[L2CPU_FW_VERSION] = 0x00000000;
 
 	/* Tile enablement / harvesting information */
@@ -203,13 +201,13 @@ static void telemetry_timer_handler(struct k_timer *timer)
 static K_WORK_DEFINE(telem_update_worker, telemetry_work_handler);
 static K_TIMER_DEFINE(telem_update_timer, telemetry_timer_handler, NULL);
 
-void init_telemetry(void)
+void init_telemetry(uint32_t app_version)
 {
 	/* Initialize the telemetry struct to all 0's by default */
 	memset(&telemetry_table, 0, sizeof(telemetry_table));
 
 	update_tag_table();
-	write_static_telemetry();
+	write_static_telemetry(app_version);
 	/* fill the dynamic values once before starting timed updates */
 	update_telemetry();
 

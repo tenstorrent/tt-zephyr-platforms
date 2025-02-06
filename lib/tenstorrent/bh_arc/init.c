@@ -241,8 +241,8 @@ static void EthInit(void)
 	}
 }
 
-/* Returns 0 on success, non-zero on failure */
-static uint32_t InitHW(void)
+#ifdef CONFIG_TT_BH_ARC_SYSINIT
+static int InitHW(void)
 {
 	/* Write a status register indicating HW init progress */
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
@@ -380,15 +380,5 @@ static uint32_t InitHW(void)
 
 	return 0;
 }
-
-#ifdef CONFIG_TT_BH_ARC_SYSINIT
-static int tt_bh_arc_init(void)
-{
-	InitFW();
-	InitHW();
-
-	return 0;
-}
-
-SYS_INIT(tt_bh_arc_init, APPLICATION, 99);
+SYS_INIT(InitHW, APPLICATION, 99);
 #endif /* CONFIG_TT_BH_ARC_SYSINIT */

@@ -3,11 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdlib.h>
-
-#include <zephyr/kernel.h>
-#include <app_version.h>
-
 #include "arc_dma.h"
 #include "cm2bm_msg.h"
 #include "init_common.h"
@@ -17,6 +12,10 @@
 #include "spi_eeprom.h"
 #include "status_reg.h"
 #include "tt_boot_fs.h"
+
+#include <stdint.h>
+
+#include <zephyr/kernel.h>
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
 {
@@ -79,9 +78,9 @@ void DeassertTileResets(void)
 	WriteReg(RESET_UNIT_L2CPU_RESET_REG_ADDR, l2cpu_reset.val);
 }
 
-uint32_t InitFW(void)
+int InitFW(uint32_t app_version)
 {
-	WriteReg(STATUS_FW_VERSION_REG_ADDR, APPVERSION);
+	WriteReg(STATUS_FW_VERSION_REG_ADDR, app_version);
 
 	/* Initialize ARC DMA */
 	ArcDmaConfig();

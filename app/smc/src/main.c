@@ -3,12 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "dvfs.h"
+#include "fan_ctrl.h"
+#include "fw_table.h"
+#include "init_common.h"
 #include "smbus_target.h"
+#include "telemetry.h"
 
 #include <stdint.h>
 
 #include <app_version.h>
+#include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -31,7 +38,7 @@ int main(void)
 	init_msgqueue();
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		init_telemetry();
+		init_telemetry(APPVERSION);
 		init_fan_ctrl();
 
 		/* These timers are split out from their init functions since their work tasks have
@@ -60,3 +67,10 @@ int main(void)
 
 uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) = {
 	FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};
+
+static int _InitFW(void)
+{
+	return InitFW(APPVERSION);
+}
+
+SYS_INIT(_InitFW, APPLICATION, 98);

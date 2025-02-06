@@ -101,6 +101,6 @@ int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst);
 void InitSpiFS(void);
 void InitResetInterrupt(uint8_t pcie_inst);
 void DeassertTileResets(void);
-uint32_t InitFW(void);
+int InitFW(uint32_t app_version);
 
 #endif
