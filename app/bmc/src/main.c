@@ -13,6 +13,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
@@ -34,6 +35,7 @@ struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), c
 
 static const struct gpio_dt_spec board_fault_led =
 	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
+static const struct device *const ina228 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(ina228));
 
 int update_fw(void)
 {
@@ -105,8 +107,7 @@ void process_cm2bm_message(struct bh_chip *chip)
 			break;
 		case 0x2:
 			/* Respond to ping request from CMFW */
-			bharc_smbus_word_data_write(&chip->config.arc,
-						    0x21, 0xA5A5);
+			bharc_smbus_word_data_write(&chip->config.arc, 0x21, 0xA5A5);
 			break;
 		case 0x3:
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
@@ -114,6 +115,20 @@ void process_cm2bm_message(struct bh_chip *chip)
 			}
 			break;
 		}
+	}
+}
+
+void ina228_current_update(void)
+{
+	struct sensor_value current_sensor_val;
+
+	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
+	sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &current_sensor_val);
+	uint32_t current = (current_sensor_val.val1 << 16) |
+			   ((current_sensor_val.val2 / 100) & 0xFFFF); /* Truncate */
+
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		bh_chip_set_input_current(chip, &current);
 	}
 }
 
@@ -245,6 +260,10 @@ int main(void)
 					chip->data.arc_just_reset = false;
 				}
 			}
+		}
+
+		if (IS_ENABLED(CONFIG_INA228)) {
+			ina228_current_update();
 		}
 
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {

@@ -63,6 +63,17 @@ int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
 	return ret;
 }
 
+int bh_chip_set_input_current(struct bh_chip *chip, uint32_t *current)
+{
+	int ret;
+
+	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
+	ret = bharc_smbus_block_write(&chip->config.arc, 0x22, 4, (uint8_t *)current);
+	k_mutex_unlock(&chip->data.reset_lock);
+
+	return ret;
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);

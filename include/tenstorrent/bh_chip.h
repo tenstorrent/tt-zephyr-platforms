@@ -112,6 +112,7 @@ void bh_chip_cancel_bus_transfer_clear(struct bh_chip *chip);
 
 cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip);
 int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info);
+int bh_chip_set_input_current(struct bh_chip *chip, uint32_t *current);
 
 void bh_chip_assert_asic_reset(const struct bh_chip *chip);
 void bh_chip_deassert_asic_reset(const struct bh_chip *chip);
