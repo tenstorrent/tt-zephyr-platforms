@@ -31,7 +31,6 @@
 
 #include <stdint.h>
 
-#include <app_version.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
 #include <zephyr/init.h>
