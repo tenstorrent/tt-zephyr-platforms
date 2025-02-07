@@ -19,6 +19,7 @@ CONFIG_RTT_CONSOLE=y
 
 # enable i2c
 CONFIG_I2C=y
+CONFIG_I2C_DW_CLOCK_SPEED=50
 
 # enable spi
 CONFIG_SPI=y

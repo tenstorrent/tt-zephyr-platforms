@@ -292,6 +292,21 @@ uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf)
 	return 0;
 }
 
+void I2CInitGPIO(uint32_t id)
+{
+	/* initialize I2C pads for i2c controller */
+	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
+
+	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+						RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK |
+						RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
+	WriteReg(GetI2CPadDataAddr(id), 0);
+
+	uint32_t i2c_cntl = ReadReg(RESET_UNIT_I2C_CNTL_REG_ADDR);
+
+	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_cntl | 1 << id);
+}
+
 /* Initialize I2C controller by setting up I2C pads and configuration settings. */
 void I2CInit(I2CMode mode, uint32_t slave_addr, I2CSpeedMode speed, uint32_t id)
 {
@@ -302,16 +317,7 @@ void I2CInit(I2CMode mode, uint32_t slave_addr, I2CSpeedMode speed, uint32_t id)
 	WaitTxFifoEmpty(id);
 	WaitMasterIdle(id);
 
-	/* initialize I2C pads for i2c controller */
-	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
-
-	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
-						RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK |
-						RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
-	WriteReg(GetI2CPadDataAddr(id), 0);
-	uint32_t i2c_cntl = ReadReg(RESET_UNIT_I2C_CNTL_REG_ADDR);
-
-	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_cntl | 1 << id);
+	I2CInitGPIO(id);
 
 	/* configure dw_apb_i2c controller */
 	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 0);

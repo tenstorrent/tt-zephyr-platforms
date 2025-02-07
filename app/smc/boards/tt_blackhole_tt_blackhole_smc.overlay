@@ -3,11 +3,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &i2c2 {
-	status = "okay";
+	status = "disabled";
 };

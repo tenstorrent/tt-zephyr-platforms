@@ -359,6 +359,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		default:
 			/* Error, invalid command for read */
 			smbus_data.state = kSmbusStateWaitIdle;
+			*val = 0xFF;
 			return -1;
 		}
 		/* Call the send handler to get the data */
@@ -366,6 +367,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 			WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0020);
 			/* Send handler returned error */
 			smbus_data.state = kSmbusStateWaitIdle;
+			*val = 0xFF;
 			return -1;
 		}
 		/* Send the correct data for different types of commands */
@@ -387,6 +389,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 			WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0040);
 			/* Error, invalid command for read */
 			smbus_data.state = kSmbusStateWaitIdle;
+			*val = 0xFF;
 			return -1;
 		}
 	} else if (smbus_data.state == kSmbusStateSendData) {
@@ -415,6 +418,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
 			 0xc1de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
 		smbus_data.state = kSmbusStateWaitIdle;
+		*val = 0xFF;
 		return -1;
 	}
 	return 0;
@@ -439,10 +443,15 @@ const struct i2c_target_callbacks i2c_target_cb_impl = {
 	.stop = &I2CStopHandler,
 };
 
+struct i2c_target_config i2c_target_config_impl = {
+	.address = I2C_TARGET_ADDR,
+	.callbacks = &i2c_target_cb_impl,
+};
+
 void InitSmbusTarget(void)
 {
-	I2CInit(I2CSlv, I2C_TARGET_ADDR, I2CFastMode, CM_I2C_BM_TARGET_INST);
-	SetI2CSlaveCallbacks(CM_I2C_BM_TARGET_INST, &i2c_target_cb_impl);
+	I2CInitGPIO(CM_I2C_BM_TARGET_INST);
+	i2c_target_register(DEVICE_DT_GET(DT_NODELABEL(i2c0)), &i2c_target_config_impl);
 }
 
 void PollSmbusTarget(void)

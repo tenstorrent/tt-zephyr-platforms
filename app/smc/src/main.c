@@ -53,7 +53,6 @@ int main(void)
 	}
 
 	while (1) {
-		PollSmbusTarget();
 		k_yield();
 	}
 
