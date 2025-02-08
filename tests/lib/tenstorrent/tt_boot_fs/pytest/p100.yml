@@ -1,0 +1,72 @@
+name: P100-1
+
+product_name: P100
+gen_name: P100
+
+alignment:
+  flash_device_size: 0x1000000
+  flash_block_size: 4096
+
+# FIXME: need to come up with a set of predefined build directory variables and then feed those
+# into tt_boot_fs.py. These could easily be yet another YAML file (specifically a dict).
+#
+# This would typically correspond to sysbuild output directories. E.g.
+# - $BMC_BUILD: build/tt_blackhole@p100/tt_blackhole/bmc/build
+# - $SMC_BUILD: build/tt_blackhole@p100/tt_blackhole/smc/build
+
+images:
+  ## FIXME: this is generated at build time
+  # - name: cmfwcfg
+  # binary: $BUILD/zephyr/misc/generated/fwtable.bin
+
+  ## FIXME: this is generated at build time
+  # - name: cmfw
+  #   binary: $BUILD/zephyr/zephyr.bin
+  #   executable: true
+  #   offset: 0x10000000
+
+  - name: ethfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin
+
+  - name: ethfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc.bin
+
+  - name: memfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params.bin
+
+  - name: memfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin
+
+  - name: ethsdreg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin
+
+  - name: ethsdfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
+
+## FIXME: this is generated at build time
+# Board Mgmt FW
+# - name: bmfw
+#   binary: $BUILD/zephyr/zephyr.signed.bin
+
+## FIXME: this is generated at build time
+# Meta data about the flashing process
+# - name: flshinfo
+#   binary: $BUILD/zephyr/misc/generated/flash_info.bin
+
+## FIXME: this is generated at build time
+# Read only board config data
+# - name: boardcfg
+#   binary: $BUILD/zephyr/misc/generated/read_only.bin
+#   source: $END - 0x1000
+#   provisioning_only: true
+
+## FIXME: this is generated at build time
+fail_over_image:
+  name: failover
+  ## FIXME: this is the output of building the recovery app
+  ## Just using tt_blackhole_serdes_eth_fw.bin because recovery is required.
+  # binary: $BUILD/zephyr/zephyr.bin
+  binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
+  offset: 0x10000000
+  # not needed, but exercise padto for coverage (adds 36 bytes of 0xff)
+  padto: 19540
