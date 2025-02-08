@@ -133,6 +133,16 @@
 	};
 };
 
+&gpiob {
+	status = "okay";
+
+	spi-flash-mux0 {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
 &spi1 {
 	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pb3
 			 &spi1_miso_pa11 &spi1_mosi_pa12>;
