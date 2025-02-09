@@ -45,3 +45,11 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84054
     comments: |
       Fix upstream check_compliance.py to be usable by other modules.
+  - path: zephyr/arc-multilvl-int.patch
+    sha256sum: d217ac7819d39f9266b4b77e023e2aa61cac02e5f86c49e9141650bb826dcf24
+    module: zephyr
+    author: Aaron Fong
+    email: afong@tenstorrent.com
+    date: 2025-02-07
+    comments: |
+      Add support for multilevel interrupts on the ARC architecture.
