@@ -20,13 +20,14 @@ patches:
     comments: |
       This works. It might go through a few more rounds of review though. No sense in delaying.
   - path: zephyr/multiple_icntl.patch
-    sha256sum: a87aecc8f450311f37644120be6fa9c409794f58d1083b8adddd929baa143cdb
+    sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
     module: zephyr
     author: Samridhi Bansal
     email: sbansal@tenstorrent.com
-    date: 2024-06-14
+    date: 2025-02-07
     comments: |
-      This patch allows multiple interrupt comtrollers to be used in the ARC architecture.
+      This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
+      It also enhances the driver to support multiple instances on the same platform.
   - path: zephyr/move-bss-to-end.patch
     sha256sum: bc781234c7bb8acf1346a860db00252311b5c7aab9cca81b015a53cf9ef78358
     module: zephyr
