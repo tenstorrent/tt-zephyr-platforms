@@ -53,3 +53,12 @@ patches:
     date: 2025-02-07
     comments: |
       Add support for multilevel interrupts on the ARC architecture.
+  - path: zephyr/i2c-dw-multi-ints.patch
+    sha256sum: 01e793791b6243697362c7d87ab05f90bf0dcc3f14939f101260021c7dd9e11b
+    module: zephyr
+    author: Aaron Fong
+    email: afong@tenstorrent.com
+    date: 2025-02-07
+    comments: |
+      Hack to support the version of the DesignWare I2C hardware that splits the interrupts
+      to multiple lines.
