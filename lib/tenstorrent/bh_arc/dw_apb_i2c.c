@@ -498,8 +498,8 @@ void PollI2CSlave(uint32_t id)
 		}
 	} else if (raw_intr_stat.f.rd_req) {
 		ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_CLR_RD_REQ)));
-		if (cb->read_processed) {
-			if (cb->read_processed(&i2c_target_config[id], &data)) {
+		if (cb->read_requested) {
+			if (cb->read_requested(&i2c_target_config[id], &data)) {
 				/* Error condition, just send 0xFF */
 				data = 0xFF;
 			}

@@ -435,7 +435,7 @@ static int I2CStopHandler(struct i2c_target_config *config)
 
 const struct i2c_target_callbacks i2c_target_cb_impl = {
 	.write_received = &I2CWriteHandler,
-	.read_processed = &I2CReadHandler,
+	.read_requested = &I2CReadHandler,
 	.stop = &I2CStopHandler,
 };
 
