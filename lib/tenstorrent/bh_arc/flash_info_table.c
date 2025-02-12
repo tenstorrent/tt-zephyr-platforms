@@ -7,7 +7,7 @@
 #include "flash_info_table.h"
 
 #include <pb_decode.h>
-#include "tt_boot_fs.h"
+#include <tenstorrent/tt_boot_fs.h>
 
 static FlashInfoTable flash_info_table;
 

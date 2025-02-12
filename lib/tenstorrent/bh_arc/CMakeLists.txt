@@ -3,6 +3,7 @@
 
 zephyr_library_named(bh_arc)
 zephyr_include_directories(.)
+zephyr_include_directories(${ZEPHYR_CURRENT_MODULE_DIR}/include)
 zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY
   aiclk_ppm.c
@@ -53,7 +54,6 @@ zephyr_library_sources(
   spi_controller.c
   spi_eeprom.c
   timer.c
-  tt_boot_fs.c
 )
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
 zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)

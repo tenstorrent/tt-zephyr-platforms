@@ -11,10 +11,10 @@
 #include "spi_controller.h"
 #include "spi_eeprom.h"
 #include "status_reg.h"
-#include "tt_boot_fs.h"
 
 #include <stdint.h>
 
+#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/kernel.h>
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)

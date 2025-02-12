@@ -74,6 +74,8 @@ typedef enum {
 	TT_BOOT_FS_CHK_FAIL,
 } tt_checksum_res_t;
 
+extern tt_boot_fs boot_fs_data;
+
 uint32_t tt_boot_fs_next(uint32_t prev);
 
 int tt_boot_fs_mount(tt_boot_fs *tt_boot_fs, tt_boot_fs_read hal_read, tt_boot_fs_write hal_write,
@@ -84,6 +86,9 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd_data,
 			bool isSecurityBinaryEntry);
 
 uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t size);
+
+int load_bin_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
+		    uint32_t buf_size, uint32_t *file_size);
 
 #ifdef __cplusplus
 }

@@ -27,12 +27,12 @@
 #include "telemetry.h"
 #include "telemetry_internal.h"
 #include "tensix_cg.h"
-#include "tt_boot_fs.h"
 
 #include <stdint.h>
 
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 

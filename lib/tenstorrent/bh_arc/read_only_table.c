@@ -7,7 +7,7 @@
 #include "read_only_table.h"
 
 #include <pb_decode.h>
-#include "tt_boot_fs.h"
+#include <tenstorrent/tt_boot_fs.h>
 
 #define BOARDTYPE_ORION 0x37
 #define BOARDTYPE_P100  0x36
