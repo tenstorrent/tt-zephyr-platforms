@@ -120,6 +120,13 @@
 		interrupt-parent = <&intc>;
 	};
 
+	vuart0: vuart {
+		compatible = "tenstorrent,uart-virt";
+		tx-buf-size = <3072>;
+		rx-buf-size = <1024>;
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -237,6 +244,7 @@
 			reg = <0x80200000 0x1000>;
 			interrupts = <59 1>;
 			reg-shift = <2>;
+			status = "disabled";
 		};
 
 		// Each core has 4kB of ICCM @ 0.
