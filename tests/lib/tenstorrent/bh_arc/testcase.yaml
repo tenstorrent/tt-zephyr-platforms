@@ -1,4 +1,2 @@
 tests:
-  lib.tenstorrent.bh_arc:
-    platform_allow:
-      - native_sim
+  lib.tenstorrent.bh_arc: {}

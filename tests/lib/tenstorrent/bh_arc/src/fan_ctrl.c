@@ -4,19 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/ztest.h>
 #include <math.h>
 
-/*
- * FIXME: need to separate platform-layer (arch) code, kernel-layer (driver) code,
- * and application-layer (library/telemetry) code in bh_arc lib, i.e. separate
- * the information processing from the hardware specifics.
- */
-#include "../../../../../lib/tenstorrent/bh_arc/fan_ctrl.c"
+#include <zephyr/ztest.h>
 
 extern uint32_t fan_curve(float max_asic_temp, float max_gddr_temp);
 
-ZTEST(bh_arc, test_fan_curve)
+ZTEST(fan_ctrl, test_fan_curve)
 {
 	/* Test each GDDR temp fan curve step */
 	zassert_equal(fan_curve(25, 25), 35);
@@ -68,4 +62,4 @@ ZTEST(bh_arc, test_fan_curve)
 	}
 }
 
-ZTEST_SUITE(bh_arc, NULL, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(fan_ctrl, NULL, NULL, NULL, NULL, NULL);
