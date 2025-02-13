@@ -4,13 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/i2c.h>
 #include "reg.h"
 #include "status_reg.h"
 #include "dw_apb_i2c.h"
 #include "cm2bm_msg.h"
+
 #include <stdint.h>
+
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/i2c.h>
 
 /* BMFW to CMFW i2c interface is on I2C0 of tensix_sm */
 #define CM_I2C_BM_TARGET_INST 0
@@ -76,6 +78,8 @@ typedef struct {
 } SmbusConfig;
 
 /***Start of SMBus handlers***/
+
+static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c0));
 
 int32_t ReadByteTest(uint8_t *data, uint8_t size)
 {
@@ -451,7 +455,7 @@ struct i2c_target_config i2c_target_config_impl = {
 void InitSmbusTarget(void)
 {
 	I2CInitGPIO(CM_I2C_BM_TARGET_INST);
-	i2c_target_register(DEVICE_DT_GET(DT_NODELABEL(i2c0)), &i2c_target_config_impl);
+	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
 }
 
 void PollSmbusTarget(void)
