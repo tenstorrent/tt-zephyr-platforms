@@ -35,6 +35,7 @@ void InitSpiFS(void)
 
 void InitResetInterrupt(uint8_t pcie_inst)
 {
+#if CONFIG_ARC
 	if (pcie_inst == 0) {
 		IRQ_CONNECT(IRQNUM_PCIE0_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE0_ERR_INTR, 0);
 		irq_enable(IRQNUM_PCIE0_ERR_INTR);
@@ -42,6 +43,9 @@ void InitResetInterrupt(uint8_t pcie_inst)
 		IRQ_CONNECT(IRQNUM_PCIE1_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE1_ERR_INTR, 0);
 		irq_enable(IRQNUM_PCIE1_ERR_INTR);
 	}
+#else
+	ARG_UNUSED(pcie_inst);
+#endif
 }
 
 void DeassertTileResets(void)

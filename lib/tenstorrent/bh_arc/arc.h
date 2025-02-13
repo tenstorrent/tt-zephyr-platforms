@@ -11,6 +11,8 @@
 
 #include <stdint.h>
 
+#include <zephyr/sys/util_macro.h>
+
 #define ARC_AUX_TIMER_0_COUNT   (0x21)
 #define ARC_AUX_TIMER_0_CONTROL (0x22)
 #define ARC_AUX_TIMER_0_LIMIT   (0x23)
@@ -30,6 +32,11 @@
 static inline unsigned int ArcGetTimer0(void)
 {
 	unsigned volatile int count;
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	/*LR r1,[r2] ; Load contents of Aux. register ;pointed ; to by r2 into r1 */
 	__asm__ __volatile__("mov r1, %[addr]\n"
 			     "lr  %[reg], [r1]\n"
@@ -41,6 +48,10 @@ static inline unsigned int ArcGetTimer0(void)
 
 static inline void ArcWriteAux(unsigned int addr, unsigned int value)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
 	/*SR r1,[r2] ; Store contents of r1 into Aux. register pointed to by r2  */
 	__asm__ __volatile__("mov r1, %[addr]\n"
 			     "sr %[reg], [r1]\n"
@@ -52,6 +63,11 @@ static inline void ArcWriteAux(unsigned int addr, unsigned int value)
 static inline unsigned int ArcReadAux(unsigned int addr)
 {
 	unsigned volatile int value;
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	/*LR r1,[r2] ; Load contents of Aux. register ;pointed ; to by r2 into r1 */
 	__asm__ __volatile__("mov r1, %[addr]\n"
 			     "lr  %[reg], [r1]\n"
@@ -63,6 +79,10 @@ static inline unsigned int ArcReadAux(unsigned int addr)
 
 static inline void _clri(void)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
 	/*clri; disables the interrupts clears any pending. */
 	__asm__ __volatile__("clri\n"
 			     :      /*no output */
@@ -73,6 +93,10 @@ static inline void _clri(void)
 
 static inline void _rtie(void)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
 	__asm__ __volatile__("rtie\n"
 			     :      /*no output */
 			     :      /*no input */
@@ -82,6 +106,10 @@ static inline void _rtie(void)
 
 static inline void _seti(unsigned int flags)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
 	/*seti r1; Sets the status register interrupt enable and level. */
 	__asm__ __volatile__("mov  r1, %[reg]\n"
 			     "seti r1\n"
@@ -141,6 +169,10 @@ static inline void ArcSetIsrVect(uint32_t volatile intvec, volatile uint32_t int
 
 static inline void ArcSleep(void)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
 	__asm__ __volatile__("sleep");
 }
 #endif

@@ -56,7 +56,9 @@ zephyr_library_sources(
   timer.c
 )
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
-zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
+if(CONFIG_ARC)
+  zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
