@@ -1,4 +1,0 @@
-tests:
-  lib.tenstorrent.bitrev:
-    platform_allow:
-      - qemu_x86
