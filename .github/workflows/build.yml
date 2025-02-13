@@ -81,11 +81,20 @@ jobs:
         run: |
           west build -p -b tt_blackhole/tt_blackhole/smc app/smc -- -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y
 
-      - name: Run tests in QEMU
+      - name: Verify tests in Simulation
         working-directory: tt-zephyr-platforms
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             EXTRA_TWISTER_FLAGS="--short-build-path -O/tmp/twister-out"
           fi
-          west twister -i --retry-failed=3 -T tests -T samples $EXTRA_TWISTER_FLAGS
+          west twister -i --retry-failed=3 -p native_sim -p unit_testing -T tests $EXTRA_TWISTER_FLAGS
+
+      - name: Verify samples in Simulation
+        working-directory: tt-zephyr-platforms
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            EXTRA_TWISTER_FLAGS="--short-build-path -O/tmp/twister-out"
+          fi
+          west twister -i --retry-failed=3 -T samples $EXTRA_TWISTER_FLAGS
