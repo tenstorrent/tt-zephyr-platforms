@@ -14,7 +14,7 @@ static FwTable fw_table;
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
 int load_fw_table(uint8_t *buffer_space, uint32_t buffer_size)
 {
-	static const char fwTableTag[IMAGE_TAG_SIZE] = "cmfwcfg";
+	static const char fwTableTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "cmfwcfg";
 	uint32_t bin_size = 0;
 
 	if (load_bin_by_tag(&boot_fs_data, fwTableTag, buffer_space, buffer_size, &bin_size) !=

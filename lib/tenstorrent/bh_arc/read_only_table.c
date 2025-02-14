@@ -26,7 +26,7 @@ static ReadOnly read_only_table;
 int load_read_only_table(uint8_t *buffer_space, uint32_t buffer_size)
 {
 	uint32_t bin_size = 0;
-	static const char readOnlyTag[IMAGE_TAG_SIZE] = "boardcfg";
+	static const char readOnlyTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "boardcfg";
 
 	if (load_bin_by_tag(&boot_fs_data, readOnlyTag, buffer_space, buffer_size, &bin_size) !=
 	    TT_BOOT_FS_OK) {

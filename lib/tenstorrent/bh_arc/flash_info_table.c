@@ -14,7 +14,7 @@ static FlashInfoTable flash_info_table;
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
 int load_flash_info_table(uint8_t *buffer_space, uint32_t buffer_size)
 {
-	static const char flashInfoTableTag[IMAGE_TAG_SIZE] = "flshinfo";
+	static const char flashInfoTableTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "flshinfo";
 	uint32_t bin_size = 0;
 
 	if (load_bin_by_tag(&boot_fs_data, flashInfoTableTag, buffer_space, buffer_size,

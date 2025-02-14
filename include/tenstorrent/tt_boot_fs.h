@@ -19,7 +19,7 @@ extern "C" {
 /* These defines must change when BOOT_START or DESC_REGION_SIZE change in python toolchain */
 #define TT_BOOT_FS_SECURITY_BINARY_FD_ADDR (0x3FE0)
 #define TT_BOOT_FS_FAILOVER_HEAD_ADDR      (0x4000)
-#define IMAGE_TAG_SIZE                     8
+#define TT_BOOT_FS_IMAGE_TAG_SIZE          8
 
 typedef struct {
 	uint32_t image_size: 24;
@@ -50,7 +50,7 @@ typedef struct {
 	fd_flags_u flags;
 	uint32_t data_crc;
 	security_fd_flags_u security_flags;
-	uint8_t image_tag[IMAGE_TAG_SIZE];
+	uint8_t image_tag[TT_BOOT_FS_IMAGE_TAG_SIZE];
 	uint32_t fd_crc;
 } tt_boot_fs_fd;
 

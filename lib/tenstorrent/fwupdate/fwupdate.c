@@ -116,8 +116,8 @@ static void tt_fwupdate_dump_fd(const char *msg, const tt_boot_fs_fd *fd, bool v
 		"%x, security_flags: %x, image_tag: %.*s, fd_crc: %x%s}",
 		(msg == NULL) ? "" : msg, (msg == NULL || msg[0] == '\0') ? "" : ": ", fd->spi_addr,
 		fd->copy_dest, fd->flags.f.image_size, fd->flags.f.executable, fd->flags.f.invalid,
-		fd->data_crc, fd->security_flags.val, IMAGE_TAG_SIZE, fd->image_tag, fd->fd_crc,
-		verified ? " (verified)" : "");
+		fd->data_crc, fd->security_flags.val, TT_BOOT_FS_IMAGE_TAG_SIZE, fd->image_tag,
+		fd->fd_crc, verified ? " (verified)" : "");
 }
 
 #ifdef CONFIG_TT_FWUPDATE_TEST

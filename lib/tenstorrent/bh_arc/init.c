@@ -100,8 +100,8 @@ static void DeassertRiscvResets(void)
 
 static void InitMrisc(void)
 {
-	static const char kMriscFwCfgTag[IMAGE_TAG_SIZE] = "memfwcfg";
-	static const char kMriscFwTag[IMAGE_TAG_SIZE] = "memfw";
+	static const char kMriscFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfwcfg";
+	static const char kMriscFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfw";
 	uint32_t fw_size = 0;
 
 	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
@@ -170,7 +170,7 @@ static void SerdesEthInit(void)
 	}
 
 	/* Load fw regs */
-	static const char kSerdesEthFwRegsTag[IMAGE_TAG_SIZE] = "ethsdreg";
+	static const char kSerdesEthFwRegsTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdreg";
 	uint32_t reg_table_size = 0;
 
 	if (load_bin_by_tag(&boot_fs_data, kSerdesEthFwRegsTag, large_sram_buffer, SCRATCHPAD_SIZE,
@@ -188,7 +188,7 @@ static void SerdesEthInit(void)
 	}
 
 	/* Load fw */
-	static const char kSerdesEthFwTag[IMAGE_TAG_SIZE] = "ethsdfw";
+	static const char kSerdesEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdfw";
 	uint32_t fw_size = 0;
 
 	if (load_bin_by_tag(&boot_fs_data, kSerdesEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
@@ -210,7 +210,7 @@ static void EthInit(void)
 	uint32_t ring = 0;
 
 	/* Load fw */
-	static const char kEthFwTag[IMAGE_TAG_SIZE] = "ethfw";
+	static const char kEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfw";
 	uint32_t fw_size = 0;
 
 	if (load_bin_by_tag(&boot_fs_data, kEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
@@ -225,7 +225,7 @@ static void EthInit(void)
 	}
 
 	/* Load param table */
-	static const char kEthFwCfgTag[IMAGE_TAG_SIZE] = "ethfwcfg";
+	static const char kEthFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfwcfg";
 
 	if (load_bin_by_tag(&boot_fs_data, kEthFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
 			    &fw_size) != TT_BOOT_FS_OK) {

@@ -133,7 +133,7 @@ static int find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, tt_b
 			continue;
 		}
 
-		if (memcmp(boot_fs_cache[i].image_tag, tag, IMAGE_TAG_SIZE) != 0) {
+		if (memcmp(boot_fs_cache[i].image_tag, tag, TT_BOOT_FS_IMAGE_TAG_SIZE) != 0) {
 			continue;
 		}
 
