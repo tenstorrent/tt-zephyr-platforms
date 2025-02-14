@@ -27,7 +27,7 @@ static int tt_boot_fs_load_cache(tt_boot_fs *tt_boot_fs)
 	return TT_BOOT_FS_OK;
 }
 
-/* Setups hardware abstraction layer (HAL) callbacks, initializes HEAD fd */
+/* Sets up hardware abstraction layer (HAL) callbacks, initializes HEAD fd */
 int tt_boot_fs_mount(tt_boot_fs *tt_boot_fs, tt_boot_fs_read hal_read, tt_boot_fs_write hal_write,
 		     tt_boot_fs_erase hal_erase)
 {
@@ -38,8 +38,7 @@ int tt_boot_fs_mount(tt_boot_fs *tt_boot_fs, tt_boot_fs_read hal_read, tt_boot_f
 	return tt_boot_fs_load_cache(tt_boot_fs);
 }
 
-/* Allocates new file descriptor on SPI device */
-/* Writes associated data to correct address on SPI device */
+/* Allocate new file descriptor on SPI device and write associated data to correct address */
 int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd,
 			const uint8_t *image_data_src, bool isFailoverEntry,
 			bool isSecurityBinaryEntry)
@@ -70,9 +69,10 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd,
 
 	tt_boot_fs->hal_spi_write_f(curr_fd_addr, sizeof(tt_boot_fs_fd), (uint8_t *)&fd);
 
-	/* Now copy total image size from image_data_src pointer into the SPI device address */
-	/* specified Total image size = image_size + signature_size (security) + padding (future */
-	/* work) */
+	/*
+	 * Now copy total image size from image_data_src pointer into the specified address.
+	 * Total image size = image_size + signature_size (security) + padding.
+	 */
 	uint32_t total_image_size = fd.flags.f.image_size + fd.security_flags.f.signature_size;
 
 	tt_boot_fs->hal_spi_write_f(fd.spi_addr, total_image_size, image_data_src);
@@ -95,11 +95,6 @@ uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t num_bytes)
 	}
 
 	switch (num_bytes % 4) {
-	/*
-	 * case 3: cksum += *data_as_dwords & 0x000000ff; break;
-	 * case 2: cksum += *data_as_dwords & 0x0000ffff; break;
-	 * case 1: cksum += *data_as_dwords & 0x00ffffff; break;
-	 */
 	case 0:
 		cksum += *data_as_dwords & 0xffffffff;
 		break;
