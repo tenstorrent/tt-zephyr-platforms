@@ -155,7 +155,7 @@ static int find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, tt_b
 }
 
 int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
-			uint32_t buf_size, uint32_t *file_size)
+			size_t buf_size, size_t *file_size)
 {
 	tt_boot_fs_fd fd_data;
 

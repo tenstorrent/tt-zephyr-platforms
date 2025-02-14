@@ -88,7 +88,7 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd_data,
 uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t size);
 
 int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
-			uint32_t buf_size, uint32_t *file_size);
+			size_t buf_size, size_t *file_size);
 
 #ifdef __cplusplus
 }
