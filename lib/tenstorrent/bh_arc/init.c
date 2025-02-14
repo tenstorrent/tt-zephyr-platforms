@@ -110,8 +110,8 @@ static void InitMrisc(void)
 		}
 	}
 
-	if (load_bin_by_tag(&boot_fs_data, kMriscFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &fw_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+				&fw_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle this more gracefully */
 		return;
@@ -121,8 +121,8 @@ static void InitMrisc(void)
 		LoadMriscFw(gddr_inst, large_sram_buffer, fw_size);
 	}
 
-	if (load_bin_by_tag(&boot_fs_data, kMriscFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &fw_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
+				&fw_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle this more gracefully */
 		return;
@@ -173,8 +173,8 @@ static void SerdesEthInit(void)
 	static const char kSerdesEthFwRegsTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdreg";
 	uint32_t reg_table_size = 0;
 
-	if (load_bin_by_tag(&boot_fs_data, kSerdesEthFwRegsTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &reg_table_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kSerdesEthFwRegsTag, large_sram_buffer,
+				SCRATCHPAD_SIZE, &reg_table_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle more gracefully */
 		return;
@@ -191,8 +191,8 @@ static void SerdesEthInit(void)
 	static const char kSerdesEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdfw";
 	uint32_t fw_size = 0;
 
-	if (load_bin_by_tag(&boot_fs_data, kSerdesEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &fw_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kSerdesEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+				&fw_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle more gracefully */
 		return;
@@ -213,8 +213,8 @@ static void EthInit(void)
 	static const char kEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfw";
 	uint32_t fw_size = 0;
 
-	if (load_bin_by_tag(&boot_fs_data, kEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &fw_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+				&fw_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle more gracefully */
 		return;
@@ -227,8 +227,8 @@ static void EthInit(void)
 	/* Load param table */
 	static const char kEthFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfwcfg";
 
-	if (load_bin_by_tag(&boot_fs_data, kEthFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
-			    &fw_size) != TT_BOOT_FS_OK) {
+	if (tt_boot_fs_get_file(&boot_fs_data, kEthFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
+				&fw_size) != TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle more gracefully */
 		return;

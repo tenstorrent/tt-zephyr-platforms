@@ -17,7 +17,7 @@ int load_fw_table(uint8_t *buffer_space, uint32_t buffer_size)
 	static const char fwTableTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "cmfwcfg";
 	uint32_t bin_size = 0;
 
-	if (load_bin_by_tag(&boot_fs_data, fwTableTag, buffer_space, buffer_size, &bin_size) !=
+	if (tt_boot_fs_get_file(&boot_fs_data, fwTableTag, buffer_space, buffer_size, &bin_size) !=
 	    TT_BOOT_FS_OK) {
 		/* Error */
 		/* TODO: Handle more gracefully */
