@@ -22,11 +22,11 @@ index 1bcb7db62f2..986f3235e5f 100644
 +    tags:
 +      - rtt
 diff --git a/tests/boot/test_mcuboot/testcase.yaml b/tests/boot/test_mcuboot/testcase.yaml
-index a19a51485d1..8352932a8db 100644
+index ffa090f882b..5459833a66f 100644
 --- a/tests/boot/test_mcuboot/testcase.yaml
 +++ b/tests/boot/test_mcuboot/testcase.yaml
-@@ -2,12 +2,13 @@ common:
-   sysbuild: true
+@@ -3,12 +3,12 @@ common:
+   tags: mcuboot
    harness: console
    harness_config:
 -    type: multi_line
@@ -36,7 +36,6 @@ index a19a51485d1..8352932a8db 100644
 -      - "Launching primary slot application on (.*)"
 -      - "Secondary application ready for swap, rebooting"
 -      - "I: Starting swap using (.*)|I: Image 0 upgrade secondary slot -> primary slot"
-+# Some of these messages tend to get lost with RTT due to tight printk() / RTT / sys_reboot() margins
 +#      - "I: Starting bootloader"
 +#      - "Launching primary slot application on (.*)"
 +#      - "Secondary application ready for swap, rebooting"
@@ -44,13 +43,12 @@ index a19a51485d1..8352932a8db 100644
        - "Swapped application booted on (.*)"
  tests:
    bootloader.mcuboot:
-@@ -53,3 +54,10 @@ tests:
-       - b_u585i_iot02a
-     extra_configs:
-       - CONFIG_ASSERT=y
+@@ -62,3 +62,9 @@ tests:
+     extra_args:
+       - SB_CONFIG_MCUBOOT_MODE_SWAP_USING_OFFSET=y
+       - swapped_app_CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y
 +  bootloader.mcuboot.rtt:
 +    tags:
-+      - mcuboot
 +      - rtt
 +    filter: CONFIG_HAS_SEGGER_RTT
 +    required_snippets:
