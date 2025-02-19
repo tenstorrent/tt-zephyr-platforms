@@ -152,18 +152,25 @@ static void CLR_TMS(const struct jtag_config *config)
 
 #endif /* CONFIG_JTAG_USE_MMAPPED_IO */
 
+static ALWAYS_INLINE void delay_tick(void)
+{
+	arch_nop();
+	arch_nop();
+	arch_nop();
+}
+
 static ALWAYS_INLINE void jtag_bitbang_tick(const struct device *dev, uint32_t count)
 {
 	const struct jtag_config *config = dev->config;
 
 	for (; count > 0; --count) {
 		CLR_TCK(config);
-		k_busy_wait(config->tck_delay);
+		delay_tick();
 		SET_TCK(config);
-		k_busy_wait(config->tck_delay);
+		delay_tick();
 	}
 	CLR_TCK(config);
-	k_busy_wait(config->tck_delay);
+	delay_tick();
 }
 
 int jtag_bitbang_reset(const struct device *dev)
@@ -517,8 +524,8 @@ static int jtag_bitbang_init(const struct device *dev)
 		 .tdo_reg = JTAG_BB_GPIOS_GET_REG(n, tdo_gpios),               \
 		 .tms_reg = JTAG_BB_GPIOS_GET_REG(n, tms_gpios),               \
 		 .port_write_cycles = DT_INST_PROP(n, port_write_cycles),      \
-		 .tck_delay = DT_INST_PROP(n, tck_delay),),                    \
-		())};                         \
+		 ),                    \
+		())};                                 \
                                                                                                    \
 	static struct jtag_data jtag_bitbang_data_##n;                                             \
                                                                                                    \
