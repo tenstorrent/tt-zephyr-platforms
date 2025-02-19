@@ -41,20 +41,19 @@ source zephyr-env.sh
 Note: Currently, [JLink software](https://www.segger.com/downloads/jlink/) is used to flash BMC FW.
 Please download and install it.
 
-**Build, flash, and attach to the target with `west`**
+**Build, flash, and view output from the target with `west`**
 ```shell
 # Set up a convenience variable for BMC FW
 BOARD=tt_blackhole/tt_blackhole/bmc
 BOARD_SANITIZED=tt_blackhole_tt_blackhole_bmc
 
 west build --sysbuild -p -S rtt-console -b $BOARD ../$MODULE.git/app/bmc
-# In a separate terminal run 'JLinkRTTClient'
+# Note: if debugging with a JLink, add `-r jlink` to the `west flash` and
+# `west rtt` invocations. The default debug configuration uses an st-link
 # Flash mcuboot and the app
-west flash -r jlink
-# Attach a debugger
-west attach -r jlink -d build/bmc
-# at the GDB prompt, enter the following
-# (gdb) monitor reset
+west flash
+# Open RTT viewer
+west rtt
 ```
 
 Console output should appear as shown below.
