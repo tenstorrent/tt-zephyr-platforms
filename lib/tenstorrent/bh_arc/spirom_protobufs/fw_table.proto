@@ -41,6 +41,7 @@ message FwTable {
     bool watchdog_en = 5;
     bool smbus_en = 6;
     bool harvesting_en = 7;
+    bool fan_ctrl_en = 8;
   }
 
   message FanTable{

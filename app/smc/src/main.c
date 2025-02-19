@@ -39,7 +39,9 @@ int main(void)
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		init_telemetry(APPVERSION);
-		init_fan_ctrl();
+		if (get_fw_table()->feature_enable.fan_ctrl_en) {
+			init_fan_ctrl();
+		}
 
 		/* These timers are split out from their init functions since their work tasks have
 		 * i2c conflicts with other init functions.
