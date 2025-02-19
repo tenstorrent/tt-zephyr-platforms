@@ -1,0 +1,19 @@
+common:
+  sysbuild: true
+  tags:
+    - mcuboot
+    - smoke
+  harness: console
+  harness_config:
+    type: one_line
+    regex:
+      - "Swapped application booted on (.*)"
+tests:
+  bootloader.mcuboot.rtt:
+    platform_allow:
+      - tt_blackhole/tt_blackhole/bmc
+    tags:
+      - rtt
+    filter: CONFIG_HAS_SEGGER_RTT
+    required_snippets:
+      - rtt-console

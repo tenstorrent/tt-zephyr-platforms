@@ -1,15 +1,4 @@
 patches:
-  - path: zephyr/run-tests-with-rtt-console.patch
-    sha256sum: 00c19242c30bd1ffc12febf83cbc228a7343389848c79b16d20fbb5dd6c0219b
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2024-07-25
-    upstreamable: true
-    comments: |
-      Allows certain upstream Zephyr tests to run on platforms without a physical UART as long as
-      the platform supports RTT. This requires "twister-rtt-support.patch" as well, which adds the
-      "--device-serial rtt" option to twister.
   - path: zephyr/twister-rtt-support.patch
     sha256sum: c64e1ca07119aea925f482bbdb4e5c76c17dc1843b5616ebecf49c004183bef6
     module: zephyr

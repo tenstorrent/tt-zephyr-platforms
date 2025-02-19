@@ -90,14 +90,14 @@ jobs:
             -p tt_blackhole/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -s app/bmc/sample.app \
-            -T ../tt-zephyr-platforms -ll DEBUG
+            -T ../tt-zephyr-platforms/samples -ll DEBUG
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
             -p tt_blackhole/tt_blackhole/smc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -s app/smc/app.e2e-smoke \
-            -T ../tt-zephyr-platforms -ll DEBUG
+            -T ../tt-zephyr-platforms/samples -ll DEBUG
 
       - name: Run Metal Tests
         run: >

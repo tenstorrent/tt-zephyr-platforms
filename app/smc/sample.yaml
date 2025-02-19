@@ -7,6 +7,7 @@ common:
 tests:
   app.default: {}
   app.e2e-smoke:
+    tags: e2e
     harness: pytest
     harness_config:
       pytest_root:

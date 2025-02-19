@@ -5,6 +5,7 @@ tests:
     sysbuild: true
     platform_allow:
       - tt_blackhole/tt_blackhole/bmc
+    tags: e2e
     harness: console
     harness_config:
       type: one_line

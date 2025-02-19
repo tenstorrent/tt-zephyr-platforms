@@ -100,15 +100,13 @@ jobs:
           # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
           pip install west -U &>/dev/null
 
-          # Ensure that scrappy can
-          # 1. build, flash & run the hello world app
-          # 2. perform a full bootloader + fw flash
-          # 3. perform a fw update via mcuboot
+          # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
             -p tt_blackhole/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -s samples/hello_world/sample.basic.helloworld.rtt \
-            -s tests/boot/test_mcuboot/bootloader.mcuboot.rtt
+            --tag smoke \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/tests
 
       - name: run-smc-tests
         working-directory: zephyr
@@ -125,12 +123,13 @@ jobs:
           # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
           pip install west -U &>/dev/null
 
-          # Ensure that scrappy can
-          # build, flash & run the hello world app
+          # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            -p tt_blackhole/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -s samples/hello_world/sample.basic.helloworld.rtt \
+            --tag smoke \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/tests
       - name: cleanup
         if: ${{ always() }}
         run: |
@@ -242,17 +241,17 @@ jobs:
           # then run twister with SMC firmware
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
+            --tag e2e \
             -p tt_blackhole/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -s app/bmc/sample.app \
-            -T ../tt-zephyr-platforms -ll DEBUG
+            -T ../tt-zephyr-platforms/app -ll DEBUG
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
             -p tt_blackhole/tt_blackhole/smc --device-testing \
+            --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -s app/smc/app.e2e-smoke \
-            -T ../tt-zephyr-platforms -ll DEBUG
+            -T ../tt-zephyr-platforms/app -ll DEBUG
 
       - name: cleanup
         if: ${{ always() }}

@@ -1,0 +1,22 @@
+sample:
+  description: Hello World sample, the simplest Zephyr
+    application
+  name: hello world
+common:
+  tags:
+    - smoke
+    - introduction
+  integration_platforms:
+    - native_sim
+  harness: console
+  harness_config:
+    type: one_line
+    regex:
+      - "Hello World! (.*)"
+tests:
+  sample.basic.helloworld.rtt:
+    filter: CONFIG_HAS_SEGGER_RTT
+    required_snippets:
+      - rtt-console
+    tags:
+      - rtt
