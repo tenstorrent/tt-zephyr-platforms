@@ -10,7 +10,16 @@
 #include "functional_efuse.h"
 #include "noc.h"
 
-TileEnable tile_enable;
+TileEnable tile_enable = {
+	.tensix_col_enabled = BIT_MASK(14),
+	.eth_enabled = BIT_MASK(14),
+	.eth5_serdes = true,
+	.eth8_serdes = true,
+	.eth_serdes_connected = BIT_MASK(12),
+	.gddr_enabled = BIT_MASK(8),
+	.l2cpu_enabled = BIT_MASK(4),
+	.pcie_enabled = BIT_MASK(2),
+};
 
 static bool FusesValid(void)
 {
@@ -166,7 +175,7 @@ void CalculateHarvesting(void)
 	tile_enable.l2cpu_enabled = BIT_MASK(4);
 	tile_enable.pcie_enabled = BIT_MASK(2);
 
-	if (FusesValid()) {
+	if (get_fw_table()->feature_enable.harvesting_en && FusesValid()) {
 		HarvestingATEFuses();
 		HarvestingSLTFuses();
 	}

@@ -40,6 +40,7 @@ message FwTable {
     bool aiclk_ppm_en = 4;
     bool watchdog_en = 5;
     bool smbus_en = 6;
+    bool harvesting_en = 7;
   }
 
   message FanTable{
