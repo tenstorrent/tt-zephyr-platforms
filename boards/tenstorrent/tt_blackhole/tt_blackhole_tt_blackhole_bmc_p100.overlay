@@ -11,3 +11,7 @@
 	tms-gpios = <&gpiob 9 GPIO_ACTIVE_HIGH>;
 	trst-gpios = <&gpiod 0 GPIO_ACTIVE_LOW>;
 };
+
+&flash1 {
+	jedec-id = [2c 5b 1a];
+};
