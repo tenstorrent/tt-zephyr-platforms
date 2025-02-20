@@ -212,7 +212,7 @@ int main(void)
 	}
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-		gpio_pin_configure_dt(&board_fault_led, GPIO_OUTPUT_ACTIVE);
+		gpio_pin_configure_dt(&board_fault_led, GPIO_OUTPUT_INACTIVE);
 	}
 
 	if (IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)) {
@@ -235,22 +235,16 @@ int main(void)
 
 	printk("BMFW VERSION " APP_VERSION_STRING "\n");
 
+	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
+		gpio_pin_set_dt(&board_fault_led, 1);
+	}
+
 	/* No mechanism for getting bl version... yet */
 	bmStaticInfo static_info =
 		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
-	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-		gpio_pin_set_dt(&board_fault_led, 0);
-	}
-
 	while (1) {
 		k_sleep(K_MSEC(20));
-
-		if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
-			/* Blink the light every half second or so */
-			k_sleep(K_MSEC(500 - 20));
-			gpio_pin_toggle_dt(&board_fault_led);
-		}
 
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
 		 */
