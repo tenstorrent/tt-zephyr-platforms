@@ -37,6 +37,9 @@ static const struct gpio_dt_spec board_fault_led =
 	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
 static const struct device *const ina228 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(ina228));
 
+// static struct k_timer auto_reset_timer;
+static int auto_reset_timeout = 0;
+
 int update_fw(void)
 {
 	/* To get here we are already running known good fw */
@@ -110,9 +113,17 @@ void process_cm2bm_message(struct bh_chip *chip)
 			bharc_smbus_word_data_write(&chip->config.arc, 0x21, 0xA5A5);
 			break;
 		case 0x3:
+			/* Update fan PWM */
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 				set_fan_speed((uint8_t)message.data & 0xFF);
 			}
+			break;
+		case 0x4:
+			/* Update auto reset timeout */
+			auto_reset_timeout = message.data;
+			// if (auto_reset_timeout == 0) {
+			// 	k_timer_stop(&auto_reset_timer);
+			// }
 			break;
 		}
 	}
