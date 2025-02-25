@@ -125,6 +125,15 @@ void UpdateAutoRstTimeoutRequest(uint32_t timeout)
 	EnqueueCm2BmMsg(&msg);
 }
 
+void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
+{
+	Cm2BmMsg msg = {
+		.msg_id = kCm2BmMsgTelemHeartbeatUpdate,
+		.data = heartbeat /* in ms */
+	};
+	EnqueueCm2BmMsg(&msg);
+}
+
 /* Report the current message and automatically acknowledge it. */
 int32_t ResetBoardByte(uint8_t *data, uint8_t size)
 {
