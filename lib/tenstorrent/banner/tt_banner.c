@@ -41,7 +41,7 @@ static int tt_boot_banner(void)
 ;
 	/* clang-format on */
 
-	printk(logo);
+	printk("%s\n", logo);
 	printk("*** Booting " CONFIG_BOARD " with Zephyr OS " STRINGIFY(BUILD_VERSION) " ***\n");
 
 	return 0;

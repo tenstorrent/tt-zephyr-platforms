@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	vuart0: uart_tt_virt {
+		compatible = "tenstorrent,uart-virt";
+		/* tx-buf-size + rx-buf-size + sizeof(uart_tt_virt_desc) = 4096 */
+		tx-buf-size = <3040>;
+		rx-buf-size = <1024>;
+		status = "okay";
+	};
+};

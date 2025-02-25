@@ -1,0 +1,17 @@
+common:
+  tags:
+    - drivers
+    - uart
+tests:
+  drivers.uart.basic_api.uart_tt_virt:
+    tags:
+      - tt_sim
+      - uart_tt_virt
+    filter: CONFIG_UART_CONSOLE
+    harness: keyboard
+    platform_allow:
+      - native_sim/native/64
+      - qemu_riscv64
+    extra_args:
+      - "DTC_OVERLAY_FILE=uart_tt_virt.overlay"
+      - "CONF_FILE=uart_tt_virt.conf"
