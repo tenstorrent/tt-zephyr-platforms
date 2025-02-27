@@ -16,6 +16,7 @@
 #include "status_reg.h"
 #include "telemetry.h"
 #include "telemetry_internal.h"
+#include "gddr.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>  /* for floor */
@@ -66,10 +67,79 @@ uint32_t ConvertFloatToTelemetry(float value)
 	return ret_value;
 }
 
+static void UpdateGddrTelemetry(void)
+{
+	/* We pack multiple metrics into one field, so need to clear first. */
+	for (int i = 0; i < NUM_GDDR / 2; i++) {
+		telemetry[GDDR_0_1_TEMP + i] = 0;
+		telemetry[GDDR_0_1_CORR_ERRS + i] = 0;
+	}
+
+	telemetry[GDDR_UNCORR_ERRS] = 0;
+	telemetry[GDDR_STATUS] = 0;
+
+	for (int i = 0; i < NUM_GDDR; i++) {
+		gddr_telemetry_table_t gddr_telemetry;
+		/* Harvested instances should read 0b00 for status. */
+		if (IS_BIT_SET(tile_enable.gddr_enabled, i)) {
+			read_gddr_telemetry_table(i, &gddr_telemetry);
+			/* DDR Status:
+			 * [0] - Training complete GDDR 0
+			 * [1] - Error GDDR 0
+			 * [2] - Training complete GDDR 1
+			 * [3] - Error GDDR 1
+			 * ...
+			 * [14] - Training Complete GDDR 7
+			 * [15] - Error GDDR 7
+			 */
+			telemetry[GDDR_STATUS] |= (gddr_telemetry.training_complete << (i * 2)) |
+				(gddr_telemetry.gddr_error << (i * 2 + 1));
+
+			/* DDR_x_y_TEMP:
+			 * [31:24] GDDR y top
+			 * [23:16] GDDR y bottom
+			 * [15:8]  GDDR x top
+			 * [7:0]   GDDR x bottom
+			 */
+			int shift_val = (i % 2) * 16;
+
+			telemetry[GDDR_0_1_TEMP + i / 2] |=
+				((gddr_telemetry.dram_temperature_top & 0xff) << (8 + shift_val)) |
+				((gddr_telemetry.dram_temperature_bottom & 0xff) << shift_val);
+
+			/* GDDR_x_y_CORR_ERRS:
+			 * [31:24] GDDR y Corrected Write EDC errors
+			 * [23:16] GDDR y Corrected Read EDC Errors
+			 * [15:8]  GDDR x Corrected Write EDC errors
+			 * [7:0]   GDDR y Corrected Read EDC Errors
+			 */
+			telemetry[GDDR_0_1_CORR_ERRS + i / 2] |=
+				((gddr_telemetry.corr_edc_wr_errors & 0xff) << (8 + shift_val)) |
+				((gddr_telemetry.corr_edc_rd_errors & 0xff) << shift_val);
+
+			/* GDDR_UNCORR_ERRS:
+			 * [0]  GDDR 0 Uncorrected Read EDC error
+			 * [1]  GDDR 0 Uncorrected Write EDC error
+			 * [2]  GDDR 1 Uncorrected Read EDC error
+			 * ...
+			 * [15] GDDR 7 Uncorrected Write EDC error
+			 */
+			telemetry[GDDR_UNCORR_ERRS] |=
+				(gddr_telemetry.uncorr_edc_rd_error << (i * 2)) |
+				(gddr_telemetry.uncorr_edc_wr_error << (i * 2 + 1));
+			/* GDDR speed - in Mbps */
+			telemetry[GDDR_SPEED] = gddr_telemetry.dram_speed;
+
+		}
+	}
+}
+
 static void write_static_telemetry(uint32_t app_version)
 {
 	telemetry_table.version =
-		TELEMETRY_VERSION; /* v0.1.0 - Please update when changes are made */
+		TELEMETRY_VERSION; /* v0.1.0 - Only update when redefining the
+				    * meaning of an existing tag
+				    */
 	telemetry_table.entry_count = TELEM_ENUM_COUNT; /* Runtime count of telemetry entries */
 
 	/* Get the static values */
@@ -81,7 +151,15 @@ static void write_static_telemetry(uint32_t app_version)
 
 	/* TODO: Gather FW versions from FW themselves */
 	telemetry[ETH_FW_VERSION] = 0x00000000;
-	telemetry[DDR_FW_VERSION] = 0x00000000;
+	if (tile_enable.gddr_enabled != 0) {
+		gddr_telemetry_table_t gddr_telemetry;
+		/* Use first available instance. */
+		uint32_t gddr_inst = find_lsb_set(tile_enable.gddr_enabled) - 1;
+
+		read_gddr_telemetry_table(gddr_inst, &gddr_telemetry);
+		telemetry[GDDR_FW_VERSION] = (gddr_telemetry.mrisc_fw_version_major << 16) |
+			gddr_telemetry.mrisc_fw_version_minor;
+	}
 	telemetry[BM_APP_FW_VERSION] = 0x00000000;
 	telemetry[BM_BL_FW_VERSION] = 0x00000000;
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
@@ -134,10 +212,9 @@ static void update_telemetry(void)
 		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
 			     * retrain_status - Not Available yet
 			     */
-	telemetry[DDR_STATUS] = 0x00000000;   /* DDR status - Not Available yet */
-	telemetry[DDR_SPEED] = 0x00000000;    /* DDR speed - Not Available yet */
 	telemetry[FAN_SPEED] = GetFanSpeed(); /* Target fan speed - reported in percentage */
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
+	UpdateGddrTelemetry();
 	telemetry[INPUT_CURRENT] =
 		GetInputCurrent();    /* Input current - reported in A in signed int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
@@ -167,10 +244,10 @@ static void update_tag_table(void)
 	tag_table[18] = (struct telemetry_entry){TAG_L2CPUCLK2, L2CPUCLK2};
 	tag_table[19] = (struct telemetry_entry){TAG_L2CPUCLK3, L2CPUCLK3};
 	tag_table[20] = (struct telemetry_entry){TAG_ETH_LIVE_STATUS, ETH_LIVE_STATUS};
-	tag_table[21] = (struct telemetry_entry){TAG_DDR_STATUS, DDR_STATUS};
-	tag_table[22] = (struct telemetry_entry){TAG_DDR_SPEED, DDR_SPEED};
+	tag_table[21] = (struct telemetry_entry){TAG_GDDR_STATUS, GDDR_STATUS};
+	tag_table[22] = (struct telemetry_entry){TAG_GDDR_SPEED, GDDR_SPEED};
 	tag_table[23] = (struct telemetry_entry){TAG_ETH_FW_VERSION, ETH_FW_VERSION};
-	tag_table[24] = (struct telemetry_entry){TAG_DDR_FW_VERSION, DDR_FW_VERSION};
+	tag_table[24] = (struct telemetry_entry){TAG_GDDR_FW_VERSION, GDDR_FW_VERSION};
 	tag_table[25] = (struct telemetry_entry){TAG_BM_APP_FW_VERSION, BM_APP_FW_VERSION};
 	tag_table[26] = (struct telemetry_entry){TAG_BM_BL_FW_VERSION, BM_BL_FW_VERSION};
 	tag_table[27] = (struct telemetry_entry){TAG_FLASH_BUNDLE_VERSION, FLASH_BUNDLE_VERSION};
@@ -186,7 +263,16 @@ static void update_tag_table(void)
 	tag_table[37] = (struct telemetry_entry){TAG_INPUT_CURRENT, INPUT_CURRENT};
 	tag_table[38] = (struct telemetry_entry){TAG_NOC_TRANSLATION, NOC_TRANSLATION};
 	tag_table[39] = (struct telemetry_entry){TAG_FAN_RPM, FAN_RPM};
-	tag_table[40] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[40] = (struct telemetry_entry){TAG_GDDR_0_1_TEMP, GDDR_0_1_TEMP};
+	tag_table[41] = (struct telemetry_entry){TAG_GDDR_2_3_TEMP, GDDR_2_3_TEMP};
+	tag_table[42] = (struct telemetry_entry){TAG_GDDR_4_5_TEMP, GDDR_4_5_TEMP};
+	tag_table[43] = (struct telemetry_entry){TAG_GDDR_6_7_TEMP, GDDR_6_7_TEMP};
+	tag_table[44] = (struct telemetry_entry){TAG_GDDR_0_1_CORR_ERRS, GDDR_0_1_CORR_ERRS};
+	tag_table[45] = (struct telemetry_entry){TAG_GDDR_2_3_CORR_ERRS, GDDR_2_3_CORR_ERRS};
+	tag_table[46] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS, GDDR_4_5_CORR_ERRS};
+	tag_table[47] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
+	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
+	tag_table[49] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */

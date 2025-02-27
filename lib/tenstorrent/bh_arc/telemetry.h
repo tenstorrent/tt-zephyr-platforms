@@ -9,8 +9,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define TELEMETRY_VERSION 0x00000100 /* v0.1.0 - Please update when changes are made */
-				     /* Semver format: 0 x 00 Major Minor Patch  */
+#define TELEMETRY_VERSION 0x00000100 /* v0.1.0 - Only update when redefining the
+				      * meaning of an existing tag
+				      * Semver format: 0 x 00 Major Minor Patch
+				      */
 
 /* Tags - these will be guaranteed and will not change */
 #define TAG_BOARD_ID_HIGH        1
@@ -34,10 +36,10 @@
 #define TAG_L2CPUCLK2            19
 #define TAG_L2CPUCLK3            20
 #define TAG_ETH_LIVE_STATUS      21
-#define TAG_DDR_STATUS           22
-#define TAG_DDR_SPEED            23
+#define TAG_GDDR_STATUS          22
+#define TAG_GDDR_SPEED           23
 #define TAG_ETH_FW_VERSION       24
-#define TAG_DDR_FW_VERSION       25
+#define TAG_GDDR_FW_VERSION      25
 #define TAG_BM_APP_FW_VERSION    26
 #define TAG_BM_BL_FW_VERSION     27
 #define TAG_FLASH_BUNDLE_VERSION 28
@@ -54,6 +56,15 @@
 #define TAG_INPUT_CURRENT        39
 #define TAG_NOC_TRANSLATION      40
 #define TAG_FAN_RPM              41
+#define TAG_GDDR_0_1_TEMP        42
+#define TAG_GDDR_2_3_TEMP        43
+#define TAG_GDDR_4_5_TEMP        44
+#define TAG_GDDR_6_7_TEMP        45
+#define TAG_GDDR_0_1_CORR_ERRS   46
+#define TAG_GDDR_2_3_CORR_ERRS   47
+#define TAG_GDDR_4_5_CORR_ERRS   48
+#define TAG_GDDR_6_7_CORR_ERRS   49
+#define TAG_GDDR_UNCORR_ERRS     50
 
 /* Enums are subject to updates */
 typedef enum {
@@ -89,12 +100,12 @@ typedef enum {
 
 	/* IO information */
 	ETH_LIVE_STATUS, /* Lower 16 bits - heartbeat status, upper 16 bits - retrain_status */
-	DDR_STATUS,
-	DDR_SPEED,
+	GDDR_STATUS,
+	GDDR_SPEED,
 
 	/* FW versions */
 	ETH_FW_VERSION,
-	DDR_FW_VERSION,
+	GDDR_FW_VERSION,
 	/* Board manager fw versions */
 	BM_APP_FW_VERSION,
 	BM_BL_FW_VERSION,
@@ -115,6 +126,19 @@ typedef enum {
 	ENABLED_L2CPU,
 	PCIE_USAGE,
 	NOC_TRANSLATION,
+
+	/* DRAM Temperatures */
+	GDDR_0_1_TEMP,
+	GDDR_2_3_TEMP,
+	GDDR_4_5_TEMP,
+	GDDR_6_7_TEMP,
+
+	/* DDR Errors */
+	GDDR_0_1_CORR_ERRS,
+	GDDR_2_3_CORR_ERRS,
+	GDDR_4_5_CORR_ERRS,
+	GDDR_6_7_CORR_ERRS,
+	GDDR_UNCORR_ERRS,
 
 	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
 } Telemetry;
