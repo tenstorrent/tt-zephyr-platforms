@@ -50,7 +50,7 @@ zephyr_library_sources(
   post_code.c
   read_only_table.c
   smbus_target.c
-  spi_controller.c
+  #spi_controller.c
   spi_eeprom.c
   timer.c
 )
