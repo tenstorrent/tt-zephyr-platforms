@@ -71,7 +71,6 @@ struct spi_dw_flash_dev_data {
 /* Config and data structures for SPI controller */
 struct spi_dw_flash_config {
 	DEVICE_MMIO_ROM;
-	uint32_t clock_frequency;
 	spi_dw_config_t config_func;
 	bool serial_target;
 	uint8_t fifo_depth;
@@ -87,6 +86,7 @@ struct spi_dw_flash_data {
 	uint8_t *rx_pos;
 	uint32_t rx_len;
 	uint32_t err_state;
+	uint32_t clock_frequency;
 };
 
 /* Entry for flash device settings */
