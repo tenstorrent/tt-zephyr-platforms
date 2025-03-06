@@ -14,7 +14,11 @@
 
 const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
-static int tt_blackhole_init(void)
+/*
+ * Handles reclocking event for SPI controller. We must program the new clock
+ * frequency to the SPI controller, and recalibrate the RX sample delay
+ */
+int spi_controller_reclock(uint32_t freq)
 {
 	/* To avoid false positive */
 	uint32_t spi_rx_buf = 0xDEADBEEF;
@@ -23,6 +27,12 @@ static int tt_blackhole_init(void)
 
 	if (!device_is_ready(flash)) {
 		return -ENODEV;
+	}
+
+	/* Program the new frequency */
+	rc = flash_ex_op(flash, FLASH_EX_OP_SPI_DW_CLK_FREQ, freq, NULL);
+	if (rc < 0) {
+		return rc;
 	}
 
 	/*
@@ -42,6 +52,10 @@ static int tt_blackhole_init(void)
 			return rc;
 		}
 	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < 255));
+	if ((rx_delay == 255) && (spi_rx_buf != SPI_RX_TRAIN_DATA)) {
+		/* We could not find a good training point */
+		return -EIO;
+	}
 	delay_lb = rx_delay;
 	/* Find the upper bound on the delay setting */
 	do {
@@ -60,6 +74,11 @@ static int tt_blackhole_init(void)
 	/* Find midpoint of both delay settings */
 	rx_delay = (delay_ub - delay_lb) / 2 + delay_lb;
 	return flash_ex_op(flash, FLASH_EX_OP_SPI_DW_RX_DLY, rx_delay, NULL);
+}
+
+static int tt_blackhole_init(void)
+{
+	return spi_controller_reclock(DT_PROP(DT_NODELABEL(sysclk), clock_frequency));
 }
 
 SYS_INIT(tt_blackhole_init, POST_KERNEL, CONFIG_BOARD_INIT_PRIORITY);
