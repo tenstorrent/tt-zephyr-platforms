@@ -164,7 +164,7 @@ static int spi_dw_tx(const struct device *dev,
 	}
 
 	/* Program baudr */
-	write_baudr(dev, SPI_DW_CLK_DIVIDER(cfg->clock_frequency, clock_freq));
+	write_baudr(dev, SPI_DW_CLK_DIVIDER(data->clock_frequency, clock_freq));
 
 	/* Program SPI for TX mode */
 	ctrlr0 &= ~DW_SPI_CTRLR0_TMOD_RESET;
@@ -242,7 +242,7 @@ static int spi_dw_eeprom_transceive(const struct device *dev,
 	}
 
 	/* Program baudr */
-	write_baudr(dev, SPI_DW_CLK_DIVIDER(cfg->clock_frequency, clock_freq));
+	write_baudr(dev, SPI_DW_CLK_DIVIDER(data->clock_frequency, clock_freq));
 
 	/* Program SPI for eeprom mode */
 	ctrlr0 &= ~DW_SPI_CTRLR0_TMOD_RESET;
@@ -662,9 +662,13 @@ static int spi_dw_flash_ex_op(const struct device *dev, uint16_t code,
 			      const uintptr_t in, void *out)
 {
 	const struct spi_dw_flash_dev_config *cfg = dev->config;
+	struct spi_dw_flash_data *data = cfg->parent_dev->data;
 
 	if (code == FLASH_EX_OP_SPI_DW_RX_DLY) {
 		write_rx_sample_dly(cfg->parent_dev, in);
+		return 0;
+	} else if (code == FLASH_EX_OP_SPI_DW_CLK_FREQ) {
+		data->clock_frequency = in;
 		return 0;
 	}
 	return -ENOTSUP;
@@ -918,13 +922,14 @@ COND_CODE_1(IS_EQ(DT_NUM_IRQS(DT_DRV_INST(inst)), 1),              \
 #define SPI_DW_INIT(inst)                                                                   \
 	IF_ENABLED(CONFIG_PINCTRL, (PINCTRL_DT_INST_DEFINE(inst);))                         \
 	SPI_DW_IRQ_HANDLER(inst);                                                           \
-	static struct spi_dw_flash_data spi_dw_data_##inst;                                 \
-	static const struct spi_dw_flash_config spi_dw_config_##inst = {                    \
-		DEVICE_MMIO_ROM_INIT(DT_DRV_INST(inst)),                                    \
+	static struct spi_dw_flash_data spi_dw_data_##inst = {                              \
 		.clock_frequency = COND_CODE_1(                                             \
 			DT_NODE_HAS_PROP(DT_INST_PHANDLE(inst, clocks), clock_frequency),   \
 			(DT_INST_PROP_BY_PHANDLE(inst, clocks, clock_frequency)),           \
 			(DT_INST_PROP(inst, clock_frequency))),                             \
+	};                                                                                  \
+	static const struct spi_dw_flash_config spi_dw_config_##inst = {                    \
+		DEVICE_MMIO_ROM_INIT(DT_DRV_INST(inst)),                                    \
 		.config_func = spi_dw_irq_config_##inst,                                    \
 		.serial_target = DT_INST_PROP(inst, serial_target),                         \
 		.fifo_depth = DT_INST_PROP(inst, fifo_depth),                               \

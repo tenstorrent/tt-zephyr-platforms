@@ -10,5 +10,6 @@
 #include <zephyr/drivers/flash.h>
 
 #define FLASH_EX_OP_SPI_DW_RX_DLY (FLASH_EX_OP_VENDOR_BASE | 0x1)
+#define FLASH_EX_OP_SPI_DW_CLK_FREQ (FLASH_EX_OP_VENDOR_BASE | 0x2)
 
 #endif /* ZEPHYR_INCLUDE_DRIVERS_FLASH_SPI_DW_FLASH_H */
