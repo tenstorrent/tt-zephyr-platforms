@@ -103,7 +103,7 @@ typedef enum {
 } FWID;
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst);
-void InitSpiFS(void);
+int InitSpiFS(void);
 void InitResetInterrupt(uint8_t pcie_inst);
 void DeassertTileResets(void);
 int InitFW(uint32_t app_version);
