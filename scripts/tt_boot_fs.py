@@ -384,6 +384,7 @@ class BootFs:
 
         # Write image descriptors and data
         descriptor_addr = 0
+        self.entries = entries
         for tag in order:
             entry = entries[tag]
             descriptor = entry.descriptor()
