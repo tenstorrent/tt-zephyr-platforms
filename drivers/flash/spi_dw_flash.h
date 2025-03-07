@@ -99,7 +99,7 @@ struct spi_dw_flash_entry {
 /* Helper macros */
 
 #define SPI_DW_CLK_DIVIDER(clock_freq, ssi_clk_hz) \
-		((clock_freq / ssi_clk_hz) & 0xFFFF)
+		MAX(((clock_freq / ssi_clk_hz) & 0xFFFF), 2)
 
 #define DEFINE_MM_REG_READ(__reg, __off, __sz)				\
 	static inline uint32_t read_##__reg(const struct device *dev)	\
