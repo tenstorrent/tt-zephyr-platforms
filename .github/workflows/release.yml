@@ -42,30 +42,37 @@ jobs:
         with:
           name: firmware-p100
           path: assets/p100
+          pattern: firmare-p100-*
+          merge-multiple: true
 
       - name: Download firmware artifact (p100a)
         uses: actions/download-artifact@v4
         with:
           name: firmware-p100a
           path: assets/p100a
+          pattern: firmare-p100a-*
+          merge-multiple: true
 
       - name: Download firmware artifact (p150a)
         uses: actions/download-artifact@v4
         with:
           name: firmware-p150a
           path: assets/p150a
+          pattern: firmare-p150a-*
+          merge-multiple: true
 
       - name: Package firmware artifacts
         run: |
-          cp assets/p100/update.fwbundle p100.fwbundle
-          cp assets/p100a/update.fwbundle p100a.fwbundle
-          cp assets/p150a/update.fwbundle p150a.fwbundle
+          mkdir -p fw_pack
+          cat assets/p100/smc/update.fwbundle | tar xpzf - -C fw_pack
+          cat assets/p100a/smc/update.fwbundle | tar xpzf - -C fw_pack
+          cat assets/p150a/smc/update.fwbundle | tar xpzf - -C fw_pack
+          cd fw_pack
+          tar czf ../fw_pack-${{ steps.get_version.outputs.TRIMMED_VERSION }}.fwbundle .
+          cd ..
 
           cd assets
-          zip -r -9 ../tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip \
-            p100 \
-            p100a \
-            p150a
+          zip -r -9 ../tt-zephyr-platforms-assets-${{ steps.get_version.outputs.VERSION }}.zip .
 
       - name: Create empty release notes body
         run: |
@@ -79,8 +86,6 @@ jobs:
           draft: true
           prerelease: true
           files: |
-            p100.fwbundle
-            p100a.fwbundle
-            p150a.fwbundle
-            tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip
+            fw_pack-${{ steps.get_version.outputs.TRIMMED_VERSION }}.fwbundle
+            tt-zephyr-platforms-assets-${{ steps.get_version.outputs.VERSION }}.zip
             tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx

@@ -23,6 +23,9 @@ jobs:
           - p100
           - p100a
           - p150a
+        target:
+          - bmc
+          - smc
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/prepare-zephyr
@@ -31,9 +34,9 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.board }}" in
-            p100) BOARD=tt_blackhole@p100/tt_blackhole/smc;;
-            p100a) BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
-            p150a) BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            p100) BOARD=tt_blackhole@p100/tt_blackhole/${{ matrix.target }};;
+            p100a) BOARD=tt_blackhole@p100a/tt_blackhole/${{ matrix.target }};;
+            p150a) BOARD=tt_blackhole@p150a/tt_blackhole/${{ matrix.target }};;
             *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
           esac
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
@@ -45,10 +48,14 @@ jobs:
           echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
           SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
           if [ $SZ -gt 42 ]; then
+            # use a custom signature key file
             echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          else
+            # use the default / insecure signature key file
+            echo "SIGNATURE_KEY_FILE=$(realpath $PWD/../bootloader/mcuboot/root-rsa-2048.pem)" >> "$GITHUB_ENV"
           fi
 
-      - name: Build firmware bundle
+      - name: Build firmware
         shell: bash
         run: |
           if [ "$BOARD" = "" ]; then
@@ -57,23 +64,25 @@ jobs:
           fi
 
           west build \
-            -d build-${{ matrix.board }} \
+            -d build-${{ matrix.board }}/$${{ matrix.target }} \
             --sysbuild \
             -p \
             -b $BOARD \
-            app/smc \
+            app/${{ matrix.target }} \
             -- \
               -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
-              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
+              -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\"
 
       - name: Upload firmware assets
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: firmware-${{ matrix.board }}
+          name: firmware-${{ matrix.board }}-${{ matrix.target }}
           path: |
-            build-${{ matrix.board }}/update.fwbundle
             build-${{ matrix.board }}/**/.config
             build-${{ matrix.board }}/**/devicetree_generated.h
+            build-${{ matrix.board }}/**/devicetree_gene
+            build-${{ matrix.board }}/**/update.fwbundle
             build-${{ matrix.board }}/**/zephyr.bin
             build-${{ matrix.board }}/**/zephyr.dts
             build-${{ matrix.board }}/**/zephyr.elf
