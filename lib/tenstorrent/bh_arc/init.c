@@ -399,6 +399,12 @@ static int InitHW(void)
 
 	/* Indicate successful HW Init */
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
+	/* Record FW ID */
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		boot_status0.f.fw_id = FW_ID_SMC_RECOVERY;
+	} else {
+		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
+	}
 	boot_status0.f.hw_init_status = kHwInitDone;
 	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
 

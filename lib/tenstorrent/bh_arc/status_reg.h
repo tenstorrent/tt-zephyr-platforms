@@ -37,7 +37,8 @@
 typedef struct {
 	uint32_t msg_queue_ready: 1;
 	uint32_t hw_init_status: 2;
-	uint32_t spare: 29;
+	uint32_t fw_id: 4;
+	uint32_t spare: 25;
 } STATUS_BOOT_STATUS0_reg_t;
 
 typedef union {
