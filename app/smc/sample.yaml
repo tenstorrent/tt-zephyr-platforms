@@ -27,3 +27,12 @@ tests:
     build_only: true
     extra_overlay_confs:
       - recovery.conf
+  app.recovery-flash:
+    sysbuild: true
+    tags: recovery
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/recovery.py
+      pytest_args:
+        - "--dut-scope=session"
