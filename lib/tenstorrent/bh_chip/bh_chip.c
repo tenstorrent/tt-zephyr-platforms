@@ -122,13 +122,14 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 
 void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
+
 	/* Ramp up fan */
 	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 		set_fan_speed(100);
 	}
-	/* Assert ASIC reset */
-	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
 
+	/* Assert ASIC reset */
 	bh_chip_reset_chip(chip, true);
 }
 
@@ -147,7 +148,75 @@ int therm_trip_gpio_setup(struct bh_chip *chip)
 	}
 	gpio_init_callback(&chip->therm_trip_cb, therm_trip_detected,
 			   BIT(chip->config.therm_trip.pin));
-	ret = gpio_add_callback(chip->config.therm_trip.port, &chip->therm_trip_cb);
+	ret = gpio_add_callback_dt(&chip->config.therm_trip, &chip->therm_trip_cb);
+
+	return ret;
+}
+
+void pgood_fault_work_handler(struct k_work *work)
+{
+	struct bh_chip *chip = CONTAINER_OF(work, struct bh_chip, pgood_fault_worker);
+	static const struct gpio_dt_spec board_fault_led =
+		GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
+
+	k_sem_reset(&chip->data.pgood_high_sem);
+	/* Assert board fault */
+	gpio_pin_set_dt(&board_fault_led, 1);
+	/* Report over SMBus - to add later */
+	/* Assert ASIC reset */
+	bh_chip_assert_asic_reset(chip);
+	/* Wait for PGOOD to rise */
+	k_sem_take(&chip->data.pgood_high_sem, K_MSEC(50));
+	/* Follow out of reset procedure */
+	bh_chip_reset_chip(chip, true);
+	/* Clear board fault */
+	gpio_pin_set_dt(&board_fault_led, 0);
+	k_msleep(1000);
+	if (!gpio_pin_get_dt(&chip->config.pgood)) {
+		/* Assert board fault */
+		gpio_pin_set_dt(&board_fault_led, 1);
+		/* Do not deassert ASIC reset until power cycle */
+		bh_chip_assert_asic_reset(chip);
+		/* Report more severe fault over IPMI - to add later */
+	}
+}
+
+void pgood_fall_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, pgood_fall_cb);
+
+	k_work_submit(&chip->pgood_fault_worker);
+}
+
+void pgood_rise_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, pgood_rise_cb);
+
+	k_sem_give(&chip->data.pgood_high_sem);
+}
+
+int pgood_gpio_setup(struct bh_chip *chip)
+{
+	/* Set up PGOOD interrupt */
+	int ret;
+
+	ret = gpio_pin_configure_dt(&chip->config.pgood, GPIO_INPUT);
+	if (ret != 0) {
+		return ret;
+	}
+	ret = gpio_pin_interrupt_configure_dt(&chip->config.pgood, GPIO_INT_EDGE_TO_INACTIVE);
+	if (ret != 0) {
+		return ret;
+	}
+	gpio_init_callback(&chip->pgood_fall_cb, pgood_fall_detected, BIT(chip->config.pgood.pin));
+	ret = gpio_add_callback_dt(&chip->config.pgood, &chip->pgood_fall_cb);
+
+	ret = gpio_pin_interrupt_configure_dt(&chip->config.pgood, GPIO_INT_EDGE_TO_ACTIVE);
+	if (ret != 0) {
+		return ret;
+	}
+	gpio_init_callback(&chip->pgood_rise_cb, pgood_rise_detected, BIT(chip->config.pgood.pin));
+	ret = gpio_add_callback_dt(&chip->config.pgood, &chip->pgood_fall_cb);
 
 	return ret;
 }
