@@ -113,6 +113,7 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
+
 	chip->data.therm_trip_triggered = true;
 	bh_chip_cancel_bus_transfer_set(chip);
 	tt_event_post(TT_EVENT_WAKE);
@@ -127,13 +128,47 @@ int therm_trip_gpio_setup(struct bh_chip *chip)
 	if (ret != 0) {
 		return ret;
 	}
-	ret = gpio_pin_interrupt_configure_dt(&chip->config.therm_trip, GPIO_INT_EDGE_TO_ACTIVE);
+	gpio_init_callback(&chip->therm_trip_cb, therm_trip_detected,
+			   BIT(chip->config.therm_trip.pin));
+	ret = gpio_add_callback_dt(&chip->config.therm_trip, &chip->therm_trip_cb);
 	if (ret != 0) {
 		return ret;
 	}
-	gpio_init_callback(&chip->therm_trip_cb, therm_trip_detected,
-			   BIT(chip->config.therm_trip.pin));
-	ret = gpio_add_callback(chip->config.therm_trip.port, &chip->therm_trip_cb);
+	ret = gpio_pin_interrupt_configure_dt(&chip->config.therm_trip, GPIO_INT_EDGE_TO_ACTIVE);
+
+	return ret;
+}
+
+void pgood_change_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, pgood_cb);
+
+	/* Sample PGOOD to see if it rose or fell */
+	/* TODO: could setup rising interrupt only after falling triggered */
+	if (gpio_pin_get_dt(&chip->config.pgood)) {
+		chip->data.pgood_rise_triggered = true;
+	} else {
+		chip->data.pgood_fall_triggered = true;
+	}
+	tt_event_post(TT_EVENT_WAKE);
+}
+
+int pgood_gpio_setup(struct bh_chip *chip)
+{
+	/* Set up PGOOD interrupt */
+	int ret;
+
+	ret = gpio_pin_configure_dt(&chip->config.pgood, GPIO_INPUT);
+	if (ret != 0) {
+		return ret;
+	}
+	gpio_init_callback(&chip->pgood_cb, pgood_change_detected, BIT(chip->config.pgood.pin));
+	ret = gpio_add_callback_dt(&chip->config.pgood, &chip->pgood_cb);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = gpio_pin_interrupt_configure_dt(&chip->config.pgood, GPIO_INT_EDGE_BOTH);
 
 	return ret;
 }
