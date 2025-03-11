@@ -86,11 +86,15 @@ static void spi_dw_flash_isr(const struct device *dev)
 			data = read_dr(dev);
 
 			/* Copy to RX buffer */
-			*dev_data->rx_pos = data & 0xFF;
-			dev_data->rx_pos++;
-			dev_data->rx_len--;
+			if (dev_data->rx_size == 4) {
+				*((uint32_t *)dev_data->rx_pos) = data;
+			} else {
+				*dev_data->rx_pos = data & 0xFF;
+			}
+			dev_data->rx_pos += dev_data->rx_size;
+			dev_data->rx_cnt--;
 
-			if (dev_data->rx_len == 0) {
+			if (dev_data->rx_cnt == 0) {
 				/* Wait for FIFO to drain */
 				while (test_bit_sr_busy(dev)) {
 				}
@@ -104,8 +108,8 @@ static void spi_dw_flash_isr(const struct device *dev)
 			}
 		}
 
-		if (read_rxftlr(dev) >= (dev_data->rx_len - 1)) {
-			write_rxftlr(dev, dev_data->rx_len - 1);
+		if (read_rxftlr(dev) >= (dev_data->rx_cnt - 1)) {
+			write_rxftlr(dev, dev_data->rx_cnt - 1);
 		}
 	} else if (risr & DW_SPI_ISR_TXEIS) {
 		/* Wait for FIFO to drain */
@@ -165,6 +169,14 @@ static int spi_dw_tx(const struct device *dev,
 	/* Program SPI for TX mode */
 	ctrlr0 &= ~DW_SPI_CTRLR0_TMOD_RESET;
 	ctrlr0 |= DW_SPI_CTRLR0_TMOD_TX;
+	/* Configure SPI DFS for 8 bit frames */
+	if (cfg->max_xfer_size == 32) {
+		ctrlr0 &= ~DW_SPI_CTRLR0_DFS_32_MASK;
+		ctrlr0 |= DW_SPI_CTRLR0_DFS_32(8);
+	} else {
+		ctrlr0 &= ~DW_SPI_CTRLR0_DFS_16_MASK;
+		ctrlr0 |= DW_SPI_CTRLR0_DFS_16(8);
+	}
 	write_ctrlr0(dev, ctrlr0);
 
 	/* Assert TXE interrupt when TX FIFO drains */
@@ -232,11 +244,32 @@ static int spi_dw_eeprom_transceive(const struct device *dev,
 	/* Program baudr */
 	write_baudr(dev, SPI_DW_CLK_DIVIDER(cfg->clock_frequency, clock_freq));
 
-	/* Program NDF */
-	write_ctrlr1(dev, rx_len - 1);
 	/* Program SPI for eeprom mode */
 	ctrlr0 &= ~DW_SPI_CTRLR0_TMOD_RESET;
 	ctrlr0 |= DW_SPI_CTRLR0_TMOD_EEPROM;
+	if ((mode != SPI_DW_ACCESS_1_1_1) && (rx_len % 4 == 0) &&
+	    (cfg->max_xfer_size == 32)) {
+		/*
+		 * We can perform RX using 32 bit data frames, which will
+		 * improve performance.
+		 */
+		ctrlr0 &= ~DW_SPI_CTRLR0_DFS_32_MASK;
+		ctrlr0 |= DW_SPI_CTRLR0_DFS_32(32);
+		/* Endian swap is needed in this mode */
+		ctrlr0 |= DW_SPI_CTRLR0_SECONV;
+		data->rx_size = sizeof(uint32_t);
+		rx_len /= sizeof(uint32_t);
+	} else {
+		/* Configure SPI DFS for 8 bit frames */
+		if (cfg->max_xfer_size == 32) {
+			ctrlr0 &= ~DW_SPI_CTRLR0_DFS_32_MASK;
+			ctrlr0 |= DW_SPI_CTRLR0_DFS_32(8);
+		} else {
+			ctrlr0 &= ~DW_SPI_CTRLR0_DFS_16_MASK;
+			ctrlr0 |= DW_SPI_CTRLR0_DFS_16(8);
+		}
+		data->rx_size = sizeof(uint8_t);
+	}
 	write_ctrlr0(dev, ctrlr0);
 
 	if (addr_len + 1 > cfg->fifo_depth) {
@@ -246,8 +279,11 @@ static int spi_dw_eeprom_transceive(const struct device *dev,
 
 	/* Setup RX context */
 	data->rx_pos = rx_buf;
-	data->rx_len = rx_len;
+	data->rx_cnt = rx_len;
 	data->err_state = 0;
+
+	/* Program NDF */
+	write_ctrlr1(dev, data->rx_cnt - 1);
 
 	/* Program RX FIFO threshold */
 	if (rxftlr > (rx_len - 1)) {
@@ -728,7 +764,6 @@ static int spi_dw_flash_init(const struct device *dev)
 {
 	const struct spi_dw_flash_config *cfg = dev->config;
 	struct spi_dw_flash_data *data = dev->data;
-	uint32_t ctrlr0 = 0;
 
 #ifdef CONFIG_PINCTRL
 	pinctrl_apply_state(cfg->pcfg, PINCTRL_STATE_DEFAULT);
@@ -737,16 +772,10 @@ static int spi_dw_flash_init(const struct device *dev)
 	write_imr(dev, DW_SPI_IMR_MASK);
 	clear_bit_ssienr(dev);
 
+	/* Clear previous CTRLR0 settings */
+	write_ctrlr0(dev, 0);
+
 	cfg->config_func();
-
-	/* Configure SPI DFS for 8 bit frames */
-	if (cfg->max_xfer_size == 32) {
-		ctrlr0 |= DW_SPI_CTRLR0_DFS_32(8);
-	} else {
-		ctrlr0 |= DW_SPI_CTRLR0_DFS_16(8);
-	}
-
-	write_ctrlr0(dev, ctrlr0);
 
 	k_sem_init(&data->isr_sem, 0, 1);
 	k_sem_init(&data->bus_lock, 1, 1);

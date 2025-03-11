@@ -85,8 +85,9 @@ struct spi_dw_flash_data {
 	struct k_sem isr_sem;
 	struct k_sem bus_lock;
 	uint8_t *rx_pos;
-	uint32_t rx_len;
+	uint32_t rx_cnt;
 	uint32_t err_state;
+	uint8_t rx_size;
 };
 
 /* Entry for flash device settings */
@@ -137,11 +138,13 @@ struct spi_dw_flash_entry {
 #define DW_SPI_CTRLR0_TMOD_SHIFT	(8)
 #define DW_SPI_CTRLR0_SLV_OE_BIT	(10)
 #define DW_SPI_CTRLR0_SRL_BIT		(11)
+#define DW_SPI_CTRLR0_SECONV_BIT	(25)
 
 #define DW_SPI_CTRLR0_SCPH		BIT(DW_SPI_CTRLR0_SCPH_BIT)
 #define DW_SPI_CTRLR0_SCPOL		BIT(DW_SPI_CTRLR0_SCPOL_BIT)
 #define DW_SPI_CTRLR0_SRL		BIT(DW_SPI_CTRLR0_SRL_BIT)
 #define DW_SPI_CTRLR0_SLV_OE		BIT(DW_SPI_CTRLR0_SLV_OE_BIT)
+#define DW_SPI_CTRLR0_SECONV		BIT(DW_SPI_CTRLR0_SECONV_BIT)
 
 #define DW_SPI_CTRLR0_TMOD_TX_RX	(0)
 #define DW_SPI_CTRLR0_TMOD_TX		(1 << DW_SPI_CTRLR0_TMOD_SHIFT)
@@ -150,7 +153,9 @@ struct spi_dw_flash_entry {
 #define DW_SPI_CTRLR0_TMOD_RESET	(3 << DW_SPI_CTRLR0_TMOD_SHIFT)
 
 #define DW_SPI_CTRLR0_DFS_16(__bpw)	((__bpw) - 1)
+#define DW_SPI_CTRLR0_DFS_16_MASK       DW_SPI_CTRLR0_DFS_16(16)
 #define DW_SPI_CTRLR0_DFS_32(__bpw)	(((__bpw) - 1) << 16)
+#define DW_SPI_CTRLR0_DFS_32_MASK       DW_SPI_CTRLR0_DFS_32(32)
 
 /* 0x38 represents the bits 8, 16 and 32. Knowing that 24 is bits 8 and 16
  * These are the bits were when you divide by 8, you keep the result as it is.
