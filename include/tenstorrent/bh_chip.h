@@ -57,6 +57,7 @@ struct bh_chip {
 	const struct bh_chip_config config;
 	struct bh_chip_data data;
 	struct gpio_callback therm_trip_cb;
+	struct gpio_callback pgood_cb;
 };
 
 #define DT_PHANDLE_OR_CHILD(node_id, name)                                                         \
@@ -130,6 +131,7 @@ void bh_chip_deassert_spi_reset(const struct bh_chip *chip);
 int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset);
 
 int therm_trip_gpio_setup(struct bh_chip *chip);
+int pgood_gpio_setup(struct bh_chip *chip);
 
 #ifdef __cplusplus
 }
