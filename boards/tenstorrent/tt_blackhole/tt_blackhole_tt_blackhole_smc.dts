@@ -29,7 +29,7 @@
 		compatible = "snps,designware-spi-flash";
 		reg = <0>;
 		status = "disabled";
-		spi-max-frequency = <DT_FREQ_M(3)>;
+		spi-max-frequency = <DT_FREQ_M(9)>;
 	};
 };
 
