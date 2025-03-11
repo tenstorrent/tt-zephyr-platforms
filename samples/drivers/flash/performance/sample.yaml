@@ -1,0 +1,14 @@
+sample:
+  description: Flash performance test
+  name: Flash Performance Test
+common:
+  tags: smoke
+  integration_platforms:
+    - tt_blackhole@p100/tt_blackhole/smc
+  harness: console
+  harness_config:
+    type: one_line
+    regex:
+      - "Flash performance test complete"
+tests:
+  sample.drivers.flash.performance: {}
