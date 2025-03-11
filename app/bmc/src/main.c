@@ -223,14 +223,6 @@ int main(void)
 		}
 	}
 
-	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		ret = therm_trip_gpio_setup(chip);
-		if (ret != 0) {
-			LOG_ERR("%s() failed: %d", "therm_trip_gpio_setup", ret);
-			return ret;
-		}
-	}
-
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
 		if (!tt_fwupdate_is_confirmed()) {
 			if (bist_rc < 0) {
@@ -269,8 +261,22 @@ int main(void)
 		}
 	}
 
-	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
+	/* Set up GPIOs */
+	if (board_fault_led.port != NULL) {
 		gpio_pin_configure_dt(&board_fault_led, GPIO_OUTPUT_INACTIVE);
+	}
+
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		ret = therm_trip_gpio_setup(chip);
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "therm_trip_gpio_setup", ret);
+			return ret;
+		}
+		ret = pgood_gpio_setup(chip);
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "pgood_gpio_setup", ret);
+			return ret;
+		}
 	}
 
 	if (IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)) {
@@ -329,6 +335,32 @@ int main(void)
 					chip->data.needs_reset = true;
 				}
 				bh_chip_cancel_bus_transfer_clear(chip);
+			}
+		}
+
+		/* handler for PGOOD */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.pgood_fall_triggered && !chip->data.pgood_severe_fault) {
+				int64_t current_uptime_ms = k_uptime_get();
+				/* Assert board fault */
+				gpio_pin_set_dt(&board_fault_led, 1);
+				/* Report over SMBus - to add later */
+				/* Assert ASIC reset */
+				bh_chip_assert_asic_reset(chip);
+				/* If pgood went down again within 1 second */
+				if (current_uptime_ms - chip->data.pgood_last_trip_ms < 1000) {
+					/* Assert more severe fault over IPMI - to add later */
+					chip->data.pgood_severe_fault = true;
+				}
+				chip->data.pgood_last_trip_ms = current_uptime_ms;
+				chip->data.pgood_fall_triggered = false;
+			}
+			if (chip->data.pgood_rise_triggered && !chip->data.pgood_severe_fault) {
+				/* Follow out of reset procedure */
+				bh_chip_reset_chip(chip, true);
+				/* Clear board fault */
+				gpio_pin_set_dt(&board_fault_led, 0);
+				chip->data.pgood_rise_triggered = false;
 			}
 		}
 
