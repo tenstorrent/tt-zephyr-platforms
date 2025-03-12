@@ -3,7 +3,9 @@ sample:
   name: bh-cmfw
 common:
   platform_allow:
-    - tt_blackhole/tt_blackhole/smc
+    - tt_blackhole@p100/tt_blackhole/smc
+    - tt_blackhole@p100a/tt_blackhole/smc
+    - tt_blackhole@p150a/tt_blackhole/smc
 tests:
   app.default: {}
   app.e2e-smoke:

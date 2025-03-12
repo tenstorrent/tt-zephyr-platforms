@@ -102,7 +102,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -138,7 +138,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
@@ -149,7 +149,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            -p tt_blackhole@p100/tt_blackhole/smc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -295,14 +295,14 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole/tt_blackhole/smc --device-testing \
+            -p tt_blackhole@p100/tt_blackhole/smc --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \

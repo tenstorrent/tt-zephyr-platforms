@@ -6,7 +6,9 @@ tests:
     extra_configs:
       - CONFIG_TT_FWUPDATE=n
     platform_allow:
-      - tt_blackhole/tt_blackhole/bmc
+      - tt_blackhole@p100/tt_blackhole/bmc
+      - tt_blackhole@p100a/tt_blackhole/bmc
+      - tt_blackhole@p150a/tt_blackhole/bmc
     tags: e2e
     harness: console
     harness_config:

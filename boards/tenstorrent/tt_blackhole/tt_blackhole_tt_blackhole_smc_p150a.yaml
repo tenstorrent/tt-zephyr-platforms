@@ -1,8 +1,8 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-identifier: tt_blackhole/tt_blackhole/smc
-name: Tenstorrent Blackhole board (SMC)
+identifier: tt_blackhole@p150a/tt_blackhole/smc
+name: Tenstorrent Blackhole P150a board (SMC)
 type: mcu
 arch: arc
 toolchain:

@@ -11,7 +11,9 @@ common:
 tests:
   bootloader.mcuboot.rtt:
     platform_allow:
-      - tt_blackhole/tt_blackhole/bmc
+      - tt_blackhole@p100/tt_blackhole/bmc
+      - tt_blackhole@p100a/tt_blackhole/bmc
+      - tt_blackhole@p150a/tt_blackhole/bmc
     tags:
       - rtt
     filter: CONFIG_HAS_SEGGER_RTT

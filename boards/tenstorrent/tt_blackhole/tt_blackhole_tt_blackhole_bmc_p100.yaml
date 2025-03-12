@@ -1,0 +1,20 @@
+identifier: tt_blackhole@p100/tt_blackhole/bmc
+name: Tenstorrent Blackhole P100 board (BMC)
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+sysbuild: true
+ram: 144
+flash: 512
+supported:
+  - gpio
+  - counter
+  - watchdog
+  - pwm
+  - adc
+  - i2c
+  - dma
+vendor: tenstorrent
