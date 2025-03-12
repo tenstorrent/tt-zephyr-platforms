@@ -590,7 +590,7 @@ static void DisableArcNocTranslation(void)
 	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
 }
 
-static void ClearNocTranslation(void)
+void ClearNocTranslation(void)
 {
 	DisableArcNocTranslation();
 
