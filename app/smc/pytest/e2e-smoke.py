@@ -75,7 +75,12 @@ def arc_chip(unlaunched_dut: DeviceAdapter):
         )
     unlaunched_dut._flash_and_run()
     time.sleep(1)
-    chips = pyluwen.detect_chips()
+    try:
+        chips = pyluwen.detect_chips()
+    except Exception:
+        print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
+        rescan_pcie()
+        chips = pyluwen.detect_chips()
     if len(chips) == 0:
         raise RuntimeError("PCIe card was not detected on this system")
     chip = chips[0]
