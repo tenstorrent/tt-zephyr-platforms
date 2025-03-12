@@ -42,7 +42,7 @@ static const struct spi_dw_flash_entry flash_devs[] = {
 	/* JEDEC ID, mode, addr_len */
 	{0x20BB20, {SPI_DW_ACCESS_1_4_4, 4, /* MT25QU512ABB */
 	/* read_cmd, read_dummy, ce_cmd, se_cmd, be_cmd, pp_cmd, ssize, bsize */
-	   0xEC,     10,         0xC7,   0x21,   0xDC,   0x34,   KB(4), KB(64)}}
+	   0xEC,     10,         0xC7,   0x21,   0xDC,   0x3E,   KB(4), KB(64)}}
 };
 
 /*
