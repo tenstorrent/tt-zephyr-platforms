@@ -12,7 +12,16 @@ on:
 jobs:
   hardware-smoke-test:
     if: github.repository_owner == 'tenstorrent'
-    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    strategy:
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - yyz-zephyr-lab-p100
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
+    runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
@@ -86,12 +95,6 @@ jobs:
 
       - name: run-bmc-tests
         working-directory: zephyr
-        env:
-          # below, BOARD refers to a directory name which cannot contain the '/'
-          # character (weird quirk of HWMv2 naming and output directories)
-          BOARD: 'tt_blackhole_tt_blackhole_bmc'
-          BH_FW_DIR: "${{ github.workspace }}/tt-zephyr-platforms"
-          AFTER_SCRIPT: "${{ github.workspace }}/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
         run: |
           # This needs to be added to the github runner
           export PATH=$PATH:/opt/SEGGER/JLink/
@@ -102,7 +105,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -113,7 +116,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: BMC Smoke test results
+          name: BMC Smoke test results (${{ matrix.config.board }})
           path: |
             zephyr/twister-bmc-smoke/**/handler.log
             zephyr/twister-bmc-smoke/**/zephyr.dts
@@ -126,19 +129,13 @@ jobs:
 
       - name: run-smc-tests
         working-directory: zephyr
-        env:
-          # below, BOARD refers to a directory name which cannot contain the '/'
-          # character (weird quirk of HWMv2 naming and output directories)
-          BOARD: 'tt_blackhole_tt_blackhole_bmc'
-          BH_FW_DIR: "${{ github.workspace }}/tt-zephyr-platforms"
-          AFTER_SCRIPT: "${{ github.workspace }}/tt-zephyr-platforms/scripts/restore-stable-bmfw.sh"
         run: |
           # Flash the BMFW app back onto the BMC. Otherwise the flash device
           # will not be muxed to the SMC, and flash tests will fail
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
@@ -149,7 +146,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@p100/tt_blackhole/smc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -160,7 +157,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: SMC Smoke test results
+          name: SMC Smoke test results (${{ matrix.config.board }})
           path: |
             zephyr/twister-smc-smoke/**/handler.log
             zephyr/twister-smc-smoke/**/zephyr.dts
@@ -182,7 +179,16 @@ jobs:
 
   smoke-e2e-test:
     if: github.repository_owner == 'tenstorrent'
-    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    strategy:
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - yyz-zephyr-lab-p100
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
+    runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
@@ -295,14 +301,14 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@p100/tt_blackhole/smc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
@@ -312,7 +318,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: E2E test results
+          name: E2E test results (${{ matrix.config.board }})
           path: |
             zephyr/twister-*-e2e/**/handler.log
             zephyr/twister-*-e2e/**/zephyr.dts
@@ -327,7 +333,7 @@ jobs:
         working-directory: zephyr
         run: |
           # Run a full flash test, using tt-flash as the runner
-          ./scripts/twister -i -p tt_blackhole@p100/tt_blackhole/smc \
+          ./scripts/twister -i -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc \
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
@@ -339,7 +345,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: E2E Flash Results
+          name: E2E Flash results (${{ matrix.config.board }})
           path: |
             zephyr/twister-e2e-flash/**/update.fwbundle
 

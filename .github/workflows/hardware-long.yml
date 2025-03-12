@@ -8,7 +8,16 @@ on:
 jobs:
   hardware-metal-test:
     if: github.repository_owner == 'tenstorrent'
-    runs-on: [self-hosted, yyz-zephyr-lab-p100]
+    strategy:
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - yyz-zephyr-lab-p100
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
+    runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
@@ -90,13 +99,13 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@p100/tt_blackhole/bmc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@p100/tt_blackhole/smc --device-testing \
+            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
