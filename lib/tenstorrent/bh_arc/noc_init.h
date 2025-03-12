@@ -14,5 +14,6 @@ void NocInit(void);
 void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, uint8_t bad_gddr,
 			uint16_t skip_eth);
 void InitNocTranslationFromHarvesting(void);
+void ClearNocTranslation(void);
 
 #endif

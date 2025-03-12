@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/msg_type.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/init.h>
@@ -263,6 +264,32 @@ static void EthInit(void)
 		}
 	}
 }
+
+#ifndef CONFIG_TT_SMC_RECOVERY
+/**
+ * @brief Redo Tensix init that gets cleared on Tensix reset
+ *
+ * This includes all NOC programming and any programming within the tile.
+ */
+static uint8_t ReinitTensix(uint32_t msg_code, const struct request *req, struct response *rsp)
+{
+	ClearNocTranslation();
+	/* We technically don't have to re-program the entire NOC (only the Tensix NOC portions),
+	 * but it's simpler to reuse the same functions to re-program all of it.
+	 */
+	NocInit();
+	if (get_fw_table()->feature_enable.cg_en) {
+		EnableTensixCG();
+	}
+	if (get_fw_table()->feature_enable.noc_translation_en) {
+		InitNocTranslationFromHarvesting();
+	}
+
+	return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_REINIT_TENSIX, ReinitTensix);
+#endif
 
 #ifdef CONFIG_TT_BH_ARC_SYSINIT
 static int InitHW(void)

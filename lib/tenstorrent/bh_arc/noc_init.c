@@ -354,6 +354,13 @@ static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned int 
 		for (unsigned int y = 0; y < NOC_Y_SIZE; y++) {
 			volatile void *noc_regs = SetupNiuTlb(kTlbIndex, x, y, noc_id);
 
+			uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+			if (!nt->translate_en) {
+				WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
+				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+			}
+
 			WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_COL_MASK,
 				       nt->translate_col_mask[0]);
 			WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_ROW_MASK,
@@ -371,11 +378,8 @@ static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned int 
 					       translate_table_y[i]);
 			}
 
-			if (x != arc_x || y != arc_y) {
-				uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
-
-				WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN,
-					  nt->translate_en);
+			if (nt->translate_en && (x != arc_x || y != arc_y)) {
+				WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
 				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
 			}
 		}
@@ -590,7 +594,7 @@ static void DisableArcNocTranslation(void)
 	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
 }
 
-static void ClearNocTranslation(void)
+void ClearNocTranslation(void)
 {
 	DisableArcNocTranslation();
 
