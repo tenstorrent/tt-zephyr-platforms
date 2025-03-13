@@ -165,7 +165,19 @@ static inline void tt_vuart_poll_out(volatile struct tt_vuart *vuart, unsigned c
 #ifdef __ZEPHYR__
 #include <zephyr/device.h>
 
+enum uart_tt_virt_irq_event {
+	UART_TT_VIRT_IRQ_EVENT_RX_DISABLE,
+	UART_TT_VIRT_IRQ_EVENT_RX_ENABLE,
+	UART_TT_VIRT_IRQ_EVENT_TX_DISABLE,
+	UART_TT_VIRT_IRQ_EVENT_TX_ENABLE,
+};
+
+typedef void (*uart_tt_virt_irq_callback_t)(const struct device *dev,
+					    enum uart_tt_virt_irq_event event, void *user_data);
+
 volatile struct tt_vuart *uart_tt_virt_get(const struct device *dev);
+int uart_tt_virt_irq_callback_set(const struct device *dev, uart_tt_virt_irq_callback_t cb,
+				  void *user_data);
 #endif
 
 #ifdef __cplusplus

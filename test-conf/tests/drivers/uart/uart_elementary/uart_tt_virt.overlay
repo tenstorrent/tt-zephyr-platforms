@@ -10,6 +10,10 @@
 		/* tx-buf-size + rx-buf-size + sizeof(uart_tt_virt_desc) = 4096 */
 		tx-buf-size = <3040>;
 		rx-buf-size = <1024>;
-		status = "okay";
+		status = "disabled";
 	};
+};
+
+dut: &vuart0 {
+	status = "okay";
 };

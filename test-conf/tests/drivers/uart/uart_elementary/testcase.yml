@@ -7,8 +7,8 @@ tests:
     tags:
       - tt_sim
       - uart_tt_virt
-    filter: CONFIG_UART_CONSOLE
-    harness: keyboard
+    filter: CONFIG_SERIAL_SUPPORT_INTERRUPT
+
     platform_allow:
       - native_sim/native/64
       - qemu_riscv64
