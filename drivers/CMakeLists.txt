@@ -6,5 +6,4 @@ add_subdirectory_ifdef(CONFIG_JTAG jtag)
 add_subdirectory_ifdef(CONFIG_RESET reset)
 add_subdirectory_ifdef(CONFIG_SENSOR sensor)
 add_subdirectory_ifdef(CONFIG_SERIAL serial)
-add_subdirectory_ifdef(CONFIG_SMBUS smbus)
 # zephyr-keep-sorted-stop
