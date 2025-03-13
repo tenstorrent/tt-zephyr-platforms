@@ -11,23 +11,18 @@ runs:
       with:
         python-version: 3.11
 
+    # TODO: potentially improve caching strategy
+    # Note: this step performs "west init", "west update", and installs zephyr python dependencies
     - name: Set up Zephyr project
       uses: zephyrproject-rtos/action-zephyr-setup@v1
       with:
         app-path: .
         toolchains: arm-zephyr-eabi:riscv64-zephyr-elf:x86_64-zephyr-elf:arc-zephyr-elf
 
-    - name: Set up Zephyr modules
+    - name: Install additional python dependencies
       shell: bash
       run: |
-        west config manifest.group-filter -- +optional
-        west update
-
-    - name: Install additional dependencies
-      shell: bash
-      run: |
-        # need to install protoc manually here, for some reason
-        pip install protobuf grpcio-tools
+        pip install -r scripts/requirements.txt
 
     - name: Verify binary blobs
       shell: bash

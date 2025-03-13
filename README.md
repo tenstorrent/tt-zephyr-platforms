@@ -25,9 +25,6 @@ MODULE=tt-zephyr-platforms
 west init -m https://github.com/tenstorrent/tt-zephyr-platforms.git ~/$MODULE-work
 cd ~/$MODULE-work
 
-# Enable optional modules
-west config manifest.group-filter -- +optional
-
 # Fetch Zephyr modules
 west update
 
