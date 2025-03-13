@@ -86,6 +86,24 @@ jobs:
           maturin build --release
           pip install ../../target/wheels/*
 
+      - name: Generate board names
+        shell: bash
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          case "${{ matrix.config.board }}" in
+            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
+            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
+            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
+          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+
       - name: Flash Firmware
         working-directory: zephyr
         run: |
@@ -99,13 +117,13 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
+            -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
+            -p $SMC_BOARD --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG

@@ -93,6 +93,24 @@ jobs:
         run: |
           west -v patch apply
 
+      - name: Generate board names
+        shell: bash
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          case "${{ matrix.config.board }}" in
+            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
+            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
+            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
+          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+
       - name: run-bmc-tests
         working-directory: zephyr
         run: |
@@ -105,7 +123,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
+            -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -135,7 +153,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
+            -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
@@ -146,7 +164,7 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
+            -p $SMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -237,6 +255,24 @@ jobs:
           # debug
           git log  --pretty=oneline | head -n 10
 
+      - name: Generate board names
+        shell: bash
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          case "${{ matrix.config.board }}" in
+            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
+            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
+            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
+          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+
       - name: Install west
         run: |
           pip install west
@@ -301,14 +337,14 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/bmc --device-testing \
+            -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
           ./scripts/twister -i --retry-failed 3 \
-            -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc --device-testing \
+            -p $SMC_BOARD --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
@@ -333,7 +369,7 @@ jobs:
         working-directory: zephyr
         run: |
           # Run a full flash test, using tt-flash as the runner
-          ./scripts/twister -i -p tt_blackhole@${{ matrix.config.board }}/tt_blackhole/smc \
+          ./scripts/twister -i -p $SMC_BOARD \
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
