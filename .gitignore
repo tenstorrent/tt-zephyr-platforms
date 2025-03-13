@@ -106,3 +106,4 @@ Ruff.txt
 SphinxLint.txt
 TextEncoding.txt
 YAMLLint.txt
+*.fwbundle
