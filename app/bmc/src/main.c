@@ -20,7 +20,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 
-#include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
 #include <tenstorrent/jtag_bootrom.h>
@@ -199,8 +198,7 @@ int main(void)
 			continue;
 		}
 
-		tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
-					     &((&chip->data)->bus_cancel_flag));
+		/* TODO: set abort pointer for bh chip */
 	}
 
 	bist_rc = 0;
