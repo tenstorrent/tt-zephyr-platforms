@@ -110,8 +110,28 @@ void process_cm2bm_message(struct bh_chip *chip)
 			bharc_smbus_word_data_write(&chip->config.arc, 0x21, 0xA5A5);
 			break;
 		case 0x3:
+			/* Update fan PWM */
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 				set_fan_speed((uint8_t)message.data & 0xFF);
+			}
+			break;
+		case 0x4:
+			/* Update auto reset timeout */
+			chip->data.auto_reset_timeout = message.data;
+			if (chip->data.auto_reset_timeout == 0) {
+				k_timer_stop(&chip->auto_reset_timer);
+			}
+			break;
+		case 0x5:
+			/* Update telemetry heartbeat */
+			if (chip->data.telemetry_heartbeat != message.data) {
+				/* Telemetry heartbeat is moving */
+				chip->data.telemetry_heartbeat = message.data;
+				if (chip->data.auto_reset_timeout != 0) {
+					k_timer_start(&chip->auto_reset_timer,
+						      K_MSEC(chip->data.auto_reset_timeout),
+						      K_NO_WAIT);
+				}
 			}
 			break;
 		}
@@ -296,8 +316,10 @@ int main(void)
 	}
 
 	/* No mechanism for getting bl version... yet */
-	bmStaticInfo static_info =
-		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
+	bmStaticInfo static_info = (bmStaticInfo){.version = 1,
+						  .bl_version = 0,
+						  .app_version = APPVERSION,
+						  .last_reset_was_automatic = false};
 
 	while (1) {
 		k_sleep(K_MSEC(20));
@@ -306,8 +328,11 @@ int main(void)
 		 */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_just_reset) {
+				static_info.last_reset_was_automatic =
+					chip->data.last_reset_was_automatic;
 				if (bh_chip_set_static_info(chip, &static_info) == 0) {
 					chip->data.arc_just_reset = false;
+					chip->data.last_reset_was_automatic = false;
 				}
 				/* TODO: we don't have to read this per chip */
 				uint16_t max_pwr = detect_max_pwr();
