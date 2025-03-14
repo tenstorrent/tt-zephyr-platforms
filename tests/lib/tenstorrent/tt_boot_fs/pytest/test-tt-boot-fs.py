@@ -14,6 +14,16 @@ from urllib.request import urlretrieve
 TEST_ROOT = Path(__file__).parent.resolve()
 MODULE_ROOT = TEST_ROOT.parents[4]
 
+TEST_SPEC = (
+    MODULE_ROOT
+    / "boards"
+    / "tenstorrent"
+    / "tt_blackhole"
+    / "bootfs"
+    / "p100-bootfs.yaml"
+)
+SCHEMA_PATH = MODULE_ROOT / "scripts" / "schemas" / "tt-boot-fs-schema.yml"
+
 TEST_ALIGNMENT = 0x1000
 
 sys.path.append(str(MODULE_ROOT / "scripts"))
@@ -199,14 +209,11 @@ def get_corrupted_test_image_path(tmp_path: Path):
 
 
 def test_tt_boot_fs_schema():
-    SCHEMA_PATH = MODULE_ROOT / "scripts" / "schemas" / "tt-boot-fs-schema.yml"
-    SPEC_PATH = TEST_ROOT / "p100.yml"
-
     schema = None
     spec = None
     with open(SCHEMA_PATH) as f:
         schema = yaml.load(f, Loader=SafeLoader)
-    with open(SPEC_PATH) as f:
+    with open(TEST_SPEC) as f:
         spec = yaml.load(f, Loader=SafeLoader)
     spec = pykwalify.core.Core(source_data=spec, schema_data=schema).validate()
 
@@ -215,9 +222,7 @@ def test_tt_boot_fs_mkfs():
     """
     Test the ability to make a tt_boot_fs.
     """
-    assert (
-        tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None
-    ), "tt_boot_fs.mkfs() failed"
+    assert tt_boot_fs.mkfs(TEST_SPEC) is not None, "tt_boot_fs.mkfs() failed"
 
 
 def test_tt_boot_fs_fsck(tmp_path: Path):
