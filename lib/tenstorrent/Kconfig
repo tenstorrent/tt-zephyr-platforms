@@ -13,6 +13,7 @@ rsource "event/Kconfig"
 rsource "fan_ctrl/Kconfig"
 rsource "fwupdate/Kconfig"
 rsource "jtag_bootrom/Kconfig"
+rsource "qsfp_dd/Kconfig"
 # zephyr-keep-sorted-stop
 
 endmenu
