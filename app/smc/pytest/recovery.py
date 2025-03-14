@@ -10,10 +10,11 @@ import sys
 
 import pyluwen
 
+from pathlib import Path
 from twister_harness import DeviceAdapter
 
 # Import tt_boot_fs utilities
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+sys.path.append(str(Path(__file__).parents[3] / "scripts"))
 import tt_boot_fs
 
 
