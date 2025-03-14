@@ -745,42 +745,61 @@ def fsck(path: Path, alignment: int = 0x1000) -> bool:
     return fs is not None
 
 
-def mkbundle(image: Path, output: Path, board: str):
+def mkbundle(
+    output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path]
+):
     bundle_dir = Path(tempfile.mkdtemp())
     try:
-        # Todo- this manifest should be populated with version information in
-        # the future
+        # Process firmware bundles to combine before processing tt_boot_fs.bin files.
+        # The implication is that binaries may overwrite files from combined bundles.
+        origdir = os.getcwd()
+        os.chdir(bundle_dir)
+        for bundle in combine:
+            with tarfile.open(bundle, "r:gz") as tar:
+                tar.extractall(filter="data")  # tarfile only ever extracts to CWD
+        os.chdir(origdir)
+
+        # Process (board, tt_boot_fs) pairs
+        for board, image in boot_fs.items():
+            board_dir = bundle_dir / board
+            board_dir.mkdir()
+            mask = [{"tag": "write-boardcfg"}]
+            with open(board_dir / "mask.json", "w") as file:
+                file.write(json.dumps(mask))
+            mapping = []
+            with open(board_dir / "mapping.json", "w") as file:
+                file.write(json.dumps(mapping))
+            with open(image, "rb") as img:
+                binary = img.read()
+                # Convert image to base16 encoded ascii to conform to
+                # tt-flash format
+                b16out = b16encode(binary).decode("ascii")
+            with open(board_dir / "image.bin", "w") as img:
+                img.write(b16out)
+
+        # Update the manifest last, so we can specify the bundle_version
         manifest = {
-            "version": "0.0.0",
-            "bundle_version": {"fwId": 0, "releaseId": 0, "patch": 2, "debug": 0},
+            "version": "1.0.0",  # manifest file version
+            "bundle_version": {
+                "fwId": version[0],
+                "releaseId": version[1],
+                "patch": version[2],
+                "debug": version[3],
+            },
         }
-        with open(bundle_dir / "manifest.json", "w") as file:
+        with open(bundle_dir / "manifest.json", "w+") as file:
             file.write(json.dumps(manifest))
-        board_dir = bundle_dir / board
-        board_dir.mkdir()
-        mask = [{"tag": "write-boardcfg"}]
-        with open(board_dir / "mask.json", "w") as file:
-            file.write(json.dumps(mask))
-        mapping = []
-        with open(board_dir / "mapping.json", "w") as file:
-            file.write(json.dumps(mapping))
-        with open(image, "rb") as img:
-            binary = img.read()
-            # Convert image to base16 encoded ascii to conform to
-            # tt-flash format
-            b16out = b16encode(binary).decode("ascii")
-        with open(board_dir / "image.bin", "w") as img:
-            img.write(b16out)
 
         # Compress output as tar.gz
         if output.exists():
             output.unlink()
         with tarfile.open(output, "x:gz") as tar:
             tar.add(bundle_dir, arcname=".")
-        shutil.rmtree(bundle_dir)
+
     except Exception as e:
-        shutil.rmtree(bundle_dir)
         raise e
+    finally:
+        shutil.rmtree(bundle_dir)
 
 
 def invoke_mkfs(args):
@@ -810,10 +829,24 @@ def invoke_fsck(args):
 
 
 def invoke_fwbundle(args):
-    if not args.bootfs.exists():
-        raise RuntimeError("File {args.bootfs} doesn't exist")
-    mkbundle(args.bootfs, args.output_bundle, args.board)
-    print(f"Wrote fwbundle for {args.board} to {args.output_bundle}")
+    # Convert e.g. "80.16.0.1" to [80, 16, 0, 1]
+    version = args.version.split(".")
+    if len(version) != 4:
+        raise RuntimeError("Invalid bundle version format")
+    for i in range(4):
+        version[i] = int(version[i])
+    setattr(args, "version", version)
+
+    # e.g. bootfs["P100-1"] = blah/p100/tt_boot_fs.bin
+    if len(args.bootfs) % 2 != 0:
+        raise RuntimeError(f"Invalid number of boot fs arguments: {len(args.boot_fs)}")
+    bootfs = {}
+    for i in range(0, len(args.bootfs), 2):
+        bootfs[args.bootfs[i]] = Path(args.bootfs[i + 1])
+    setattr(args, "bootfs", bootfs)
+
+    mkbundle(args.output, args.version, args.combine, args.bootfs)
+    print(f"Wrote fwbundle to {args.output}")
     return os.EX_OK
 
 
@@ -822,6 +855,7 @@ def parse_args():
         description="Utility to manage tt_boot_fs binaries", allow_abbrev=False
     )
     subparsers = parser.add_subparsers()
+
     # MKFS command- build a tt_boot_fs given a specification
     mkfs_parser = subparsers.add_parser("mkfs", help="Make tt_boot_fs filesystem")
     mkfs_parser.add_argument(
@@ -837,22 +871,50 @@ def parse_args():
         type=Path,
     )
     mkfs_parser.set_defaults(func=invoke_mkfs)
+
     # Check a filesystem for validity
     fsck_parser = subparsers.add_parser("fsck", help="Check tt_boot_fs filesystem")
     fsck_parser.add_argument(
         "filesystem", metavar="FS", help="filesystem to check", type=Path
     )
     fsck_parser.set_defaults(func=invoke_fsck)
+
     # Create a firmware update bundle
     bundle_parser = subparsers.add_parser("fwbundle", help="manage firmware bundle")
     bundle_parser.add_argument(
-        "bootfs", metavar="FS", help="tt_boot_fs binary", type=Path
+        "-v",
+        "--version",
+        metavar="VERSION",
+        help="bundle version (e.g. 80.16.0.1)",
+        required=True,
     )
-    bundle_parser.add_argument("board", metavar="BOARD", help="board name", type=str)
     bundle_parser.add_argument(
-        "output_bundle", metavar="BUNDLE", help="bundle file name", type=Path
+        "-o",
+        "--output",
+        metavar="BUNDLE",
+        help="output bundle file name",
+        type=Path,
+        required=True,
+    )
+    bundle_parser.add_argument(
+        "-c",
+        "--combine",
+        metavar="BUNDLE",
+        help="firmware bundle to combine (can be specified more than once)",
+        type=Path,
+        action="append",
+        default=[],
+    )
+    bundle_parser.add_argument(
+        "bootfs",
+        metavar="BOARD_FS",
+        help="[PREFIX FS..] pairs (e.g. P150A-1 build-p150a/tt_boot_fs.bin)",
+        nargs="*",
+        default=[],
     )
     bundle_parser.set_defaults(func=invoke_fwbundle)
+
+    # Parse arguments
     args = parser.parse_args()
 
     if not hasattr(args, "func"):
