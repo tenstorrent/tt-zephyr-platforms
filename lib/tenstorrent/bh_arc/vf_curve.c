@@ -20,9 +20,7 @@ void InitVFCurve(void)
  */
 float VFCurve(float freq_mhz)
 {
-	/* VF curve from a single typical part on a liquid-cooled Orion-CB */
-	freq_mhz = MAX(937.5F, freq_mhz); /* This curve is only valid above 937.5 MHz */
-	float voltage_mv = 3.63763e-4F * freq_mhz * freq_mhz - 6.48668e-1F * freq_mhz + 9.60745e2F;
+	float voltage_mv = 0.00031395F * freq_mhz * freq_mhz - 0.43953F * freq_mhz + 828.83F;
 
-	return voltage_mv + 100.0F; /* Add 100 mV of margin */
+	return voltage_mv + 50.0F; /* Add 50 mV of margin */
 }

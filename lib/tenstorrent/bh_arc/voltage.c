@@ -13,7 +13,7 @@
 #include "dvfs.h"
 
 /* TODO: Get these from SPI parameters */
-#define VDD_MIN  750
+#define VDD_MIN  700
 #define VDD_MAX  900
 #define VDD_BOOT 750
 
