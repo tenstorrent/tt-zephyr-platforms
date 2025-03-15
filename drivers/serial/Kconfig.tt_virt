@@ -1,0 +1,10 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config UART_TT_VIRT
+	bool "Tenstorrent virtual UART driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_VUART_ENABLED
+	select SERIAL_HAS_DRIVER
+	help
+	  Enable the Tenstorrent virtual UART driver.
