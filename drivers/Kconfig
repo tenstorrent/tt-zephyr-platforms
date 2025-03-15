@@ -9,7 +9,6 @@ rsource "i2c/Kconfig"
 rsource "jtag/Kconfig"
 rsource "reset/Kconfig"
 rsource "sensor/Kconfig"
-rsource "serial/Kconfig"
 rsource "smbus/Kconfig"
 # zephyr-keep-sorted-stop
 

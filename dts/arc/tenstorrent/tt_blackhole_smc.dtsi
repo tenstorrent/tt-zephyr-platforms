@@ -120,13 +120,6 @@
 		interrupt-parent = <&intc>;
 	};
 
-	vuart0: vuart {
-		compatible = "tenstorrent,uart-virt";
-		tx-buf-size = <3072>;
-		rx-buf-size = <1024>;
-		status = "disabled";
-	};
-
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
