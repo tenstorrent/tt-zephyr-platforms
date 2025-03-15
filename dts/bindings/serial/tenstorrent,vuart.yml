@@ -1,0 +1,98 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,vuart"
+
+description: |
+  Tenstorrent Virtual UART driver
+
+  This virtual uart driver is typically used in uncached, shared memory environments. It uses an
+  in-memory structure that includes
+
+  1. metadata for identifying the virtual uart in memory, including
+      - a magic number which may be polled to determine when the virtual uart is ready for use
+      - a version number which may be used to determine binary compatibility
+  2. transmit and receive buffer information, including
+      - buffer capacity
+      - head and tail indices
+      - statistics for virtual uart performance analysis
+  3. the transmit and receive buffers themselves
+
+  Both the head and tail indices of the transmit and receive buffers are 32-bit up-counters that
+  wrap around the 32-bit boundary. When empty, the head and the tail indices are equal. When full,
+  the tail index - the head index is equal to the buffer capacity. This ensures that there is no
+  ambiguity between an empty buffer and a full buffer.
+
+  By convention, the transmit and receive are from the perspective of the local processor. From
+  the perspective of the remote processor, transmit and receive buffers, as well as indices, are
+  reversed.
+
+  Default sizes of the transmit and receive buffers are chosen such that the size of metadata,
+  buffer information, and the buffers themselves fit into 4096 bytes of memory, and are naturally
+  aligned on a 4-byte boundary.
+
+  The theory of operation is as follows:
+
+  - The remote processor updates the head index of the transmit buffer and the tail index of the
+    receive buffer.
+  - The local processor updates the head index of the receive buffer and the tail index of the
+    transmit buffer.
+  - Accesses are atomic with respect to other threads on the same processor. The local and
+    remote processors access independent indices, and indices are monotonically increasing,
+    generally mitigating the need for locks.
+  - Caching is disabled for the virtual uart memory region.
+  - The remote processor polls the transmit tail index to determine if there is data to read.
+  - The local processor polls the receive tail index to determine if there is data to read.
+
+  At this time, interrupt support is limited to being used for testing purposes only. The virtual
+  uart driver may be updated at a later time to support interrupt-driven operation.
+
+include: uart-controller.yaml
+
+properties:
+  magic:
+    type: int
+    default: 0x775e21a1
+    description: |
+      Magic number with which to identify the virtual UART device in-memory and determine when the
+      virtual uart device is ready for use.
+
+      The default value is a hexadecimal representation of the string "TTSeRial".
+
+  version:
+    type: int
+    required: true
+    const: 0x00000000
+    description: |
+      Version number of the virtual UART device. This number may be used to determine binary
+      compatibility. Fields of the version number are 8-bits each, and are organized
+      (from MSB to LSB) as [INST, MAJOR, MINOR, PATCH].
+
+      When reading version information via the in-memory data structure, the INST field is used to
+      enumerate multiiple instances of the virtual UART device on the remote processor side.
+      Otherwise, the INST field has no bearing on the version number and should be ignored.
+
+      The version field shall be updated when the binary layout of the in-memory structure
+      changes, when other semantic behaviour of the virtual UART device changes, or when
+      new features are added.
+
+  tx-cap:
+    type: int
+    default: 3036
+    description: |
+      Transmit buffer capacity in bytes. This is the maximum amount of data that can be queued
+      at one time for transmission via the virtual UART device.
+
+  rx-cap:
+    type: int
+    default: 1024
+    description: |
+      Receive buffer capacity in bytes. This is the maximum amount of data that can be queued
+      at one time for reception via the virtual UART device.
+
+  loopback:
+    type: boolean
+    description: |
+      Enable loopback mode. When enabled, data transmitted by the virtual UART device is
+      immediately received by the virtual UART device. Loopback mode is used exclusively for
+      test purposes at this time.
