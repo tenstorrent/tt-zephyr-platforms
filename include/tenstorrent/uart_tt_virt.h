@@ -74,7 +74,7 @@ static inline uint32_t tt_vuart_buf_size(uint32_t head, uint32_t tail)
 	return tail - head;
 }
 
-static inline uint32_t tt_vuart_buf_space(uint32_t cap, uint32_t head, uint32_t tail)
+static inline uint32_t tt_vuart_buf_space(uint32_t head, uint32_t tail, uint32_t cap)
 {
 	return cap - (tt_vuart_buf_size(head, tail));
 }
@@ -112,13 +112,16 @@ static inline int tt_vuart_poll_in(volatile struct tt_vuart *vuart, unsigned cha
 
 		if (head == tail) {
 			/* if up-counters are equal, buffer is empty */
-			return -1;
+			return -1 /* EOF */;
 		}
 
 		if (atomic_compare_exchange_strong(headp, &head, head + 1)) {
 			*p_char = vuart->buf[offs + (head % cap)];
+			return *p_char;
 		}
 	} while (true);
+
+	/* code unreachable */
 }
 
 static inline void tt_vuart_poll_out(volatile struct tt_vuart *vuart, unsigned char out_char,
@@ -156,7 +159,7 @@ static inline void tt_vuart_poll_out(volatile struct tt_vuart *vuart, unsigned c
 		}
 
 		if (atomic_compare_exchange_strong(tailp, &tail, tail + 1)) {
-			vuart->buf[offs + tail % cap] = out_char;
+			vuart->buf[offs + (tail % cap)] = out_char;
 			break;
 		}
 	} while (true);
@@ -165,19 +168,16 @@ static inline void tt_vuart_poll_out(volatile struct tt_vuart *vuart, unsigned c
 #ifdef __ZEPHYR__
 #include <zephyr/device.h>
 
-enum uart_tt_virt_irq_event {
-	UART_TT_VIRT_IRQ_EVENT_RX_DISABLE,
-	UART_TT_VIRT_IRQ_EVENT_RX_ENABLE,
-	UART_TT_VIRT_IRQ_EVENT_TX_DISABLE,
-	UART_TT_VIRT_IRQ_EVENT_TX_ENABLE,
+enum uart_tt_virt_event {
+	UART_TT_VIRT_EVENT_TX_DATA_READY,
 };
 
-typedef void (*uart_tt_virt_irq_callback_t)(const struct device *dev,
-					    enum uart_tt_virt_irq_event event, void *user_data);
+typedef void (*uart_tt_virt_event_callback_t)(const struct device *dev,
+					      enum uart_tt_virt_event event, void *user_data);
 
 volatile struct tt_vuart *uart_tt_virt_get(const struct device *dev);
-int uart_tt_virt_irq_callback_set(const struct device *dev, uart_tt_virt_irq_callback_t cb,
-				  void *user_data);
+int uart_tt_virt_event_callback_set(const struct device *dev, uart_tt_virt_event_callback_t cb,
+				    void *user_data);
 #endif
 
 #ifdef __cplusplus

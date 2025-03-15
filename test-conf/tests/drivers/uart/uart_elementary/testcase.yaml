@@ -2,13 +2,14 @@ common:
   tags:
     - drivers
     - uart
+  depends_on: gpio
+  harness: ztest
+  harness_config:
+    fixture: gpio_loopback
 tests:
-  drivers.uart.basic_api.uart_tt_virt:
-    tags:
-      - tt_sim
-      - uart_tt_virt
+  drivers.uart.uart_elementary.uart_tt_virt:
+    tags: tt_sim
     filter: CONFIG_SERIAL_SUPPORT_INTERRUPT
-
     platform_allow:
       - native_sim/native/64
       - qemu_riscv64

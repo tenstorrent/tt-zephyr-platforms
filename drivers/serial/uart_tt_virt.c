@@ -31,6 +31,9 @@ static uintptr_t uart_tt_virt_discovery;
 
 struct uart_tt_virt_config {
 	volatile struct tt_vuart *vuart;
+	uint32_t rx_cap;
+	uint32_t tx_cap;
+	bool loopback;
 };
 
 struct uart_tt_virt_data {
@@ -41,13 +44,20 @@ struct uart_tt_virt_data {
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 	struct k_spinlock rx_lock;
 	struct k_spinlock tx_lock;
+	struct k_spinlock err_lock;
 
+	bool err_irq_en;
 	bool rx_irq_en;
 	bool tx_irq_en;
+	uint32_t err_flags;
 	struct k_work irq_work;
+	const struct device *dev;
 
 	uart_irq_callback_user_data_t irq_cb;
 	void *irq_cb_udata;
+
+	uart_tt_virt_event_callback_t event_cb;
+	void *event_cb_udata;
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 };
 
@@ -72,6 +82,29 @@ static int uart_tt_virt_configure(const struct device *dev, const struct uart_co
 {
 	struct uart_tt_virt_data *data = dev->data;
 
+	if (cfg == NULL) {
+		return -EINVAL;
+	}
+
+	if (!((cfg->parity >= UART_CFG_PARITY_NONE) && (cfg->parity <= UART_CFG_PARITY_SPACE))) {
+		return -EINVAL;
+	}
+
+	if (!((cfg->stop_bits >= UART_CFG_STOP_BITS_0_5) &&
+	      (cfg->stop_bits <= UART_CFG_STOP_BITS_2))) {
+		return -EINVAL;
+	}
+
+	if (!((cfg->data_bits >= UART_CFG_DATA_BITS_5) &&
+	      (cfg->data_bits <= UART_CFG_DATA_BITS_8))) {
+		return -EINVAL;
+	}
+
+	if (!((cfg->flow_ctrl >= UART_CFG_FLOW_CTRL_NONE) &&
+	      (cfg->flow_ctrl <= UART_CFG_FLOW_CTRL_RTS_CTS))) {
+		return -EINVAL;
+	}
+
 	memcpy(&data->cfg, cfg, sizeof(*cfg));
 	return 0;
 }
@@ -95,90 +128,97 @@ static int uart_tt_virt_err_check(const struct device *dev)
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 static int uart_tt_virt_fifo_fill(const struct device *dev, const uint8_t *tx_data, int size)
 {
-#if 0
-	int ret;
 	struct uart_tt_virt_data *data = dev->data;
 	const struct uart_tt_virt_config *config = dev->config;
-	uint32_t put_size = MIN(config->latch_buffer_size, size);
+	volatile struct tt_vuart *vuart = config->vuart;
+
+	__ASSERT_NO_MSG(size >= 0);
 
 	K_SPINLOCK(&data->tx_lock) {
-		ret = ring_buf_put(data->tx_rb, tx_data, put_size);
+		size = MIN((int)tt_vuart_buf_space(vuart->tx_head, vuart->tx_tail, vuart->tx_cap),
+			   size);
+
+		for (int i = 0; i < size; ++i) {
+			tt_vuart_poll_out(vuart, *tx_data++, TT_VUART_ROLE_DEVICE);
+		}
 	}
 
-	if (config->loopback) {
-		uart_tt_virt_put_rx_data(dev, (uint8_t *)tx_data, put_size);
+	if (config->loopback && size > 0) {
+		K_SPINLOCK(&data->rx_lock) {
+			int lim = MIN(size, (int)tt_vuart_buf_space(vuart->rx_head, vuart->rx_tail,
+								    vuart->rx_cap));
+
+			for (int i = 0; i < lim; ++i) {
+				unsigned char ch = -1;
+
+				(void)tt_vuart_poll_in(vuart, &ch, TT_VUART_ROLE_HOST);
+				tt_vuart_poll_out(vuart, ch, TT_VUART_ROLE_HOST);
+			}
+
+			/* Note: irq_handler() picks up rx data */
+		}
 	}
 
-	uart_tt_virt_tx_data_ready(dev);
-
-	return ret;
-#else
-	return -ENOSYS;
-#endif
+	return size;
 }
 
 static int uart_tt_virt_fifo_read(const struct device *dev, uint8_t *rx_data, int size)
 {
-#if 0
 	struct uart_tt_virt_data *data = dev->data;
 	const struct uart_tt_virt_config *config = dev->config;
-	uint32_t bytes_to_read;
+	volatile struct tt_vuart *vuart = config->vuart;
+
+	__ASSERT_NO_MSG(size >= 0);
 
 	K_SPINLOCK(&data->rx_lock) {
-		bytes_to_read = MIN(config->latch_buffer_size, ring_buf_size_get(data->rx_rb));
-		bytes_to_read = MIN(bytes_to_read, size);
-		ring_buf_get(data->rx_rb, rx_data, bytes_to_read);
+		size = MIN(size, (int)tt_vuart_buf_size(vuart->rx_head, vuart->rx_tail));
+
+		for (int i = 0; i < size; ++i) {
+			(void)tt_vuart_poll_in(vuart, rx_data++, TT_VUART_ROLE_DEVICE);
+		}
 	}
 
-	return bytes_to_read;
-#else
-	return -ENOSYS;
-#endif
+	return size;
 }
 
 static int uart_tt_virt_irq_tx_ready(const struct device *dev)
 {
-#if 0
 	int available = 0;
-	struct uart_tt_virt_data *data = dev->data;
+	const struct uart_tt_virt_config *config = dev->config;
+	struct uart_tt_virt_data *const data = dev->data;
+	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->tx_lock) {
 		if (!data->tx_irq_en) {
 			K_SPINLOCK_BREAK;
 		}
 
-		available = ring_buf_space_get(data->tx_rb);
+		available = tt_vuart_buf_space(vuart->tx_head, vuart->tx_tail, vuart->tx_cap);
 	}
 
 	return available;
-#else
-	return -ENOSYS;
-#endif
 }
 
 static int uart_tt_virt_irq_rx_ready(const struct device *dev)
 {
-#if 0
-	bool ready = false;
-	struct uart_tt_virt_data *data = dev->data;
+	int available = 0;
+	const struct uart_tt_virt_config *config = dev->config;
+	struct uart_tt_virt_data *const data = dev->data;
+	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->rx_lock) {
 		if (!data->rx_irq_en) {
 			K_SPINLOCK_BREAK;
 		}
 
-		ready = !ring_buf_is_empty(data->rx_rb);
+		available = !tt_vuart_buf_empty(vuart->rx_head, vuart->rx_tail);
 	}
 
-	return ready;
-#else
-	return -ENOSYS;
-#endif
+	return available;
 }
 
 static void uart_tt_virt_irq_handler(struct k_work *work)
 {
-#if 0
 	struct uart_tt_virt_data *data = CONTAINER_OF(work, struct uart_tt_virt_data, irq_work);
 	const struct device *dev = data->dev;
 	uart_irq_callback_user_data_t cb = data->irq_cb;
@@ -189,113 +229,81 @@ static void uart_tt_virt_irq_handler(struct k_work *work)
 		return;
 	}
 
-	while (true) {
-		bool have_work = false;
-
-		K_SPINLOCK(&data->tx_lock) {
-			if (!data->tx_irq_en) {
-				K_SPINLOCK_BREAK;
-			}
-
-			have_work = have_work || ring_buf_space_get(data->tx_rb) > 0;
-		}
-
-		K_SPINLOCK(&data->rx_lock) {
-			if (!data->rx_irq_en) {
-				K_SPINLOCK_BREAK;
-			}
-
-			have_work = have_work || !ring_buf_is_empty(data->rx_rb);
-		}
-
-		if (!have_work) {
-			break;
-		}
-
+	while (uart_tt_virt_irq_tx_ready(dev) || uart_tt_virt_irq_rx_ready(dev)) {
 		cb(dev, udata);
 	}
-#endif
 }
 
 static int uart_tt_virt_irq_is_pending(const struct device *dev)
 {
-#if 0
 	return uart_tt_virt_irq_tx_ready(dev) || uart_tt_virt_irq_rx_ready(dev);
-#else
-	return -ENOSYS;
-#endif
 }
 
 static void uart_tt_virt_irq_tx_enable(const struct device *dev)
 {
-#if 0
 	bool submit_irq_work;
+	const struct uart_tt_virt_config *config = dev->config;
 	struct uart_tt_virt_data *const data = dev->data;
+	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->tx_lock) {
 		data->tx_irq_en = true;
-		submit_irq_work = ring_buf_space_get(data->tx_rb) > 0;
+		submit_irq_work =
+			tt_vuart_buf_space(vuart->tx_head, vuart->tx_tail, vuart->tx_cap) > 0;
 	}
 
 	if (submit_irq_work) {
-		(void)k_work_submit_to_queue(&uart_tt_virt_work_q, &data->irq_work);
+		(void)k_work_submit(&data->irq_work);
 	}
-#endif
 }
 
 static void uart_tt_virt_irq_rx_enable(const struct device *dev)
 {
-#if 0
 	bool submit_irq_work;
+	const struct uart_tt_virt_config *config = dev->config;
 	struct uart_tt_virt_data *const data = dev->data;
+	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->rx_lock) {
 		data->rx_irq_en = true;
-		submit_irq_work = !ring_buf_is_empty(data->rx_rb);
+		submit_irq_work = !tt_vuart_buf_empty(vuart->rx_head, vuart->rx_tail);
 	}
 
 	if (submit_irq_work) {
-		(void)k_work_submit_to_queue(&uart_tt_virt_work_q, &data->irq_work);
+		(void)k_work_submit(&data->irq_work);
 	}
-#endif
 }
 
 static void uart_tt_virt_irq_tx_disable(const struct device *dev)
 {
-#if 0
 	struct uart_tt_virt_data *const data = dev->data;
 
 	K_SPINLOCK(&data->tx_lock) {
 		data->tx_irq_en = false;
 	}
-#endif
 }
 
 static void uart_tt_virt_irq_rx_disable(const struct device *dev)
 {
-#if 0
 	struct uart_tt_virt_data *const data = dev->data;
 
 	K_SPINLOCK(&data->rx_lock) {
 		data->rx_irq_en = false;
 	}
-#endif
 }
 
 static int uart_tt_virt_irq_tx_complete(const struct device *dev)
 {
-#if 0
 	bool tx_complete = false;
+	const struct uart_tt_virt_config *config = dev->config;
 	struct uart_tt_virt_data *const data = dev->data;
+	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->tx_lock) {
-		tx_complete = ring_buf_is_empty(data->tx_rb);
+		tx_complete = tt_vuart_buf_empty(vuart->tx_head, vuart->tx_tail);
 	}
 
 	return tx_complete;
-#else
-	return -ENOSYS;
-#endif
 }
 
 static void uart_tt_virt_irq_callback_set(const struct device *dev,
@@ -309,10 +317,26 @@ static void uart_tt_virt_irq_callback_set(const struct device *dev,
 
 static void uart_tt_virt_irq_err_enable(const struct device *dev)
 {
+	bool submit_irq_work;
+	struct uart_tt_virt_data *const data = dev->data;
+
+	K_SPINLOCK(&data->err_lock) {
+		data->err_irq_en = true;
+		submit_irq_work = !!data->err_flags;
+	}
+
+	if (submit_irq_work) {
+		(void)k_work_submit(&data->irq_work);
+	}
 }
 
 static void uart_tt_virt_irq_err_disable(const struct device *dev)
 {
+	struct uart_tt_virt_data *const data = dev->data;
+
+	K_SPINLOCK(&data->err_lock) {
+		data->err_irq_en = false;
+	}
 }
 
 static int uart_tt_virt_irq_update(const struct device *dev)
@@ -354,16 +378,28 @@ volatile struct tt_vuart *uart_tt_virt_get(const struct device *dev)
 	return config->vuart;
 }
 
-int uart_tt_virt_irq_callback_set(const struct device *dev, uart_tt_virt_irq_callback_t cb,
-				  void *user_data)
+int uart_tt_virt_irq_event_callback_set(const struct device *dev, uart_tt_virt_event_callback_t cb,
+					void *user_data)
 {
+	struct uart_tt_virt_data *data = dev->data;
+
+	data->event_cb = cb;
+	data->event_cb_udata = user_data;
+
+	return 0;
 }
 
 static int uart_tt_virt_init(const struct device *dev)
 {
 	const struct uart_tt_virt_config *config = dev->config;
+	struct uart_tt_virt_data *const data = dev->data;
 	volatile struct tt_vuart *vuart = config->vuart;
 
+	data->dev = dev;
+	(void)k_work_init(&data->irq_work, uart_tt_virt_irq_handler);
+
+	vuart->rx_cap = config->rx_cap;
+	vuart->tx_cap = config->tx_cap;
 	vuart->magic = UART_TT_VIRT_MAGIC;
 	*UART_TT_VIRT_DISCOVERY_ADDR = (uintptr_t)vuart;
 
@@ -382,6 +418,9 @@ static int uart_tt_virt_init(const struct device *dev)
 	static uint32_t tt_vuart_##_inst[UART_TT_VIRT_DESC_SIZE(_inst)];                           \
 	static const struct uart_tt_virt_config uart_tt_virt_config_##_inst = {                    \
 		.vuart = (struct tt_vuart *)&tt_vuart_##_inst,                                     \
+		.rx_cap = UART_TT_VIRT_RX_BUF_SIZE(_inst),                                         \
+		.tx_cap = UART_TT_VIRT_TX_BUF_SIZE(_inst),                                         \
+		.loopback = DT_INST_PROP(_inst, loopback),                                         \
 	};                                                                                         \
 	static struct uart_tt_virt_data uart_tt_virt_data_##_inst;                                 \
                                                                                                    \

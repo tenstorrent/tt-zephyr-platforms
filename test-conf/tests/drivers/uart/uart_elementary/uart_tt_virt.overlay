@@ -15,5 +15,6 @@
 };
 
 dut: &vuart0 {
+	loopback;
 	status = "okay";
 };
