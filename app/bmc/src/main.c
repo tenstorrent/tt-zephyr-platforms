@@ -10,6 +10,7 @@
 #include <tenstorrent/bist.h>
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/fwupdate.h>
+#include <tenstorrent/qsfp_dd.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
@@ -217,6 +218,14 @@ int main(void)
 		set_fan_speed(100); /* Set fan speed to 100 by default */
 		if (ret != 0) {
 			LOG_ERR("%s() failed: %d", "init_fan", ret);
+			return ret;
+		}
+	}
+
+	if (IS_ENABLED(CONFIG_TT_QSFP_DD)) {
+		ret = enable_active_qsfp_dd();
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "enable_active_qsfp_dd", ret);
 			return ret;
 		}
 	}

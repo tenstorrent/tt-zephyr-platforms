@@ -1,0 +1,11 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_QSFP_DD
+	bool "Communicate with QSFP-DD module and GPIO expander"
+	help
+	  Communicate with QSFP-DD module and GPIO expander.
+
+module = TT_QSFP_DD
+module-str = TT QSFP DD
+source "subsys/logging/Kconfig.template.log_config"
