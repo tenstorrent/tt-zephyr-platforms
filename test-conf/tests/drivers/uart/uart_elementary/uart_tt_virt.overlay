@@ -1,0 +1,18 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	vuart0: uart_tt_virt {
+		compatible = "tenstorrent,vuart";
+		version = <0x00000000>;
+		status = "disabled";
+	};
+};
+
+dut: &vuart0 {
+	loopback;
+	status = "okay";
+};

@@ -1,0 +1,13 @@
+tests:
+  drivers.uart.uart_elementary.uart_tt_virt:
+    tags: tt_sim
+    filter: CONFIG_SERIAL_SUPPORT_INTERRUPT
+    platform_allow:
+      - native_sim/native/64
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+        ../../../../../tt-zephyr-platforms.git/test-conf/tests/drivers/uart/uart_elementary/\
+        uart_tt_virt.overlay"
+      - "CONF_FILE=\
+        ../../../../../tt-zephyr-platforms.git/test-conf/tests/drivers/uart/uart_elementary/\
+        uart_tt_virt.conf"
