@@ -221,10 +221,16 @@ int main(void)
 		}
 	}
 
+	/* Set up therm trip and pgood interrupts */
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		ret = therm_trip_gpio_setup(chip);
 		if (ret != 0) {
 			LOG_ERR("%s() failed: %d", "therm_trip_gpio_setup", ret);
+			return ret;
+		}
+		ret = pgood_gpio_setup(chip);
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "pgood_gpio_setup", ret);
 			return ret;
 		}
 	}
