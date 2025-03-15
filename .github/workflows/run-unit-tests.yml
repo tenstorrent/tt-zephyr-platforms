@@ -47,3 +47,38 @@ jobs:
             twister-out/**/handler.log
             twister-out/twister.log
             twister-out/twister.json
+
+  tt-sim-test:
+    env:
+      platforms: -p native_sim
+      tags: --tag tt_sim
+      configroots: --alt-config-root test-conf/samples --alt-config-root test-conf/tests
+      roots: -T ../zephyr/samples -T ../zephyr/tests
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/prepare-zephyr
+
+      - name: build and run
+        shell: bash
+        run: |
+          west twister -i --retry-failed=3 $platforms $tags $configroots $roots
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tt-sim-test-results
+          path: |
+            twister-out/**/.config
+            twister-out/**/devicetree_generated.h
+            twister-out/**/zephyr.bin
+            twister-out/**/zephyr.dts
+            twister-out/**/zephyr.elf
+            twister-out/**/zephyr.map
+            twister-out/**/zephyr.stat
+            twister-out/**/handler.log
+            twister-out/twister.log
+            twister-out/twister.json
