@@ -120,9 +120,10 @@
 		interrupt-parent = <&intc>;
 	};
 
-	vuart0: vuart {
+	vuart0: uart_tt_virt {
 		compatible = "tenstorrent,uart-virt";
-		tx-buf-size = <3072>;
+		/* tx-buf-size + rx-buf-size + sizeof(tt_vuart) = 4096 */
+		tx-buf-size = <3040>;
 		rx-buf-size = <1024>;
 		status = "disabled";
 	};
