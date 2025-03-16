@@ -1,0 +1,17 @@
+name: Build tt-native
+
+on: [pull_request]
+
+jobs:
+  build-tt-console:
+    runs-on: ubuntu-22.04
+    name: Build tt-console
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Run the script
+      run: |
+        gcc -Iinclude -O0 -g -Wall -Wextra -Werror -std=gnu11 -o tt-console \
+          scripts/tt-console/console.c
