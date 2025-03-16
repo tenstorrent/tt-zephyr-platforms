@@ -1,2 +1,6 @@
+# for spi flash tables
 protobuf
 grpcio-tools
+
+# tenstorrent utilities (note: pyluwen is a dependency)
+tt-flash @ git+https://github.com/tenstorrent/tt-flash
