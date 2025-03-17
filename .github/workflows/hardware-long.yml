@@ -128,12 +128,15 @@ jobs:
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
 
-
       - name: Fix APT URLs
         run: |
           # Patch APT URLs to use https
           sed -i -e 's/http/https/g' /etc/apt/sources.list
           apt update
+
+      - name: Install Git LFS
+        run: |
+          apt install -y git-lfs
 
       - name: Install clang 17
         run: |
@@ -143,9 +146,10 @@ jobs:
           ./llvm.sh 17 all
           rm -f llvm.sh
 
-      - name: Install Git LFS
-        run: |
-          apt install -y git-lfs
+      - name: Update CMake
+        uses: lukka/get-cmake@b516803a3c5fac40e2e922349d15cdebdba01e60
+        with:
+          cmakeVersion: "~3.24.0"
 
       - name: Checkout Metal
         uses: actions/checkout@v4
@@ -161,11 +165,10 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
-          sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
-          apt install -y python3.10-dev python3.10-venv libpython3.10-dev python3.10
-          # This script will fail to install the tt-hugepages service, just ignore it
-          ./install_dependencies.sh
+          ./install_dependencies.sh --mode build --docker
+          # For debug
+          cmake --version
+          python3 -V
 
       - name: Run Metal Tests
         working-directory: tt-metal
@@ -175,11 +178,9 @@ jobs:
           TT_METAL_HOME: ${{ github.workspace }}/tt-metal
           PYTHONPATH: ${{ github.workspace }}/tt-metal
         run: |
-          # Debug
-          python3 -V
           # Build metal
           ./build_metal.sh --build-tests --build-programming-examples
-          PYTHON_CMD=python3.10 source ./create_venv.sh
+          source ./create_venv.sh
           # Run metal tests
           tests/scripts/run_cpp_unit_tests.sh
           TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
