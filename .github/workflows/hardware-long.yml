@@ -154,7 +154,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: v0.55.0
+          ref: v0.56.0
 
       - name: Install Metal Dependencies
         working-directory: tt-metal
