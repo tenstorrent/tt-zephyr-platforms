@@ -14,6 +14,7 @@
 
 #include <app_version.h>
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/uart_tt_virt.h>
 #include <tenstorrent/post_code.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
@@ -75,3 +76,12 @@ static int _InitFW(void)
 }
 
 SYS_INIT(_InitFW, APPLICATION, 98);
+
+#ifdef CONFIG_UART_TT_VIRT
+#include "status_reg.h"
+
+void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
+{
+	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
+}
+#endif
