@@ -55,7 +55,7 @@ int main(void)
 	}
 
 	while (1) {
-		k_yield();
+		k_msleep(1000);
 	}
 
 	return 0;
