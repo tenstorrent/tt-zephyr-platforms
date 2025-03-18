@@ -71,9 +71,9 @@ blobs:
     description: "Ethernet SerDes firmware"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_init.bin
-    sha256: 7bceecf87af619f119572fde9575153070028242a00afbda9a9efa6d779f0760
+    sha256: e13c7a9ed217ca66dbcdf2e17cfc8ef1128b496271cbb5ccd38e0196ba8493a5
     type: img
-    version: '2.5'
+    version: '2.6'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
@@ -82,7 +82,7 @@ blobs:
   - path: tt_blackhole_gddr_params.bin
     sha256: 2ff26b5bb0a7e37adf0ee8d93bbd5ab7df7ee11ebf37f601dcc28f731b94c672
     type: img
-    version: '2.5'
+    version: '2.6'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params.bin"
