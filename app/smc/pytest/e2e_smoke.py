@@ -60,8 +60,7 @@ def rescan_pcie():
         time.sleep(1)
 
 
-@pytest.fixture(scope="session")
-def arc_chip(unlaunched_dut: DeviceAdapter):
+def get_arc_chip(unlaunched_dut: DeviceAdapter):
     """
     Validates the ARC firmware is alive and booted, since this required
     for any test to run
@@ -94,6 +93,11 @@ def arc_chip(unlaunched_dut: DeviceAdapter):
     # Check post code status of firmware
     assert (status & 0xFFFF) >= 0x1D, "SMC firmware boot failed"
     return chip
+
+
+@pytest.fixture(scope="session")
+def arc_chip(unlaunched_dut: DeviceAdapter):
+    return get_arc_chip(unlaunched_dut)
 
 
 def test_arc_msg(arc_chip):

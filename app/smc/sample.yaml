@@ -13,7 +13,7 @@ tests:
     harness: pytest
     harness_config:
       pytest_root:
-        - pytest/e2e-smoke.py
+        - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
   app.e2e-smoke-flash:
@@ -22,7 +22,7 @@ tests:
     sysbuild: true
     harness_config:
       pytest_root:
-        - pytest/e2e-smoke.py
+        - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
   app.recovery:
@@ -38,3 +38,15 @@ tests:
         - pytest/recovery.py
       pytest_args:
         - "--dut-scope=session"
+  app.vuart:
+    tags: e2e
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/vuart.py
+      pytest_args:
+        - "--dut-scope=session"
+    extra_dtc_overlay_files:
+      - vuart.overlay
+    extra_overlay_confs:
+      - vuart.conf
