@@ -24,6 +24,8 @@
 #define PMBUS_MST_ID 1
 
 /* PMBus Spec constants */
+#define MFR_CTRL_OPS                   0xD2
+#define MFR_CTRL_OPS_DATA_BYTE_SIZE    1
 #define VOUT_COMMAND                   0x21
 #define VOUT_COMMAND_DATA_BYTE_SIZE    2
 #define VOUT_SCALE_LOOP                0x29
@@ -40,6 +42,9 @@
 #define PMBUS_FLIP_BYTES               0
 
 /* I2C slave addresses */
+#define SERDES_VDDL_ADDR            0x30
+#define SERDES_VDD_ADDR             0x31
+#define SERDES_VDDH_ADDR            0x32
 #define GDDR_VDDR_ADDR              0x33
 #define GDDRIO_WEST_ADDR            0x36
 #define GDDRIO_EAST_ADDR            0x37
@@ -264,6 +269,25 @@ void RegulatorInit(PcbType board_type)
 				      (uint8_t *)&vout_scale_loop, VOUT_SCALE_LOOP_DATA_BYTE_SIZE);
 			I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE,
 				      (uint8_t *)&vout_cmd, VOUT_COMMAND_DATA_BYTE_SIZE);
+		}
+	}
+
+	if (board_type == PcbTypeP150 || board_type == PcbTypeP300 || board_type == PcbTypeUBB) {
+		static const uint8_t serdes_vr_addr[] = {SERDES_VDDL_ADDR, SERDES_VDD_ADDR,
+							 SERDES_VDDH_ADDR};
+		uint8_t mfr_ctrl_ops = 7;
+
+		ARRAY_FOR_EACH_PTR(serdes_vr_addr, addr_ptr) {
+			/* Skip serdes_vdd for p300 left chip */
+			if (board_type == PcbTypeP300 &&
+			    get_read_only_table()->asic_location == 0 &&
+			    *addr_ptr == SERDES_VDD_ADDR) {
+				continue;
+			}
+
+			I2CInit(I2CMst, *addr_ptr, I2CFastMode, PMBUS_MST_ID);
+			I2CWriteBytes(PMBUS_MST_ID, MFR_CTRL_OPS, PMBUS_CMD_BYTE_SIZE,
+				      &mfr_ctrl_ops, MFR_CTRL_OPS_DATA_BYTE_SIZE);
 		}
 	}
 }
