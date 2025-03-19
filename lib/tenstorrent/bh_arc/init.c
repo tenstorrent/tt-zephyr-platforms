@@ -36,7 +36,10 @@
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/init.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+
+LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
@@ -68,7 +71,7 @@ static void AssertSoftResets(void)
 
 	/* Write to SOFT_RESET_0 of GDDR */
 	/* Note that there are 3 NOC nodes for each GDDR instance */
-	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		/* Skip harvested GDDR tiles */
 		if (tile_enable.gddr_enabled & BIT(gddr_inst)) {
 			for (uint8_t noc_node_inst = 0; noc_node_inst < 3; noc_node_inst++) {
@@ -104,13 +107,45 @@ static void DeassertRiscvResets(void)
 	WriteReg(RESET_UNIT_DDR_RESET_REG_ADDR, ddr_reset.val);
 }
 
-static void InitMrisc(void)
+static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
+{
+	uint32_t poll_val;
+	bool timedout = false;
+
+	while (true) {
+		poll_val = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+		if (poll_val == MRISC_INIT_FINISHED || poll_val == MRISC_INIT_FAILED) {
+			break;
+		}
+		if (sys_timepoint_expired(timeout)) {
+			timedout = true;
+			break;
+		}
+		k_msleep(1);
+	}
+	if (poll_val == MRISC_INIT_FINISHED) {
+		return EXIT_SUCCESS;
+	}
+	uint32_t post_code = MriscRegRead32(gddr_inst, MRISC_POST_CODE);
+
+	if (timedout) {
+		LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to "
+			"initialize. Post code: 0x%x\n",
+			MRISC_INIT_TIMEOUT, gddr_inst, post_code);
+		return -ETIMEDOUT;
+	}
+	LOG_ERR("GDDR instance %d failed to initialize. Post code: 0x%x\n",
+		gddr_inst, post_code);
+	return -EIO;
+}
+
+static int InitMrisc(void)
 {
 	static const char kMriscFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfwcfg";
 	static const char kMriscFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfw";
 	size_t fw_size = 0;
 
-	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
 			SetAxiEnable(gddr_inst, noc2axi_port, true);
 		}
@@ -118,50 +153,57 @@ static void InitMrisc(void)
 
 	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle this more gracefully */
-		return;
+		LOG_ERR("Failed to load MRISC FW from file system to ARC.\n");
+		return -EIO;
 	}
-	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
+	uint32_t dram_mask = GetDramMask();
 
-	if (get_fw_table()->has_dram_table && get_fw_table()->dram_table.dram_mask_en) {
-		dram_mask &= get_fw_table()->dram_table.dram_mask;
-	}
-	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
-		if ((dram_mask >> gddr_inst) & 1) {
-			LoadMriscFw(gddr_inst, large_sram_buffer, fw_size);
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFw(gddr_inst, large_sram_buffer, fw_size)) {
+				LOG_ERR("Failed to load MRISC FW to MRISC from ARC."
+					"Failed on GDDR instance %d.\n",
+					gddr_inst);
+				return -EIO;
+			}
 		}
 	}
 
 	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle this more gracefully */
-		return;
+		LOG_ERR("Failed to load MRISC FW config from file system to ARC.\n");
+		return -EIO;
 	}
 
 	uint32_t gddr_speed = GetGddrSpeedFromCfg(large_sram_buffer);
 
 	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
-		/* Error */
-		/* TODO: Handle this more gracefully */
-		return;
+		LOG_WRN("Invalid GDDR speed in FW config: %d Mbps\n"
+			"Must be between %d Mbps and %d Mbps\n"
+			"Setting to minimum speed %d Mbps\n",
+			gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED, MIN_GDDR_SPEED);
+		gddr_speed = MIN_GDDR_SPEED;
 	}
 
 	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
-		/* Error */
-		/* TODO: Handle this more gracefully */
-		return;
+		LOG_ERR("Failed to set GDDR memory clock to requested: %d Mbps\n", gddr_speed);
+		return -EIO;
 	}
 
-	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
-		if ((dram_mask >> gddr_inst) & 1) {
-			LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size);
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size)) {
+				LOG_ERR("Failed to load MRISC FW config to MRISC from ARC."
+					"Failed on GDDR instance %d.\n",
+					gddr_inst);
+				return -EIO;
+			}
+			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
 			ReleaseMriscReset(gddr_inst);
 		}
 	}
 
-	/* TODO: Check for MRISC FW success / failure */
+	return EXIT_SUCCESS;
 }
 
 static void SerdesEthInit(void)
@@ -392,10 +434,14 @@ static int InitHW(void)
 		InitResetInterrupt(1);
 	}
 
-	/* TODO: Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
+	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
+	bool init_errors = false;
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		InitMrisc();
+		if (InitMrisc()) {
+			LOG_ERR("Failed to initialize GDDR.\n");
+			init_errors = true;
+		}
 	}
 
 	/* TODO: Load ERISC (Ethernet RISC) FW to all ethernets (8 of them) */
@@ -427,6 +473,27 @@ static int InitHW(void)
 		}
 	}
 
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPE);
+	/* Check GDDR training status. */
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_INIT_TIMEOUT));
+
+		for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+			if (IS_BIT_SET(GetDramMask(), gddr_inst)) {
+				int error = CheckGddrTraining(gddr_inst, timeout);
+
+				if (error == -ETIMEDOUT) {
+					LOG_ERR("GDDR instance %d timed out during training.\n",
+						gddr_inst);
+					init_errors = true;
+				} else if (error) {
+					LOG_ERR("GDDR instance %d failed training.\n", gddr_inst);
+					init_errors = true;
+				}
+			}
+		}
+	}
+
 	/* Indicate successful HW Init */
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
 	/* Record FW ID */
@@ -435,7 +502,7 @@ static int InitHW(void)
 	} else {
 		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
 	}
-	boot_status0.f.hw_init_status = kHwInitDone;
+	boot_status0.f.hw_init_status = init_errors ? kHwInitError : kHwInitDone;
 	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
 
 	return 0;

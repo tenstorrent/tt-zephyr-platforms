@@ -8,12 +8,18 @@
 #include <noc.h>
 #include <noc2axi.h>
 #include <arc_dma.h>
+
+#include "fw_table.h"
 #include "gddr.h"
+#include "harvesting.h"
+
+
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
 #define MRISC_SETUP_TLB       13
 #define MRISC_L1_ADDR         (1ULL << 37)
+#define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
 
 volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
@@ -32,6 +38,24 @@ uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
 	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
 	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_L1_ADDR + addr);
+}
+
+uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_REG_ADDR + addr);
+	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr);
+}
+
+void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_REG_ADDR + addr);
+	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr, val);
 }
 
 void read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
@@ -101,4 +125,14 @@ int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *fw_cfg_image, uint32_t fw_cfg_siz
 	bool dma_pass = ArcDmaTransfer(fw_cfg_image, (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET,
 				       fw_cfg_size);
 	return dma_pass ? 0 : -1;
+}
+
+uint32_t GetDramMask(void)
+{
+	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
+
+	if (get_fw_table()->has_dram_table && get_fw_table()->dram_table.dram_mask_en) {
+		dram_mask &= get_fw_table()->dram_table.dram_mask;
+	}
+	return dram_mask;
 }
