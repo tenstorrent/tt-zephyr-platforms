@@ -41,7 +41,7 @@ int32_t ResetBoardByte(uint8_t *data, uint8_t size);
 
 void ChipResetRequest(void *arg);
 void UpdateFanSpeedRequest(uint32_t fan_speed);
-void UpdateAutoRstTimeoutRequest(uint32_t timeout);
+void UpdateAutoResetTimeoutRequest(uint32_t timeout);
 void UpdateTelemHeartbeatRequest(uint32_t heartbeat);
 
 typedef struct bmStaticInfo {
