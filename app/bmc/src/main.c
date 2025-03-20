@@ -316,6 +316,13 @@ int main(void)
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
 
+	/* Start auto-reset timer */
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		chip->data.auto_reset_timeout = 1000;
+		k_timer_start(&chip->auto_reset_timer, K_MSEC(chip->data.auto_reset_timeout),
+			      K_NO_WAIT);
+	}
+
 	/* No mechanism for getting bl version... yet */
 	bmStaticInfo static_info = (bmStaticInfo){.version = 1,
 						  .bl_version = 0,

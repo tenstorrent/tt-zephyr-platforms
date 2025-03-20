@@ -50,8 +50,6 @@ static struct k_timer telem_update_timer;
 static struct k_work telem_update_worker;
 static int telem_update_interval = 100;
 
-static int auto_reset_timeout;
-
 uint32_t ConvertFloatToTelemetry(float value)
 {
 	/* Convert float to signed int 16.16 format */
@@ -303,7 +301,7 @@ static void telemetry_work_handler(struct k_work *work)
 {
 	/* Repeat fetching of dynamic telemetry values */
 	update_telemetry();
-	if (auto_reset_timeout != 0) {
+	if (IS_ENABLED(CONFIG_TT_AUTO_RESET)) {
 		UpdateTelemHeartbeatRequest(telemetry[TIMER_HEARTBEAT]);
 	}
 }

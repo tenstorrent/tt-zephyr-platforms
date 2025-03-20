@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cm2bm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
 #include "fw_table.h"
@@ -53,6 +54,10 @@ int main(void)
 		init_telemetry(APPVERSION);
 		if (get_fw_table()->feature_enable.fan_ctrl_en) {
 			init_fan_ctrl();
+		}
+
+		if (!IS_ENABLED(CONFIG_TT_AUTO_RESET)) {
+			UpdateAutoResetTimeoutRequest(0);
 		}
 
 		/* These timers are split out from their init functions since their work tasks have
