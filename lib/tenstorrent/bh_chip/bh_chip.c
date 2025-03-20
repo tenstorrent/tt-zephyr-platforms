@@ -147,7 +147,55 @@ int therm_trip_gpio_setup(struct bh_chip *chip)
 	}
 	gpio_init_callback(&chip->therm_trip_cb, therm_trip_detected,
 			   BIT(chip->config.therm_trip.pin));
-	ret = gpio_add_callback(chip->config.therm_trip.port, &chip->therm_trip_cb);
+	ret = gpio_add_callback_dt(&chip->config.therm_trip, &chip->therm_trip_cb);
+
+	return ret;
+}
+
+void pgood_fault_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	static const struct gpio_dt_spec board_fault_led =
+		GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, pgood_cb);
+
+	/* Assert board fault */
+	gpio_pin_set_dt(&board_fault_led, 1);
+	/* Report over SMBus - to add later */
+	/* Assert ASIC reset */
+	bh_chip_assert_asic_reset(chip);
+	/* Once board fault comes back up */
+	while (!gpio_pin_get_dt(&board_fault_led)) {
+	}
+	/* Follow out of reset procedure */
+	bh_chip_reset_chip(chip, true);
+	/* Deassert board fault */
+	gpio_pin_set_dt(&board_fault_led, 0);
+
+	/* If PGOOD goes down again within 1 second, then there is a hardware fault */
+	k_sleep(K_MSEC(1000));
+	if (!gpio_pin_get_dt(&chip->config.pgood)) {
+		gpio_pin_set_dt(&board_fault_led, 1);
+		/* Do not deassert ASIC reset until power cycle */
+		bh_chip_assert_asic_reset(chip);
+		/* Report more severe fault over IPMI - to add later */
+	}
+}
+
+int pgood_gpio_setup(struct bh_chip *chip)
+{
+	/* Set up PGOOD interrupt */
+	int ret;
+
+	ret = gpio_pin_configure_dt(&chip->config.pgood, GPIO_INPUT);
+	if (ret != 0) {
+		return ret;
+	}
+	ret = gpio_pin_interrupt_configure_dt(&chip->config.pgood, GPIO_INT_EDGE_TO_INACTIVE);
+	if (ret != 0) {
+		return ret;
+	}
+	gpio_init_callback(&chip->pgood_cb, pgood_fault_detected, BIT(chip->config.pgood.pin));
+	ret = gpio_add_callback_dt(&chip->config.pgood, &chip->pgood_cb);
 
 	return ret;
 }
