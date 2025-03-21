@@ -5,7 +5,6 @@
  */
 
 #include <tenstorrent/fan_ctrl.h>
-#include <tenstorrent/tt_smbus.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/logging/log.h>

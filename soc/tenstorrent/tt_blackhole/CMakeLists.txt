@@ -5,6 +5,7 @@ if(CONFIG_SOC_TT_BLACKHOLE_BMC)
 endif()
 
 if(CONFIG_SOC_TT_BLACKHOLE_SMC)
+  zephyr_include_directories_ifdef(CONFIG_ARC_EARLY_SOC_INIT ${ZEPHYR_BASE}/soc/snps/hsdk4xd)
   if(COMPILER STREQUAL gcc)
     # GNU compiler options
     zephyr_compile_options(-mno-sdata)
