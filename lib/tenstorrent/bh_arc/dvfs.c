@@ -44,7 +44,7 @@ void InitDVFS(void)
 {
 	InitVFCurve();
 	InitVoltagePPM();
-	InitAiclkPPM();
+	InitArbMaxVoltage();
 	InitThrottlers();
 	dvfs_enabled = true;
 }

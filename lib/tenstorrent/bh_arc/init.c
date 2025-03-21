@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "aiclk_ppm.h"
 #include "avs.h"
 #include "cat.h"
 #include "dvfs.h"
@@ -353,6 +354,8 @@ static int InitHW(void)
 		/* Deassert RISC reset from reset_unit */
 		DeassertRiscvResets();
 		PLLInit();
+		/* Initialize some AICLK tracking variables */
+		InitAiclkPPM();
 	}
 
 	/* Initialize the serdes based on board type and asic location - data will be in fw_table */

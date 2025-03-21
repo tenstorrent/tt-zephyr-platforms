@@ -43,6 +43,7 @@ void SetAiclkArbMin(AiclkArbMin arb_min, float freq);
 void CalculateTargAiclk(void);
 void DecreaseAiclk(void);
 void IncreaseAiclk(void);
+void InitArbMaxVoltage(void);
 void InitAiclkPPM(void);
 uint8_t ForceAiclk(uint32_t freq);
 

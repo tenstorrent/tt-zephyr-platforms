@@ -111,6 +111,12 @@ uint32_t GetMaxAiclkForVoltage(uint32_t voltage)
 	return low_freq - 1;
 }
 
+void InitArbMaxVoltage(void)
+{
+	/* ArbMaxVoltage is statically set to the frequency of the maximum voltage */
+	SetAiclkArbMax(kAiclkArbMaxVoltage, GetMaxAiclkForVoltage(voltage_arbiter.vdd_max));
+}
+
 void InitAiclkPPM(void)
 {
 	aiclk_ppm.boot_freq = GetAICLK();
@@ -128,9 +134,6 @@ void InitAiclkPPM(void)
 	for (int i = 0; i < kAiclkArbMaxCount; i++) {
 		aiclk_ppm.arbiter_max[i] = aiclk_ppm.fmax;
 	}
-
-	/* ArbMaxVoltage is statically set to the frequency of the maximum voltage */
-	SetAiclkArbMax(kAiclkArbMaxVoltage, GetMaxAiclkForVoltage(voltage_arbiter.vdd_max));
 
 	for (int i = 0; i < kAiclkArbMinCount; i++) {
 		aiclk_ppm.arbiter_min[i] = aiclk_ppm.fmin;
