@@ -14,6 +14,7 @@
 #define MRISC_FW_NOC2AXI_PORT 0
 #define MRISC_SETUP_TLB       13
 #define MRISC_L1_ADDR         (1ULL << 37)
+#define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
 
 volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
@@ -32,6 +33,24 @@ uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
 	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
 	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_L1_ADDR + addr);
+}
+
+uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_REG_ADDR + 0xff000000);
+	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr);
+}
+
+void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_REG_ADDR + addr);
+	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr, val);
 }
 
 void read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
