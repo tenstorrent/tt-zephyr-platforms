@@ -124,8 +124,9 @@ void ina228_current_update(void)
 
 	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
 	sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &current_sensor_val);
-	uint32_t current = (current_sensor_val.val1 << 16) |
-			   ((current_sensor_val.val2 / 100) & 0xFFFF); /* Truncate */
+
+	float current_flt = current_sensor_val.val1 + current_sensor_val.val2 / 1000000.0;
+	int32_t current = current_flt * 65536;
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		bh_chip_set_input_current(chip, &current);
