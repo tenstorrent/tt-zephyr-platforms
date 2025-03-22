@@ -145,6 +145,7 @@ typedef enum {
 
 void init_telemetry(uint32_t app_version);
 uint32_t ConvertFloatToTelemetry(float value);
+float ConvertTelemetryToFloat(int32_t value);
 void StartTelemetryTimer(void);
 void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);

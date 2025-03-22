@@ -67,6 +67,16 @@ uint32_t ConvertFloatToTelemetry(float value)
 	return ret_value;
 }
 
+float ConvertTelemetryToFloat(int32_t value)
+{
+	/* Convert signed int 16.16 format to float */
+	if (value == INT32_MIN) {
+		return FLT_MAX;
+	} else {
+		return value / 65536.0;
+	}
+}
+
 static void UpdateGddrTelemetry(void)
 {
 	/* We pack multiple metrics into one field, so need to clear first. */

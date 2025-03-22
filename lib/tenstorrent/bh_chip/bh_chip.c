@@ -63,7 +63,7 @@ int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
 	return ret;
 }
 
-int bh_chip_set_input_current(struct bh_chip *chip, uint32_t *current)
+int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
 {
 	int ret;
 

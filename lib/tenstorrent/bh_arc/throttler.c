@@ -10,6 +10,7 @@
 #include "cm2bm_msg.h"
 #include "fw_table.h"
 #include "telemetry_internal.h"
+#include "telemetry.h"
 
 #define kThrottlerAiclkScaleFactor 500.0F
 #define DEFAULT_BOARD_PWR_LIMIT 150
@@ -173,7 +174,7 @@ void CalculateThrottlers(void)
 	UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
-	UpdateThrottler(kThrottlerBoardPwr, 12 * GetInputCurrent());
+	UpdateThrottler(kThrottlerBoardPwr, 12 * ConvertTelemetryToFloat(GetInputCurrent()));
 
 	for (ThrottlerId i = 0; i < kThrottlerCount; i++) {
 		UpdateThrottlerArb(i);
