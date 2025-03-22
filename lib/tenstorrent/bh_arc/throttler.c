@@ -173,7 +173,7 @@ void CalculateThrottlers(void)
 	UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
-	UpdateThrottler(kThrottlerBoardPwr, 12 * GetInputCurrent());
+	UpdateThrottler(kThrottlerBoardPwr, 12 * GetInputCurrentFloat());
 
 	for (ThrottlerId i = 0; i < kThrottlerCount; i++) {
 		UpdateThrottlerArb(i);
