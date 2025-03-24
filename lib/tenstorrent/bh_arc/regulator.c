@@ -227,36 +227,40 @@ void RegulatorInit(PcbType board_type)
 		/* VCORE */
 		I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
 
-		static const uint8_t data_b0[] = {0x15, 0x09, 0x3c, 0x08, 0x0a, 0x02, 0x0f, 0x00,
+		static const uint8_t vcore_b0[] = {0x15, 0x09, 0x3c, 0x08, 0x0a, 0x02, 0x0f, 0x00,
 						0x11, 0x00, 0x00, 0x00, 0x00, 0x41, 0x03, 0x00,
 						0x00, 0x0f, 0x0d, 0x0a, 0x00, 0x00};
-		static const uint8_t data_ca[] = {0x04, 0x78, 0x3c, 0x0f, 0x00};
-		static const uint8_t data_cb[] = {0x05, 0x50, 0x0e, 0x64, 0x28, 0x00};
-		static const uint8_t data_d3[] = {0x00};
-		static const uint8_t data_38[] = {0x08, 0x00};
-		static const uint8_t data_39[] = {0x0c, 0x00};
-		static const uint8_t data_e7[] = {0x01};
+		static const uint8_t vcore_ca[] = {0x04, 0x78, 0x3c, 0x0f, 0x00};
+		static const uint8_t vcore_cb[] = {0x05, 0x50, 0x0e, 0x64, 0x28, 0x00};
+		static const uint8_t vcore_d3[] = {0x00};
+		static const uint8_t vcore_38[] = {0x08, 0x00};
+		static const uint8_t vcore_39[] = {0x0c, 0x00};
+		static const uint8_t vcore_e7[] = {0x01};
 
-		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, data_b0, sizeof(data_b0));
-		I2CWriteBytes(PMBUS_MST_ID, 0xca, PMBUS_CMD_BYTE_SIZE, data_ca, sizeof(data_ca));
-		I2CWriteBytes(PMBUS_MST_ID, 0xcb, PMBUS_CMD_BYTE_SIZE, data_cb, sizeof(data_cb));
-		I2CWriteBytes(PMBUS_MST_ID, 0xd3, PMBUS_CMD_BYTE_SIZE, data_d3, sizeof(data_d3));
-		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, data_38, sizeof(data_38));
-		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, data_39, sizeof(data_39));
-		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, data_e7, sizeof(data_e7));
+		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, vcore_b0, sizeof(vcore_b0));
+		I2CWriteBytes(PMBUS_MST_ID, 0xca, PMBUS_CMD_BYTE_SIZE, vcore_ca, sizeof(vcore_ca));
+		I2CWriteBytes(PMBUS_MST_ID, 0xcb, PMBUS_CMD_BYTE_SIZE, vcore_cb, sizeof(vcore_cb));
+		I2CWriteBytes(PMBUS_MST_ID, 0xd3, PMBUS_CMD_BYTE_SIZE, vcore_d3, sizeof(vcore_d3));
+		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, vcore_38, sizeof(vcore_38));
+		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, vcore_39, sizeof(vcore_39));
+		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, vcore_e7, sizeof(vcore_e7));
 
 		/* VCOREM */
-		static const uint8_t data2_b0[] = {0x0f, 0x19, 0x2b, 0x08, 0x17, 0x07, 0x0f, 0x00,
+		static const uint8_t vcorem_b0[] = {0x0f, 0x19, 0x2b, 0x08, 0x17, 0x07, 0x0f, 0x00,
 						0x09, 0x63, 0x09, 0x00, 0x00, 0x3f, 0x3d, 0x3a};
-		static const uint8_t data2_38[] = {0x08, 0x00};
-		static const uint8_t data2_39[] = {0x0c, 0x00};
-		static const uint8_t data2_e7[] = {0x10};
+		static const uint8_t vcorem_38[] = {0x08, 0x00};
+		static const uint8_t vcorem_39[] = {0x0c, 0x00};
+		static const uint8_t vcorem_e7[] = {0x10};
 
 		I2CInit(I2CMst, P0V8_VCOREM_ADDR, I2CFastMode, PMBUS_MST_ID);
-		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, data2_b0, sizeof(data2_b0));
-		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, data2_38, sizeof(data2_38));
-		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, data2_39, sizeof(data2_39));
-		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, data2_e7, sizeof(data2_e7));
+		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, vcorem_b0,
+			sizeof(vcorem_b0));
+		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, vcorem_38,
+			sizeof(vcorem_38));
+		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, vcorem_39,
+			sizeof(vcorem_39));
+		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, vcorem_e7,
+			sizeof(vcorem_e7));
 	}
 
 	/* GDDRIO */
