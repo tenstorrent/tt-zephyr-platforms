@@ -12,6 +12,7 @@
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "timer.h"
+#include "harvesting.h"
 
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
@@ -40,13 +41,15 @@ static uint16_t read_max_gddr_temp(void)
 	gddr_telemetry_table_t telemetry;
 
 	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
-		read_gddr_telemetry_table(gddr_inst, &telemetry);
+		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
+			read_gddr_telemetry_table(gddr_inst, &telemetry);
 
-		if (telemetry.dram_temperature_bottom > max_temp) {
-			max_temp = telemetry.dram_temperature_bottom;
-		}
-		if (telemetry.dram_temperature_top > max_temp) {
-			max_temp = telemetry.dram_temperature_top;
+			if (telemetry.dram_temperature_bottom > max_temp) {
+				max_temp = telemetry.dram_temperature_bottom;
+			}
+			if (telemetry.dram_temperature_top > max_temp) {
+				max_temp = telemetry.dram_temperature_top;
+			}
 		}
 	}
 
