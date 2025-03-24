@@ -13,7 +13,7 @@
 #include "gddr.h"
 #include "harvesting.h"
 
-
+#include <zephyr/logging/log.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -21,6 +21,8 @@
 #define MRISC_L1_ADDR         (1ULL << 37)
 #define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
+
+LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
 volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
 {
@@ -58,19 +60,26 @@ void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr, val);
 }
 
-void read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
+int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
 {
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 	bool dma_pass = ArcDmaTransfer((const void *) (mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
 		gddr_telemetry, sizeof(*gddr_telemetry));
-	if (dma_pass) {
-		return;
+	if (!dma_pass) {
+		/* If DMA failed, can read 32b at a time via NOC2AXI */
+		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
+			((uint32_t *)gddr_telemetry)[i] =
+				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
+		}
 	}
-	/* If DMA failed, can read 32b at a time via NOC2AXI */
-	for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
-		((uint32_t *)gddr_telemetry)[i] = MriscL1Read32(gddr_inst,
-			GDDR_TELEMETRY_TABLE_ADDR + i * 4);
+	/* Check that version matches expectation. */
+	if (gddr_telemetry->telemetry_table_version != GDDR_TELEMETRY_TABLE_T_VERSION) {
+		LOG_WRN_ONCE("GDDR telemetry table version mismatch: %d (expected %d)",
+			     gddr_telemetry->telemetry_table_version,
+			     GDDR_TELEMETRY_TABLE_T_VERSION);
+		return -ENOTSUP;
 	}
+	return 0;
 }
 
 void ReleaseMriscReset(uint8_t gddr_inst)

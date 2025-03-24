@@ -28,7 +28,7 @@
 #define MRISC_INIT_STARTED  0x0
 #define MRISC_INIT_TIMEOUT  1000 /* In ms */
 
-void read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
+int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
 void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable);
 int LoadMriscFw(uint8_t gddr_inst, uint8_t *fw_image, uint32_t fw_size);
 int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *fw_cfg_image, uint32_t fw_cfg_size);

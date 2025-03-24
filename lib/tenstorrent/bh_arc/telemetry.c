@@ -25,6 +25,9 @@
 
 #include <tenstorrent/post_code.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -82,7 +85,11 @@ static void UpdateGddrTelemetry(void)
 		gddr_telemetry_table_t gddr_telemetry;
 		/* Harvested instances should read 0b00 for status. */
 		if (IS_BIT_SET(tile_enable.gddr_enabled, i)) {
-			read_gddr_telemetry_table(i, &gddr_telemetry);
+			if (read_gddr_telemetry_table(i, &gddr_telemetry) < 0) {
+				LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
+					     "updating telemetry");
+				continue;
+			}
 			/* DDR Status:
 			 * [0] - Training complete GDDR 0
 			 * [1] - Error GDDR 0
@@ -156,9 +163,13 @@ static void write_static_telemetry(uint32_t app_version)
 		/* Use first available instance. */
 		uint32_t gddr_inst = find_lsb_set(tile_enable.gddr_enabled) - 1;
 
-		read_gddr_telemetry_table(gddr_inst, &gddr_telemetry);
-		telemetry[GDDR_FW_VERSION] = (gddr_telemetry.mrisc_fw_version_major << 16) |
-			gddr_telemetry.mrisc_fw_version_minor;
+		if (read_gddr_telemetry_table(gddr_inst, &gddr_telemetry) < 0) {
+			LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
+				     "writing static telemetry");
+		} else {
+			telemetry[GDDR_FW_VERSION] = (gddr_telemetry.mrisc_fw_version_major << 16) |
+						     gddr_telemetry.mrisc_fw_version_minor;
+		}
 	}
 	telemetry[BM_APP_FW_VERSION] = 0x00000000;
 	telemetry[BM_BL_FW_VERSION] = 0x00000000;

@@ -18,12 +18,15 @@
 #include <tenstorrent/msg_type.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/logging/log.h>
 
 #ifdef CONFIG_ZTEST
 #define STATIC
 #else
 #define STATIC static
 #endif
+
+LOG_MODULE_REGISTER(fan_ctrl, CONFIG_TT_APP_LOG_LEVEL);
 
 static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
@@ -42,7 +45,11 @@ static uint16_t read_max_gddr_temp(void)
 
 	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
 		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
-			read_gddr_telemetry_table(gddr_inst, &telemetry);
+			if (read_gddr_telemetry_table(gddr_inst, &telemetry) < 0) {
+				LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
+					     "reading max GDDR temp");
+				continue;
+			}
 
 			if (telemetry.dram_temperature_bottom > max_temp) {
 				max_temp = telemetry.dram_temperature_bottom;
