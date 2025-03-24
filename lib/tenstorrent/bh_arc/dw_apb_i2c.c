@@ -85,6 +85,7 @@
 /* IC abort source */
 /* starting from bit21, bit20-0 is reserved. */
 #define IC_ABRT_A3_STATE (0x1 << 21)
+#define IC_VERIFY_FAIL (0x1 << 22)
 
 #define GET_I2C_OFFSET(REG_NAME) DW_APB_I2C_##REG_NAME##_REG_OFFSET
 
@@ -507,6 +508,47 @@ uint32_t I2CReadBytes(uint32_t id, uint16_t command, uint32_t command_byte_size,
 		FlipBytes(p_read_buf, data_byte_size);
 	}
 	return ic_error;
+}
+
+/**
+ * @brief I2C Read-Modify-Write-Verify
+ */
+uint32_t I2CRMWV(uint32_t id, uint16_t command, uint32_t command_byte_size, const uint8_t *p_data,
+		 const uint8_t *p_mask, uint32_t data_byte_size)
+{
+	uint32_t ic_error;
+	uint8_t buffer[data_byte_size];
+
+	/* Read */
+	ic_error = I2CReadBytes(id, command, command_byte_size, buffer, data_byte_size, 0);
+	if (ic_error) {
+		return ic_error;
+	}
+
+	/* Modify */
+	for (uint32_t i = 0; i < data_byte_size; i++) {
+		buffer[i] = (buffer[i] & ~p_mask[i]) | (p_data[i] & p_mask[i]);
+	}
+
+	/* Write */
+	ic_error = I2CWriteBytes(id, command, command_byte_size, buffer, data_byte_size);
+	if (ic_error) {
+		return ic_error;
+	}
+
+	/* Verify */
+	ic_error = I2CReadBytes(id, command, command_byte_size, buffer, data_byte_size, 0);
+	if (ic_error) {
+		return ic_error;
+	}
+
+	for (uint32_t i = 0; i < data_byte_size; i++) {
+		if ((buffer[i] & p_mask[i]) != (p_data[i] & p_mask[i])) {
+			return IC_VERIFY_FAIL;
+		}
+	}
+
+	return 0;
 }
 
 void SetI2CSlaveCallbacks(uint32_t id, const struct i2c_target_callbacks *cb)

@@ -10,12 +10,15 @@
 #include <float.h> /* for FLT_MAX */
 #include <stdint.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "avs.h"
 #include "dw_apb_i2c.h"
 #include "timer.h"
+
+LOG_MODULE_REGISTER(regulator);
 
 #define LINEAR_FORMAT_CONSTANT (1 << 9)
 #define SCALE_LOOP             0.335f
@@ -221,46 +224,171 @@ void SwitchVoutControl(VoltageCmdSource source)
 	vout_cmd_source = source;
 }
 
-void RegulatorInit(PcbType board_type)
+uint32_t RegulatorInit(PcbType board_type)
 {
+	/* Helpers used in this function */
+	#define REGULATOR_DATA(regulator, cmd) \
+		{0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask, \
+		sizeof(regulator##_##cmd##_data)}
+
+	typedef struct {
+		uint8_t cmd;
+		const uint8_t *data;
+		const uint8_t *mask;
+		uint32_t size;
+	} RegulatorData;
+
+	uint32_t aggregate_i2c_errors = 0;
+	uint32_t i2c_error = 0;
+
 	if (board_type == PcbTypeP150) {
 		/* VCORE */
+		static const uint8_t vcore_b0_data[] = {
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x02, 0x00, 0x00,
+			0x11, 0x00, 0x00, 0x00,
+			0x00, 0x41, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00};
+		static const uint8_t vcore_b0_mask[] = {
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x1f, 0x00, 0x00,
+			0x1f, 0x00, 0x00, 0x00,
+			0x00, 0x7f, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00};
+
+		BUILD_ASSERT(sizeof(vcore_b0_data) == sizeof(vcore_b0_mask));
+
+		static const uint8_t vcore_cb_data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+		static const uint8_t vcore_cb_mask[] = {0x00, 0x07, 0x00, 0x00, 0x00, 0x00};
+
+		BUILD_ASSERT(sizeof(vcore_cb_data) == sizeof(vcore_cb_mask));
+
+		static const uint8_t vcore_d3_data[] = {0x00};
+		static const uint8_t vcore_d3_mask[] = {0x80};
+
+		BUILD_ASSERT(sizeof(vcore_d3_data) == sizeof(vcore_d3_mask));
+
+		static const uint8_t vcore_ca_data[] = {0x00, 0x78, 0x00, 0x00, 0x00};
+		static const uint8_t vcore_ca_mask[] = {0x00, 0xff, 0x00, 0x00, 0x00};
+
+		BUILD_ASSERT(sizeof(vcore_ca_data) == sizeof(vcore_ca_mask));
+
+		static const uint8_t vcore_38_data[] = {0x08, 0x00};
+		static const uint8_t vcore_38_mask[] = {0xff, 0x00};
+
+		BUILD_ASSERT(sizeof(vcore_38_data) == sizeof(vcore_38_mask));
+
+		static const uint8_t vcore_39_data[] = {0x0c, 0x00};
+		static const uint8_t vcore_39_mask[] = {0xff, 0x00};
+
+		BUILD_ASSERT(sizeof(vcore_39_data) == sizeof(vcore_39_mask));
+
+		static const uint8_t vcore_e7_data[] = {0x01};
+		static const uint8_t vcore_e7_mask[] = {0x07};
+
+		BUILD_ASSERT(sizeof(vcore_e7_data) == sizeof(vcore_e7_mask));
+
+		static const RegulatorData vcore_data[] = {
+			REGULATOR_DATA(vcore, b0),
+			REGULATOR_DATA(vcore, cb),
+			REGULATOR_DATA(vcore, d3),
+			REGULATOR_DATA(vcore, ca),
+			REGULATOR_DATA(vcore, 38),
+			REGULATOR_DATA(vcore, 39),
+			REGULATOR_DATA(vcore, e7),
+		};
+
 		I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
 
-		static const uint8_t vcore_b0[] = {0x15, 0x09, 0x3c, 0x08, 0x0a, 0x02, 0x0f, 0x00,
-						0x11, 0x00, 0x00, 0x00, 0x00, 0x41, 0x03, 0x00,
-						0x00, 0x0f, 0x0d, 0x0a, 0x00, 0x00};
-		static const uint8_t vcore_ca[] = {0x04, 0x78, 0x3c, 0x0f, 0x00};
-		static const uint8_t vcore_cb[] = {0x05, 0x50, 0x0e, 0x64, 0x28, 0x00};
-		static const uint8_t vcore_d3[] = {0x00};
-		static const uint8_t vcore_38[] = {0x08, 0x00};
-		static const uint8_t vcore_39[] = {0x0c, 0x00};
-		static const uint8_t vcore_e7[] = {0x01};
+		ARRAY_FOR_EACH_PTR(vcore_data, regulator_data) {
+			LOG_DBG("Vcore regulator init on cmd %#x", regulator_data->cmd);
+			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+				regulator_data->mask, regulator_data->size);
 
-		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, vcore_b0, sizeof(vcore_b0));
-		I2CWriteBytes(PMBUS_MST_ID, 0xca, PMBUS_CMD_BYTE_SIZE, vcore_ca, sizeof(vcore_ca));
-		I2CWriteBytes(PMBUS_MST_ID, 0xcb, PMBUS_CMD_BYTE_SIZE, vcore_cb, sizeof(vcore_cb));
-		I2CWriteBytes(PMBUS_MST_ID, 0xd3, PMBUS_CMD_BYTE_SIZE, vcore_d3, sizeof(vcore_d3));
-		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, vcore_38, sizeof(vcore_38));
-		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, vcore_39, sizeof(vcore_39));
-		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, vcore_e7, sizeof(vcore_e7));
+			if (i2c_error) {
+				LOG_WRN("Vcore regulator init retried on cmd %#x with error %#x",
+					regulator_data->cmd, i2c_error);
+				/* Retry once */
+				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+					regulator_data->mask, regulator_data->size);
+				if (i2c_error) {
+					LOG_ERR("Vcore regulator init failed on cmd %#x "
+						"with error %#x",
+						regulator_data->cmd, i2c_error);
+					aggregate_i2c_errors |= i2c_error;
+				} else {
+					LOG_INF("Vcore regulator init succeeded on cmd %#x",
+						regulator_data->cmd);
+				}
+			}
+		}
 
 		/* VCOREM */
-		static const uint8_t vcorem_b0[] = {0x0f, 0x19, 0x2b, 0x08, 0x17, 0x07, 0x0f, 0x00,
-						0x09, 0x63, 0x09, 0x00, 0x00, 0x3f, 0x3d, 0x3a};
-		static const uint8_t vcorem_38[] = {0x08, 0x00};
-		static const uint8_t vcorem_39[] = {0x0c, 0x00};
-		static const uint8_t vcorem_e7[] = {0x10};
+		static const uint8_t vcorem_b0_data[] = {
+			0x00, 0x00, 0x2b, 0x00,
+			0x00, 0x07, 0x00, 0x00,
+			0x09, 0x00, 0x09, 0x00,
+			0x00, 0x00, 0x00, 0x00};
+		static const uint8_t vcorem_b0_mask[] = {
+			0x00, 0x00, 0x3f, 0x00,
+			0x00, 0x1f, 0x00, 0x00,
+			0x1f, 0x00, 0x0f, 0x00,
+			0x00, 0x00, 0x00, 0x00};
+
+		BUILD_ASSERT(sizeof(vcorem_b0_data) == sizeof(vcorem_b0_mask));
+
+		static const uint8_t vcorem_38_data[] = {0x08, 0x00};
+		static const uint8_t vcorem_38_mask[] = {0xff, 0x00};
+
+		BUILD_ASSERT(sizeof(vcorem_38_data) == sizeof(vcorem_38_mask));
+
+		static const uint8_t vcorem_39_data[] = {0x0c, 0x00};
+		static const uint8_t vcorem_39_mask[] = {0xff, 0x00};
+
+		BUILD_ASSERT(sizeof(vcorem_39_data) == sizeof(vcorem_39_mask));
+
+		static const uint8_t vcorem_e7_data[] = {0x04};
+		static const uint8_t vcorem_e7_mask[] = {0x07};
+
+		BUILD_ASSERT(sizeof(vcorem_e7_data) == sizeof(vcorem_e7_mask));
+
+		static const RegulatorData vcorem_data[] = {
+			REGULATOR_DATA(vcorem, b0),
+			REGULATOR_DATA(vcorem, 38),
+			REGULATOR_DATA(vcorem, 39),
+			REGULATOR_DATA(vcorem, e7),
+		};
 
 		I2CInit(I2CMst, P0V8_VCOREM_ADDR, I2CFastMode, PMBUS_MST_ID);
-		I2CWriteBytes(PMBUS_MST_ID, 0xb0, PMBUS_CMD_BYTE_SIZE, vcorem_b0,
-			sizeof(vcorem_b0));
-		I2CWriteBytes(PMBUS_MST_ID, 0x38, PMBUS_CMD_BYTE_SIZE, vcorem_38,
-			sizeof(vcorem_38));
-		I2CWriteBytes(PMBUS_MST_ID, 0x39, PMBUS_CMD_BYTE_SIZE, vcorem_39,
-			sizeof(vcorem_39));
-		I2CWriteBytes(PMBUS_MST_ID, 0xe7, PMBUS_CMD_BYTE_SIZE, vcorem_e7,
-			sizeof(vcorem_e7));
+
+		ARRAY_FOR_EACH_PTR(vcorem_data, regulator_data) {
+			LOG_DBG("Vcorem regulator init on cmd %#x", regulator_data->cmd);
+			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+				regulator_data->mask, regulator_data->size);
+
+			if (i2c_error) {
+				LOG_WRN("Vcorem regulator init retried on cmd %#x with error %#x",
+					regulator_data->cmd, i2c_error);
+				/* Retry once */
+				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+					regulator_data->mask, regulator_data->size);
+				if (i2c_error) {
+					LOG_ERR("Vcorem regulator init failed on cmd %#x "
+						"with error %#x",
+						regulator_data->cmd, i2c_error);
+					aggregate_i2c_errors |= i2c_error;
+				} else {
+					LOG_INF("Vcorem regulator init succeeded on cmd %#x",
+						regulator_data->cmd);
+				}
+			}
+		}
 	}
 
 	/* GDDRIO */
@@ -296,6 +424,7 @@ void RegulatorInit(PcbType board_type)
 				      &mfr_ctrl_ops, MFR_CTRL_OPS_DATA_BYTE_SIZE);
 		}
 	}
+	return aggregate_i2c_errors;
 }
 
 static uint8_t set_voltage_handler(uint32_t msg_code, const struct request *request,

@@ -25,5 +25,5 @@ void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv);
 float GetVcoreCurrent(void);
 float GetVcorePower(void);
 void SwitchVoutControl(VoltageCmdSource source);
-void RegulatorInit(PcbType board_type);
+uint32_t RegulatorInit(PcbType board_type);
 #endif
