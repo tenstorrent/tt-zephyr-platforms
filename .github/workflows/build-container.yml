@@ -1,0 +1,88 @@
+name: Build Metal Container
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+
+jobs:
+  check-ci-manifest:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      build-container: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Check for Manifest Changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci:
+              - 'submanifests/ci.yaml'
+
+  build-container:
+    runs-on: [self-hosted, Linux]
+    needs: check-ci-manifest
+    if: ${{ needs.check-ci-manifest.outputs.build-container == 'true' }}
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/tt-zephyr-platforms/ubuntu-22-04-ci-image
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # FIXME: would be nice to either use the default here or a built-in github environment
+          # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
+          path: tt-zephyr-platforms
+          fetch-depth: 0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: tt-zephyr-platforms/.github
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: REPO_REV=${{ github.event.pull_request.head.sha }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          rm -rf tt-zephyr-platforms
