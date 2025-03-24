@@ -64,3 +64,9 @@ eth_property_table {
   eth_disable_mask: 0x3480
   eth_disable_mask_en: true
 }
+
+product_spec_harvesting {
+  dram_disable_count: 0
+  eth_disabled: false
+  tensix_col_disable_count: 2
+}
