@@ -8,7 +8,7 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include "dw_apb_i2c.h"
 #include <tenstorrent/reg.h>
 #include "efuse.h"

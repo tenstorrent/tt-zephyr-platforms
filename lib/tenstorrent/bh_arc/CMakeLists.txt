@@ -49,7 +49,6 @@ zephyr_library_sources(
   smbus_target.c
   spi_controller.c
   spi_eeprom.c
-  timer.c
 )
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
 if(CONFIG_ARC)

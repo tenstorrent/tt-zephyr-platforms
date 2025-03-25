@@ -12,10 +12,10 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include <tenstorrent/reg.h>
 #include "pll.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include "gpio.h"
 #include "telemetry.h"
 

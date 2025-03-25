@@ -10,7 +10,7 @@
 
 #include <tenstorrent/reg.h>
 #include "noc2axi.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include <tenstorrent/fw_table/read_only_table.h>
 #include <tenstorrent/fw_table/fw_table.h>
 #include "gpio.h"

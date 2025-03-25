@@ -8,7 +8,7 @@
 
 #include <zephyr/sys/util.h>
 
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include <tenstorrent/reg.h>
 #include "pll.h"
 

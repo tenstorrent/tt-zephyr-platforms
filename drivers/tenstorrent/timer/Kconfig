@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_TIMER
+	bool "Enable Tenstorrent Timer driver"
+	help
+	  Enable Tenstorrent Timer drivers.
+
+if TT_TIMER
+
+config TT_BH_ARC_TIMER
+	bool "Enable ARC RefClk Timer driver for Tenstorrent Blackhole"
+	help
+	  Enable the ARC RefClk Timer driver for Tenstorrent Blackhole SOC.
+
+endif # TT_TIMER

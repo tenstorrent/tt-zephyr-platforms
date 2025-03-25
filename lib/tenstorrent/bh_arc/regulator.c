@@ -15,7 +15,7 @@
 
 #include "avs.h"
 #include "dw_apb_i2c.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 
 #define LINEAR_FORMAT_CONSTANT (1 << 9)
 #define SCALE_LOOP             0.335f

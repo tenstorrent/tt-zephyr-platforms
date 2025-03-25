@@ -11,7 +11,7 @@
 #include "gddr.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include "harvesting.h"
 
 #include <tenstorrent/msgqueue.h>

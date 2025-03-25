@@ -11,7 +11,7 @@
 
 #include <tenstorrent/reg.h>
 #include "spi_eeprom.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 
 #define VCO_MIN_FREQ              1600
 #define VCO_MAX_FREQ              5000

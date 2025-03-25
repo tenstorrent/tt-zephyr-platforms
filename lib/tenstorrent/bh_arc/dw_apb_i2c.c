@@ -6,11 +6,11 @@
 
 #include <zephyr/drivers/i2c.h>
 #include <string.h>
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include "dw_apb_i2c.h"
 #include "asic_state.h"
 #include <tenstorrent/reg.h>
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 #include "util.h"
 
 #define DW_APB_I2C_REG_MAP_BASE_ADDR      0x80060000
