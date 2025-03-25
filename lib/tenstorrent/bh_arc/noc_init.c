@@ -18,7 +18,7 @@
 #include "noc.h"
 #include "noc2axi.h"
 #include <tenstorrent/fw_table/fw_table.h>
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "harvesting.h"
 #include "telemetry.h"
 

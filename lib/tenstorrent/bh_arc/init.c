@@ -20,7 +20,7 @@
 #include "pll.h"
 #include "pvt.h"
 #include <tenstorrent/fw_table/read_only_table.h>
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "regulator.h"
 #include "serdes_eth.h"
 #include "smbus_target.h"

@@ -13,7 +13,7 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "spi_controller.h"
 #include "util.h"
 

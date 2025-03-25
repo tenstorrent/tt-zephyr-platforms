@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "noc2axi.h"
 #include "timer.h"
 #include <tenstorrent/fw_table/read_only_table.h>

@@ -13,7 +13,7 @@
 #include <tenstorrent/msgqueue.h>
 
 #include "timer.h"
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "pll.h"
 #include "timer.h"
 #include "gpio.h"

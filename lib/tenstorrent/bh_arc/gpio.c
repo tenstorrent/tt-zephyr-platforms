@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "reg.h"
+#include <tenstorrent/reg.h>
 
 #define GPIOS_PER_REG 16
 

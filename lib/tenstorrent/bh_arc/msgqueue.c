@@ -15,7 +15,7 @@
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/msg_type.h>
 #include "status_reg.h"
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "irqnum.h"
 
 #define MSGHANDLER_COMPAT_MASK 0x1

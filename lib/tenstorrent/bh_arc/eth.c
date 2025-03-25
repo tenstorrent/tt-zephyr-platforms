@@ -8,7 +8,7 @@
 #include "serdes_eth.h"
 #include "noc2axi.h"
 #include "noc.h"
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include <tenstorrent/fw_table/read_only_table.h>
 #include <tenstorrent/fw_table/fw_table.h>
 #include "efuse.h"

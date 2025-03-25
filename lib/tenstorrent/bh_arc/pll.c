@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <zephyr/sys/util.h>
 
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "spi_eeprom.h"
 #include "timer.h"
 

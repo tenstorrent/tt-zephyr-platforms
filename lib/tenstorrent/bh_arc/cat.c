@@ -5,7 +5,7 @@
  */
 
 #include "gpio.h"
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "timer.h"
 
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR    0x80030168

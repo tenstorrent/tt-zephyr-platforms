@@ -11,7 +11,7 @@
 #include "pll.h"
 #include "pvt.h"
 #include <tenstorrent/fw_table/read_only_table.h>
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "regulator.h"
 #include "status_reg.h"
 #include "telemetry.h"
