@@ -87,48 +87,74 @@
 		chips = <&chip0 &chip1>;
 		primary = <1>;
 	};
+};
 
-	/*
-	 * Chip 1
-	 * sck: PA6
-	 * SO PC2
-	 * SI: PC3
-	 * RST: pc8
-	 * CS: pb12
-	 */
-	chip1_spi {
-		compatible = "zephyr,spi-bitbang";
+/*
+ * Added these pinctrl definitions from the file stm32g0b1v(b-c-e)ix-pinctrl.dtsi.
+ * These are not included in our default dtsi file stm32g0b1c(b-c-e)tx-pinctrl.dtsi
+ * but are required to configure the hardware spi "spi2".
+ * This is maybe a sign that we need to rethink our board hierarchy, but for now this
+ * seems like a "good enough" workaround.
+ */
+&pinctrl {
+	/omit-if-no-ref/ spi2_nss_pb12: spi2_nss_pb12 {
+		pinmux = <STM32_PINMUX('B', 12, AF0)>;
+		bias-pull-up;
+	};
+
+	/omit-if-no-ref/ spi2_sck_pb8: spi2_sck_pb8 {
+		pinmux = <STM32_PINMUX('B', 8, AF1)>;
+		bias-pull-down;
+		slew-rate = "very-high-speed";
+	};
+
+	/omit-if-no-ref/ spi2_miso_pc2: spi2_miso_pc2 {
+		pinmux = <STM32_PINMUX('C', 2, AF1)>;
+		bias-pull-down;
+	};
+
+	/omit-if-no-ref/ spi2_mosi_pc3: spi2_mosi_pc3 {
+		pinmux = <STM32_PINMUX('C', 3, AF1)>;
+		bias-pull-down;
+	};
+};
+
+/*
+ * Chip 1
+ * sck: PA6
+ * SO PC2
+ * SI: PC3
+ * RST: pc8
+ * CS: pb12
+ */
+&spi2 {
+	pinctrl-0 = <&spi2_nss_pb12 &spi2_sck_pb8
+			 &spi2_miso_pc2 &spi2_mosi_pc3>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	chip1_flash: flash@0 {
+		/* base properties */
+		compatible = "jedec,spi-nor";
 		status = "okay";
 
-		#address-cells = <1>;
-		#size-cells = <0>;
+		reset-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
-		clk-gpios = <&gpioa 6 GPIO_ACTIVE_HIGH>;
-		mosi-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
-		miso-gpios = <&gpioc 3 0>;
-		cs-gpios = <&gpiob 12 GPIO_ACTIVE_LOW>;
+		/* spi-device properties */
+		reg = <0>;
+		spi-max-frequency = <7999999>;
+		spi-cpol;
+		spi-cpha;
 
-		chip1_flash: flash@0 {
-			/* base properties */
-			compatible = "jedec,spi-nor";
-			status = "okay";
+		/* jedec,spi-nor properties */
+		size = <DT_SIZE_M(512)>; /* Size in bits */
 
-			/* spi-device properties */
-			reg = <0>;
-			spi-max-frequency = <7999999>;
-			spi-cpol;
-			spi-cpha;
+		/* jedec,spi-nor-common properties */
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <30000>;
 
-			/* jedec,spi-nor properties */
-			size = <DT_SIZE_M(512)>; /* Size in bits */
-
-			/* jedec,spi-nor-common properties */
-			has-dpd;
-			t-enter-dpd = <3000>;
-			t-exit-dpd = <30000>;
-
-			jedec-id = [20 bb 20];
-		};
+		jedec-id = [20 bb 20];
 	};
 };
 
