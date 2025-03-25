@@ -9,8 +9,8 @@
 #include "noc2axi.h"
 #include "noc.h"
 #include "reg.h"
-#include "read_only_table.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/read_only_table.h>
+#include <tenstorrent/fw_table/fw_table.h>
 #include "efuse.h"
 
 #define ETH_SETUP_TLB  0

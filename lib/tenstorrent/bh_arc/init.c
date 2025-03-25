@@ -9,8 +9,8 @@
 #include "dvfs.h"
 #include "eth.h"
 #include "fan_ctrl.h"
-#include "flash_info_table.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/flash_info_table.h>
+#include <tenstorrent/fw_table/fw_table.h>
 #include "gddr.h"
 #include "harvesting.h"
 #include "init_common.h"
@@ -19,7 +19,7 @@
 #include "pcie.h"
 #include "pll.h"
 #include "pvt.h"
-#include "read_only_table.h"
+#include <tenstorrent/fw_table/read_only_table.h>
 #include "reg.h"
 #include "regulator.h"
 #include "serdes_eth.h"

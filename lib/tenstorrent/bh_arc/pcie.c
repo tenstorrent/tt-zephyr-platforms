@@ -11,8 +11,8 @@
 #include "reg.h"
 #include "noc2axi.h"
 #include "timer.h"
-#include "read_only_table.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/read_only_table.h>
+#include <tenstorrent/fw_table/fw_table.h>
 #include "gpio.h"
 #include <zephyr/sys/util.h>
 

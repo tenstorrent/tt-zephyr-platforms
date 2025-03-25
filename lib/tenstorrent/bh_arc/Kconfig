@@ -4,8 +4,6 @@
 config TT_BH_ARC
 	bool "Blackhole ARC firmware library"
 	depends on NANOPB
-	# this is a hack
-	default y if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
 	help
 	  This option enables the Blackhole ARC firmware library.
 

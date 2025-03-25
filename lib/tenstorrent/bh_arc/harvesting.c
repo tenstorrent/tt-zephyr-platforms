@@ -6,7 +6,7 @@
 
 #include <zephyr/sys/util.h>
 #include "harvesting.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "functional_efuse.h"
 #include "noc.h"
 

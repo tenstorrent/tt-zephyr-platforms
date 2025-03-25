@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "read_only_table.h"
+#include <tenstorrent/fw_table/read_only_table.h>
 
 #include <pb_decode.h>
 #include <tenstorrent/tt_boot_fs.h>

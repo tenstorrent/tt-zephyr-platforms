@@ -1,0 +1,10 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_FW_TABLE
+	bool "Tenstorrent firmware table library"
+	depends on TT_BOOT_FS
+	depends on NANOPB
+	help
+	  Library for reading flash resident firmware tables, used for
+	  configuration of Tenstorrent devices

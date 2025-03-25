@@ -5,7 +5,7 @@
 
 #include "dvfs.h"
 #include "fan_ctrl.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "init_common.h"
 #include "smbus_target.h"
 #include "telemetry.h"

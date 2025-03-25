@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include "read_only_table.h"
+#include <tenstorrent/fw_table/read_only_table.h>
 
 typedef enum {
 	VoutCommand = 0,

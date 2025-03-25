@@ -8,7 +8,7 @@
 #include "throttler.h"
 #include "aiclk_ppm.h"
 #include "cm2bm_msg.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "telemetry_internal.h"
 
 #define kThrottlerAiclkScaleFactor 500.0F

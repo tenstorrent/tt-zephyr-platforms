@@ -7,7 +7,7 @@
 #include "fan_ctrl.h"
 
 #include "cm2bm_msg.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "gddr.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
