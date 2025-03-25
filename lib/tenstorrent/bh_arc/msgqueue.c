@@ -54,6 +54,31 @@ typedef union {
 
 #define RESET_UNIT_ARC_MISC_CNTL_REG_DEFAULT (0x00000000)
 
+#define MSI_CATCHER_BASE (APB_BASE_ADDR + 0xB0000)
+
+/* Read/Write to FIFO pops/pushes on the FIFO. 64 entries. APB SLVERR on overflow/underflow. */
+#define MSI_CATCHER_FIFO_OFFSET 0
+#define MSI_CATCHER_FIFO_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_FIFO_OFFSET)
+
+/* Read to flush clears the FIFO. */
+#define MSI_CATCHER_FLUSH_OFFSET 4
+#define MSI_CATCHER_FLUSH_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_FLUSH_OFFSET)
+
+#define MSI_CATCHER_STATUS_OFFSET 8
+#define MSI_CATCHER_STATUS_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_STATUS_OFFSET)
+
+typedef struct {
+	uint32_t msi_ready: 1; /* [0:0] -- FIFO can accept a push. (Out of reset and not full.) */
+	uint32_t unused: 7;
+	uint32_t msi_intr: 1; /* [8:8] -- FIFO is nonempty */
+	uint32_t msi_ovfl: 1; /* [9:9] -- FIFO above high water mark. (Full, by default.) */
+} MSI_CATCHER_STATUS_reg_t;
+
+typedef union {
+	uint32_t val;
+	MSI_CATCHER_STATUS_reg_t f;
+} MSI_CATCHER_STATUS_reg_u;
+
 /* Describes a single message queue. */
 struct message_queue {
 	struct message_queue_header header;
@@ -366,14 +391,67 @@ static void msgqueue_interrupt_handler(void *arg)
 	clear_msg_irq();
 	k_work_submit(&msgqueue_work);
 }
+
+static bool msi_catcher_nonempty(void)
+{
+	MSI_CATCHER_STATUS_reg_u status;
+
+	status.val = ReadReg(MSI_CATCHER_STATUS_REG_ADDR);
+	return status.f.msi_intr;
+}
+
+static uint32_t msi_catcher_pop(void)
+{
+	return ReadReg(MSI_CATCHER_FIFO_REG_ADDR);
+}
+
+static void msi_catcher_flush(void)
+{
+	ReadReg(MSI_CATCHER_FLUSH_REG_ADDR);
+}
+
+static void msgqueue_msi_interrupt_handler(void *arg)
+{
+	(void)(arg);
+
+	bool msi_for_msgqueue = false;
+
+	/* MSI catcher generates SLVERR if you read from an empty FIFO. */
+	while (msi_catcher_nonempty()) {
+		uint32_t msi_data = msi_catcher_pop();
+
+		if (msi_data == 0) {
+			msi_for_msgqueue = true;
+		}
+	}
+
+	if (msi_for_msgqueue) {
+		k_work_submit(&msgqueue_work);
+	}
+}
+
+static void msgqueue_msi_overflow_handler(void *arg)
+{
+	(void)(arg);
+
+	msi_catcher_flush();
+	k_work_submit(&msgqueue_work);
+}
 #endif
 
 void init_msgqueue(void)
 {
 	prepare_msg_queue();
+
 #ifdef CONFIG_BOARD_TT_BLACKHOLE
 	IRQ_CONNECT(IRQNUM_ARC_MISC_CNTL_IRQ0, 0, msgqueue_interrupt_handler, NULL, 0);
 	irq_enable(IRQNUM_ARC_MISC_CNTL_IRQ0);
+
+	IRQ_CONNECT(IRQNUM_MSI_CATCHER_NONEMPTY, 0, msgqueue_msi_interrupt_handler, NULL, 0);
+	irq_enable(IRQNUM_MSI_CATCHER_NONEMPTY);
+
+	IRQ_CONNECT(IRQNUM_MSI_CATCHER_OVERFLOW, 0, msgqueue_msi_overflow_handler, NULL, 0);
+	irq_enable(IRQNUM_MSI_CATCHER_OVERFLOW);
 
 	volatile STATUS_BOOT_STATUS0_reg_u *boot_status0 =
 		(volatile STATUS_BOOT_STATUS0_reg_u *)STATUS_BOOT_STATUS0_REG_ADDR;
