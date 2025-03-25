@@ -2,6 +2,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # zephyr-keep-sorted-start
-add_subdirectory_ifdef(CONFIG_TT_FUSE fuse)
-add_subdirectory_ifdef(CONFIG_TT_TIMER timer)
+add_subdirectory_ifdef(CONFIG_TT_BH_ARC_EFUSE blackhole)
 # zephyr-keep-sorted-stop

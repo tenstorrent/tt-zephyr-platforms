@@ -8,10 +8,8 @@ zephyr_library_sources_ifndef(
   aiclk_ppm.c
   clock_wave.c
   dvfs.c
-  efuse.c
   eth.c
   fan_ctrl.c
-  functional_efuse.c
   gddr.c
   harvesting.c
   i2c_messages.c

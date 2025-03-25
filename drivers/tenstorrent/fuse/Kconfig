@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_FUSE
+	bool "Enable Tenstorrent Fuse drivers"
+	help
+	  Enable Tenstorrent Fuse drivers.
+
+if TT_FUSE
+
+config TT_BH_ARC_EFUSE
+	bool "Enable ARC EFUSE driver for Tenstorrent Blackhole"
+	help
+	  Enable the ARC EFUSE driver for Tenstorrent Blackhole SOC.
+
+endif # TT_FUSE

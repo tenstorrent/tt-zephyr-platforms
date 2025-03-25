@@ -4,6 +4,7 @@
 menu "Tenstorrent Device Drivers"
 
 # zephyr-keep-sorted-start
+rsource "fuse/Kconfig"
 rsource "timer/Kconfig"
 # zephyr-keep-sorted-stop
 
