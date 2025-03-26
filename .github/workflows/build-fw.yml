@@ -25,7 +25,11 @@ jobs:
           - p150a
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/prepare-zephyr
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
 
       - name: Generate BOARD
         shell: bash
@@ -61,7 +65,7 @@ jobs:
             --sysbuild \
             -p \
             -b $BOARD \
-            app/smc \
+            tt-zephyr-platforms/app/smc \
             -- \
               -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
               -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
@@ -87,7 +91,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/prepare-zephyr
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
 
       - name: Build recovery firmware
         shell: bash
@@ -96,7 +104,7 @@ jobs:
             -d build-recovery \
             -p auto \
             -b tt_blackhole/tt_blackhole/smc \
-            app/smc \
+            tt-zephyr-platforms/app/smc \
             -- \
               -DEXTRA_CONF_FILE=recovery.conf \
               -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y

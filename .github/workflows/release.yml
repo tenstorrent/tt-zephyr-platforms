@@ -16,7 +16,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/prepare-zephyr
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
 
       - name: Get the version
         id: get_version

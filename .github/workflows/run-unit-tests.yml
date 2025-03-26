@@ -13,13 +13,17 @@ jobs:
   unit-test:
     env:
       platforms: -p unit_testing -p native_sim
-      roots: -T tests -T samples
+      roots: -T tt-zephyr-platforms/tests -T tt-zephyr-platforms/samples
     strategy:
       fail-fast: false
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/prepare-zephyr
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
 
       - id: build
         shell: bash
@@ -52,14 +56,18 @@ jobs:
     env:
       platforms: -p native_sim/native/64
       tags: --tag tt_sim
-      configroots: --alt-config-root test-conf
-      roots: -T ../zephyr
+      configroots: --alt-config-root tt-zephyr-platforms/test-conf
+      roots: -T zephyr
     strategy:
       fail-fast: false
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/prepare-zephyr
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
 
       - name: build and run
         shell: bash
