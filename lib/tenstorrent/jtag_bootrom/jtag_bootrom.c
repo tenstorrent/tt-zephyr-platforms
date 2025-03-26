@@ -54,7 +54,7 @@ static const __maybe_unused struct gpio_dt_spec arc_rambus_jtag_mux_sel =
 static const __maybe_unused struct gpio_dt_spec arc_l2_jtag_mux_sel =
 	GPIO_DT_SPEC_GET_OR(DT_NODELABEL(arc_l2_jtag_mux_sel), gpios, {0});
 
-#if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#ifdef CONFIG_JTAG_LOAD_ON_PRESET
 static const struct gpio_dt_spec preset_trigger = GPIO_DT_SPEC_GET(DT_PATH(preset_trigger), gpios);
 
 void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *cb, uint32_t pins)
@@ -146,7 +146,7 @@ int jtag_bootrom_init(struct bh_chip *chip)
 		return ret;
 	}
 
-#if IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET)
+#ifdef CONFIG_JTAG_LOAD_ON_PRESET
 	ret = gpio_pin_configure_dt(&preset_trigger, GPIO_INPUT);
 	if (ret) {
 		return ret;
@@ -175,7 +175,7 @@ int jtag_bootrom_init(struct bh_chip *chip)
 int jtag_bootrom_patch_offset(struct bh_chip *chip, const uint32_t *patch, size_t patch_len,
 			      const uint32_t start_addr)
 {
-#if IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
 	const struct device *dev = chip->config.jtag;
 
 	jtag_reset(dev);
@@ -241,7 +241,7 @@ int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t 
 
 void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 {
-#if IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
 	const struct device *dev = chip->config.jtag;
 
 	jtag_reset(dev);
