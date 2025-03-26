@@ -13,6 +13,10 @@ menu "Tenstorrent App Configuration"
 config TT_ASSEMBLY_TEST
 	bool "Output additional debug if we are running in a test environment"
 
+config JTAG_SELECT_1
+	select BOARD_P300
+	bool "Select chip 1 JTAG"
+
 # common log level for applications
 module = TT_APP
 module-str = "Tenstorrent app"

@@ -37,6 +37,14 @@ static const struct gpio_dt_spec board_fault_led =
 	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
 static const struct device *const ina228 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(ina228));
 
+#if CONFIG_BOARD_P300
+static const struct gpio_dt_spec sys_jtag_mux =
+	GPIO_DT_SPEC_GET_OR(DT_PATH(sys_jtag_mux), gpios, {0});
+
+static const struct gpio_dt_spec arc_jtag_mux =
+	GPIO_DT_SPEC_GET_OR(DT_PATH(arc_jtag_mux), gpios, {0});
+#endif
+
 int update_fw(void)
 {
 	/* To get here we are already running known good fw */
@@ -266,6 +274,21 @@ int main(void)
 			gpio_pin_configure_dt(&chip->config.spi_mux, GPIO_OUTPUT_ACTIVE);
 		}
 	}
+
+#if CONFIG_BOARD_P300
+	gpio_pin_configure_dt(&sys_jtag_mux, GPIO_OUTPUT_ACTIVE);
+	gpio_pin_configure_dt(&arc_jtag_mux, GPIO_OUTPUT_ACTIVE);
+
+	/* Somewhat unintuatively active selects chip 0 */
+#ifdef CONFIG_JTAG_SELECT_1
+	int jtag_sel = 1;
+#else
+	int jtag_sel = 0;
+#endif
+
+	gpio_pin_set_dt(&sys_jtag_mux, jtag_sel);
+	gpio_pin_set_dt(&arc_jtag_mux, jtag_sel);
+#endif
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
 		gpio_pin_configure_dt(&board_fault_led, GPIO_OUTPUT_INACTIVE);
