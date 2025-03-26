@@ -1,4 +1,4 @@
-name: Hardware Smoke Tests
+name: Hardware Tests
 
 on:
   pull_request:
@@ -394,4 +394,154 @@ jobs:
           rm -rf luwen
           # Cleanup the checked out repo, we can leave everything else
           rm -rf tt-zephyr-platforms
+          rm -rf .west
+
+  hardware-metal-test:
+    if: github.repository_owner == 'tenstorrent'
+    needs: smoke-e2e-test
+    strategy:
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - yyz-zephyr-lab-p100
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
+    runs-on: ${{ matrix.config.runs-on }}
+    env:
+      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
+      "ZEPHYR_BASE": ${{ github.workspace }}/zephyr
+    container:
+      image: ghcr.io/${{ github.repository }}/tt-zephyr-platforms/ubuntu-22-04-ci-image:latest
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /dev/hugepages:/dev/hugepages
+        - /opt/SEGGER:/opt/SEGGER
+        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
+        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # FIXME: would be nice to either use the default here or a built-in github environment
+          # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
+          path: tt-zephyr-platforms
+          fetch-depth: 0
+
+      - name: Rebase onto the target branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          cd tt-zephyr-platforms
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          git remote -v
+          # Update the remote ref
+          git fetch origin
+          # Ensure there's no merge commits in the PR
+          if [ $(git rev-list --merges --count origin/${BASE_REF}..) -ne 0 ]; then
+            echo "::error ::Merge commits not allowed, rebase instead"
+            exit 1
+          fi
+          rm -fr ".git/rebase-apply"
+          rm -fr ".git/rebase-merge"
+          git rebase origin/${BASE_REF}
+          git clean -f -d
+          # debug
+          git log  --pretty=oneline | head -n 10
+
+      - name: west setup
+        # FIXME: would be ideal to use a built-in github environment variable
+        # instead of tt-zephyr-platforms
+        run: |
+          west init -l tt-zephyr-platforms
+
+      - name: Update modules and apply patches
+        run: |
+          # Setup cargo, since we run with a different $HOME
+          HOME=/root . /root/.cargo/env
+          west config manifest.group-filter -- +optional
+          west update
+          west patch apply
+          pip install -r tt-zephyr-platforms/scripts/requirements.txt
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Generate board names
+        shell: bash
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          case "${{ matrix.config.board }}" in
+            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
+            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
+            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
+          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+
+      - name: Flash Firmware
+        working-directory: tt-zephyr-platforms
+        run: |
+          ./scripts/rescan-pcie.sh
+          west build -p always -b $SMC_BOARD --sysbuild app/smc
+          west flash -r tt_flash --force
+
+      - name: Check for Manifest Changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci:
+              - 'submanifests/ci.yaml'
+
+      - name: Update Metal
+        id: update_metal
+        if: steps.filter.outputs.ci == 'true'
+        shell: bash
+        run: |
+          # Clone the new metal repo
+          west config manifest.group-filter -- +ci
+          west update
+          rm -r /metal-env
+          rm -r /tt-metal
+          cp -r ci/tt-metal /tt-metal
+          cd /tt-metal
+          # Rebuild metal
+          ./build_metal.sh --clean
+          ./build_metal.sh --build-tests --build-programming-examples
+          PYTHON_ENV_DIR=/metal-env source ./create_venv.sh
+
+
+      - name: Run Metal Tests
+        working-directory: /tt-metal
+        shell: bash
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: /tt-metal
+          PYTHONPATH: /tt-metal
+        run: |
+          # Source metal env
+          source /metal-env/bin/activate
+          # Run metal tests
+          # Skipped because the P100a has harvested columns
+          # tests/scripts/run_cpp_unit_tests.sh
+          TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean up patched Zephyr repo
+          west patch clean
+          # Cleanup the checked out repo and metal. we can leave everything else
+          rm -rf tt-zephyr-platforms
+          rm -rf ci/tt-metal
           rm -rf .west
