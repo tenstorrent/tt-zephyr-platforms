@@ -22,76 +22,21 @@ jobs:
             runs-on:
               - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
-    env:
-      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/SEGGER:/opt/SEGGER
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
         - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
-      options: '--device /dev/tenstorrent --device /dev/bus/usb'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          # FIXME: would be nice to either use the default here or a built-in github environment
-          # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
           path: tt-zephyr-platforms
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
-          python-version: 3.11
-
-      - name: Rebase onto the target branch
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          cd tt-zephyr-platforms
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          git remote -v
-          # Update the remote ref
-          git fetch origin
-          # Ensure there's no merge commits in the PR
-          if [ $(git rev-list --merges --count origin/${BASE_REF}..) -ne 0 ]; then
-            echo "::error ::Merge commits not allowed, rebase instead"
-            exit 1
-          fi
-          rm -fr ".git/rebase-apply"
-          rm -fr ".git/rebase-merge"
-          git rebase origin/${BASE_REF}
-          git clean -f -d
-          # debug
-          git log  --pretty=oneline | head -n 10
-
-      - name: Install west
-        run: |
-          pip install west
-
-      - name: west setup
-        # FIXME: would be ideal to use a built-in github environment variable
-        # instead of tt-zephyr-platforms
-        run: |
-          west init -l tt-zephyr-platforms
-
-      - name: Setup Zephyr modules
-        run: |
-          west config manifest.group-filter -- +optional
-          west update
-
-          # need to install protoc manually here, for some reason
-          pip install -r zephyr/scripts/requirements.txt
-          pip install protobuf grpcio-tools
-
-      - name: Apply patches
-        run: |
-          west -v patch apply
+          app-path: tt-zephyr-platforms
 
       - name: Generate board names
         shell: bash
@@ -114,13 +59,6 @@ jobs:
       - name: run-bmc-tests
         working-directory: zephyr
         run: |
-          # This needs to be added to the github runner
-          export PATH=$PATH:/opt/SEGGER/JLink/
-
-          # The '-q' argument to west (which '--device-serial-pty rtt' depends on) was only added to west
-          # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
-          pip install west -U &>/dev/null
-
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
             -p $BMC_BOARD --device-testing \
@@ -158,10 +96,6 @@ jobs:
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
 
-          # The '-q' argument to west (which '--device-serial-pty rtt' depends on) was only added to west
-          # as of v1.3.0, v1.2.0 does not have it, so we need to update west here.
-          pip install west -U &>/dev/null
-
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
@@ -186,15 +120,6 @@ jobs:
             zephyr/twister-smc-smoke/twister.log
             zephyr/twister-smc-smoke/twister.json
 
-      - name: cleanup
-        if: ${{ always() }}
-        run: |
-          # Clean up patched Zephyr repo
-          west patch clean
-          # Cleanup the checked out repo, we can leave everything else
-          rm -rf tt-zephyr-platforms
-          rm -rf .west
-
   smoke-e2e-test:
     if: github.repository_owner == 'tenstorrent'
     strategy:
@@ -213,47 +138,17 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/SEGGER:/opt/SEGGER
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
         - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          # FIXME: would be nice to either use the default here or a built-in github environment
-          # variable, since shouldn't need to be specific to the tt-zephyr-platforms module.
           path: tt-zephyr-platforms
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
-          python-version: 3.11
-
-      - name: Rebase onto the target branch
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          cd tt-zephyr-platforms
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          git remote -v
-          # Update the remote ref
-          git fetch origin
-          # Ensure there's no merge commits in the PR
-          if [ $(git rev-list --merges --count origin/${BASE_REF}..) -ne 0 ]; then
-            echo "::error ::Merge commits not allowed, rebase instead"
-            exit 1
-          fi
-          rm -fr ".git/rebase-apply"
-          rm -fr ".git/rebase-merge"
-          git rebase origin/${BASE_REF}
-          git clean -f -d
-          # debug
-          git log  --pretty=oneline | head -n 10
+          app-path: tt-zephyr-platforms
 
       - name: Generate board names
         shell: bash
@@ -273,63 +168,9 @@ jobs:
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
           echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
 
-      - name: Install west
-        run: |
-          pip install west
-
-      - name: west setup
-        # FIXME: would be ideal to use a built-in github environment variable
-        # instead of tt-zephyr-platforms
-        run: |
-          west init -l tt-zephyr-platforms
-
-      - name: Setup Zephyr modules
-        run: |
-          west config manifest.group-filter -- +optional
-          west update
-
-          # need to install protoc manually here, for some reason
-          pip install -r zephyr/scripts/requirements.txt
-          pip install protobuf grpcio-tools
-
-      - name: Apply patches
-        run: |
-          west -v patch apply
-
-      - name: Checkout pyluwen
-        uses: actions/checkout@v4
-        with:
-          repository: tenstorrent/luwen
-          path: luwen
-
-      - name: Build pyluwen
-        run: |
-          # Setup cargo, since we run with a different $HOME
-          HOME=/root . /root/.cargo/env
-          # Install maturin for build (we already have cargo)
-          pip install maturin
-          cd luwen/crates/pyluwen
-          maturin build --release
-          pip install ../../target/wheels/*
-
-      - name: Checkout tt-flash
-        uses: actions/checkout@v4
-        with:
-          repository: tenstorrent/tt-flash
-          path: tt-flash
-
-      - name: Install tt-flash
-        run: |
-          # Setup cargo, since we run with a different $HOME
-          HOME=/root . /root/.cargo/env
-          pip install ./tt-flash
-
       - name: run-e2e-tests
         working-directory: zephyr
         run: |
-          # This needs to be added to the github runner
-          export PATH=$PATH:/opt/SEGGER/JLink/
-
           # TODO: ideally we would use one twister command to build and
           # flash BMC and SMC firmware, but since each chip uses a separate
           # debug adapter this doesn't work. For now, just flash BMC
@@ -384,14 +225,3 @@ jobs:
           name: E2E Flash results (${{ matrix.config.board }})
           path: |
             zephyr/twister-e2e-flash/**/update.fwbundle
-
-      - name: cleanup
-        if: ${{ always() }}
-        run: |
-          # Clean up patched Zephyr repo
-          west patch clean
-          # Cleanup pyluwen build
-          rm -rf luwen
-          # Cleanup the checked out repo, we can leave everything else
-          rm -rf tt-zephyr-platforms
-          rm -rf .west
