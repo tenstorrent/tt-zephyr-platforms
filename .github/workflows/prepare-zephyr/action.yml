@@ -58,8 +58,9 @@ runs:
 
     # TODO: potentially improve caching strategy
     # Note: this step performs "west init", "west update", and installs zephyr python dependencies
+    # Todo- once this feature branch is merged, we should use the mainline Zephyr action
     - name: Set up Zephyr project
-      uses: zephyrproject-rtos/action-zephyr-setup@v1
+      uses: danieldegrasse/action-zephyr-setup@feature/skip-dependencies
       with:
         app-path: ${{ inputs.app-path }}
         toolchains: arm-zephyr-eabi:riscv64-zephyr-elf:x86_64-zephyr-elf:arc-zephyr-elf
