@@ -47,4 +47,14 @@ typedef union {
 	uint32_t val;
 	STATUS_BOOT_STATUS0_reg_t f;
 } STATUS_BOOT_STATUS0_reg_u;
+
+typedef struct {
+	uint32_t regulator_init_error: 1;
+} STATUS_ERROR_STATUS0_reg_t;
+
+typedef union {
+	uint32_t val;
+	STATUS_ERROR_STATUS0_reg_t f;
+} STATUS_ERROR_STATUS0_reg_u;
+
 #endif
