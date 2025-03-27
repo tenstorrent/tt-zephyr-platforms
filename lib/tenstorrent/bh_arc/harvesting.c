@@ -212,8 +212,10 @@ void CalculateHarvesting(void)
 			tile_enable.eth_enabled = 0;
 		}
 
-		if (8 - get_fw_table()->product_spec_harvesting.dram_disable_count >
-			POPCOUNT(tile_enable.gddr_enabled)) {
+		uint8_t desired_gddr_count =
+			8 - get_fw_table()->product_spec_harvesting.dram_disable_count;
+
+		if (POPCOUNT(tile_enable.gddr_enabled) > desired_gddr_count) {
 			/* Only handle soft harvesting of one GDDR. Always choose GDDR3. */
 			WRITE_BIT(tile_enable.gddr_enabled, 3, 0);
 		}
