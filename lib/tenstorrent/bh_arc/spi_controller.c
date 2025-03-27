@@ -10,8 +10,8 @@
 #include <zephyr/sys/util.h>
 
 #include "pll.h"
-#include "reg.h"
-#include "timer.h"
+#include <tenstorrent/reg.h>
+#include <tenstorrent/drivers/timer/timer.h>
 
 #define SPICLK_FREQ_MHZ 40
 

@@ -1,3 +1,4 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
 # zephyr-keep-sorted-start
@@ -9,3 +10,4 @@ add_subdirectory_ifdef(CONFIG_SENSOR sensor)
 add_subdirectory_ifdef(CONFIG_SERIAL serial)
 add_subdirectory_ifdef(CONFIG_SMBUS smbus)
 # zephyr-keep-sorted-stop
+add_subdirectory(tenstorrent)

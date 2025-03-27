@@ -14,7 +14,7 @@
 #include "voltage.h"
 #include "vf_curve.h"
 #include "dvfs.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 
 /* Bounds checks for FMAX and FMIN (in MHz) */
 #define AICLK_FMAX_MAX 1400.0F

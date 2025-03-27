@@ -5,8 +5,8 @@
  */
 
 #include <zephyr/sys/util.h>
-#include "functional_efuse.h"
-#include "efuse.h"
+#include <tenstorrent/drivers/fuse/functional_efuse.h>
+#include <tenstorrent/drivers/fuse/efuse.h>
 
 /* Extracts fields from the functional efuse from start_bit to end_bit (inclusive) */
 /* Note that this only works for fields that are 32-bits or smaller */

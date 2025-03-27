@@ -6,7 +6,7 @@
 
 #include "arc_dma.h"
 #include "arc.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 
 void ArcDmaConfig(void)
 {
