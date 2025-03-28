@@ -51,5 +51,5 @@ void InitDVFS(void)
 
 void StartDVFSTimer(void)
 {
-	k_timer_start(&dvfs_timer, K_MSEC(1), K_MSEC(1));
+	k_timer_start(&dvfs_timer, K_MSEC(10), K_MSEC(10));
 }
