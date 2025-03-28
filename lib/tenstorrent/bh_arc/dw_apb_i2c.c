@@ -255,9 +255,19 @@ static void I2CRecoverBus(uint32_t id)
 static void WaitTxFifoEmpty(uint32_t id)
 {
 	uint32_t ic_status = 0;
+	uint64_t ts = k_uptime_get();
 
 	do {
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
+
+		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
+			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
+							(0))) {
+				I2CRecoverBus(id);
+				break;
+			}
+		}
 	} while ((ic_status & DW_APB_I2C_IC_STATUS_TFE_MASK) == 0);
 }
 
@@ -282,9 +292,18 @@ static void WaitTxFifoNotFull(uint32_t id)
 static void WaitMasterIdle(uint32_t id)
 {
 	uint32_t ic_status = 0;
+	uint64_t ts = k_uptime_get();
 
 	do {
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
+		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
+			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
+							(0))) {
+				I2CRecoverBus(id);
+				break;
+			}
+		}
 	} while (ic_status & DW_APB_I2C_IC_STATUS_MST_ACTIVITY_MASK);
 }
 
@@ -315,6 +334,7 @@ static uint32_t WaitAllTxDone(uint32_t id)
 {
 	uint32_t master_active = 0;
 	uint32_t tx_fifo_not_empty = 0;
+	uint64_t ts = k_uptime_get();
 
 	do {
 		uint32_t ic_error = CheckTxAbrt(id);
@@ -326,6 +346,15 @@ static uint32_t WaitAllTxDone(uint32_t id)
 
 		master_active = ic_status & DW_APB_I2C_IC_STATUS_MST_ACTIVITY_MASK;
 		tx_fifo_not_empty = (ic_status & DW_APB_I2C_IC_STATUS_TFE_MASK) == 0;
+
+		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
+			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
+							(0))) {
+				I2CRecoverBus(id);
+				return -ETIMEDOUT;
+			}
+		}
 	} while (master_active || tx_fifo_not_empty);
 	return 0;
 }
@@ -335,6 +364,7 @@ static uint32_t WaitAllTxDone(uint32_t id)
 uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf)
 {
 	uint32_t ic_status = 0;
+	uint64_t ts = k_uptime_get();
 
 	do {
 		uint32_t ic_error = CheckTxAbrt(id);
@@ -343,6 +373,15 @@ uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf)
 			return ic_error;
 		}
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
+
+		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
+			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
+							(0))) {
+				I2CRecoverBus(id);
+				return -ETIMEDOUT;
+			}
+		}
 	} while ((ic_status & DW_APB_I2C_IC_STATUS_RFNE_MASK) == 0);
 	*p_read_buf = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_DATA_CMD)));
 	return 0;
