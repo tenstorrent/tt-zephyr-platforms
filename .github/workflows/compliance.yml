@@ -10,6 +10,7 @@ on:
       - edited
     branches:
       - main
+      - v*-branch
 
 jobs:
   check_compliance:

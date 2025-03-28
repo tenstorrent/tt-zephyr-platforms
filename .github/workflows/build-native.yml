@@ -1,6 +1,18 @@
 name: Build tt-native
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
+      - v*-branch
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
 
 jobs:
   build-tt-console:

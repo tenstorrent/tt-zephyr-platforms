@@ -5,6 +5,10 @@ on:
     secrets:
       SIGNATURE_KEY:
         required: true
+  push:
+    branches:
+      - main
+      - v*-branch
   pull_request:
     types:
       - opened
@@ -12,6 +16,7 @@ on:
       - synchronize
     branches:
       - main
+      - v*-branch
 
 jobs:
   build:
