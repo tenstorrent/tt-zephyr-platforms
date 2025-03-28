@@ -6,6 +6,7 @@
 
 #include <zephyr/sys/util.h>
 #include "vf_curve.h"
+#include "fw_table.h"
 
 void InitVFCurve(void)
 {
@@ -20,7 +21,12 @@ void InitVFCurve(void)
  */
 float VFCurve(float freq_mhz)
 {
-	float voltage_mv = 0.00031395F * freq_mhz * freq_mhz - 0.43953F * freq_mhz + 828.83F;
+	float freq_margin_mhz = get_fw_table()->chip_limits.frequency_margin;
+	float freq_with_margin_mhz = freq_mhz + freq_margin_mhz;
 
-	return voltage_mv + 50.0F; /* Add 50 mV of margin */
+	float voltage_margin_mv = get_fw_table()->chip_limits.voltage_margin;
+	float voltage_mv = 0.00031395F * freq_with_margin_mhz * freq_with_margin_mhz -
+			   0.43953F * freq_with_margin_mhz + 828.83F;
+
+	return voltage_mv + voltage_margin_mv;
 }
