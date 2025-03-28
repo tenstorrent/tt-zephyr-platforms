@@ -5,7 +5,7 @@ chip_limits {
   asic_fmax: 1000
   vdd_max: 0
   vdd_min: 0
-  voltage_margin: 0
+  voltage_margin: 50
   tdp_limit: 0
   tdc_limit: 0
   thm_limit: 0
