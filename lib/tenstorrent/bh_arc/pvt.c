@@ -97,6 +97,18 @@ typedef union {
 	PDIpCfg0T f;
 } PDIpCfg0U;
 
+typedef struct {
+	uint32_t run_mode: 4;
+	uint32_t reserved_0: 1;
+	uint32_t resolution: 2;
+	uint32_t reserved_1: 25;
+} TSIpCfg0T;
+
+typedef union {
+	uint8_t val;
+	TSIpCfg0T f;
+} TSIpCfg0U;
+
 typedef enum {
 	ValidData = 0,
 	AnalogueAccess = 1,
@@ -384,8 +396,12 @@ void PVTInit(void)
 	/* Configure TS */
 	SdifWrite(PVT_CNTL_TS_CMN_SDIF_STATUS_REG_ADDR, PVT_CNTL_TS_CMN_SDIF_REG_ADDR, IP_TMR_ADDR,
 		  0x100); /* 256 cycles for TS */
+
+	/* MODE_RUN_0, 8-bit resolution */
+	TSIpCfg0U ts_ip_cfg0 = {.f.run_mode = 0, .f.resolution = 2};
+
 	SdifWrite(PVT_CNTL_TS_CMN_SDIF_STATUS_REG_ADDR, PVT_CNTL_TS_CMN_SDIF_REG_ADDR, IP_CFG0_ADDR,
-		  0x0); /* use 12-bit resolution, MODE_RUN_0 */
+		  ts_ip_cfg0.val);
 	SdifWrite(PVT_CNTL_TS_CMN_SDIF_STATUS_REG_ADDR, PVT_CNTL_TS_CMN_SDIF_REG_ADDR, IP_CNTL_ADDR,
 		  0x108); /* ip_run_cont */
 
