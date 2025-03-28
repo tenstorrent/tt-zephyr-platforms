@@ -280,6 +280,9 @@ static void telemetry_work_handler(struct k_work *work)
 {
 	/* Repeat fetching of dynamic telemetry values */
 	update_telemetry();
+	if (IS_ENABLED(CONFIG_TT_AUTO_RESET)) {
+		UpdateTelemHeartbeatRequest(telemetry[TIMER_HEARTBEAT]);
+	}
 }
 static void telemetry_timer_handler(struct k_timer *timer)
 {
@@ -322,6 +325,7 @@ void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version)
 {
 	telemetry[BM_BL_FW_VERSION] = bl_version;
 	telemetry[BM_APP_FW_VERSION] = app_version;
+	/* TODO: Add reset reason to telemetry */
 }
 
 void UpdateTelemetryNocTranslation(bool translation_enabled)
