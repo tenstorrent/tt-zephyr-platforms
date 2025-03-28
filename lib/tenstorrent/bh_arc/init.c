@@ -339,6 +339,7 @@ static int InitHW(void)
 {
 	/* Write a status register indicating HW init progress */
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
 	boot_status0.f.hw_init_status = kHwInitStarted;
@@ -457,7 +458,11 @@ static int InitHW(void)
 	/* Initiate AVS interface and switch vout control to AVSBus */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		RegulatorInit(get_pcb_type());
+		if (RegulatorInit(get_pcb_type())) {
+			LOG_ERR("Failed to initialize regulators.\n");
+			error_status0.f.regulator_init_error = 1;
+			init_errors = true;
+		}
 		AVSInit();
 		SwitchVoutControl(AVSVoutCommand);
 	}
@@ -504,6 +509,7 @@ static int InitHW(void)
 	}
 	boot_status0.f.hw_init_status = init_errors ? kHwInitError : kHwInitDone;
 	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
+	WriteReg(STATUS_ERROR_STATUS0_REG_ADDR, error_status0.val);
 
 	return 0;
 }

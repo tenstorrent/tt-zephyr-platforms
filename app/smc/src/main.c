@@ -9,6 +9,8 @@
 #include "init_common.h"
 #include "smbus_target.h"
 #include "telemetry.h"
+#include "status_reg.h"
+#include "reg.h"
 
 #include <stdint.h>
 
@@ -29,10 +31,19 @@ int main(void)
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (get_fw_table()->feature_enable.aiclk_ppm_en) {
-			/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled */
-			/* We currently don't have plans to implement L2CPUCLK PPM, */
-			/* so currently, dvfs_enable == aiclk_ppm_enable */
-			InitDVFS();
+			STATUS_ERROR_STATUS0_reg_u error_status0 = {
+				.val = ReadReg(STATUS_ERROR_STATUS0_REG_ADDR)
+			};
+
+			if (error_status0.f.regulator_init_error) {
+				LOG_ERR("Not enabling AICLK PPM due to regulator init error.\n");
+			} else {
+				/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled
+				 * We currently don't have plans to implement L2CPUCLK PPM,
+				 * so currently, dvfs_enable == aiclk_ppm_enable
+				 */
+				InitDVFS();
+			}
 		}
 	}
 
