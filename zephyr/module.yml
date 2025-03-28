@@ -26,18 +26,18 @@ runners:
 
 blobs:
   - path: tt_blackhole_erisc.bin
-    sha256: 641b27703ad39b55277b53015acbd7981dc1ccfccc1a77b51d460688bf8e8468
+    sha256: 08f18b77a628e5514189387e41b7d57f6e8f372579bb67130302fecb9fadf9aa
     type: img
-    version: '0.4.0'
+    version: '1.2.0'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc.bin"
     description: "Ethernet FW"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_erisc_params.bin
-    sha256: 1e690e36a26100ca61f5e7e8edb1533f421d9e51aaf2a44b4519b0a21ae7e53a
+    sha256: 8226fadf8e33c4dc31e5fe2e3b2106a54c8507300772cb1c029df59f13728d49
     type: img
-    version: '0.4.0'
+    version: '1.2.0'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
@@ -53,18 +53,18 @@ blobs:
     description: "PCIe SerDes FW and parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_serdes_eth_fwreg.bin
-    sha256: 15b31ca6ee1840b9307d333a23dba6067e84bedfa1e8c27b17ddcd3182fdf247
+    sha256: 008dd0d355080c8073ed9869ab677ef9f0da2a61856d46a86aea5d29bec40298
     type: img
-    version: '2.4.12'
+    version: '0.9.16'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin"
     description: "Ethernet SerDes parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_serdes_eth_fw.bin
-    sha256: b0cd575ef19b48245f02a2e967a7dc2fe3760ad797753dfbeac264e8760ff14b
+    sha256: 225fb0375786833ffad60061431f0e09db118d500b2d777bd0c3bfe7f1a650a4
     type: img
-    version: '2.4.12'
+    version: '0.9.16'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin"
