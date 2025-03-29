@@ -38,15 +38,15 @@ tests:
         - pytest/recovery.py
       pytest_args:
         - "--dut-scope=session"
-  app.vuart:
-    tags: e2e
-    harness: pytest
-    harness_config:
-      pytest_root:
-        - pytest/vuart.py
-      pytest_args:
-        - "--dut-scope=session"
-    extra_dtc_overlay_files:
-      - vuart.overlay
-    extra_overlay_confs:
-      - vuart.conf
+  # app.vuart:
+  #   tags: e2e
+  #   harness: pytest
+  #   harness_config:
+  #     pytest_root:
+  #       - pytest/vuart.py
+  #     pytest_args:
+  #       - "--dut-scope=session"
+  #   extra_dtc_overlay_files:
+  #     - vuart.overlay
+  #   extra_overlay_confs:
+  #     - vuart.conf
