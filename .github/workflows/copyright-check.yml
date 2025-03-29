@@ -1,6 +1,10 @@
 name: Copyright Check
 
 on:
+  push:
+    branches:
+      - main
+      - v*-branch
   pull_request:
     types:
       - opened
@@ -8,6 +12,7 @@ on:
       - synchronize
     branches:
       - main
+      - v*-branch
 
 jobs:
   copyright_check_job:
