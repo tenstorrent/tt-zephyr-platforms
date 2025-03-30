@@ -59,3 +59,11 @@ patches:
     date: 2025-02-08
     comments: |
       Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
+  - path: zephyr/smbus-stm32-support-pec.patch
+    sha256sum: c8a5034026b02dc6ee9056fa3b3fdedc74fdd190337604fcc73aa8d81325a682
+    module: zephyr
+    author: Daniel Rosen
+    email: drosen@tenstorrent.com
+    date: 2024-08-28
+    comments: |
+      Implement crc8 based pec and smbus block_read.
