@@ -108,6 +108,11 @@
 		interrupt-parent = <&intc>;
 	};
 
+	pinctrl: pinctrl {
+		compatible = "tenstorrent,blackhole-pinctrl";
+		status = "okay";
+	};
+
 	timer0: timer0 {
 		compatible = "snps,arc-timer";
 		interrupts = <16 1>;
