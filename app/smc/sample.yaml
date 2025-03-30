@@ -51,3 +51,8 @@ tests:
       - vuart.overlay
     extra_overlay_confs:
       - vuart.conf
+  # demonstrates pinctrl driver, macros, etc, compile
+  app.uart:
+    build_only: true
+    extra_dtc_overlay_files:
+      - uart.overlay
