@@ -64,3 +64,12 @@ config TT_BH_ARC_SYSINIT
 	  Initialize blackhole firmware and hardware prior to starting the application.
 
 	  This allows our library drivers to work better with Zephyr's driver model.
+
+config TT_FWTABLE_IN_SPI
+	bool "Use SPI flash for firmware table"
+	help
+	  Use SPI flash for firmware table. Disable this option to use a set of rational
+	  default values per-board instead of using the values in SPI flash.
+
+	  This option can help if enabling a feature in the firmware tables suddenly
+	  breaks firmware (a.k.a. a regression was introduced due to lack of testing).
