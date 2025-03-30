@@ -1,0 +1,39 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Pin configuration for Tenstorrent Blackhole SoC.
+
+compatible: "tenstorrent,blackhole-pinctrl"
+
+include: base.yaml
+
+properties: {}
+
+child-binding:
+  description: |
+    This binding gives a base representation of Blackhole SoC pin configuration.
+
+  include:
+    - name: pincfg-node.yaml
+      property-allowlist:
+        - bias-disable
+        - bias-pull-down
+        - bias-pull-up
+        - drive-strength
+        - input-enable
+        - receive-enable
+        - input-schmitt-enable
+
+  properties:
+    pinmux:
+      required: true
+      type: array
+      description: |
+        Blackhole pin configuration (IO pin, IO function).
+
+    drive-strength:
+      type: int
+      default: 7
+      description: |
+        Drive strength of the pin.
