@@ -59,6 +59,12 @@ if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 endif()
 
+include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
+zephyr_library_compile_definitions(BUNDLE_VERSION_NUMBER=${BUNDLE_VERSION_NUMBER})
+zephyr_library_compile_definitions(BUNDLE_VERSION_STRING="${BUNDLE_VERSION_STRING}")
+
+include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/board_revision_ifdef.cmake)
+
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
 zephyr_nanopb_sources(bh_arc spirom_protobufs/fw_table.proto)
@@ -114,4 +120,62 @@ if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 		  --bundle-version ${BUNDLE_VERSION_STRING}
 	)
 	endif()
+endif()
+
+if(NOT CONFIG_TT_SMC_RECOVERY)
+if(CONFIG_TT_FWTABLE_MOCK)
+  set(MY_BOARD_DIR ${BOARD_DIR})
+  if(NOT BOARD STREQUAL "tt_blackhole")
+    set(MY_BOARD_DIR ${ZEPHYR_CURRENT_MODULE_DIR}/boards/tenstorrent/tt_blackhole)
+  endif()
+
+  # Inputs
+  set(FW_TABLE_TXT ${MY_BOARD_DIR}/spirom_data_tables/${PROD_NAME}/fw_table.txt)
+  set(FW_TABLE_PROTO ${SPIROM_PROTOBUFS}/fw_table.proto)
+
+  # Paths
+  set(FW_TABLE_GEN_DIR ${ZEPHYR_BINARY_DIR}/bh_arc)
+  set(FW_TABLE_MOCK_PATH ${FW_TABLE_GEN_DIR}/include)
+  set(FW_TABLE_PYPATH ${FW_TABLE_GEN_DIR}/fw_table)
+
+  # Outputs
+  set(FW_TABLE_MOCK_INC ${FW_TABLE_MOCK_PATH}/tenstorrent/fw_table_mock.inc)
+  set(FW_TABLE_PYLIB ${FW_TABLE_PYPATH}/fw_table_pb2.py)
+
+  # Generate fw_table_pb2.py from fw_table.proto
+  # Note: this is done as part of the build process, not as "extra_post_build_commands"
+  add_custom_command(
+    OUTPUT ${FW_TABLE_PYLIB}
+    COMMAND
+    ${PROTOC}
+    --python_out=${FW_TABLE_PYPATH}
+    ${FW_TABLE_PROTO}
+    -I ${SPIROM_PROTOBUFS}
+    DEPENDS ${FW_TABLE_PROTO}
+  )
+  MESSAGE(STATUS "Generated ${FW_TABLE_PYLIB}")
+
+  # Generate fw_table_mock.inc from fw_table.txt using fw_table_pb2.py
+  add_custom_command(
+    OUTPUT ${FW_TABLE_MOCK_INC}
+    COMMAND
+    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+    ${PYTHON_EXECUTABLE}
+    ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_fwtable_mock.py
+    --python-path=${FW_TABLE_PYPATH}
+    --bundle-version=${BUNDLE_VERSION_NUMBER}
+    --input ${FW_TABLE_TXT}
+    --output ${FW_TABLE_MOCK_INC}
+    DEPENDS ${FW_TABLE_PYLIB}
+  )
+  MESSAGE(STATUS "Generated ${FW_TABLE_MOCK_INC}")
+
+  # Create a dynamic cmake target for the generated file (required because file is not present at cmake time)
+  generate_unique_target_name_from_filename(${FW_TABLE_MOCK_INC} FW_TABLE_MOCK_INC_TGT)
+  add_custom_target(${FW_TABLE_MOCK_INC_TGT} DEPENDS ${FW_TABLE_MOCK_INC})
+
+  # Add the generated file as a dependency of the bh_arc library (and update include paths)
+  add_dependencies(bh_arc ${FW_TABLE_MOCK_INC_TGT})
+  zephyr_library_include_directories(bh_arc ${FW_TABLE_MOCK_PATH})
+endif()
 endif()
