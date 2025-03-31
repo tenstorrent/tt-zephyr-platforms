@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <reg.h>
+#include <tenstorrent/reg.h>
 #include <noc.h>
 #include <noc2axi.h>
 #include <arc_dma.h>
 
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "gddr.h"
 #include "harvesting.h"
 

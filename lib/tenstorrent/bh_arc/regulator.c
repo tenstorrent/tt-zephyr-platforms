@@ -16,7 +16,7 @@
 
 #include "avs.h"
 #include "dw_apb_i2c.h"
-#include "timer.h"
+#include <tenstorrent/drivers/timer/timer.h>
 
 LOG_MODULE_REGISTER(regulator);
 

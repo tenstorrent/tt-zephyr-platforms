@@ -6,12 +6,12 @@
 
 #include "cm2bm_msg.h"
 #include "fan_ctrl.h"
-#include "fw_table.h"
+#include <tenstorrent/fw_table/fw_table.h>
 #include "harvesting.h"
 #include "pll.h"
 #include "pvt.h"
-#include "read_only_table.h"
-#include "reg.h"
+#include <tenstorrent/fw_table/read_only_table.h>
+#include <tenstorrent/reg.h>
 #include "regulator.h"
 #include "status_reg.h"
 #include "telemetry.h"

@@ -8,10 +8,10 @@
 #include "serdes_eth.h"
 #include "noc2axi.h"
 #include "noc.h"
-#include "reg.h"
-#include "read_only_table.h"
-#include "fw_table.h"
-#include "efuse.h"
+#include <tenstorrent/reg.h>
+#include <tenstorrent/fw_table/read_only_table.h>
+#include <tenstorrent/fw_table/fw_table.h>
+#include <tenstorrent/drivers/fuse/efuse.h>
 
 #define ETH_SETUP_TLB  0
 #define ETH_PARAM_ADDR 0x7c000

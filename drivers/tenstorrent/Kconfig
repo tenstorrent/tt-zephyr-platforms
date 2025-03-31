@@ -1,0 +1,11 @@
+#  Copyright (c) 2025 Tenstorrent AI ULC
+#  SPDX-License-Identifier: Apache-2.0
+
+menu "Tenstorrent Device Drivers"
+
+# zephyr-keep-sorted-start
+rsource "fuse/Kconfig"
+rsource "timer/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu

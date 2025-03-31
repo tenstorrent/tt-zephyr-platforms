@@ -8,8 +8,8 @@
 
 #include <zephyr/sys/util.h>
 
-#include "timer.h"
-#include "reg.h"
+#include <tenstorrent/drivers/timer/timer.h>
+#include <tenstorrent/reg.h>
 #include "pll.h"
 
 #define APB2AVSBUS_AVS_INTERRUPT_MASK_REG_ADDR 0x80100034

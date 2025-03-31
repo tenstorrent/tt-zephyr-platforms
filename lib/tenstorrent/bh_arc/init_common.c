@@ -7,7 +7,7 @@
 #include "cm2bm_msg.h"
 #include "init_common.h"
 #include "irqnum.h"
-#include "reg.h"
+#include <tenstorrent/reg.h>
 #include "spi_controller.h"
 #include "spi_eeprom.h"
 #include "status_reg.h"

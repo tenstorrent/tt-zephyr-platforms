@@ -8,10 +8,9 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "timer.h"
-#include "dw_apb_i2c.h"
-#include "reg.h"
-#include "efuse.h"
+#include <tenstorrent/drivers/timer/timer.h>
+#include <tenstorrent/reg.h>
+#include <tenstorrent/drivers/fuse/efuse.h>
 
 #define EFUSE_DFT0_MEM_BASE_ADDR          0x80040000
 #define EFUSE_DFT0_CNTL_REG_MAP_BASE_ADDR 0x80048000
