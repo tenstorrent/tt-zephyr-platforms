@@ -139,6 +139,57 @@ static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 	return -EIO;
 }
 
+static int CheckGddrHwTest(void)
+{
+	/* First kick off all tests in parallel, then check their results. Test will take
+	 * approximately 300-400 ms.
+	 */
+	uint8_t test_started = 0; /* Bitmask of tests started */
+	int any_error = 0;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
+			int error = StartHwMemtest(gddr_inst, 26, 0, 0);
+
+			if (error == -ENOTSUP) {
+				/* Shouldn't be considered a test failure if MRISC FW is too old. */
+				LOG_WRN("GDDR %d MRISC FW version does not support memtest. "
+					"Skipping the test on this instance.\n",
+					gddr_inst);
+			} else if (error < 0) {
+				LOG_WRN("Failed to start GDDR %d memory test. Got error code %d.\n",
+					gddr_inst, error);
+				any_error = -EIO;
+			} else {
+				test_started |= BIT(gddr_inst);
+			}
+		}
+	}
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(test_started, gddr_inst)) {
+			int error = CheckHwMemtestResult(gddr_inst, timeout);
+
+			if (error < 0) {
+				any_error = -EIO;
+				if (error == -ETIMEDOUT) {
+					LOG_ERR("GDDR %d memory test timed out.\n", gddr_inst);
+				} else if (error == -EIO) {
+					LOG_ERR("GDDR %d memory test failed comparison.\n",
+						gddr_inst);
+				} else {
+					LOG_ERR("GDDR %d memory test failed with error code %d.\n",
+						gddr_inst, error);
+				}
+			} else {
+				LOG_DBG("GDDR %d memory test passed.\n", gddr_inst);
+			}
+		}
+	}
+	return any_error;
+}
+
 static int InitMrisc(void)
 {
 	static const char kMriscFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfwcfg";
@@ -495,6 +546,14 @@ static int InitHW(void)
 					LOG_ERR("GDDR instance %d failed training.\n", gddr_inst);
 					init_errors = true;
 				}
+			}
+		}
+	}
+	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		if (!init_errors) {
+			if (CheckGddrHwTest() < 0) {
+				LOG_ERR("GDDR HW test failed.\n");
+				init_errors = true;
 			}
 		}
 	}
