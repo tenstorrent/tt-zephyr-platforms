@@ -48,6 +48,11 @@ jobs:
             p100) BOARD=tt_blackhole@p100/tt_blackhole/smc;;
             p100a) BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
             p150a) BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            p150b) BOARD=tt_blackhole@p150b/tt_blackhole/smc;;
+            p150c) BOARD=tt_blackhole@p150c/tt_blackhole/smc;;
+            p300a) BOARD=tt_blackhole@p300a/tt_blackhole/smc;;
+            p300b) BOARD=tt_blackhole@p300b/tt_blackhole/smc;;
+            p300c) BOARD=tt_blackhole@p300c/tt_blackhole/smc;;
             *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
           esac
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
@@ -132,41 +137,3 @@ jobs:
             build-recovery/**/zephyr.hex
             build-recovery/**/zephyr.map
             build-recovery/**/zephyr.stat
-
-  build-p300-bmc:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
-
-      - name: Build bmc firmware
-        shell: bash
-        run: |
-          west build \
-            -d build-p300-bmc \
-            -p auto \
-            -b tt_blackhole@p300/tt_blackhole/bmc \
-            tt-zephyr-platforms/app/bmc \
-            -- \
-              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
-
-      - name: Upload bmc assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: p300-bmc
-          path: |
-            build-p300-bmc/**/.config
-            build-p300-bmc/**/devicetree_generated.h
-            build-p300-bmc/**/zephyr.bin
-            build-p300-bmc/**/zephyr.signed.bin
-            build-p300-bmc/**/zephyr.dts
-            build-p300-bmc/**/zephyr.elf
-            build-p300-bmc/**/zephyr.signed.elf
-            build-p300-bmc/**/zephyr.hex
-            build-p300-bmc/**/zephyr.signed.hex
-            build-p300-bmc/**/zephyr.map
-            build-p300-bmc/**/zephyr.stat
