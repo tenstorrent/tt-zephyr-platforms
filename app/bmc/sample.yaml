@@ -8,7 +8,8 @@ tests:
     platform_allow:
       - tt_blackhole@p100/tt_blackhole/bmc
       - tt_blackhole@p100a/tt_blackhole/bmc
-      - tt_blackhole@p150a/tt_blackhole/bmc
+      - tt_blackhole@p150/tt_blackhole/bmc
+      - tt_blackhole@p300/tt_blackhole/bmc
     tags: e2e
     harness: console
     harness_config:

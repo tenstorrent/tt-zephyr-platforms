@@ -21,7 +21,7 @@ mPATH="$(dirname "$0")"
 # put tt_boot_fs.py in the path (use it to combine .fwbundle files)
 PATH="$mPATH:$PATH"
 
-BOARD_REVS="p100 p100a p150a"
+BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c"
 
 MAJOR="$(grep "^VERSION_MAJOR" VERSION | awk '{print $3}')"
 MINOR="$(grep "^VERSION_MINOR" VERSION | awk '{print $3}')"
@@ -46,12 +46,7 @@ PRELEASE="$MAJOR.$MINOR.$PATCH.$EXTRAVERSION_NUMBER"
 echo "Building release $RELEASE / pack $PRELEASE"
 
 for REV in $BOARD_REVS; do
-  case "$REV" in
-    p100) BOARD="tt_blackhole@$REV/tt_blackhole/smc";;
-    p100a) BOARD="tt_blackhole@$REV/tt_blackhole/smc";;
-    p150a) BOARD="tt_blackhole@$REV/tt_blackhole/smc";;
-    *) echo "Unknown board rev $REV"; exit 1;;
-  esac
+  BOARD="tt_blackhole@$REV/tt_blackhole/smc";;
 
   echo "Building $BOARD"
   west build -d "$TEMP_DIR/$REV" --sysbuild -p -b "$BOARD" app/smc >/dev/null 2>&1

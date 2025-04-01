@@ -17,139 +17,28 @@
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
 	};
+};
 
-	chip0: chip0 {
-		compatible = "tenstorrent,bh-chip";
+#include "tt_blackhole_base.dtsi"
 
-		asic_reset {
-			compatible = "zephyr,gpio-line";
-			label = "Line to asic reset";
-			gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
-		};
+&chip0 {
+    jtag0: jtag {
+		compatible = "zephyr,jtag-gpio";
+		port-write-cycles = <2>;
 
-		spi_reset {
-			compatible = "zephyr,gpio-line";
-			label = "Line to spi reset";
-			gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
-		};
-
-		pgood {
-			compatible = "zephyr,gpio-line";
-			label = "Power good indicator";
-			gpios = <&gpioc 14 GPIO_PULL_DOWN>;
-		};
-
-		therm_trip {
-			compatible = "zephyr,gpio-line";
-			label = "Thermal trip indicator";
-			gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>;
-		};
-
-		jtag0: jtag {
-			compatible = "zephyr,jtag-gpio";
-			port-write-cycles = <2>;
-
-			tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
-			tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
-			tdo-gpios = <&gpiob 1 GPIO_PULL_UP>;
-			tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
-			trst-gpios = <&gpiod 0 GPIO_ACTIVE_LOW>;
-		};
-
-		flash = <&flash1>;
-		spi_mux {
-			compatible = "zephyr,gpio-line";
-			label = "Line to spi mux, drive low to enable bmfw -> eeprom";
-			gpios = <&gpiob 5 GPIO_ACTIVE_LOW>;
-		};
-
-		arc = <&chip0_arc>;
+		tck-gpios = <&gpiob 10 GPIO_ACTIVE_HIGH>;
+		tdi-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+		tdo-gpios = <&gpiob 1 GPIO_PULL_UP>;
+		tms-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+		trst-gpios = <&gpiod 0 GPIO_ACTIVE_LOW>;
 	};
+};
 
-	preset_trigger {
-		compatible = "zephyr,gpio-line";
-		label = "Input from PCIe card edge triggering an asic reset";
-		gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-	};
-
-	board_fault_led {
-		compatible = "zephyr,gpio-line";
-		label = "LED Output to board fault indicator";
-		gpios = <&gpioc 15 GPIO_ACTIVE_HIGH>;
-	};
-
-	psu_sense0 {
-		compatible = "zephyr,gpio-line";
-		label = "PSU Sense 0 from 12V-2x6 connector";
-		gpios = <&gpioa 6 GPIO_ACTIVE_HIGH>;
-	};
-
-	psu_sense1 {
-		compatible = "zephyr,gpio-line";
-		label = "PSU Sense 1 from 12V-2x6 connector";
-		gpios = <&gpiob 9 GPIO_ACTIVE_HIGH>;
-	};
-
-	board_id0 {
-		compatible = "zephyr,gpio-line";
-		label = "Board ID 0 indicator";
-		gpios = <&gpioa 2 GPIO_ACTIVE_HIGH>;
-	};
-
+/ {
 	chips {
 		compatible = "tenstorrent,bh-chips";
 		chips = <&chip0>;
 		primary = <0>;
-	};
-};
-
-&clk_lsi {
-	clock-frequency = <DT_FREQ_K(32)>;
-	status = "okay";
-};
-
-&clk_hsi {
-	clock-frequency = <DT_FREQ_M(16)>;
-	status = "okay";
-};
-
-&pll {
-	clocks = <&clk_hsi>;
-	div-m = <1>;
-	mul-n = <8>;
-	div-r = <2>;
-	div-q = <2>;
-	div-p = <2>;
-	status = "okay";
-};
-
-&rcc {
-	clocks = <&pll>;
-	clock-frequency = <DT_FREQ_M(64)>;
-	ahb-prescaler = <1>;
-	apb1-prescaler = <1>;
-};
-
-&i2c3 {
-	pinctrl-0 = <&i2c3_scl_pa7 &i2c3_sda_pb4>;
-	pinctrl-names = "default";
-	status = "okay";
-	clock-frequency = <I2C_BITRATE_FAST>;
-	compatible = "st,tt-stm32-i2c";
-
-	scl-gpios = <&gpioa 7 GPIO_OPEN_DRAIN>;
-	sda-gpios = <&gpiob 4 GPIO_OPEN_DRAIN>;
-
-	bh_arc: i2c@54 {
-		compatible = "zephyr,i2c-target-eeprom";
-		reg = <0x54>;
-		status = "okay";
-	};
-
-	aardvark: eeprom@55 {
-		compatible = "zephyr,i2c-target-eeprom";
-		reg = <0x55>;
-		status = "okay";
 	};
 };
 
@@ -161,97 +50,4 @@
 		compatible = "tenstorrent,bh-arc";
 		reg = <0xA>;
 	};
-};
-
-&gpiob {
-	status = "okay";
-
-	spi-flash-mux0 {
-		gpio-hog;
-		gpios = <5 GPIO_ACTIVE_HIGH>;
-		output-high;
-	};
-};
-
-&spi1 {
-	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pb3
-			 &spi1_miso_pa11 &spi1_mosi_pa12>;
-	pinctrl-names = "default";
-	status = "okay";
-
-	flash1: flash@0 {
-		/* base properties */
-		compatible = "jedec,spi-nor";
-		status = "okay";
-
-		reset-gpios = <&gpioc 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-
-		/* spi-device properties */
-		reg = <0>;
-		spi-max-frequency = <7999999>;
-		spi-cpol;
-		spi-cpha;
-
-		/* jedec,spi-nor properties */
-		size = <DT_SIZE_M(512)>; /* Size in bits */
-
-		/* jedec,spi-nor-common properties */
-		has-dpd;
-		t-enter-dpd = <3000>;
-		t-exit-dpd = <30000>;
-		jedec-id = [20 bb 20];
-	};
-};
-
-&flash0 {
-	/* TODO:
-	 * Move slot1_partition to spi flash.
-	 * Ensure main flash erase size agrees with minimal subsector erase size of SPI flash,
-	 * i.e. 4096 bytes. Currently sectors are 2048 bytes on stm32g071rb and this value is
-	 * likely hard-coded in several places.
-	 */
-	/* erase-block-size = <4096>; */
-
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 DT_SIZE_K(48)>;
-			read-only;
-		};
-
-		slot0_partition: partition@c000 {
-			label = "image-0";
-			reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
-		};
-
-		slot1_partition: partition@46000 {
-			label = "image-1";
-			reg = <0x00046000 (DT_SIZE_K(230))>;
-		};
-	};
-};
-
-&i2c1 {
-	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
-	pinctrl-names = "default";
-	status = "okay";
-	clock-frequency = <I2C_BITRATE_FAST>;
-
-	ina228: ina228@40 {
-		compatible = "ti,ina228";
-		reg = <0x40>;
-		status = "okay";
-		/* max_current / (2^19) */
-		current-lsb-microamps = <210>;
-		rshunt-micro-ohms = <1000>;
-	};
-};
-
-&smbus1 {
-	compatible = "st,tt-stm32-smbus";
-	status = "okay";
 };

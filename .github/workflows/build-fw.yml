@@ -28,6 +28,11 @@ jobs:
           - p100
           - p100a
           - p150a
+          - p150b
+          - p150c
+          - p300a
+          - p300b
+          - p300c
     steps:
       - uses: actions/checkout@v4
         with:
@@ -108,7 +113,7 @@ jobs:
           west build \
             -d build-recovery \
             -p auto \
-            -b tt_blackhole/tt_blackhole/smc \
+            -b tt_blackhole@p100a/tt_blackhole/smc \
             tt-zephyr-platforms/app/smc \
             -- \
               -DEXTRA_CONF_FILE=recovery.conf \

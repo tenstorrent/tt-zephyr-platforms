@@ -1,5 +1,5 @@
 identifier: tt_blackhole@p100/tt_blackhole/bmc
-name: Tenstorrent Blackhole P100 board (BMC)
+name: Tenstorrent Blackhole P100 (Scrappy) board (BMC)
 type: mcu
 arch: arm
 toolchain:

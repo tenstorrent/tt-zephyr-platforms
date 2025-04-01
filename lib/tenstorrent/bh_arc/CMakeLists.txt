@@ -77,21 +77,36 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/flash_info.proto -I ${SPIROM_PROTOBUFS}
 )
 
-if(BOARD STREQUAL "tt_blackhole")
-  # Map board revision names to folder name
-  string(TOUPPER ${BOARD_REVISION} PROD_NAME)
-elseif(BOARD STREQUAL "native_sim")
-  # Use P100 data files to stand in
-  set(PROD_NAME "P100")
-else()
-  message(FATAL_ERROR "No support for board ${BOARD}")
+if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
+	if(BOARD STREQUAL "tt_blackhole")
+	# Map board revision names to folder name
+	string(TOUPPER ${BOARD_REVISION} PROD_NAME)
+	elseif(BOARD STREQUAL "native_sim")
+	# Use P100 data files to stand in
+	set(PROD_NAME "P100")
+	else()
+	message(FATAL_ERROR "No support for board ${BOARD}")
+	endif()
+
+	message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
+
+	# variable is needed to avoid protobuf version clashing
+	if (PROD_NAME MATCHES "^P300")
+	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+		  --board ${PROD_NAME}_L --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+	)
+	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+		  --board ${PROD_NAME}_R --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+	)
+	else()
+	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+		  --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+	)
+	endif()
 endif()
-
-message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
-
-# variable is needed to avoid protobuf version clashing
-set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-	COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-	  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
-	  --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
-)

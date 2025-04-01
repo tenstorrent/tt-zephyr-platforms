@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/dts-v1/;
+#include <st/g0/stm32g0b1Xe.dtsi>
+#include <st/g0/stm32g0b1v(b-c-e)ix-pinctrl.dtsi>
+
+#include "tt_blackhole_base.dtsi"
+
 /*
  * Left chip is local (comes up in non bifercation mode) this is referred to as chip1
  * in the schematics
@@ -90,36 +96,6 @@
 };
 
 /*
- * Added these pinctrl definitions from the file stm32g0b1v(b-c-e)ix-pinctrl.dtsi.
- * These are not included in our default dtsi file stm32g0b1c(b-c-e)tx-pinctrl.dtsi
- * but are required to configure the hardware spi "spi2".
- * This is maybe a sign that we need to rethink our board hierarchy, but for now this
- * seems like a "good enough" workaround.
- */
-&pinctrl {
-	/omit-if-no-ref/ spi2_nss_pb12: spi2_nss_pb12 {
-		pinmux = <STM32_PINMUX('B', 12, AF0)>;
-		bias-pull-up;
-	};
-
-	/omit-if-no-ref/ spi2_sck_pb8: spi2_sck_pb8 {
-		pinmux = <STM32_PINMUX('B', 8, AF1)>;
-		bias-pull-down;
-		slew-rate = "very-high-speed";
-	};
-
-	/omit-if-no-ref/ spi2_miso_pc2: spi2_miso_pc2 {
-		pinmux = <STM32_PINMUX('C', 2, AF1)>;
-		bias-pull-down;
-	};
-
-	/omit-if-no-ref/ spi2_mosi_pc3: spi2_mosi_pc3 {
-		pinmux = <STM32_PINMUX('C', 3, AF1)>;
-		bias-pull-down;
-	};
-};
-
-/*
  * Chip 1
  * sck: PA6
  * SO PC2
@@ -177,12 +153,6 @@
 &chip0 {
 	compatible = "tenstorrent,bh-chip";
 
-	asic_reset {
-		compatible = "zephyr,gpio-line";
-		label = "Line to asic reset";
-		gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
-	};
-
 	jtag {
 		compatible = "zephyr,jtag-gpio";
 		status = "okay";
@@ -193,10 +163,6 @@
 		port-write-cycles = <2>;
 		tck-delay = <1>;
 	};
-
-	flash = <&flash1>;
-
-	arc = <&chip0_arc>;
 };
 
 &i2c1 {
@@ -219,13 +185,6 @@
 		gpio-controller;
 	};
 };
-
-/*
- * On the p300 the location of the chip0_arc was changed from smbus3 to smbus1 and the chip1
- * ARC is now located on smbus3. In order to avoid confusion by assigning chip0_arc to chip1 I
- * deleted it and defined both chip0_arc and chip1_arc on their respective busses.
- */
-/delete-node/ &chip0_arc;
 
 /*
  * I2C1_SW_EN is F8

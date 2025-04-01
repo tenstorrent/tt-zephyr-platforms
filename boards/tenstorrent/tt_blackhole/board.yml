@@ -4,10 +4,16 @@ boards:
   vendor: tenstorrent
   revision:
     format: custom
-    default: "p100"
     revisions:
     - name: "p100"
     - name: "p100a"
+    - name: "p150"
     - name: "p150a"
+    - name: "p150b"
+    - name: "p150c"
+    - name: "p300"
+    - name: "p300a"
+    - name: "p300b"
+    - name: "p300c"
   socs:
   - name: tt_blackhole

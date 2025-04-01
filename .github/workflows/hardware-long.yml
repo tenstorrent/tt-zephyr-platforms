@@ -100,7 +100,8 @@ jobs:
           case "${{ matrix.config.board }}" in
             p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
             p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
-            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            p150) BMC_BOARD=tt_blackhole@p150/tt_blackhole/bmc;;
+            p300) BMC_BOARD=tt_blackhole@p300/tt_blackhole/bmc;;
             *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
           esac
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
