@@ -68,6 +68,7 @@
 #define TAG_MAX_GDDR_TEMP        51
 #define TAG_ASIC_LOCATION        52
 #define TAG_BOARD_PWR_LIMIT      53
+#define TAG_INPUT_POWER			 54
 
 /* Enums are subject to updates */
 typedef enum {
@@ -117,11 +118,14 @@ typedef enum {
 	L2CPU_FW_VERSION,
 
 	/* MISC */
+	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
+
+	/* Board telemetry */
 	FAN_SPEED,
 	FAN_RPM,
-	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
 	INPUT_CURRENT,
 	BOARD_PWR_LIMIT,
+	INPUT_POWER,
 
 	/* Tile enablement/harvesting information */
 	ENABLED_TENSIX_COL,
