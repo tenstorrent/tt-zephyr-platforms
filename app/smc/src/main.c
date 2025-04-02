@@ -7,18 +7,18 @@
 #include "dvfs.h"
 #include "fan_ctrl.h"
 #include "init.h"
-#include "smbus_target.h"
-#include "telemetry.h"
-#include "status_reg.h"
 #include "reg.h"
+#include "smbus_target.h"
+#include "status_reg.h"
+#include "telemetry.h"
 #include "timer.h"
 
 #include <stdint.h>
 
 #include <app_version.h>
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/uart_tt_virt.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/uart_tt_virt.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -105,8 +105,6 @@ static int record_cmfw_start_time(void)
 SYS_INIT(record_cmfw_start_time, EARLY, 0);
 
 #ifdef CONFIG_UART_TT_VIRT
-#include "status_reg.h"
-
 void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
 {
 	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
