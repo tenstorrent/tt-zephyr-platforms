@@ -31,9 +31,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +103,7 @@ jobs:
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -144,9 +142,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -195,7 +191,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-smc-e2e
 
@@ -214,6 +210,11 @@ jobs:
             zephyr/twister-*-e2e/twister.log
             zephyr/twister-*-e2e/twister.json
 
+      - name: build-tt-console
+        working-directory: tt-zephyr-platforms
+        run: |
+          gcc -std=gnu11 -Iinclude -o /tmp/tt-console scripts/tt-console/console.c
+
       - name: run-e2e-flash-test
         working-directory: zephyr
         run: |
@@ -223,7 +224,7 @@ jobs:
             --west-flash="--force" \
             --west-runner tt_flash \
             --device-testing -c -ll DEBUG \
-            --device-serial-pty rtt \
+            --device-serial-pty /tmp/tt-console \
             --outdir twister-e2e-flash
 
       - name: Upload E2E Flash Results
