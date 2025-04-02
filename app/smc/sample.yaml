@@ -47,10 +47,6 @@ tests:
         - pytest/vuart.py
       pytest_args:
         - "--dut-scope=session"
-    extra_args:
-      - "EXTRA_DTC_OVERLAY_FILE=vuart.overlay"
-    extra_overlay_confs:
-      - vuart.conf
   # demonstrates pinctrl driver, macros, etc, compile
   app.e2e_smoke.pinctrl:
     tags: e2e

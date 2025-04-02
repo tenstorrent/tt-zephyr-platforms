@@ -107,6 +107,6 @@ jobs:
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
+          python3 ./scripts/dmc_rtt.py -n || true
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt || true
