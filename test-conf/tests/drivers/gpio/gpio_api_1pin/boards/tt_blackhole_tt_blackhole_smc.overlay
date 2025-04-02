@@ -12,3 +12,8 @@
 		status = "okay";
 	};
 };
+
+&vuart0 {
+	/* this testsuite is slightly more verbose and requires additional buffering for now */
+	tx-cap = <7132>;
+};

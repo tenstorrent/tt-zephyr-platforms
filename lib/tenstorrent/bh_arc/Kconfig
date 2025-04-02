@@ -3,12 +3,10 @@
 
 config TT_BH_ARC
 	bool "Blackhole ARC firmware library"
-	depends on NANOPB
-	# Enable flash driver
 	select FLASH
 	select FLASH_PAGE_LAYOUT
-	# this is a hack
-	default y if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+	select TT_BOOT_FS
+	select NANOPB
 	help
 	  This option enables the Blackhole ARC firmware library.
 

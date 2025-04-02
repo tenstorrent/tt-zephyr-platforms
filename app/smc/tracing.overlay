@@ -6,36 +6,8 @@
 
 / {
 	chosen {
-		zephyr,console = &vuart0;
-		zephyr,shell-uart = &vuart0;
 		zephyr,tracing-uart = &vuart1;
 	};
-
-	vuarts {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		vuart0: uart_tt_virt@0 {
-			compatible = "tenstorrent,vuart";
-			version = <0x00000000>;
-			reg = <0x0>;
-			status = "disabled";
-		};
-
-		vuart1: uart_tt_virt@1 {
-			compatible = "tenstorrent,vuart";
-			version = <0x00000000>;
-			reg = <0x1>;
-			status = "disabled";
-		};
-	};
-};
-
-&uart0 {
-	status = "disabled";
-};
-
-&vuart0 {
-	status = "okay";
 };
 
 &vuart1 {

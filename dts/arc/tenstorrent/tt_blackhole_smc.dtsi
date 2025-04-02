@@ -43,6 +43,24 @@
 
 	};
 
+	vuarts {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		vuart0: uart_tt_virt@0 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x0>;
+			status = "disabled";
+		};
+
+		vuart1: uart_tt_virt@1 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x1>;
+			status = "disabled";
+		};
+	};
+
 	gpio0: gpio@800301a0 {
 		compatible = "tenstorrent,bh-gpio";
 		reg = <0x800301a0 0x4>,
