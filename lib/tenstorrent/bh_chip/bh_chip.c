@@ -73,23 +73,35 @@ int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
 
 	return ret;
 }
+
+int bh_chip_set_input_pwr(struct bh_chip *chip, uint32_t *power)
+{
+	int ret;
+
+	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
+	ret = bharc_smbus_block_write(&chip->config.arc, 0x25, 4, (uint8_t *)power);
+	k_mutex_unlock(&chip->data.reset_lock);
+
+	return ret;
+}
+
+int bh_chip_set_input_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
+{
+	int ret;
+
+	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
+	k_mutex_unlock(&chip->data.reset_lock);
+
+	return ret;
+}
+
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
 
 	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x23, rpm);
-	k_mutex_unlock(&chip->data.reset_lock);
-
-	return ret;
-}
-
-int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
-{
-	int ret;
-
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
 	k_mutex_unlock(&chip->data.reset_lock);
 
 	return ret;
