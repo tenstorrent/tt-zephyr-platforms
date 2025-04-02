@@ -63,8 +63,6 @@ for REV in $BOARD_REVS; do
 
   echo "Building $BOARD"
   west build -d "${TEMP_DIR}${REV}" --sysbuild -p -b "$BOARD" app/smc \
-    -DEXTRA_CONF_FILE=vuart.conf \
-    -DEXTRA_DTC_OVERLAY_FILE=vuart.overlay \
     >/dev/null 2>&1
 done
 
