@@ -127,18 +127,17 @@ void process_cm2dm_message(struct bh_chip *chip)
 	}
 }
 
-void ina228_current_update(void)
+void ina228_pwr_update(void)
 {
-	struct sensor_value current_sensor_val;
+	struct sensor_value sensor_val;
 
-	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
-	sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &current_sensor_val);
+	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_POWER);
+	sensor_channel_get(ina228, SENSOR_CHAN_POWER, &sensor_val);
 
-	int32_t current =
-		(current_sensor_val.val1 << 16) + (current_sensor_val.val2 * 65536ULL) / 1000000ULL;
+	int32_t power = (sensor_val.val1 << 16) + (sensor_val.val2 * 65536ULL) / 1000000ULL;
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		bh_chip_set_input_current(chip, &current);
+		bh_chip_set_input_pwr(chip, &power);
 	}
 }
 
@@ -349,7 +348,7 @@ int main(void)
 		}
 
 		if (IS_ENABLED(CONFIG_INA228)) {
-			ina228_current_update();
+			ina228_pwr_update();
 		}
 
 		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {

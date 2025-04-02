@@ -66,20 +66,30 @@ int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
 
 	return ret;
 }
+
+int bh_chip_set_input_pwr(struct bh_chip *chip, uint32_t *power)
+{
+	int ret;
+
+	ret = bharc_smbus_block_write(&chip->config.arc, 0x25, 4, (uint8_t *)power);
+
+	return ret;
+}
+
+int bh_chip_set_input_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
+{
+	int ret;
+
+	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
+
+	return ret;
+}
+
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
 
 	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x23, rpm);
-
-	return ret;
-}
-
-int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
-{
-	int ret;
-
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
 
 	return ret;
 }
