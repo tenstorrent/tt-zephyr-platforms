@@ -21,6 +21,7 @@ typedef enum {
 	kThrottlerTDC,
 	kThrottlerThm,
 	kThrottlerBoardPwr,
+	kThrottlerGDDRThm,
 	kThrottlerCount,
 } ThrottlerId;
 
@@ -57,6 +58,10 @@ static const ThrottlerLimitRange throttler_limit_ranges[kThrottlerCount] = {
 			.min = 50,
 			.max = 600,
 		},
+	[kThrottlerGDDRThm] = {
+			.min = 50,
+			.max = 100,
+	}
 };
 
 typedef struct {
@@ -125,6 +130,15 @@ static Throttler throttler[kThrottlerCount] = {
 					.p_gain = 0.2,
 					.d_gain = 0,
 			}
+	},
+	[kThrottlerGDDRThm] = {
+			.arb_max = kAiclkArbMaxGDDRThm,
+			.params = {
+
+					.alpha_filter = 1.0,
+					.p_gain = 0.2,
+					.d_gain = 0,
+				},
 	}
 };
 
@@ -141,6 +155,7 @@ void InitThrottlers(void)
 	SetThrottlerLimit(kThrottlerTDC, get_fw_table()->chip_limits.tdc_limit);
 	SetThrottlerLimit(kThrottlerThm, get_fw_table()->chip_limits.thm_limit);
 	SetThrottlerLimit(kThrottlerBoardPwr, DEFAULT_BOARD_PWR_LIMIT);
+	SetThrottlerLimit(kThrottlerGDDRThm, get_fw_table()->chip_limits.gddr_thm_limit);
 }
 
 static void UpdateThrottler(ThrottlerId id, float value)
@@ -175,6 +190,7 @@ void CalculateThrottlers(void)
 	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
 	UpdateThrottler(kThrottlerBoardPwr, 12 * ConvertTelemetryToFloat(GetInputCurrent()));
+	UpdateThrottler(kThrottlerGDDRThm, GetMaxGDDRTemp());
 
 	for (ThrottlerId i = 0; i < kThrottlerCount; i++) {
 		UpdateThrottlerArb(i);
