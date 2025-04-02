@@ -34,9 +34,11 @@ west blobs fetch
 # Apply local patches
 west patch apply
 
-# Go to the main Zephyr directory
-cd zephyr
-source zephyr-env.sh
+# Set up Zephyr environment
+source zephyr/zephyr-env.sh
+
+# Enter the module
+cd $MODULE.git
 ```
 
 ### Build, Flash, Debug & Test BMC FW
@@ -48,7 +50,7 @@ BOARD=tt_blackhole/tt_blackhole/bmc
 BOARD_SANITIZED=tt_blackhole_tt_blackhole_bmc
 
 # Build BMC firmware
-west build --sysbuild -p -S rtt-console -b $BOARD ../$MODULE.git/app/bmc
+west build --sysbuild -p -S rtt-console -b $BOARD app/bmc
 
 # Flash mcuboot and the app
 west flash
@@ -109,7 +111,7 @@ The file `fw.hex` is a concatenation of the mcuboot `zephyr.bin` and the `app/sm
 BOARD=tt_blackhole/tt_blackhole/smc
 
 # Build SMC firmware
-west build -p -S rtt-console -b $BOARD ../$MODULE.git/app/smc
+west build -p -S rtt-console -b $BOARD app/smc
 
 # Flash mcuboot and the app
 west flash
