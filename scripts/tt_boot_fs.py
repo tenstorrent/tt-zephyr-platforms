@@ -290,6 +290,7 @@ class BootImage:
                 raise ValueError(
                     f"{tag} padto value {padto} is < the binary size {len(binary)}"
                 )
+            binary += bytes(padto - len(binary))
         # We always need to pad binaries to 4 byte offsets for checksum verification
         binary += bytes((len(binary) % 8))
 
