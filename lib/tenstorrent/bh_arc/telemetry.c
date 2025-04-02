@@ -264,7 +264,9 @@ static void update_telemetry(void)
 	UpdateGddrTelemetry();
 	telemetry[MAX_GDDR_TEMP] = GetMaxGDDRTemp();
 	telemetry[INPUT_CURRENT] =
-		GetInputCurrent();    /* Input current - reported in A in signed int 16.16 format */
+		GetInputCurrent(); /* Input current - reported in A in signed int 16.16 format */
+	telemetry[INPUT_POWER] =
+		GetInputPower();      /* Input power - reported in W in unsigned int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }
@@ -323,7 +325,8 @@ static void update_tag_table(void)
 	tag_table[49] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
 	tag_table[50] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
 	tag_table[51] = (struct telemetry_entry){TAG_BOARD_PWR_LIMIT, BOARD_PWR_LIMIT};
-	tag_table[52] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[52] = (struct telemetry_entry){TAG_INPUT_POWER, INPUT_POWER};
+	tag_table[53] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */
