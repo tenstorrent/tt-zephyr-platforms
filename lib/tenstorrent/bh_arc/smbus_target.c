@@ -198,6 +198,13 @@ static SmbusConfig smbus_config = {
 			  .handler = {
 					  .rcv_handler = &Bm2CmSetBoardPwrLimit
 			  }},
+		[0x25] = {
+			.valid = 1,
+			.trans_type = kSmbusTransBlockWrite,
+			.expected_blocksize = 4,
+			.handler = {
+					.rcv_handler = &Bm2CmSendPwrHandler
+			}},
 #endif
 		[0xD8] = {
 
