@@ -18,10 +18,9 @@
 
 	chosen {
 		zephyr,sram = &csm;
-		zephyr,console = &uart0;
-		zephyr,shell-uart = &uart0;
+		zephyr,console = &vuart0;
+		zephyr,shell-uart = &vuart0;
 	};
-
 };
 
 &spi0 {
@@ -114,5 +113,9 @@
 
 &fwtable {
 	flash_dev = <&spi_flash>;
+	status = "okay";
+};
+
+&vuart0 {
 	status = "okay";
 };

@@ -58,10 +58,7 @@ cd tt-zephyr-platforms
 make -j -C scripts/tooling OUTDIR=/tmp tt-console
 
 # Build and flash firmware
-west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/smc app/smc \
-  -- -DEXTRA_CONF_FILE=vuart.conf \
-  -DEXTRA_DTC_OVERLAY_FILE=vuart.overlay \
-  -DCONFIG_SHELL=y
+west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/smc app/smc -- -DCONFIG_SHELL=y
 west flash -r tt_flash --force
 
 # Reset the board and rescan the PCIe bus
