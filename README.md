@@ -41,6 +41,57 @@ source zephyr/zephyr-env.sh
 cd $MODULE.git
 ```
 
+### Build & Flash
+
+**Build and flash targets with `west`**
+
+> [!NOTE]
+> Below, we build with [application overlay](https://docs.zephyrproject.org/latest/develop/application/index.html#important-build-system-variables)
+> files to support `tt-console` from firmware.
+
+```shell
+# Build `tt-console`
+gcc -Iinclude -std=gnu11 -o tt-console scripts/tt-console/console.c
+
+# Build and flash firmware
+west build --sysbuild -p -b tt_blackhole@p100/tt_blackhole/smc app/smc
+west flash -r tt_flash --force
+
+# Reset the board and rescan the PCIe bus
+tt-smi -r
+./scripts/rescan-pcie.sh
+
+# Interact via `tt-console`
+./scripts/tt-console/tt-console
+```
+
+Output should appear as shown below
+```shell
+Press Ctrl-a,x to quit
+         .:.                 .:
+      .:-----:..             :+++-.
+   .:------------:.          :++++++=:
+ :------------------:..      :+++++++++
+ :----------------------:.   :+++++++++
+ :-------------------------:.:+++++++++
+ :--------:  .:-----------:. :+++++++++
+ :--------:     .:----:.     :+++++++++
+ .:-------:         .        :++++++++-
+    .:----:                  :++++=:.
+        .::                  :+=:
+          .:.               ::
+          .===-:        .-===-
+          .=======:. :-======-
+          .==================-
+          .==================-
+           ==================:
+            :-==========-:.
+                .:====-.
+
+*** Booting tt_blackhole with Zephyr OS v4.1.0 ***
+Tenstorrent Blackhole CMFW 0.9.1
+```
+
 ### Build, Flash, Debug & Test BMC FW
 
 **Build, flash, and view output from the target with `west`**
@@ -61,17 +112,18 @@ west rtt
 
 Console output should appear as shown below.
 ```shell
-*** Booting MCUboot v2.1.0-rc1-163-geb9420679895 ***
-*** Using Zephyr OS build v4.0.0-1487-g595d81a941c5 ***
+*** Booting MCUboot v2.1.0-rc1-233-g346f7374ff44 ***
+*** Using Zephyr OS build v4.1.0 ***
 I: Starting bootloader
 I: Primary image: magic=good, swap_type=0x2, copy_done=0x1, image_ok=0x1
-I: Secondary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+I: Secondary image: magic=good, swap_type=0x2, copy_done=0x3, image_ok=0x3
 I: Boot source: none
-I: Image index: 0, Swap type: none
+I: Image index: 0, Swap type: test
+I: Starting swap using move algorithm.
 I: Bootloader chainload address offset: 0xc000
-I: Image version: v0.2.1
+I: Image version: v0.3.2
 I: Jumping to the first image slot
-*** Booting Zephyr OS build v4.0.0-1487-g595d81a941c5 ***
+*** Booting Zephyr OS build 7823374e8721 ***
 ```
 
 **Build and run tests on hardware with `twister`**
@@ -93,31 +145,6 @@ The file `fw.hex` is a concatenation of the mcuboot `zephyr.bin` and the `app/sm
 ```shell
 ./scripts/bmc-reset.py /opt/tenstorrent/fw/stable/$BOARD_SANITIZED/fw.hex
 ./scripts/rescan-pcie.sh
-```
-
-**Reset the BMC via OpenOCD (I.e. Soft-Reset the Card)**
-
-```shell
-./scripts/bmc-reset.py
-./scripts/rescan-pcie.sh
-```
-
-### Build, Flash, and Debug SMC FW
-
-**Build, flash, and attach to the target with `west`**
-
-```shell
-# Set up a convenience variable for SMC FW
-BOARD=tt_blackhole/tt_blackhole/smc
-
-# Build SMC firmware
-west build -p -S rtt-console -b $BOARD app/smc
-
-# Flash mcuboot and the app
-west flash
-
-# Attach a debugger
-west attach
 ```
 
 ## Enable Git Hooks for Development
