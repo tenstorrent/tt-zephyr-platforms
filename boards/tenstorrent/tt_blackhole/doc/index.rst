@@ -30,7 +30,7 @@ Overview
 
 The Blackhole SoC is Tenstorrent's third-generation AI accelerator SoC, packing up to
 
-* 140 Tensix |Trade| cores
+* 140 Tensix™ cores
 * 8 GDDR6 channels for 3.5 Tb/s of throughput
 * 32 GB of on-board GDDR6 memory
 * 4 QSFP-DD ports at 800 Gb/s
@@ -48,7 +48,7 @@ The Blackhole SoC is Tenstorrent's third-generation AI accelerator SoC, packing 
 
    .. container:: rightside
 
-      .. figure:: img/blackhole-p150-pcb.webp
+      .. figure:: img/blackhole-p150a-pcb.webp
          :align: center
          :alt: Tenstorrent Blackhole SoC
 
@@ -80,9 +80,9 @@ Supported Features
 
 .. note::
    Some components are in the process of being migrated to Zephyr's driver model, and are
-   currently implemented in the :zephyr_file:`lib/tenstorrent/bh_arc` library.
+   currently implemented in the ``lib/tenstorrent/bh_arc`` library.
 
-.. zephyr:board-supported-hw::
+.. :external+zephyr:zephyr:board-supported-hw::
 
 Building
 ========
@@ -90,7 +90,7 @@ Building
 SMC firmware can be built using the standard Zephyr build system. For other apps, tests,
 and samples, simply point the build system to the desired app directory.
 
-.. zephyr-app-commands::
+.. :external+zephyr:zephyr-app-commands::
    :zephyr-app: app/smc
    :host-os: unix
    :board: tt_blackhole@p100a/tt_blackhole/smc
