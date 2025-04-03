@@ -37,6 +37,10 @@ struct bh_chip_config {
 
 struct bh_chip_data {
 	struct k_mutex reset_lock;
+	struct gpio_callback therm_trip_cb;
+	struct gpio_callback pgood_rise_cb;
+	struct gpio_callback pgood_fall_cb;
+	struct k_work pgood_fault_worker;
 	struct k_sem pgood_high_sem;
 
 	/* Flag set when we need to apply the reset regardless of preset state. */
@@ -57,10 +61,6 @@ struct bh_chip_data {
 struct bh_chip {
 	const struct bh_chip_config config;
 	struct bh_chip_data data;
-	struct gpio_callback therm_trip_cb;
-	struct gpio_callback pgood_rise_cb;
-	struct gpio_callback pgood_fall_cb;
-	struct k_work pgood_fault_worker;
 };
 
 #define DT_PHANDLE_OR_CHILD(node_id, name)                                                         \
@@ -111,9 +111,9 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 							BH_CHIPS[idx].data.reset_lock),            \
 						.pgood_high_sem = Z_SEM_INITIALIZER(               \
 							BH_CHIPS[idx].data.pgood_high_sem, 1, 1),  \
+						.pgood_fault_worker = Z_WORK_INITIALIZER(          \
+							pgood_fault_work_handler),                 \
 					},                                                         \
-				.pgood_fault_worker =                                              \
-					Z_WORK_INITIALIZER(pgood_fault_work_handler),              \
 			},
 
 #define BH_CHIP_PRIMARY_INDEX DT_PROP(DT_PATH(chips), primary)
