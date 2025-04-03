@@ -4,6 +4,6 @@
 config RESET_TT_BH
 	bool "Tenstorrent Blackhole reset controller"
 	default y
-	depends on DT_HAS_TENSTORRENT_BLACKHOLE_RESET_ENABLED
+	depends on DT_HAS_TENSTORRENT_BH_RESET_ENABLED
 	help
 	  This option enables the Tenstorrent Blackhole reset controller.
