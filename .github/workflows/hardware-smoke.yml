@@ -43,6 +43,7 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
+          skip-dependencies: true
 
       - name: Generate board names
         shell: bash
@@ -156,6 +157,7 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
+          skip-dependencies: true
 
       - name: Generate board names
         shell: bash
