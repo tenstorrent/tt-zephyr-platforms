@@ -241,7 +241,7 @@ uint32_t RegulatorInit(PcbType board_type)
 	uint32_t aggregate_i2c_errors = 0;
 	uint32_t i2c_error = 0;
 
-	if (board_type == PcbTypeP150) {
+	if (board_type == PcbTypeP150 || board_type == PcbTypeP100) {
 		/* VCORE */
 		static const uint8_t vcore_b0_data[] = {
 			0x00, 0x00, 0x00, 0x00,
