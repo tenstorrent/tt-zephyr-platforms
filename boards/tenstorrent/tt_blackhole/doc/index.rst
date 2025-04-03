@@ -1,216 +1,128 @@
-.. _bh_arc:
+.. _tt_blackhole:
 
-Blackhole ARC Board
-###################
+Tenstorrent Blackhole PCI Express Cards
+#######################################
 
-The Blackhole ARC "board" is a conceptual board that we use for BlackHole firmware running on
-the internal ARC core of the Blackhole SoC, which is responsible for chip-management.
+Tenstorrent is proud to release firmware for Blackhole PCIe AI accelerator cards powered by the
+`Zephyr Real-Time Operating System`_. Following our commitment to providing the best hardware,
+tools, and developer experience to our customers, partners, and the Open Source Community, we
+believe that embracing the Open Source development model is key to empowering everyone
+to build the next generation of AI applications with the best silicon available.
+
+Of possibly historical note, we believe Blackhole to be the world's first consumer-focused
+PCIe AI accelerator card that is also a
+`Zephyr-based product <https://www.zephyrproject.org/products-running-zephyr/>`_.
+
+Own your Silicon Future.
+
+Supported Boards
+****************
+
+Boards in the Blackhole product family that are officially supported by this repository include:
+
+* Blackhole P100 (aka "Scrappy" - an internal development board)
+* Blackhole P100A
+* Blackhole P150A
+* Blackhole P150B
+
+Additional boards in the Blackhole product family may be added in the future as they are
+announced.
 
 Overview
 ********
 
 The Blackhole SoC is Tenstorrent's third-generation AI accelerator SoC, packing up to
 
-* 140 Tensix |Trade| cores
+* 140 Tensix™ cores
 * 8 GDDR6 channels for 3.5 Tb/s of throughput
 * 32 GB of on-board GDDR6 memory
-* 6 Ethernet ports at 400 Gb/s
+* 4 QSFP-DD ports at 800 Gb/s
 * 16 PCIe 5.0 lanes for 500 Gb/s of throughput
+
+.. container:: twocol
+
+   .. container:: leftside
+
+      .. figure:: img/blackhole.webp
+         :align: center
+         :alt: Tenstorrent Blackhole SoC
+
+         Tenstorrent Blackhole Block Diagram
+
+   .. container:: rightside
+
+      .. figure:: img/blackhole-p150a-pcb.webp
+         :align: center
+         :alt: Tenstorrent Blackhole SoC
+
+         Tenstorrent Blackhole P150A PCB
 
 See the `Blackhole Product Page`_ for additional details and specifications.
 
-.. figure:: img/blackhole.jpg
-   :align: center
-   :alt: Tenstorrent Blackhole SoC
+Blackhole firmware is built for two targets:
 
-   Tenstorrent Blackhole SoC
+* System Management Controller (SMC): the ARC cluster in the Blackhole SoC
+* Device Management Controller (DMC): an external ARM microcontroller
+
+DMC firmware is mainly responsible for power-on, fan control, some telemetry, SMBus
+communication, and other board-level management functions.
+
+SMC firmware focuses on management of high-speed I/O (i.e PCIe, GDDR, and Ethernet), power
+management, frequency scaling, thermal management, host communication over PCIe and other
+chip-level functionality.
 
 Hardware
 ********
 
-The ARC chip management cores run at 800 MHz and are responsible for managing connectivity, power,
-and other chip-level functionality.
-
 Supported Features
 ==================
 
-The Blackhole ARC cores have access to the following features:
+.. note::
+   Some drivers not specific to Tenstorrent hardware may be located in the main
+   `Zephyr git repository <https://github.com/zephyrproject/zephyr>`_.
 
-.. Add devices as drivers are enabled.
+.. note::
+   Some components are in the process of being migrated to Zephyr's driver model, and are
+   currently implemented in the ``lib/tenstorrent/bh_arc`` library.
 
-+-----------+------------+------------------+
-| Interface | Controller | Driver/Component |
-+===========+============+==================+
-| GPIO      | on-chip    | gpio             |
-+-----------+------------+------------------+
-| PINMUX    | on-chip    | pinmux           |
-+-----------+------------+------------------+
-| UART      | on-chip    | serial           |
-+-----------+------------+------------------+
-| I2C       | on-chip    | i2c              |
-+-----------+------------+------------------+
-| SPI       | on-chip    | spi              |
-+-----------+------------+------------------+
-
-Other hardware features have not been enabled yet for this board.
-
-Connections and IOs
-===================
-
-All I/O signals are accessible from the BoosterPack connectors. Pin function
-aligns with the SensorTag standard.
-
-.. Add pinctrl entries as they are enabled.
-
-+--------+-----------+---------------------+
-| Pin    | Function  | Usage               |
-+========+===========+=====================+
-| GPIO48 | UART TX   | UART                |
-+--------+-----------+---------------------+
-| GPIO49 | UART RX   | UART                |
-+-------+-----------+---------------------+
-
-Prerequisites:
-==============
-
-#. Install Segger J-Link software
-
-   Download and install the latest J-Link software from
-   :ref:`here <https://www.segger.com/downloads/jlink/>`_.
-
-#. Install OpenOCD
-
-.. tabs::
-
-   .. group-tab:: Ubuntu
-
-      OpenOCD should be installed along with the `Zephyr SDK <toolchain_zephyr_sdk>`.
-
-   .. group-tab:: macOS
-
-      OpenOCD should be installed via `Homebrew <https://brew.sh/>`_.
-
-         .. code-block:: bash
-
-            brew install openocd
-
-   .. group-tab:: Windows
-
-      ¯\_(ツ)_/¯
-
-#. Install a terminal emulator (e.g. minicom, putty, etc.) for console I/O
-
-.. tabs::
-
-   .. group-tab:: Ubuntu
-
-         .. code-block:: bash
-
-            sudo apt install -y minicom
-
-   .. group-tab:: macOS
-
-         .. code-block:: bash
-
-            brew install minicom
-
-   .. group-tab:: Windows
-
-      ¯\_(ツ)_/¯
-
-Programming and Debugging
-*************************
-
-The Blackhole ARC cores require both a system JTAG connection as well as an ARC JTAG connection.
-The system JTAG connection is used for programming SPI flash from the PCIe host, while the ARC
-JTAG is used to to control and inspect the ARC cluster. A USB serial adapter is used for direct
-UART I/O, the Zephyr console, and the Zephyr shell.
-
-.. FIXME: add either a diagram or photo of the debug setup
-
-.. figure:: img/bh-arc-debug.jpg
-   :align: center
-   :alt: Debugging the Tenstorrent Blackhole SoC
-
-Open a terminal emulator to connect to the Blackhole ARC UART. The device node will vary depending
-on the host OS and serial adapter.
-
-.. code-block:: bash
-
-   $ minicom -w -b 115200 -D /dev/tty.usbmodem1234
+.. :external+zephyr:zephyr:board-supported-hw::
 
 Building
 ========
 
-Production firmware can be built using the standard Zephyr build system. For other apps, tests,
+SMC firmware can be built using the standard Zephyr build system. For other apps, tests,
 and samples, simply point the build system to the desired app directory.
 
-.. zephyr-app-commands::
-   :zephyr-app: ../modules/bh-cmfw/app/
+.. :external+zephyr:zephyr-app-commands::
+   :zephyr-app: app/smc
    :host-os: unix
-   :board: bh_arc
-   :goals: build
+   :board: tt_blackhole@p100a/tt_blackhole/smc
+   :goals: build flash
    :compact:
 
-Flashing
-========
-
-Use ``boot.py`` to flash firmware to the target (note: this requires cloning the syseng repo)
+The ``tt-console`` app is a terminal-emulator-like utility that can be used to view log messages
+and interact with the Zephyr shell.
 
 .. code-block:: bash
 
-    # only required once
-    pushd syseng/src/t6ifc/t6py
-    ./bin/venv-create ../../../../.venv
-    popd
+   $ gcc -std=gnu11 -Iinclude -o tt-console scripts/tt-console/console.c
+   $ ./tt-console
 
-.. code-block:: bash
-
-    # required each time a new terminal is opened
-    pushd syseng/src/t6ifc/t6py
-    . bin/venv-activate.sh ../../../../.venv
-    popd
-
-.. code-block:: bash
-
-    # each time the firmware needs to be flashed
-    cp $ZEPHYR_BASE/build/zephyr/zephyr.bin ./syseng/src/t6ifc/t6py/packages/tenstorrent/data/blackhole/fw/cmfw.bin
-    ./syseng/src/t6ifc/t6py/packages/tenstorrent/scripts/boot.py
-
-If successful, the output of ``boot.py`` should look like the following:
-
-.. code-block:: console
-
-    Pin 8 -> 0
-    Pin 8 -> 1
-    JLink open
-    Running mini bootcode
-    Mini bootcode done
-    Running CMFW
-    CMFW done
-    JLink close
+Press ``Ctrl-x,a`` to exit the ``tt-console`` app.
 
 Debugging
 =========
 
-Production firmware can debugged in the usual way. For debugging other apps, repease the build,
-flash, and debug steps for the desired app.
+Tenstorrent has developed a custom adapter board to facilitate debugging firmware running on the
+Blackhole SMC and DMC.
 
-.. zephyr-app-commands::
-   :zephyr-app: ../modules/bh-cmfw/app/
-   :board: bh_arc
-   :maybe-skip-config:
-   :goals: debug
-
-`Additional arguments <https://yyz-gitlab.local.tenstorrent.com/syseng-platform/bh-cmfw/-/blob/main/doc/faq.md>`_
-may be required when there are more than 1 JTAG adapters connected to the host. For example,
-
-.. code-block:: bash
-
-   west <flash|debug|debugserver> --cmd-pre-init 'adapter usb location 1-4'
+Details coming soon!
 
 References
 **********
 
 .. _Blackhole Product Page:
    https://tenstorrent.com/hardware/blackhole
+
+.. _Zephyr Real-Time Operating System:
+   https://www.zephyrproject.org/
