@@ -45,12 +45,8 @@ cd $MODULE.git
 
 **Build and flash targets with `west`**
 
-> [!NOTE]
-> Below, we build with [application overlay](https://docs.zephyrproject.org/latest/develop/application/index.html#important-build-system-variables)
-> files to support `tt-console` from firmware.
-
 ```shell
-# Build `tt-console`
+# Build tt-console
 gcc -Iinclude -std=gnu11 -o tt-console scripts/tt-console/console.c
 
 # Build and flash firmware
@@ -61,7 +57,7 @@ west flash -r tt_flash --force
 tt-smi -r
 ./scripts/rescan-pcie.sh
 
-# Interact via `tt-console`
+# Interact via tt-console
 ./scripts/tt-console/tt-console
 ```
 
