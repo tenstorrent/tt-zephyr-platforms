@@ -133,7 +133,7 @@
 		ranges;
 
 		global_reset: reset@80030000 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030000 0x4>;
 			#reset-cells = <1>;
 			reset-mask = <0x2383>;
@@ -141,7 +141,7 @@
 		};
 
 		pcie_reset: reset@80030004 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030004 0x4>;
 			#reset-cells = <1>;
 			nresets = <4>;
@@ -149,7 +149,7 @@
 		};
 
 		eth_reset: reset@80030008 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030008 0x4>;
 			#reset-cells = <1>;
 			nresets = <14>;
@@ -157,7 +157,7 @@
 		};
 
 		ddr_reset: reset@80030010 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030010 0x4>;
 			#reset-cells = <1>;
 			nresets = <8>;
@@ -165,7 +165,7 @@
 		};
 
 		l2cpu_reset: reset@80030014 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030014 0x4>;
 			#reset-cells = <1>;
 			nresets = <4>;
@@ -173,7 +173,7 @@
 		};
 
 		tensix_reset0: reset@80030020 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030020 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -181,7 +181,7 @@
 		};
 
 		tensix_reset1: reset@80030024 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030024 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -189,7 +189,7 @@
 		};
 
 		tensix_reset2: reset@80030028 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030028 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -197,7 +197,7 @@
 		};
 
 		tensix_reset3: reset@8003002c {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x8003002c 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -205,7 +205,7 @@
 		};
 
 		tensix_reset4: reset@80030030 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030030 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -213,7 +213,7 @@
 		};
 
 		tensix_reset5: reset@80030034 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030034 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -221,7 +221,7 @@
 		};
 
 		tensix_reset6: reset@80030038 {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			reg = <0x80030038 0x4>;
 			#reset-cells = <1>;
 			nresets = <32>;
@@ -229,7 +229,7 @@
 		};
 
 		tensix_reset7: reset@8003003c {
-			compatible = "tenstorrent,blackhole-reset";
+			compatible = "tenstorrent,bh-reset";
 			#reset-cells = <1>;
 			reg = <0x8003003c 0x4>;
 			nresets = <32>;
