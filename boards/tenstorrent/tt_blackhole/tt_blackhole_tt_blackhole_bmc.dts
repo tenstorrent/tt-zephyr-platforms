@@ -96,6 +96,12 @@
 		gpios = <&gpioa 2 GPIO_ACTIVE_HIGH>;
 	};
 
+	mcu_conn_i2c_en {
+		compatible = "zephyr,gpio-line";
+		label = "I2C enable for QSFP-DD GPIO expander";
+		gpios = <&gpiod 2 GPIO_ACTIVE_HIGH>;
+	};
+
 	chips {
 		compatible = "tenstorrent,bh-chips";
 		chips = <&chip0>;
