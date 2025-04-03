@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Get the bundle version
+set(VERSION_FILE ${ZEPHYR_CURRENT_MODULE_DIR}/VERSION)
+set(VERSION_TYPE BUNDLE)
+include(${ZEPHYR_BASE}/cmake/modules/version.cmake)
+string(REGEX REPLACE "[^0-9]+" "" BUNDLE_VERSION_EXTRA_NUM "${BUNDLE_VERSION_EXTRA}")
+set(BUNDLE_VERSION_STRING "${BUNDLE_VERSION_MAJOR}.${BUNDLE_VERSION_MINOR}.${BUNDLE_PATCHLEVEL}.${BUNDLE_VERSION_EXTRA_NUM}")
+if("${BUNDLE_VERSION_STRING}" STREQUAL "...")
+  message(FATAL_ERROR "Unable to extract bundle version")
+endif()
+
+message(STATUS "Bundle Version: ${BUNDLE_VERSION_STRING} (${BUNDLE_VERSION_NUMBER})")
