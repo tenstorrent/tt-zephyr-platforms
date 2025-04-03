@@ -56,7 +56,10 @@ int main(void)
 			init_fan_ctrl();
 		}
 
-		if (!IS_ENABLED(CONFIG_TT_AUTO_RESET)) {
+		if (IS_ENABLED(CONFIG_TT_AUTO_RESET)) {
+			UpdateAutoResetTimeoutRequest(
+				get_fw_table()->chip_limits.auto_reset_timeout);
+		} else {
 			UpdateAutoResetTimeoutRequest(0);
 		}
 
