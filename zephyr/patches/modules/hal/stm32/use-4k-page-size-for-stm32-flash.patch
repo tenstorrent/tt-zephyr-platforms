@@ -1,0 +1,13 @@
+diff --git a/stm32cube/stm32g0xx/drivers/include/stm32g0xx_hal_flash.h b/stm32cube/stm32g0xx/drivers/include/stm32g0xx_hal_flash.h
+index 25a316aff..6697fe48f 100644
+--- a/stm32cube/stm32g0xx/drivers/include/stm32g0xx_hal_flash.h
++++ b/stm32cube/stm32g0xx/drivers/include/stm32g0xx_hal_flash.h
+@@ -888,7 +888,7 @@ HAL_StatusTypeDef  FLASH_WaitForLastOperation(uint32_t Timeout);
+ #define FLASH_BANK_SIZE                 (FLASH_SIZE)   /*!< FLASH Bank Size */
+ #endif /* FLASH_DBANK_SUPPORT */
+ 
+-#define FLASH_PAGE_SIZE                 0x00000800U    /*!< FLASH Page Size, 2 KBytes */
++#define FLASH_PAGE_SIZE                 0x00001000U    /*!< FLASH Page Size, 4 KBytes */
+ #define FLASH_PAGE_NB                   (FLASH_BANK_SIZE/FLASH_PAGE_SIZE) /* Number of pages per bank */
+ #define FLASH_TIMEOUT_VALUE             1000U          /*!< FLASH Execution Timeout, 1 s */
+ #define FLASH_TYPENONE                  0x00000000U    /*!< No programming Procedure On Going */
