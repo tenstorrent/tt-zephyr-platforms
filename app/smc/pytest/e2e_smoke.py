@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Constant memory addresses we can read from SMC
 ARC_STATUS = 0x80030060
+BOOT_STATUS = 0x80030408
 
 # ARC messages
 ARC_MSG_TYPE_TEST = 0x90
@@ -123,3 +124,13 @@ def test_bmc_msg(arc_chip):
     assert response[0] == 1, "BMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
     logger.info('BMC ping message response "%d"', response[0])
+
+
+def test_boot_status(arc_chip):
+    """
+    Validates the boot status of the ARC firmware
+    """
+    # Read the boot status register and validate that it is correct
+    status = arc_chip.axi_read32(BOOT_STATUS)
+    assert (status >> 1) & 0x3 == 0x2, "SMC HW boot status is not valid"
+    logger.info('SMC boot status "%d"', status)
