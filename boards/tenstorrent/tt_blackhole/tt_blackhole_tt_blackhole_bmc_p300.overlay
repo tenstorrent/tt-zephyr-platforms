@@ -84,8 +84,8 @@
 
 	chips {
 		compatible = "tenstorrent,bh-chips";
-		chips = <&chip0 &chip1>;
-		primary = <1>;
+		chips = <&chip1 &chip0>;
+		primary = <0>;
 	};
 };
 
