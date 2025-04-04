@@ -728,11 +728,14 @@ def cksum(data: bytes):
     return calculated_checksum
 
 
-def mkfs(path: Path, env={"$ROOT": str(ROOT)}) -> bytes:
+def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False) -> bytes:
     fi = None
     try:
         fi = FileImage.load(path, env)
-        return fi.to_boot_fs().to_binary()
+        if hex:
+            return fi.to_boot_fs().to_intel_hex()
+        else:
+            return fi.to_boot_fs().to_binary()
     except Exception as e:
         _logger.error(f"Exception: {e}")
     return None
@@ -810,14 +813,14 @@ def invoke_mkfs(args):
         return os.EX_DATAERR
     if args.build_dir and args.build_dir.exists():
         env = {"$ROOT": str(ROOT), "$BUILD_DIR": str(args.build_dir)}
-        binary = mkfs(args.specification, env)
+        data = mkfs(args.specification, env, args.hex)
     else:
-        binary = mkfs(args.specification)
-    if binary is None:
+        data = mkfs(args.specification, hex=args.hex)
+    if data is None:
         return os.EX_DATAERR
-    with open(args.output_bin, "wb") as file:
-        file.write(binary)
-    print(f"Wrote tt_boot_fs to {args.output_bin}")
+    with open(args.output_file, "wb") as file:
+        file.write(data)
+    print(f"Wrote tt_boot_fs to {args.output_file}")
     return os.EX_OK
 
 
@@ -864,13 +867,16 @@ def parse_args():
         "specification", metavar="SPEC", help="filesystem specification", type=Path
     )
     mkfs_parser.add_argument(
-        "output_bin", metavar="OUT", help="output binary file", type=Path
+        "output_file", metavar="OUT", help="output file", type=Path
     )
     mkfs_parser.add_argument(
         "--build-dir",
         metavar="BUILD",
         help="build directory to read images from",
         type=Path,
+    )
+    mkfs_parser.add_argument(
+        "--hex", action="store_true", help="Generate intel hex file"
     )
     mkfs_parser.set_defaults(func=invoke_mkfs)
 
