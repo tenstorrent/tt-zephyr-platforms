@@ -56,6 +56,11 @@ int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count
 int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t word);
 
 #define BH_ARC_INIT(n)                                                                             \
-	{.smbus = SMBUS_DT_SPEC_GET(n), .enable = GPIO_DT_SPEC_INST_GET_OR(n, gpios, {0})}
+	{.smbus = SMBUS_DT_SPEC_GET(n),                                                            \
+	 .enable = COND_CODE_1(DT_PROP_HAS_IDX(n, gpios, 0),	({	\
+			.port = DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, gpios, 0)),                   \
+			.pin = DT_GPIO_PIN_BY_IDX(n, gpios, 0),                                    \
+			.dt_flags = DT_GPIO_FLAGS_BY_IDX(n, gpios, 0),                             \
+		}), ({})) }
 
 #endif

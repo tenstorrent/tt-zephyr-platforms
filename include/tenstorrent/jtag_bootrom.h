@@ -24,7 +24,7 @@ const size_t get_bootcode_len(void);
 
 int jtag_bootrom_init(struct bh_chip *chip);
 
-int jtag_bootrom_reset_asic(const struct bh_chip *chip);
+int jtag_bootrom_reset_asic(struct bh_chip *chip);
 
 int jtag_bootrom_patch_offset(struct bh_chip *chip, const uint32_t *patch, size_t patch_len,
 			      const uint32_t start_addr);

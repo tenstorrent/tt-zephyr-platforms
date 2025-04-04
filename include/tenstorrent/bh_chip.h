@@ -124,6 +124,9 @@ int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr);
 void bh_chip_assert_asic_reset(const struct bh_chip *chip);
 void bh_chip_deassert_asic_reset(const struct bh_chip *chip);
 
+void bh_chip_set_straps(struct bh_chip *chip);
+void bh_chip_unset_straps(struct bh_chip *chip);
+
 void bh_chip_assert_spi_reset(const struct bh_chip *chip);
 void bh_chip_deassert_spi_reset(const struct bh_chip *chip);
 
