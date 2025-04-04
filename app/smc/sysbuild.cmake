@@ -45,11 +45,10 @@ if(BOARD STREQUAL "tt_blackhole")
   # Map board revision names to folder names for spirom config data
   string(TOUPPER ${BOARD_REVISION} BASE_NAME)
   set(PROD_NAME "${BASE_NAME}-1")
-  set(CFG_NAME "${BOARD_REVISION}-bootfs")
 elseif(BOARD STREQUAL "native_sim")
   # Use P100 data files to stand in
   set(PROD_NAME "P100-1")
-  set(CFG_NAME "p100-bootfs")
+  set(BOARD_REVISION "p100")
 else()
   message(FATAL_ERROR "No support for board ${BOARD}")
 endif()
@@ -62,10 +61,79 @@ set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
 set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
 
 # Generate filesystem
+
+if (PROD_NAME MATCHES "^P300")
+set(OUTPUT_BOOTFS_LEFT ${CMAKE_BINARY_DIR}/tt_boot_fs-left.bin)
+set(OUTPUT_FWBUNDLE_LEFT ${CMAKE_BINARY_DIR}/update-left.fwbundle)
+
+add_custom_command(OUTPUT ${OUTPUT_BOOTFS_LEFT}
+  COMMAND ${PYTHON_EXECUTABLE}
+  ${APP_DIR}/../../scripts/tt_boot_fs.py mkfs
+  ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-left-bootfs.yaml
+  ${OUTPUT_BOOTFS_LEFT}
+  --build-dir ${CMAKE_BINARY_DIR}
+  DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+
+# Generate firmware bundle that can be used to flash this build on a board
+# using tt-flash
+add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE_LEFT}
+  COMMAND ${PYTHON_EXECUTABLE}
+  ${APP_DIR}/../../scripts/tt_boot_fs.py fwbundle
+  -v "${BUNDLE_VERSION_STRING}"
+  -o ${OUTPUT_FWBUNDLE_LEFT}
+  ${PROD_NAME}_left
+  ${OUTPUT_BOOTFS_LEFT}
+  DEPENDS ${OUTPUT_BOOTFS_LEFT})
+
+# Add custom target that should always run, so that we will generate
+# firmware bundles whenever the SMC, BMC, or recovery binaries are
+# updated
+add_custom_target(fwbundle-left ALL DEPENDS ${OUTPUT_FWBUNDLE_LEFT})
+
+set(OUTPUT_BOOTFS_RIGHT ${CMAKE_BINARY_DIR}/tt_boot_fs-right.bin)
+set(OUTPUT_FWBUNDLE_RIGHT ${CMAKE_BINARY_DIR}/update-right.fwbundle)
+
+add_custom_command(OUTPUT ${OUTPUT_BOOTFS_RIGHT}
+  COMMAND ${PYTHON_EXECUTABLE}
+  ${APP_DIR}/../../scripts/tt_boot_fs.py mkfs
+  ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-right-bootfs.yaml
+  ${OUTPUT_BOOTFS_RIGHT}
+  --build-dir ${CMAKE_BINARY_DIR}
+  DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+
+# Generate firmware bundle that can be used to flash this build on a board
+# using tt-flash
+add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE_RIGHT}
+  COMMAND ${PYTHON_EXECUTABLE}
+  ${APP_DIR}/../../scripts/tt_boot_fs.py fwbundle
+  -v "${BUNDLE_VERSION_STRING}"
+  -o ${OUTPUT_FWBUNDLE_RIGHT}
+  ${PROD_NAME}_right
+  ${OUTPUT_BOOTFS_RIGHT}
+  DEPENDS ${OUTPUT_BOOTFS_RIGHT})
+
+# Add custom target that should always run, so that we will generate
+# firmware bundles whenever the SMC, BMC, or recovery binaries are
+# updated
+add_custom_target(fwbundle-right ALL DEPENDS ${OUTPUT_FWBUNDLE_RIGHT})
+
+# Merge left and right fwbundles
+add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE}
+  COMMAND ${PYTHON_EXECUTABLE}
+  ${APP_DIR}/../../scripts/tt_boot_fs.py fwbundle
+  -v "${BUNDLE_VERSION_STRING}"
+  -o ${OUTPUT_FWBUNDLE}
+  -c ${OUTPUT_FWBUNDLE_LEFT}
+  -c ${OUTPUT_FWBUNDLE_RIGHT}
+  DEPENDS ${OUTPUT_FWBUNDLE_LEFT} ${OUTPUT_FWBUNDLE_RIGHT})
+
+add_custom_target(fwbundle ALL DEPENDS ${OUTPUT_FWBUNDLE})
+
+else()
 add_custom_command(OUTPUT ${OUTPUT_BOOTFS}
   COMMAND ${PYTHON_EXECUTABLE}
   ${APP_DIR}/../../scripts/tt_boot_fs.py mkfs
-  ${BOARD_DIRECTORIES}/bootfs/${CFG_NAME}.yaml
+  ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml
   ${OUTPUT_BOOTFS}
   --build-dir ${CMAKE_BINARY_DIR}
   DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
@@ -85,3 +153,4 @@ add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE}
 # firmware bundles whenever the SMC, BMC, or recovery binaries are
 # updated
 add_custom_target(fwbundle ALL DEPENDS ${OUTPUT_FWBUNDLE})
+endif()

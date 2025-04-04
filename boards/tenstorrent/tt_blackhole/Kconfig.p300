@@ -1,0 +1,6 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_P300
+	select SOC_TT_BLACKHOLE_BMC if BOARD_P300_TT_BLACKHOLE_BMC
+	select SOC_TT_BLACKHOLE_SMC if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC

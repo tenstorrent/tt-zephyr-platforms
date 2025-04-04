@@ -1,0 +1,59 @@
+name: P150B-1
+
+product_name: P150B
+gen_name: P150B
+
+alignment:
+  flash_device_size: 0x1000000
+  flash_block_size: 4096
+
+images:
+
+  - name: cmfwcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150B/fw_table.bin
+
+  # Copy of cmfwcfg for tt-mod restore
+  - name: origcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150B/fw_table.bin
+
+  - name: cmfw
+    binary: $BUILD_DIR/smc/zephyr/zephyr.bin
+    executable: true
+    offset: 0x10000000
+
+  - name: ethfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin
+
+  - name: ethfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc.bin
+
+  - name: memfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params.bin
+
+  - name: memfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin
+
+  - name: ethsdreg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin
+
+  - name: ethsdfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
+
+  # Board Mgmt FW
+  - name: bmfw
+    binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
+
+  # Meta data about the flashing process
+  - name: flshinfo
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150B/flash_info.bin
+
+  # Read only board config data
+  - name: boardcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150B/read_only.bin
+    source: $END - 0x1000
+    provisioning_only: true
+
+fail_over_image:
+  name: failover
+  binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+  offset: 0x10000000

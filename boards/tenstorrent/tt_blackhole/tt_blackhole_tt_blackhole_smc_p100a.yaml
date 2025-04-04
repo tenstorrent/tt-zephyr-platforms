@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 identifier: tt_blackhole@p100a/tt_blackhole/smc
-name: Tenstorrent Blackhole P100a board (SMC)
+name: Tenstorrent Blackhole P100A (SMC)
 type: mcu
 arch: arc
 toolchain:
