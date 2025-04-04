@@ -59,6 +59,12 @@ if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 endif()
 
+include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
+zephyr_library_compile_definitions(BUNDLE_VERSION_NUMBER=${BUNDLE_VERSION_NUMBER})
+zephyr_library_compile_definitions(BUNDLE_VERSION_STRING="${BUNDLE_VERSION_STRING}")
+
+include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/board_revision_ifdef.cmake)
+
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
 zephyr_nanopb_sources(bh_arc spirom_protobufs/fw_table.proto)
