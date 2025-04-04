@@ -81,7 +81,7 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 static struct gpio_callback preset_cb_data;
 #endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
-int jtag_bootrom_reset_asic(const struct bh_chip *chip)
+int jtag_bootrom_reset_asic(struct bh_chip *chip)
 {
 	/* Only check for pgood if we aren't emulating */
 #if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
@@ -100,6 +100,8 @@ int jtag_bootrom_reset_asic(const struct bh_chip *chip)
 
 	/* k_sleep(K_MSEC(1)); */
 	k_busy_wait(1000);
+
+	bh_chip_set_straps(chip);
 
 	bh_chip_deassert_asic_reset(chip);
 	bh_chip_deassert_spi_reset(chip);
@@ -120,6 +122,8 @@ int jtag_bootrom_reset_asic(const struct bh_chip *chip)
 	}
 
 	jtag_reset(chip->config.jtag);
+
+	bh_chip_unset_straps(chip);
 
 	return 0;
 }
