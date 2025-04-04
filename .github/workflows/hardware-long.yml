@@ -56,6 +56,7 @@ jobs:
         # FIXME: would be ideal to use a built-in github environment variable
         # instead of tt-zephyr-platforms
         run: |
+          rm -Rf .west
           west init -l tt-zephyr-platforms
 
       - name: Setup Zephyr modules
