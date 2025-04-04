@@ -1,9 +1,23 @@
 name: Hardware Long Tests
 
 # Run long tests once nightly, at 00:00
+# on:
+#   schedule:
+#     - cron: "0 0 * * *"
+
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  push:
+    branches:
+      - main
+      - v*-branch
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
 
 jobs:
   hardware-metal-test:
@@ -24,68 +38,25 @@ jobs:
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
-        - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
-        - /opt/SEGGER:/opt/SEGGER
+        - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
         - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
-          python-version: '3.10'
+          app-path: tt-zephyr-platforms
 
       - name: Log Test SHA
         working-directory: tt-zephyr-platforms
         run: |
           # debug
           git log  --pretty=oneline | head -n 10
-
-      - name: Install west
-        run: |
-          pip install west
-
-      - name: west setup
-        # FIXME: would be ideal to use a built-in github environment variable
-        # instead of tt-zephyr-platforms
-        run: |
-          west init -l tt-zephyr-platforms
-
-      - name: Setup Zephyr modules
-        run: |
-          west config manifest.group-filter -- +optional
-          west update
-
-          # need to install protoc manually here, for some reason
-          pip install -r zephyr/scripts/requirements.txt
-          pip install protobuf grpcio-tools
-
-      - name: Apply patches
-        run: |
-          west -v patch apply
-
-      - name: Checkout pyluwen
-        uses: actions/checkout@v4
-        with:
-          repository: tenstorrent/luwen
-          path: luwen
-
-      - name: Build pyluwen
-        run: |
-          # Setup cargo, since we run with a different $HOME
-          HOME=/root . /root/.cargo/env
-          # Install maturin for build (we already have cargo)
-          pip install maturin
-          cd luwen/crates/pyluwen
-          maturin build --release
-          pip install ../../target/wheels/*
 
       - name: Generate board names
         shell: bash
@@ -108,27 +79,24 @@ jobs:
       - name: Flash Firmware
         working-directory: zephyr
         run: |
-          # This needs to be added to the github runner
-          export PATH=$PATH:/opt/SEGGER/JLink/
-
-          # TODO: ideally we would use one twister command to build and
-          # flash BMC and SMC firmware, but since each chip uses a separate
-          # debug adapter this doesn't work. For now, just flash BMC
-          # then run twister with SMC firmware
+          # Flash the BMFW app back onto the BMC. Otherwise the flash device
+          # will not be muxed to the SMC, and flash tests will fail
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
             -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG
-          # Run E2E test to verify BMC and SMC firmware boot, and that
-          # the SMC firmware sets up PCIe and ARC messages
+            -T ../tt-zephyr-platforms/app -ll DEBUG \
+            --outdir twister-bmc-e2e
+
+          # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
-            --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG
-
+            --tag smoke \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
+            --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
+            --outdir twister-smc-smoke
 
       - name: Fix APT URLs
         run: |
@@ -155,13 +123,14 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: v0.55.0
+          ref: v0.56.0
 
       - name: Install Metal Dependencies
         working-directory: tt-metal
         continue-on-error: true
         shell: bash
         run: |
+          sed -i 's/cmake_minimum_required.*/cmake_minimum_required(VERSION 3.20)/' CMakeLists.txt
           sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
           sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
           apt install -y python3.10-dev python3.10-venv libpython3.10-dev python3.10
@@ -184,14 +153,3 @@ jobs:
           # Run metal tests
           tests/scripts/run_cpp_unit_tests.sh
           TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
-
-      - name: cleanup
-        if: ${{ always() }}
-        run: |
-          # Clean up patched Zephyr repo
-          west patch clean
-          # Clean out metal
-          rm -rf tt-metal
-          # Cleanup the checked out repo, we can leave everything else
-          rm -rf tt-zephyr-platforms
-          rm -rf .west
