@@ -20,6 +20,12 @@
 	model = "Tenstorrent Blackhole p300 board";
 	compatible = "tenstorrent,blackhole,p300";
 
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
 	chip1: chip1 {
 		compatible = "tenstorrent,bh-chip";
 
@@ -223,6 +229,9 @@
  * I2C0 is Chip1
  */
 &smbus3 {
+	status = "okay";
+	compatible = "st,tt-stm32-smbus";
+
 	chip1_arc: bh_arc@A {
 		compatible = "tenstorrent,bh-arc";
 		reg = <0xA>;

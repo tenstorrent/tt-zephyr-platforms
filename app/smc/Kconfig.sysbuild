@@ -9,4 +9,4 @@ config BMC_BOARD
 	default "tt_blackhole@p150/tt_blackhole/bmc" if $(BOARD_REVISION) = "p150a" || $(BOARD_REVISION) = "p150b" || $(BOARD_REVISION) = "p150c"
 	default "tt_blackhole@p100a/tt_blackhole/bmc" if $(BOARD_REVISION) = "p100a"
 	default "tt_blackhole@p100/tt_blackhole/bmc" if $(BOARD_REVISION) = "p100"
-	default "tt_blackhole@p300/tt_blackhole/bmc" if $(BOARD_REVISION) = "p300a" || $(BOARD_REVISION) = "p300b" || $(BOARD_REVISION) = "p300c"
+	default "p300/tt_blackhole/bmc" if $(BOARD_REVISION) = "p300a" || $(BOARD_REVISION) = "p300b" || $(BOARD_REVISION) = "p300c"

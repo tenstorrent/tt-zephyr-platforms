@@ -1,4 +1,4 @@
-identifier: tt_blackhole@p300/tt_blackhole/bmc
+identifier: p300/tt_blackhole/bmc
 name: Tenstorrent Blackhole P300 board (BMC)
 type: mcu
 arch: arm

@@ -17,3 +17,9 @@ boards:
     - name: "p300c"
   socs:
   - name: tt_blackhole
+
+- name: p300
+  full_name: Tenstorrent Blackhole p300 board
+  vendor: tenstorrent
+  socs:
+  - name: tt_blackhole
