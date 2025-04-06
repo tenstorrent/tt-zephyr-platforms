@@ -70,7 +70,8 @@ jobs:
 
       - name: Apply patches
         run: |
-          west -v patch apply
+          west patch clean
+          west -v patch apply -r
 
       - name: Checkout pyluwen
         uses: actions/checkout@v4
