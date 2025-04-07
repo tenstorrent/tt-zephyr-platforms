@@ -23,6 +23,7 @@ feature_enable {
   aiclk_ppm_en: true
   watchdog_en: false
   smbus_en: false
+  fan_ctrl_en: true
 }
 
 fan_table {
