@@ -13,6 +13,7 @@ chip_limits {
   therm_trip_l1_limit: 0
   bus_peak_limit: 0
   frequency_margin: 0
+  gddr_thm_limit: 85
 }
 
 feature_enable {
