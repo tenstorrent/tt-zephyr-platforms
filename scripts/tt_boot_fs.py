@@ -497,6 +497,44 @@ class BootFs:
         return output.encode("ascii")
 
     @staticmethod
+    def check_entry(
+        tag: str, fd: tt_boot_fs_fd, data: bytes, alignment: int = 0x1000
+    ) -> FsEntry:
+        data_offs = fd.spi_addr
+        if data_offs % alignment != 0:
+            raise ValueError(f"{tag} image not aligned to 0x{alignment:x}")
+
+        image_size = fd.flags.f.image_size
+        required_size = image_size + CKSUM_SIZE
+        if len(data) < required_size:
+            raise ValueError(
+                f"data len {len(data)} is too small to contain image '{tag}'"
+            )
+        image_data = data[data_offs : data_offs + image_size]
+        data_offs += image_size
+        actual_image_cksum = cksum(image_data)
+
+        expected_image_cksum = fd.data_crc
+        if expected_image_cksum != actual_image_cksum:
+            if tag == "boardcfg":
+                # currently, the boardcfg checksum does not seem to be added correctly in images ignore for now.
+                pass
+            else:
+                raise ValueError(
+                    f"{tag} image checksum 0x{actual_image_cksum:08x} does not match expected checksum 0x{expected_image_cksum:08x}"
+                )
+
+        return FsEntry(
+            provisioning_only=False,
+            # do not use fd.image_tag_str() as it may be blank for e.g. "failover"
+            tag=tag,
+            data=image_data,
+            spi_addr=fd.spi_addr,
+            load_addr=fd.copy_dest,
+            executable=fd.flags.f.executable,
+        )
+
+    @staticmethod
     def from_binary(data: bytes, alignment: int = 0x1000) -> BootFs:
         data_offs = 0
         order: list[str] = []
@@ -520,7 +558,6 @@ class BootFs:
         failover_fd = read_fd(
             lambda addr, size: data[addr : addr + size], FAILOVER_HEAD_ADDR
         )
-        tag = failover_fd.image_tag_str()
 
         if len(data) < SPI_RX_ADDR + SPI_RX_SIZE:
             raise ValueError(
@@ -533,69 +570,9 @@ class BootFs:
         if spi_rx_training != SPI_RX_VALUE:
             raise ValueError(f"spi rx training data not found at 0x{SPI_RX_ADDR:x}")
 
-        image_index: int = 0
         for tag in order:
-            fd = fds[tag]
-            data_offs = fd.spi_addr
-            if data_offs % alignment != 0:
-                raise ValueError(f"image {image_index} not aligned to 0x{alignment:x}")
-            image_size = fd.flags.f.image_size
-            required_size = image_size + CKSUM_SIZE
-            if len(data) < required_size:
-                raise ValueError(
-                    f"data len {len(data)} is too small to contain image {image_index} '{tag}'"
-                )
-            image_data = data[data_offs : data_offs + image_size]
-            data_offs += image_size
-            actual_image_cksum = cksum(image_data)
-
-            entries[tag] = FsEntry(
-                provisioning_only=False,
-                tag=fd.image_tag_str(),
-                data=image_data,
-                spi_addr=fd.spi_addr,
-                load_addr=fd.copy_dest,
-                executable=fd.flags.f.executable,
-            )
-
-            expected_image_cksum = fd.data_crc
-            if expected_image_cksum != actual_image_cksum:
-                if tag == "boardcfg":
-                    # currently, the boardcfg checksum does not seem to be added correctly in images ignore for now.
-                    pass
-                else:
-                    raise ValueError(
-                        f"image {image_index} checksum 0x{actual_image_cksum:08x} does not match expected checksum 0x{expected_image_cksum:08x}"
-                    )
-
-            image_index += 1
-
-        fd = failover_fd
-        tag = fd.image_tag_str()
-        data_offs = fd.spi_addr
-
-        if data_offs % alignment != 0:
-            raise ValueError(
-                f"failover image at 0x{data_offs:x} not aligned to 0x{alignment:x}"
-            )
-
-        image_data = data[data_offs : data_offs + fd.flags.f.image_size]
-
-        failover = FsEntry(
-            provisioning_only=False,
-            tag=fd.image_tag_str(),
-            data=image_data,
-            spi_addr=fd.spi_addr,
-            load_addr=fd.copy_dest,
-            executable=fd.flags.f.executable,
-        )
-
-        actual_image_cksum = cksum(image_data)
-        expected_image_cksum = fd.data_crc
-        if expected_image_cksum != actual_image_cksum:
-            raise ValueError(
-                f"recovery image checksum 0x{actual_image_cksum:08x} does not match expected checksum 0x{expected_image_cksum:08x}"
-            )
+            entries[tag] = BootFs.check_entry(tag, fds[tag], data, alignment)
+        failover = BootFs.check_entry("failover", failover_fd, data, alignment)
 
         return BootFs(order, entries, failover)
 
