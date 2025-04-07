@@ -408,6 +408,9 @@ class BootFs:
 
         self._check_overlap()
 
+        # Add failover to self.entries for each retrieval later
+        self.entries["failover"] = failover
+
     def _check_overlap(self):
         tracker = RangeTracker(1)
         for write in self.writes:
