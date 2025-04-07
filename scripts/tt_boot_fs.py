@@ -205,7 +205,7 @@ class FsEntry:
     load_addr: int
     executable: bool
 
-    def descriptor(self) -> bytes:
+    def get_descriptor(self) -> tt_boot_fs_fd:
         image_tag = [0] * MAX_TAG_LEN
         for index, c in enumerate(self.tag):
             image_tag[index] = ord(c)
@@ -230,8 +230,10 @@ class FsEntry:
             ),
         )
         fd.fd_crc = cksum(bytes(fd))
+        return fd
 
-        return bytes(fd)
+    def descriptor(self) -> bytes:
+        return bytes(self.get_descriptor())
 
 
 @dataclass
