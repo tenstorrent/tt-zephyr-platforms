@@ -16,6 +16,7 @@ tests:
         - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
+        - "-m not flash"
   app.e2e-smoke-flash:
     tags: e2e-flash
     harness: pytest

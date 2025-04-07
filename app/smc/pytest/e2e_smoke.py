@@ -6,6 +6,8 @@
 import logging
 import os
 import time
+import pathlib
+import re
 
 import pyluwen
 import pytest
@@ -13,6 +15,8 @@ import pytest
 from twister_harness import DeviceAdapter
 
 logger = logging.getLogger(__name__)
+
+SCRIPT_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
 
 # Constant memory addresses we can read from SMC
 ARC_STATUS = 0x80030060
@@ -134,3 +138,53 @@ def test_boot_status(arc_chip):
     status = arc_chip.axi_read32(BOOT_STATUS)
     assert (status >> 1) & 0x3 == 0x2, "SMC HW boot status is not valid"
     logger.info('SMC boot status "%d"', status)
+
+
+def get_int_version_from_file(filename) -> int:
+    with open(filename, "r") as f:
+        version_data = f.readlines()
+    version_dict = {}
+    for line in version_data:
+        if line:
+            # Split the line into key-value pairs
+            key_value = line.split("=")
+            key = key_value[0].strip()
+
+            if len(key_value) == 2:
+                key = key_value[0].strip()
+                try:
+                    value = int(key_value[1].strip(), 0)
+                except ValueError:
+                    # Some values are strings
+                    value = key_value[1].strip()
+                version_dict[key] = value
+            else:
+                version_dict[key] = None
+
+    if version_dict["EXTRAVERSION"]:
+        version_rc = int(re.sub(r"[^\d]", "", version_dict["EXTRAVERSION"]))
+    else:
+        # version_dict["EXTRAVERSION"] is None or an empty string
+        version_rc = 0
+
+    version_int = (
+        version_dict["VERSION_MAJOR"] << 24
+        | version_dict["VERSION_MINOR"] << 16
+        | version_dict["PATCHLEVEL"] << 8
+        | version_rc
+    )
+    return version_int
+
+
+@pytest.mark.flash
+def test_fw_bundle_version(arc_chip):
+    """
+    Checks that the fw bundle version in telemetry matches the repo
+    """
+    telemetry = arc_chip.get_telemetry()
+
+    exp_bundle_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "VERSION")
+    assert (
+        telemetry.fw_bundle_version == exp_bundle_version
+    ), f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
