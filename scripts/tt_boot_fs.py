@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import base64
 import ctypes
 from dataclasses import dataclass
 import logging
@@ -729,6 +730,65 @@ def fsck(path: Path, alignment: int = 0x1000) -> bool:
     return fs is not None
 
 
+def ls(
+    bootfs: Path, verbose: int = 0, output_json: bool = False, input_base64=False
+) -> bool:
+    fds = []
+
+    try:
+        data = (
+            base64.b16decode(open(bootfs, "r").read())
+            if input_base64
+            else open(bootfs, "rb").read()
+        )
+        fs = BootFs.from_binary(data)
+
+        if verbose >= 0 and not output_json:
+            hdr = "spi_addr\timage_tag\tsize   \tcopy_dest\tdata_crc\tflags   \tfd_crc"
+            print(hdr)
+            bar = "-" * (len(hdr.replace("\t", "")) + 8 * hdr.count("\t"))
+            print(bar)
+
+        order: list[(int, str)] = []
+        for tag, entry in fs.entries.items():
+            order.append((entry.spi_addr, tag))
+        order.sort(key=lambda x: x[0])
+        order = list(map(lambda x: x[1], order))
+
+        for tag in order:
+            entry = fs.entries[tag]
+            fd = entry.get_descriptor()
+
+            obj = {
+                "spi_addr": fd.spi_addr,
+                "image_tag": tag,
+                "size": len(entry.data),
+                "copy_dest": fd.copy_dest,
+                "data_crc": fd.data_crc,
+                "flags": fd.flags.val,
+                "fd_crc": fd.fd_crc,
+            }
+            fds.append(obj)
+
+            # if very quiet, then don't even print out data
+            if verbose <= -2:
+                continue
+
+            if not output_json:
+                print(
+                    f"{fd.spi_addr:08x}\t{tag:<8}\t{len(entry.data)}\t{fd.copy_dest:08x}\t"
+                    f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}"
+                )
+
+    except Exception as e:
+        _logger.error(f"Exception: {e}")
+
+    if fds and output_json and verbose >= 0:
+        print(json.dumps(fds))
+
+    return fds
+
+
 def mkbundle(
     output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path]
 ):
@@ -834,6 +894,11 @@ def invoke_fwbundle(args):
     return os.EX_OK
 
 
+def invoke_ls(args):
+    ls(args.bootfs, args.verbose - args.quiet, args.json, args.base64)
+    return os.EX_OK
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Utility to manage tt_boot_fs binaries", allow_abbrev=False
@@ -897,6 +962,26 @@ def parse_args():
         default=[],
     )
     bundle_parser.set_defaults(func=invoke_fwbundle)
+
+    ls_parser = subparsers.add_parser("ls", help="list tt_boot_fs contents")
+    ls_parser.add_argument("bootfs", metavar="FS", help="filesystem to list", type=Path)
+    ls_parser.add_argument(
+        "-b",
+        "--base64",
+        help="input is base64-encoded",
+        default=False,
+        action="store_true",
+    )
+    ls_parser.add_argument(
+        "-j", "--json", help="output JSON", default=False, action="store_true"
+    )
+    ls_parser.add_argument(
+        "-q", "--quiet", help="decrease verbosity", default=0, action="count"
+    )
+    ls_parser.add_argument(
+        "-v", "--verbose", help="increase verbosity", default=0, action="count"
+    )
+    ls_parser.set_defaults(func=invoke_ls)
 
     # Parse arguments
     args = parser.parse_args()
