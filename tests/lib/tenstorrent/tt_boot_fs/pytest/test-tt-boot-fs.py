@@ -148,8 +148,8 @@ def gen_released_image(tmp_path: Path):
         # Test on a recent experimental release (note: stable release does not have a recovery image)
         URL = (
             "https://github.com/tenstorrent/tt-firmware/raw/"
-            "9f2173161f11599411619cec25e6425cf56a7d59"
-            "/experiments/fw_pack-80.14.2.0.fwbundle"
+            "7bc0a90226e684962fb039cf26580356d7646574"
+            "/fw_pack-80.15.0.0.fwbundle"
         )
         targz = tmp_path / "fw_pack.tar.gz"
         urlretrieve(URL, targz)
