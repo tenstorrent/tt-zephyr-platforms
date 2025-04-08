@@ -21,3 +21,5 @@ manifest:
 
   group-filter:
     - +optional
+  self:
+    import: submanifests
