@@ -252,3 +252,132 @@ def test_tt_boot_fs_cksum():
 
     for it in items:
         assert tt_boot_fs.cksum(it[1]) == it[0]
+
+
+def test_tt_boot_fs_ls(tmp_path: Path):
+    """
+    Test the ability to list a tt_boot_fs.
+    """
+
+    # Note: values are specific to fw_pack-80.15.0.0.fwbundle due to get_released_image_path()
+    expected_fds = [
+        {
+            "spi_addr": 81920,
+            "image_tag": "cmfwcfg",
+            "size": 56,
+            "copy_dest": 0,
+            "data_crc": 2158370831,
+            "flags": 56,
+            "fd_crc": 4168430605,
+        },
+        {
+            "spi_addr": 86016,
+            "image_tag": "cmfw",
+            "size": 86600,
+            "copy_dest": 268435456,
+            "data_crc": 1374720981,
+            "flags": 33641032,
+            "fd_crc": 3680084864,
+        },
+        {
+            "spi_addr": 176128,
+            "image_tag": "ethfwcfg",
+            "size": 512,
+            "copy_dest": 0,
+            "data_crc": 2352493,
+            "flags": 512,
+            "fd_crc": 3455414089,
+        },
+        {
+            "spi_addr": 180224,
+            "image_tag": "ethfw",
+            "size": 34304,
+            "copy_dest": 0,
+            "data_crc": 433295191,
+            "flags": 34304,
+            "fd_crc": 2151631411,
+        },
+        {
+            "spi_addr": 217088,
+            "image_tag": "memfwcfg",
+            "size": 256,
+            "copy_dest": 0,
+            "data_crc": 15943,
+            "flags": 256,
+            "fd_crc": 3453442091,
+        },
+        {
+            "spi_addr": 221184,
+            "image_tag": "memfw",
+            "size": 10032,
+            "copy_dest": 0,
+            "data_crc": 3642299916,
+            "flags": 10032,
+            "fd_crc": 1066009376,
+        },
+        {
+            "spi_addr": 233472,
+            "image_tag": "ethsdreg",
+            "size": 1152,
+            "copy_dest": 0,
+            "data_crc": 897437643,
+            "flags": 1152,
+            "fd_crc": 273632020,
+        },
+        {
+            "spi_addr": 237568,
+            "image_tag": "ethsdfw",
+            "size": 19508,
+            "copy_dest": 0,
+            "data_crc": 3168980852,
+            "flags": 19508,
+            "fd_crc": 818321009,
+        },
+        {
+            "spi_addr": 258048,
+            "image_tag": "bmfw",
+            "size": 35744,
+            "copy_dest": 0,
+            "data_crc": 2928587200,
+            "flags": 35744,
+            "fd_crc": 637115074,
+        },
+        {
+            "spi_addr": 294912,
+            "image_tag": "flshinfo",
+            "size": 4,
+            "copy_dest": 0,
+            "data_crc": 50462976,
+            "flags": 4,
+            "fd_crc": 3672136659,
+        },
+        {
+            "spi_addr": 299008,
+            "image_tag": "failover",
+            "size": 65828,
+            "copy_dest": 268435456,
+            "data_crc": 2239637331,
+            "flags": 33620260,
+            "fd_crc": 1985122380,
+        },
+        {
+            "spi_addr": 16773120,
+            "image_tag": "boardcfg",
+            "size": 0,
+            "copy_dest": 0,
+            "data_crc": 0,
+            "flags": 0,
+            "fd_crc": 3670524614,
+        },
+    ]
+    actual_fds = tt_boot_fs.ls(
+        get_released_image_path(tmp_path),
+        verbose=-2,
+        output_json=True,
+        input_base64=False,
+    )
+    assert actual_fds == expected_fds, "tt_boot_fs.ls() failed with valid image"
+
+    assert not tt_boot_fs.ls(
+        get_corrupted_test_image_path(tmp_path)
+    ), "tt_boot_fs.ls() succeeded with invalid image"
