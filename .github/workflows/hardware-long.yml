@@ -7,7 +7,6 @@ on:
 
 jobs:
   hardware-metal-test:
-    if: github.repository_owner == 'tenstorrent'
     strategy:
       fail-fast: false
       matrix:

@@ -16,7 +16,6 @@ on:
 
 jobs:
   hardware-smoke-test:
-    if: github.repository_owner == 'tenstorrent'
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +127,6 @@ jobs:
             zephyr/twister-smc-smoke/twister.json
 
   smoke-e2e-test:
-    if: github.repository_owner == 'tenstorrent'
     strategy:
       fail-fast: false
       matrix:
