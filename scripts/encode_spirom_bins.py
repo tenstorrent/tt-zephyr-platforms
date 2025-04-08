@@ -86,6 +86,16 @@ def convert_proto_txt_to_bin_file(
     print()
 
 
+def decode_bundle_version(bundle_version: str) -> int:
+    try:
+        major, minor, patch, rc = map(int, bundle_version.split("."))
+        return (major << 24) | (minor << 16) | (patch << 8) | rc
+    except ValueError:
+        raise ValueError(
+            "Invalid bundle version format. Expected format: major.minor.patch.rc"
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Encode SPIROM bins", allow_abbrev=False
@@ -111,6 +121,13 @@ def main():
         default="build",
         help="Name of build folder with generated protobuf files",
     )
+    parser.add_argument(
+        "--bundle-version",
+        type=str,
+        default="0.0.0.0",
+        required=True,
+        help="Firmware bundle version to encode",
+    )
     args = parser.parse_args()
     build_folder = os.path.join(args.build_dir, "zephyr/python_proto_files")
     if not os.path.exists(build_folder):
@@ -127,17 +144,14 @@ def main():
         print(f"Error importing protobuf modules: {e}")
         print("Ensure the protobuf files are generated and the path is correct.")
         sys.exit(1)
+    bundle_version_int = decode_bundle_version(args.bundle_version)
     convert_proto_txt_to_bin_file(
         args.board,
         args.output,
         "fw_table",
         fw_table_pb2.FwTable,
         False,
-        override={
-            "fw_bundle_version": int(os.environ.get("FW_BUNDLE"), 0)
-            if os.environ.get("FW_BUNDLE")
-            else 0,
-        },
+        override={"fw_bundle_version": bundle_version_int},
     )
     convert_proto_txt_to_bin_file(
         args.board, args.output, "flash_info", flash_info_pb2.FlashInfoTable, False

@@ -90,23 +90,28 @@ if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 
 	message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
 
+	include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
+
 	# variable is needed to avoid protobuf version clashing
 	if (PROD_NAME MATCHES "^P300")
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME}_L --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+		  --bundle-version ${BUNDLE_VERSION_STRING}
 	)
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME}_R --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+		  --bundle-version ${BUNDLE_VERSION_STRING}
 	)
 	else()
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+		  --bundle-version ${BUNDLE_VERSION_STRING}
 	)
 	endif()
 endif()

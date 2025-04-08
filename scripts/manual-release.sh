@@ -46,7 +46,7 @@ PRELEASE="$MAJOR.$MINOR.$PATCH.$EXTRAVERSION_NUMBER"
 echo "Building release $RELEASE / pack $PRELEASE"
 
 for REV in $BOARD_REVS; do
-  BOARD="tt_blackhole@$REV/tt_blackhole/smc";;
+  BOARD="tt_blackhole@$REV/tt_blackhole/smc"
 
   echo "Building $BOARD"
   west build -d "$TEMP_DIR/$REV" --sysbuild -p -b "$BOARD" app/smc >/dev/null 2>&1
