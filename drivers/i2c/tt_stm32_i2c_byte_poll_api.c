@@ -31,6 +31,18 @@ LOG_MODULE_REGISTER(tt_stm32_i2c_api);
 
 #include "i2c-priv.h"
 
+#define LOG_ERR_RATELIMIT(ms, ...)                                                                 \
+	BUILD_ASSERT((ms) >= 0, "ms must be >= 0");                                                \
+	do {                                                                                       \
+		static uint32_t _last_ms;                                                          \
+		uint32_t _now_ms = k_uptime_get_32();                                              \
+                                                                                                   \
+		if ((_now_ms - _last_ms) >= ms) {                                                  \
+			LOG_ERR(__VA_ARGS__);                                                      \
+			_last_ms = _now_ms;                                                        \
+		}                                                                                  \
+	} while (0)
+
 int tt_stm32_i2c_configure_timing(const struct device *dev, uint32_t clock)
 {
 	const struct tt_stm32_i2c_config *cfg = dev->config;
@@ -568,9 +580,9 @@ finish:
 
 	if (ret != 0) {
 		if (expected_error) {
-			LOG_ERR("I2C MSG Failed On Start  with %d", ret);
+			LOG_ERR_RATELIMIT(5000, "I2C MSG Failed On Start  with %d", ret);
 		} else {
-			LOG_ERR("I2C MSG Failed with %d", ret);
+			LOG_ERR_RATELIMIT(5000, "I2C MSG Failed with %d", ret);
 		}
 	}
 
