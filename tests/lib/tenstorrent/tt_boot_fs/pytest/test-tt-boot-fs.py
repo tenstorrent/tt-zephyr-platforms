@@ -171,7 +171,7 @@ def gen_released_image(tmp_path: Path):
 
 
 def get_released_image_path(tmp_path: Path):
-    _, pth = gen_test_image(tmp_path)
+    _, pth = gen_released_image(tmp_path)
     return pth
 
 
