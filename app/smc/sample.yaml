@@ -16,6 +16,8 @@ tests:
         - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
+    extra_configs:
+      - CONFIG_TT_FWTABLE_MOCK=y
   app.e2e-smoke-flash:
     tags: e2e-flash
     harness: pytest
@@ -50,3 +52,5 @@ tests:
       - vuart.overlay
     extra_overlay_confs:
       - vuart.conf
+    extra_configs:
+      - CONFIG_TT_FWTABLE_MOCK=y

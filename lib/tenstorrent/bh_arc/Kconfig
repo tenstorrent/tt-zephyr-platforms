@@ -67,6 +67,7 @@ config TT_BH_ARC_SYSINIT
 
 config TT_FWTABLE_MOCK
 	bool "Mock SPI flash firmware tables"
+	default y if ZTEST
 	help
 	  Mock values from the firmware table in SPI flash directly in firmware. This optional
 	  can help ensure testing is more consistent without the need to flash all images to SPI.

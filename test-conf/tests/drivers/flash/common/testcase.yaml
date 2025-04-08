@@ -12,6 +12,7 @@ tests:
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_configs:
       - CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=4096
+      - CONFIG_TT_FWTABLE_MOCK=y
     extra_args:
       - "platform:tt_blackhole@p100/tt_blackhole/smc:DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
