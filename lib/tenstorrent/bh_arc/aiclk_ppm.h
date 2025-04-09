@@ -7,6 +7,7 @@
 #define AICLK_PPM_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum {
 	kAiclkArbMaxFmax,
@@ -32,6 +33,9 @@ typedef struct {
 	uint32_t fmax;        /* in MHz */
 	uint32_t fmin;        /* in MHz */
 	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
+	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
+	uint32_t sweep_low;   /* in MHz */
+	uint32_t sweep_high;  /* in MHz */
 	float arbiter_max[kAiclkArbMaxCount];
 	float arbiter_min[kAiclkArbMinCount];
 } AiclkPPM;
