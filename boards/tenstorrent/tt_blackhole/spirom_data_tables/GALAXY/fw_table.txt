@@ -17,13 +17,12 @@ chip_limits {
 
 feature_enable {
   cg_en: true
-  noc_translation_en: true
+  noc_translation_en: false
   ddr_train_en: true
   aiclk_ppm_en: false
   watchdog_en: false
   smbus_en: false
   fan_ctrl_en: false
-  harvesting_en: true
 }
 
 fan_table {
