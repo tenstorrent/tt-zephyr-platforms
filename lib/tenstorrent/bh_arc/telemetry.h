@@ -67,6 +67,7 @@
 #define TAG_GDDR_UNCORR_ERRS     50
 #define TAG_MAX_GDDR_TEMP        51
 #define TAG_ASIC_LOCATION        52
+#define TAG_BOARD_PWR_LIMIT      53
 
 /* Enums are subject to updates */
 typedef enum {
@@ -120,6 +121,7 @@ typedef enum {
 	FAN_RPM,
 	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
 	INPUT_CURRENT,
+	BOARD_PWR_LIMIT,
 
 	/* Tile enablement/harvesting information */
 	ENABLED_TENSIX_COL,
@@ -155,5 +157,6 @@ int GetMaxGDDRTemp(void);
 void StartTelemetryTimer(void);
 void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);
+void UpdateTelemetryBoardPwrLimit(uint32_t pwr_limit);
 
 #endif

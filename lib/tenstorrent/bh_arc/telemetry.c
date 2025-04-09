@@ -322,7 +322,8 @@ static void update_tag_table(void)
 	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
 	tag_table[49] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
 	tag_table[50] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
-	tag_table[51] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[51] = (struct telemetry_entry){TAG_BOARD_PWR_LIMIT, BOARD_PWR_LIMIT};
+	tag_table[52] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */
@@ -378,4 +379,9 @@ void UpdateTelemetryNocTranslation(bool translation_enabled)
 {
 	/* Note that this may be called before init_telemetry. */
 	telemetry[NOC_TRANSLATION] = translation_enabled;
+}
+
+void UpdateTelemetryBoardPwrLimit(uint32_t pwr_limit)
+{
+	telemetry[BOARD_PWR_LIMIT] = pwr_limit;
 }
