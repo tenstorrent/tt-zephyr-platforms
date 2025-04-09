@@ -44,7 +44,7 @@ blobs:
     description: "Ethernet FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_libpciesd.a
-    sha256: 31b2000e72412ae1dac03c93110f6124538934505007f43f49ad74172a303a9b
+    sha256: c459593f98e1f3a9f19c27e5af686438fe7e90fb566c89c96d1ba6286774880c
     type: lib
     version: '0.1'
     license-path: zephyr/blobs/license.txt
