@@ -23,13 +23,20 @@ We add pre-release tags using the format `MAJOR.MINOR.PATCH-EXTRAVERSION`.
 
 ## Release candidates
 
-Before each release, tags are made (see below) for at least one release candidate (`a.b.c-rc1`,
-followed by `a.b.c-rc2` and the subsequent release candidates, followed by the official `a.b.c`
-release). The intent is to freeze the code and allow testing.
+A stabilization period will occur prior to each release, where tags are made (see below) for at
+least one release candidate, `a.b.c-rc1`. If needed, additional release candidates `a.b.c-rc2`
+may be made, ultimately followed by the official and final `a.b.c` release.
 
-During the time between the `rc1` and the final release, the only changes that should be merged into
-the `main` branch are those to fix bugs found in the release candidate, to correct documentation,
-or to make other cosmetic fixes.
+During the stabilization period between `rc1` and the final release, the only changes that should
+be merged into the `main` branch are to improve testing, fix bugs, correct documentation and other
+cosmetic fixes, and explicitly not to introduce other major changes or features. The stabilization
+period is effectively a feature freeze.
+
+### Exceptions
+
+Features may only be merged during the stabilization period with the explicit approval of the
+Change Review Board (CRB). The author of the change must accompany the Release Manager (RM) to a
+CRB meeting to provide justification for merging the change and to seek CRB approval.
 
 ## Release Procedure
 
@@ -38,8 +45,9 @@ The following steps are required to be followed by firmware release engineers wh
 
 ### Release Checklist
 
-Refer to the previous release checklist for steps required before tagging release candidates and
-final releases.
+Create an issue with the title `Release Checklist va.b.c`. If the issue does not already exist,
+then create it using the previous release checklist as a template. The checklist will list the
+steps required before tagging a final release.
 
 ### Tagging
 
