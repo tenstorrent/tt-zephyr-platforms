@@ -71,7 +71,6 @@ struct spi_dw_flash_dev_data {
 /* Config and data structures for SPI controller */
 struct spi_dw_flash_config {
 	DEVICE_MMIO_ROM;
-	uint32_t clock_frequency;
 	spi_dw_config_t config_func;
 	bool serial_target;
 	uint8_t fifo_depth;
@@ -88,6 +87,7 @@ struct spi_dw_flash_data {
 	uint32_t rx_cnt;
 	uint32_t err_state;
 	uint8_t rx_size;
+	uint32_t clock_frequency;
 };
 
 /* Entry for flash device settings */
@@ -99,7 +99,7 @@ struct spi_dw_flash_entry {
 /* Helper macros */
 
 #define SPI_DW_CLK_DIVIDER(clock_freq, ssi_clk_hz) \
-		((clock_freq / ssi_clk_hz) & 0xFFFF)
+		MAX(((clock_freq / ssi_clk_hz) & 0xFFFF), 2)
 
 #define DEFINE_MM_REG_READ(__reg, __off, __sz)				\
 	static inline uint32_t read_##__reg(const struct device *dev)	\

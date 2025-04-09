@@ -28,7 +28,7 @@
 	spi_flash: eeprom@0 {
 		compatible = "snps,designware-spi-flash";
 		reg = <0>;
-		status = "disabled";
+		status = "okay";
 		spi-max-frequency = <DT_FREQ_M(9)>;
 	};
 };
