@@ -8,3 +8,14 @@ config TT_BOOT_BANNER
 	select EARLY_CONSOLE
 	help
 	  Print Tenstorrent's boot banner instead of Zephyr's boot banner.
+
+if TT_BOOT_BANNER
+
+config TT_BOOT_BANNER_GIT_VERSION
+	bool "Print the git revision when displaying the boot banner"
+	help
+	  Print the git revision when displaying the boot banner.
+
+	  See ZEPHYR_BASE/cmake/modules/git.cmake for more information.
+
+endif

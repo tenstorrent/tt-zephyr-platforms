@@ -8,6 +8,11 @@
 #include <zephyr/kernel.h>
 #include <version.h>
 
+#ifndef CONFIG_TT_BOOT_BANNER_GIT_VERSION
+/* prevent compiler warning */
+#define TT_GIT_VERSION ""
+#endif
+
 static int tt_boot_banner(void)
 {
 	/* clang-format off */
@@ -43,6 +48,10 @@ static int tt_boot_banner(void)
 
 	printk(logo);
 	printk("*** Booting " CONFIG_BOARD " with Zephyr OS " STRINGIFY(BUILD_VERSION) " ***\n");
+
+	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_GIT_VERSION)) {
+		printk("*** TT_GIT_VERSION " TT_GIT_VERSION " ***\n");
+	}
 
 	return 0;
 }
