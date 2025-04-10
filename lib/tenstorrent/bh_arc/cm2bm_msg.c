@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <zephyr/drivers/watchdog.h>
 
 #include "cm2bm_msg.h"
 #include "asic_state.h"
@@ -30,6 +31,8 @@ static Cm2BmMsgState cm2bm_msg_state;
 static bool bmfw_ping_valid;
 static int32_t current;
 K_MSGQ_DEFINE(cm2bm_msg_q, sizeof(Cm2BmMsg), 4, _Alignof(Cm2BmMsg));
+
+static const struct device *const wdt0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
 
 int32_t EnqueueCm2BmMsg(const Cm2BmMsg *msg)
 {
@@ -118,16 +121,16 @@ void UpdateFanSpeedRequest(uint32_t fan_speed)
 
 void UpdateAutoResetTimeoutRequest(uint32_t timeout)
 {
+	const struct wdt_timeout_cfg cfg = {.window = {.min = timeout, .max = timeout}};
+
+	if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(wdt0))) {
+		wdt_install_timeout(wdt0, &cfg);
+
+		return;
+	}
+
 	Cm2BmMsg msg = {
 		.msg_id = kCm2BmMsgIdAutoRstTimeoutUpdate, .data = timeout /* in ms */
-	};
-	EnqueueCm2BmMsg(&msg);
-}
-
-void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
-{
-	Cm2BmMsg msg = {
-		.msg_id = kCm2BmMsgTelemHeartbeatUpdate, .data = heartbeat /* in ms */
 	};
 	EnqueueCm2BmMsg(&msg);
 }
