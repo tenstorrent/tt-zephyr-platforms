@@ -11,13 +11,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Temporarily disable P100A tests due to reset issue #101
+        # Note: YAMLLint complains about 'comment not indented like content', so removed instead
         config:
           - board: p100
             runs-on:
               - yyz-zephyr-lab-p100
-          - board: p100a
-            runs-on:
-              - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
