@@ -1,0 +1,31 @@
+name: Check Scripts
+
+on:
+  push:
+    branches:
+      - main
+      - v*-branch
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
+
+jobs:
+  check-scripts:
+    runs-on: ubuntu-latest
+    name: Check Scripts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check scripts/check-runners.py
+        run: |
+          echo "The following runners are available:"
+          ./scripts/check-runners.py \
+            -o ${{ github.repository_owner }} \
+            -r ${{ github.event.repository.name }} \
+            -t "invalid-token" \
+            -y ./tt-zephyr-platforms/.github/runners.yml
