@@ -7,3 +7,44 @@ config BOARD_INIT_PRIORITY
 	help
 	  Board initialization priority. Should be greater than flash
 	  initialization priority
+
+if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+
+config TT_SRST_ASSIST
+	bool "Enable TT SRST assist"
+	default y
+	help
+	  It's safe to enable this option always, but it is mainly required when using JTAG to control
+	  Blackhole cards. It requires both a JTAG debugger attached to the SMC as well as an SWD
+	  debugger attached to the BMC.
+
+if TT_SRST_ASSIST
+
+config TT_SRST_ASSIST_ADDR
+	hex "Address to write to toggle SRST pin(s)"
+	# this is the same address on all P100a+ boards
+	default 0x50000418
+	help
+	  This is the address of the GPIO control register on the BMC that controls the SRST pin(s).
+
+config TT_SRST_ASSIST_SET
+	hex "Value to write to set SRST pin(s)"
+	# GPIOB pins 0 and 1
+	default 0x30000 if BOARD_P300
+	# GPIOB pin 0
+	default 0x10000
+	help
+	  This is the value to write to the GPIO control register on the BMC to set the SRST pin(s).
+
+config TT_SRST_ASSIST_CLR
+	hex "Value to write to set SRST pin(s)"
+	# GPIOB pins 0 and 1
+	default 0x3 if BOARD_P300
+	# GPIOB pin 0
+	default 0x1
+	help
+	  This is the value to write to the GPIO control register on the BMC to set the SRST pin(s).
+
+endif
+
+endif
