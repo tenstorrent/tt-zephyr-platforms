@@ -22,7 +22,13 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref }}
           fetch-depth: 0
+
+      - name: Get SHA of branch
+        run: |
+          git rev-parse HEAD
+
       - name: Run the script
         run: |
           ./scripts/check-copyright.py
