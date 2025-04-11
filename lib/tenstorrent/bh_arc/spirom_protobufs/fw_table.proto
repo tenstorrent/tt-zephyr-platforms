@@ -32,6 +32,7 @@ message FwTable {
     uint32 bus_peak_limit = 10;
     int32 frequency_margin = 11;
     uint32 asic_fmin = 12;
+    uint32 auto_reset_timeout = 13;
   }
 
   message FeatureEnable {

@@ -343,6 +343,7 @@ void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version)
 {
 	telemetry[BM_BL_FW_VERSION] = bl_version;
 	telemetry[BM_APP_FW_VERSION] = app_version;
+	/* TODO: Add reset reason to telemetry */
 }
 
 void UpdateTelemetryNocTranslation(bool translation_enabled)

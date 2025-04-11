@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cm2bm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
 #include "fw_table.h"
@@ -21,8 +22,11 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/watchdog.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
+
+static const struct device *const wdt0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
 
 int main(void)
 {
@@ -66,8 +70,15 @@ int main(void)
 		}
 	}
 
+	if (!DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(wdt0)) ||
+	    (get_fw_table()->chip_limits.auto_reset_timeout == 0)) {
+		/* How to solve this? Not going through the device API */
+		UpdateAutoResetTimeoutRequest(0);
+	}
+
 	while (1) {
-		k_msleep(1000);
+		k_msleep(250);
+		wdt_feed(wdt0, 0);
 	}
 
 	return 0;

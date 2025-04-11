@@ -1,0 +1,16 @@
+#
+# Copyright (c) 2025 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: Tenstorrent BH Watchdog driver
+
+compatible: "tenstorrent,bh-watchdog"
+
+include: base.yaml
+
+properties:
+  timeout-ms:
+    type: int
+    default: 1000
