@@ -1,0 +1,4 @@
+# A mapping of short-form board names to github self-hosted runner-labels
+config:
+  - board: p100
+    label: yyz-zephyr-lab-p100
