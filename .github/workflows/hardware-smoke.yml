@@ -39,6 +39,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
@@ -152,6 +153,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
