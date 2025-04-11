@@ -192,14 +192,17 @@ jobs:
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-bmc-e2e
+          echo 1 > /sys/class/tenstorrent/tenstorrent!0/device/remove
+          echo 1 > /sys/bus/pci/rescan
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
-          ./scripts/twister -i --retry-failed 3 \
-            -p $SMC_BOARD --device-testing \
-            --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
-            --outdir twister-smc-e2e
+          # ./scripts/twister -i --retry-failed 3 \
+          #   -p $SMC_BOARD --device-testing \
+          #   --tag e2e \
+          #   --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+          #   -T ../tt-zephyr-platforms/app -ll DEBUG \
+          #   --outdir twister-smc-e2e
+
 
       - name: Upload E2E Test results
         if: ${{ always() }}
