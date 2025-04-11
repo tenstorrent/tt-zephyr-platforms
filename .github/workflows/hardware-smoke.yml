@@ -109,7 +109,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             -p $SMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -205,7 +205,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
 
