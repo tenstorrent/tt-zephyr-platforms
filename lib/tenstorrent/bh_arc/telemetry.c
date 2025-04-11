@@ -110,7 +110,7 @@ static void UpdateGddrTelemetry(void)
 			 * [15] - Error GDDR 7
 			 */
 			telemetry[GDDR_STATUS] |= (gddr_telemetry.training_complete << (i * 2)) |
-				(gddr_telemetry.gddr_error << (i * 2 + 1));
+						  (gddr_telemetry.gddr_error << (i * 2 + 1));
 
 			/* DDR_x_y_TEMP:
 			 * [31:24] GDDR y top
@@ -146,17 +146,15 @@ static void UpdateGddrTelemetry(void)
 				(gddr_telemetry.uncorr_edc_wr_error << (i * 2 + 1));
 			/* GDDR speed - in Mbps */
 			telemetry[GDDR_SPEED] = gddr_telemetry.dram_speed;
-
 		}
 	}
 }
 
 static void write_static_telemetry(uint32_t app_version)
 {
-	telemetry_table.version =
-		TELEMETRY_VERSION; /* v0.1.0 - Only update when redefining the
-				    * meaning of an existing tag
-				    */
+	telemetry_table.version = TELEMETRY_VERSION;    /* v0.1.0 - Only update when redefining the
+							 * meaning of an existing tag
+							 */
 	telemetry_table.entry_count = TELEM_ENUM_COUNT; /* Runtime count of telemetry entries */
 
 	/* Get the static values */
@@ -237,7 +235,9 @@ static void update_telemetry(void)
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
 	UpdateGddrTelemetry();
 	telemetry[INPUT_CURRENT] =
-		GetInputCurrent();    /* Input current - reported in A in signed int 16.16 format */
+		GetInputCurrent(); /* Input current - reported in A in signed int 16.16 format */
+	telemetry[INPUT_POWER] =
+		GetInputPower();      /* Input power - reported in W in unsigned int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }
@@ -293,7 +293,8 @@ static void update_tag_table(void)
 	tag_table[46] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS, GDDR_4_5_CORR_ERRS};
 	tag_table[47] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
 	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
-	tag_table[49] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[49] = (struct telemetry_entry){TAG_INPUT_POWER, INPUT_POWER};
+	tag_table[50] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */

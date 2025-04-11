@@ -65,6 +65,7 @@
 #define TAG_GDDR_4_5_CORR_ERRS   48
 #define TAG_GDDR_6_7_CORR_ERRS   49
 #define TAG_GDDR_UNCORR_ERRS     50
+#define TAG_INPUT_POWER			 51
 
 /* Enums are subject to updates */
 typedef enum {
@@ -114,10 +115,13 @@ typedef enum {
 	L2CPU_FW_VERSION,
 
 	/* MISC */
+	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
+
+	/* Board telemetry */
 	FAN_SPEED,
 	FAN_RPM,
-	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
 	INPUT_CURRENT,
+	INPUT_POWER,
 
 	/* Tile enablement/harvesting information */
 	ENABLED_TENSIX_COL,
