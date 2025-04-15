@@ -15,6 +15,7 @@
 #include "fw_table.h"
 #include "gpio.h"
 #include <zephyr/sys/util.h>
+#include "pciesd.h"
 
 #define PCIE_SERDES0_ALPHACORE_TLB 0
 #define PCIE_SERDES1_ALPHACORE_TLB 1
@@ -94,13 +95,6 @@ typedef union {
 } PCIE_SII_LTSSM_STATE_reg_u;
 
 #define PCIE_SII_LTSSM_STATE_REG_DEFAULT (0x00000000)
-
-PCIeInitStatus SerdesInit(uint8_t pcie_inst, PCIeDeviceType device_type,
-			  uint8_t num_serdes_instance);
-void ExitLoopback(void);
-void EnterLoopback(void);
-void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max_pcie_speed,
-	      uint64_t board_id, uint32_t vendor_id);
 
 static inline void WritePcieTlbConfigReg(const uint32_t addr, const uint32_t data)
 {
