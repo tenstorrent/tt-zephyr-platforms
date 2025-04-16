@@ -122,12 +122,19 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 
 void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
+
+	const struct gpio_dt_spec board_fault_led =
+	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
+	
+	if (board_fault_led.port != NULL) {
+		gpio_pin_set_dt(&board_fault_led, 1);
+	}
 	/* Ramp up fan */
 	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 		set_fan_speed(100);
 	}
 	/* Assert ASIC reset */
-	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
 
 	bh_chip_reset_chip(chip, true);
 }
