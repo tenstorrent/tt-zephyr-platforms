@@ -18,4 +18,9 @@ config TT_BOOT_BANNER_GIT_VERSION
 
 	  See ZEPHYR_BASE/cmake/modules/git.cmake for more information.
 
+config TT_BOOT_BANNER_SDK_VERSION
+	bool "Print the sdk revision when displaying the boot banner"
+	help
+	  Print the SDK revision used when displaying the boot banner
+
 endif
