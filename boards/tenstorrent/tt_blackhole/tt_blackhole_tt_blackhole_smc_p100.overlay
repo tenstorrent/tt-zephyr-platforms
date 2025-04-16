@@ -1,0 +1,11 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <freq.h>
+
+/* P100A has octal flash, so use a slower frequency for flash access */
+/* Up to 10MHz has passed experimentally, use 8 to be safe */
+&spi_flash {
+	mspi-max-frequency = <DT_FREQ_M(8)>;
+};
