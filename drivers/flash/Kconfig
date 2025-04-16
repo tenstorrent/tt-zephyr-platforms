@@ -7,7 +7,6 @@ menu "Flash drivers"
 
 # zephyr-keep-sorted-start
 rsource "Kconfig.mspi"
-rsource "Kconfig.spi_dw"
 # zephyr-keep-sorted-stop
 
 endmenu
