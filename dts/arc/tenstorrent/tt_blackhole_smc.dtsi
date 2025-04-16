@@ -297,7 +297,7 @@
 		};
 
 		spi0: spi@80070000 {
-			compatible = "snps,designware-spi";
+			compatible = "snps,designware-ssi";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x80070000 0x1000>;
@@ -305,7 +305,7 @@
 			interrupt-parent = <&ictl3>;
 			interrupt-names = "rx_avail", "tx_req", "err_int";
 			fifo-depth = <15>;
-			max-xfer-size = <32>;
+			rx-fifo-depth = <255>;
 			clocks = <&sysclk>;
 		};
 	};

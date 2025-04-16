@@ -6,17 +6,15 @@
 
 #include <zephyr/init.h>
 #include <zephyr/drivers/flash.h>
-#include <zephyr/drivers/flash/spi_dw_flash.h>
+#include <zephyr/drivers/mspi.h>
+#include <zephyr/drivers/mspi/mspi_dw.h>
 #include <string.h>
 
 #define SPI_RX_TRAIN_ADDR 0x13FFC
 #define SPI_RX_TRAIN_DATA 0xa5a55a5a
 
-#ifdef CONFIG_FLASH
+const struct device *mspi_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi0));
 const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
-#else
-const struct device *flash;
-#endif
 
 static int tt_blackhole_init(void)
 {
@@ -25,7 +23,7 @@ static int tt_blackhole_init(void)
 	int rc, rx_delay = -1;
 	int delay_lb, delay_ub;
 
-	if (!device_is_ready(flash)) {
+	if ((!device_is_ready(flash)) || (!device_is_ready(mspi_dev))) {
 		return -ENODEV;
 	}
 
@@ -37,7 +35,7 @@ static int tt_blackhole_init(void)
 	/* First, find the lower delay setting that works */
 	do {
 		rx_delay++;
-		rc = flash_ex_op(flash, FLASH_EX_OP_SPI_DW_RX_DLY, rx_delay, NULL);
+		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
 		if (rc < 0) {
 			return rc;
 		}
@@ -50,7 +48,7 @@ static int tt_blackhole_init(void)
 	/* Find the upper bound on the delay setting */
 	do {
 		rx_delay++;
-		rc = flash_ex_op(flash, FLASH_EX_OP_SPI_DW_RX_DLY, rx_delay, NULL);
+		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
 		if (rc < 0) {
 			return rc;
 		}
@@ -63,7 +61,7 @@ static int tt_blackhole_init(void)
 
 	/* Find midpoint of both delay settings */
 	rx_delay = (delay_ub - delay_lb) / 2 + delay_lb;
-	return flash_ex_op(flash, FLASH_EX_OP_SPI_DW_RX_DLY, rx_delay, NULL);
+	return mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
 }
 
 SYS_INIT(tt_blackhole_init, POST_KERNEL, CONFIG_BOARD_INIT_PRIORITY);
