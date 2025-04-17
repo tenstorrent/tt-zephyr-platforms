@@ -139,17 +139,9 @@ jobs:
           sed -i -e 's/http/https/g' /etc/apt/sources.list
           apt update
 
-      - name: Install clang 17
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          sed -i "s/http:\/\/apt.llvm.org/https:\/\/apt.llvm.org/" -i llvm.sh
-          chmod +x llvm.sh
-          ./llvm.sh 17 all
-          rm -f llvm.sh
-
       - name: Install Git LFS
         run: |
-          apt install -y git-lfs
+          apt install -y git-lfs cmake
 
       - name: Checkout Metal
         uses: actions/checkout@v4
