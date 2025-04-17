@@ -18,3 +18,12 @@ config LOG_BACKEND_RTT
 	default y if LOG
 
 endif
+
+if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+
+# Raise the flash init priority, so that we can run flash reset
+# after MSPI init but before flash init
+config FLASH_INIT_PRIORITY
+	default 80 if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+
+endif
