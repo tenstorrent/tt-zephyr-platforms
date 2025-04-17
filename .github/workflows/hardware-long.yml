@@ -165,9 +165,9 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
-          sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
-          apt install -y python3.10-dev python3.10-venv libpython3.10-dev python3.10
+          #sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
+          #sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
+          apt install -y python3-dev python3-venv libpython3-dev python3
           # This script will fail to install the tt-hugepages service, just ignore it
           ./install_dependencies.sh
 
