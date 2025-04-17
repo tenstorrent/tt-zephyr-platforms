@@ -276,12 +276,12 @@ uint32_t RegulatorInit(PcbType board_type)
 		BUILD_ASSERT(sizeof(vcore_ca_data) == sizeof(vcore_ca_mask));
 
 		static const uint8_t vcore_38_data[] = {0x08, 0x00};
-		static const uint8_t vcore_38_mask[] = {0xff, 0x00};
+		static const uint8_t vcore_38_mask[] = {0xff, 0x07};
 
 		BUILD_ASSERT(sizeof(vcore_38_data) == sizeof(vcore_38_mask));
 
 		static const uint8_t vcore_39_data[] = {0x0c, 0x00};
-		static const uint8_t vcore_39_mask[] = {0xff, 0x00};
+		static const uint8_t vcore_39_mask[] = {0xff, 0x07};
 
 		BUILD_ASSERT(sizeof(vcore_39_data) == sizeof(vcore_39_mask));
 
@@ -342,12 +342,12 @@ uint32_t RegulatorInit(PcbType board_type)
 		BUILD_ASSERT(sizeof(vcorem_b0_data) == sizeof(vcorem_b0_mask));
 
 		static const uint8_t vcorem_38_data[] = {0x08, 0x00};
-		static const uint8_t vcorem_38_mask[] = {0xff, 0x00};
+		static const uint8_t vcorem_38_mask[] = {0xff, 0x07};
 
 		BUILD_ASSERT(sizeof(vcorem_38_data) == sizeof(vcorem_38_mask));
 
 		static const uint8_t vcorem_39_data[] = {0x0c, 0x00};
-		static const uint8_t vcorem_39_mask[] = {0xff, 0x00};
+		static const uint8_t vcorem_39_mask[] = {0xff, 0x07};
 
 		BUILD_ASSERT(sizeof(vcorem_39_data) == sizeof(vcorem_39_mask));
 
