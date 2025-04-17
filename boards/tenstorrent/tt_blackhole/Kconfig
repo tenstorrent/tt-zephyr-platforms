@@ -1,12 +1,21 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-config BOARD_INIT_PRIORITY
-	int "Board initialization priority"
-	default 80
+config FLASH_TRAINING_PRIORITY
+	int "Flash training priority"
+	default 85
 	help
-	  Board initialization priority. Should be greater than flash
-	  initialization priority
+	  Initialization priority for flash training. This is used to train the
+	  SSI RX DELAY value for the best reliability. Must be greater than
+	  flash and MSPI init priority
+
+config FLASH_RESET_PRIORITY
+	int "Flash reset priority"
+	default 75
+	help
+	  Initialization priority for flash reset. This is used to reset the flash
+	  before the flash driver runs. Must be greater than MSPI init priority,
+	  and less than flash init priority.
 
 if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
 
