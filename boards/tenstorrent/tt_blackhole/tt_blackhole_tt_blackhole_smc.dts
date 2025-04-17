@@ -26,10 +26,13 @@
 	status = "okay";
 
 	spi_flash: eeprom@0 {
-		compatible = "snps,designware-spi-flash";
+		compatible = "jedec,mspi-nor";
 		reg = <0>;
-		status = "disabled";
-		spi-max-frequency = <DT_FREQ_M(9)>;
+		status = "okay";
+		mspi-max-frequency = <DT_FREQ_M(18)>;
+		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
+		mspi-endian = "MSPI_BIG_ENDIAN";
+		quad-enable-requirements = "NONE";
 	};
 };
 
