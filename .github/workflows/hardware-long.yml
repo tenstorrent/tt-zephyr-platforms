@@ -153,7 +153,7 @@ jobs:
 
       - name: Install Git LFS
         run: |
-          apt install -y git-lfs
+          apt install -y git-lfs grub-common grub2-common cmake
 
       - name: Checkout Metal
         uses: actions/checkout@v4
