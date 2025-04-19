@@ -1,0 +1,32 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+
+config EXPECTED_READ_TIME
+	int "Upper bound on read time for flash device"
+	default 1000
+	help
+	  Expected read time for flash device in milliseconds. This is used to
+	  detect performance regressions in the flash driver. This value should
+	  be set experimentally when enabling the test, so that any performance
+	  drop in the future will be detected.
+
+config EXPECTED_PROGRAM_TIME
+	int "Upper bound on program time for flash device"
+	default 1000
+	help
+	  Expected program time for flash device in milliseconds. This is used to
+	  detect performance regressions in the flash driver. This value should
+	  be set experimentally when enabling the test, so that any performance
+	  drop in the future will be detected.
+
+config TEST_BH_ARC
+	bool "Test BH ARC Library"
+	select NANOPB
+	select BH_ARC
+	help
+	  Test the BH ARC library, rather than Zephyr's flash API. Support
+	  for this will be removed in the future, once we remove the
+	  BH ARC eeprom code.
+
+source "Kconfig.zephyr"
