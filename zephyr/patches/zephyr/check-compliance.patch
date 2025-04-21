@@ -1,5 +1,5 @@
 diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index fe56b715162..2d7bdde4914 100755
+index fe56b715162..c575460db38 100755
 --- a/scripts/ci/check_compliance.py
 +++ b/scripts/ci/check_compliance.py
 @@ -140,6 +140,7 @@ class ComplianceTest:
@@ -51,6 +51,15 @@ index fe56b715162..2d7bdde4914 100755
  
      # Top-level Kconfig file. The path can be relative to srctree (ZEPHYR_BASE).
      FILENAME = "Kconfig"
+@@ -767,7 +764,7 @@ Found disallowed Kconfig symbol in SoC Kconfig files: {sym_name:35}
+ 
+         # Grep samples/ and tests/ for symbol definitions
+         grep_stdout = git("grep", "-I", "-h", "--perl-regexp", regex, "--",
+-                          ":samples", ":tests", cwd=ZEPHYR_BASE)
++                          ":samples", ":tests", cwd=Path(GIT_TOP))
+ 
+         # Generate combined list of configs and choices from the main Kconfig tree.
+         kconf_syms = kconf.unique_defined_syms + kconf.unique_choices
 @@ -1076,6 +1073,7 @@ flagged.
          "MCUBOOT_CLEANUP_ARM_CORE", # Used in (sysbuild-based) test
          "MCUBOOT_DOWNGRADE_PREVENTION", # but symbols are defined in MCUboot
