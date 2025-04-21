@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  hardware-metal-test:
+  hardware-zephyr-test:
     strategy:
       fail-fast: false
       matrix:
@@ -137,25 +137,31 @@ jobs:
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
 
-
-      - name: Fix APT URLs
-        run: |
-          # Patch APT URLs to use https
-          sed -i -e 's/http/https/g' /etc/apt/sources.list
-          apt update
-
-      - name: Install clang 17
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          sed -i "s/http:\/\/apt.llvm.org/https:\/\/apt.llvm.org/" -i llvm.sh
-          chmod +x llvm.sh
-          ./llvm.sh 17 all
-          rm -f llvm.sh
-
+  hardware-metal-test:
+    needs:
+      - hardware-zephyr-test
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - yyz-zephyr-lab-p100
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /dev/hugepages:/dev/hugepages
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
       - name: Install Git LFS
         run: |
+          apt update
           apt install -y git-lfs
-
       - name: Checkout Metal
         uses: actions/checkout@v4
         with:
@@ -163,19 +169,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: v0.55.0
-
-      - name: Install Metal Dependencies
-        working-directory: tt-metal
-        continue-on-error: true
-        shell: bash
-        run: |
-          sed -i 's/apt-get install/apt-get install -y/' install_dependencies.sh
-          sed -i 's/python3.8-venv/python3.10-venv/' install_dependencies.sh
-          apt install -y python3.10-dev python3.10-venv libpython3.10-dev python3.10
-          # This script will fail to install the tt-hugepages service, just ignore it
-          ./install_dependencies.sh
-
+          ref: v0.56.0
       - name: Run Metal Tests
         working-directory: tt-metal
         shell: bash
@@ -192,13 +186,9 @@ jobs:
           # Run metal tests
           tests/scripts/run_cpp_unit_tests.sh
           TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+
       - name: cleanup
         if: ${{ always() }}
         run: |
-          # Clean up patched Zephyr repo
-          west patch clean
           # Clean out metal
           rm -rf tt-metal
-          # Cleanup the checked out repo, we can leave everything else
-          rm -rf tt-zephyr-platforms
-          rm -rf .west
