@@ -240,7 +240,7 @@ static void I2CRecoverBus(uint32_t id)
 	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
 	Wait(100 * WAIT_1US);
 	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK |
-					RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
+					RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
 	Wait(100 * WAIT_1US);
 	/* Restore pads to input mode */
 	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
