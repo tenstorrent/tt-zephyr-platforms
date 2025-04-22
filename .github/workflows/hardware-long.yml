@@ -148,7 +148,7 @@ jobs:
               - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64
+      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:latest
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
@@ -165,7 +165,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: v0.56.0
+          ref: pull/18131/head
       - name: Run Metal Tests
         working-directory: tt-metal
         shell: bash
@@ -182,7 +182,6 @@ jobs:
           # Run metal tests
           tests/scripts/run_cpp_unit_tests.sh
           TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
-
       - name: cleanup
         if: ${{ always() }}
         run: |
