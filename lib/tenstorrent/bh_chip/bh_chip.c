@@ -95,6 +95,14 @@ int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
 	return ret;
 }
 
+void bh_chip_auto_reset(struct k_timer *timer)
+{
+	struct bh_chip *chip = CONTAINER_OF(timer, struct bh_chip, auto_reset_timer);
+
+	chip->data.last_reset_was_automatic = true;
+	bh_chip_reset_chip(chip, true);
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);
@@ -122,13 +130,13 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 
 void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
+
 	/* Ramp up fan */
 	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 		set_fan_speed(100);
 	}
 	/* Assert ASIC reset */
-	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
-
 	bh_chip_reset_chip(chip, true);
 }
 

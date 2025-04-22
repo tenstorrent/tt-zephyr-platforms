@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config WDT_TT_BH
+	bool "Tenstorrent Blackhole watchdog driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_WATCHDOG_ENABLED
+	help
+	  Enable the Tenstorrent Blackhole watchdog driver.

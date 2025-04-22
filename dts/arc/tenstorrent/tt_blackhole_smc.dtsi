@@ -120,6 +120,11 @@
 		interrupt-parent = <&intc>;
 	};
 
+	wdt0: wdt0 {
+		compatible = "tenstorrent,bh-watchdog";
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;

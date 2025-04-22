@@ -20,6 +20,7 @@ typedef struct bmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
+	uint32_t last_reset_was_automatic;
 } __packed bmStaticInfo;
 
 typedef struct cm2bmMessage {
