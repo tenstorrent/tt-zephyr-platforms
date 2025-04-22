@@ -165,7 +165,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: pull/18131/head
+          ref: abhullar/bh-virtual
       - name: Run Metal Tests
         working-directory: tt-metal
         shell: bash
