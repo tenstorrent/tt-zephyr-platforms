@@ -13,6 +13,7 @@ jobs:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
   publish-release:
+    needs: build-release
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
