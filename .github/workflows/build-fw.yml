@@ -141,3 +141,32 @@ jobs:
             build-recovery/**/zephyr.hex
             build-recovery/**/zephyr.map
             build-recovery/**/zephyr.stat
+
+  build-combined-fwbundle:
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+
+      - name: Download firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: tt-zephyr-platforms
+
+      - name: Build Combined Firmware Bundle
+        shell: bash
+        run: |
+          pip install pykwalify
+          BUNDLE_TEMP_PREFIX="$PWD/tt-zephyr-platforms/firmware-" \
+            ./tt-zephyr-platforms/scripts/build-combined-fwbundle.sh
+
+      - name: Upload Combined Firmware Bundle Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: |
+            fw_pack*.fwbundle
