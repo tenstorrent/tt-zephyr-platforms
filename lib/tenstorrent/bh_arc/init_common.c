@@ -8,29 +8,41 @@
 #include "init_common.h"
 #include "irqnum.h"
 #include "reg.h"
-#include "spi_controller.h"
 #include "spi_eeprom.h"
 #include "status_reg.h"
 
 #include <stdint.h>
 
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/kernel.h>
+
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(init_common, CONFIG_TT_APP_LOG_LEVEL);
+
+const struct device *const flash_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
 {
-	SpiBlockRead(addr, size, dst);
+	if (flash_read(flash_dev, addr, dst, size) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
 	return TT_BOOT_FS_OK;
 }
 
-void InitSpiFS(void)
+int InitSpiFS(void)
 {
-	/* Toggle SPI reset to clear state left by bootcode */
-	SpiControllerReset();
+	int ret;
 
-	EepromSetup();
-	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
-	SpiBufferSetup();
+	if (!device_is_ready(flash_dev)) {
+		return -ENODEV;
+	}
+	ret = tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
+	if (ret != TT_BOOT_FS_OK) {
+		return ret;
+	}
+	SpiEepromSetup();
+	return 0;
 }
 
 void InitResetInterrupt(uint8_t pcie_inst)
@@ -84,6 +96,8 @@ void DeassertTileResets(void)
 
 int InitFW(uint32_t app_version)
 {
+	int ret;
+
 	WriteReg(STATUS_FW_VERSION_REG_ADDR, app_version);
 
 	/* Initialize ARC DMA */
@@ -91,7 +105,11 @@ int InitFW(uint32_t app_version)
 	ArcDmaInitCh(0, 0, 15);
 
 	/* Initialize SPI EEPROM and the filesystem */
-	InitSpiFS();
+	ret = InitSpiFS();
+	if (ret < 0) {
+		LOG_ERR("Failed to initialize SPI filesystem: %d", ret);
+		return ret;
+	}
 
 	return 0;
 }
