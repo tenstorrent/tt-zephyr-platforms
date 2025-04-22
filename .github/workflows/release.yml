@@ -55,7 +55,7 @@ jobs:
       - name: Package firmware artifacts
         run: |
           # TODO: read boards / board revs from a YAML file
-          BOARD_REVS="p100 p100a p150a"
+          BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c"
 
           for REV in $BOARD_REVS; do
             cp build-*/update.fwbundle $REV.fwbundle
