@@ -184,11 +184,11 @@ void CalculateHarvesting(void)
 		/* Eth handling */
 		/* Only enable 2 of 3 in eth {4,5,6} */
 		if (FIELD_GET(GENMASK(6, 4), tile_enable.eth_enabled) == BIT_MASK(3)) {
-			tile_enable.eth_enabled &= ~BIT(6);
+			tile_enable.eth_enabled &= ~BIT(5);
 		}
 		/* Only enable 2 of 3 in eth {7,8,9} */
 		if (FIELD_GET(GENMASK(9, 7), tile_enable.eth_enabled) == BIT_MASK(3)) {
-			tile_enable.eth_enabled &= ~BIT(9);
+			tile_enable.eth_enabled &= ~BIT(8);
 		}
 
 		/* Soft harvesting for Tensix, ETH, GDDR, Tensix based on product spec */
