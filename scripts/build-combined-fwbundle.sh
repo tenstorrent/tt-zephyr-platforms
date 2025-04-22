@@ -49,7 +49,11 @@ for REV in $BOARD_REVS; do
   BOARD="tt_blackhole@$REV/tt_blackhole/smc"
 
   echo "Building $BOARD"
-  west build -d "$TEMP_DIR/$REV" --sysbuild -p -b "$BOARD" app/smc >/dev/null 2>&1
+  west build -d "$TEMP_DIR/$REV" --sysbuild -p -b "$BOARD" app/smc \
+    -- \
+       -DDTC_OVERLAY_FILE="vuart.overlay" \
+       -DEXTRA_OVERLAY_CONF="vuart.conf" \
+    >/dev/null 2>&1
 done
 
 echo "Creating fw_pack-$PRELEASE.fwbundle"
