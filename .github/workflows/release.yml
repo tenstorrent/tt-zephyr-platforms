@@ -47,6 +47,11 @@ jobs:
         with:
           pattern: firmware-*
 
+      - name: Download combined firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+
       - name: Package firmware artifacts
         run: |
           # TODO: read boards / board revs from a YAML file
