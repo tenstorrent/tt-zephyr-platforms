@@ -136,7 +136,14 @@ jobs:
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
-
+          ../tt-zephyr-platforms/scripts/rescan-pcie.sh
+      - name: Install TT-SMI and reset the device
+        run: |
+          sed -i -e 's/http/https/g' /etc/apt/sources.list
+          apt update
+          apt install -y cargo
+          pip install git+https://github.com/tenstorrent/tt-smi@v3.0.5
+          tt-smi -r 0
   hardware-metal-test:
     needs:
       - hardware-zephyr-test
@@ -152,16 +159,28 @@ jobs:
               - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64
+      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:latest
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    env:
+      ARCH_NAME: blackhole
+      TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+      PYTHONPATH: ${{ github.workspace }}/tt-metal
     steps:
       - name: Install Git LFS
         run: |
           apt update
           apt install -y git-lfs
+      - name: Checkout Zephyr Platforms (only for rescan-pcie.sh)
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - name: Run the rescan-pcie.sh script
+        run: |
+          ./tt-zephyr-platforms/scripts/rescan-pcie.sh
       - name: Checkout Metal
         uses: actions/checkout@v4
         with:
@@ -169,8 +188,10 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: v0.56.0
-      - name: Run Metal Tests
+          ref: abhullar/bh-virtual
+          fetch-depth: 500
+          fetch-tags: true
+      - name: Build UMD Tests
         working-directory: tt-metal
         shell: bash
         env:
@@ -178,15 +199,33 @@ jobs:
           TT_METAL_HOME: ${{ github.workspace }}/tt-metal
           PYTHONPATH: ${{ github.workspace }}/tt-metal
         run: |
-          # Debug
-          python3 -V
           # Build metal
+          ./build_metal.sh --build-umd-tests
+      - name: Run UMD Tests
+        working-directory: tt-metal
+        shell: bash
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+        run: |
+          ./build/test/umd/blackhole/unit_tests
+      - name: Build Other Metal Tests
+        shell: bash
+        working-directory: tt-metal
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+        run: |
           ./build_metal.sh --build-tests --build-programming-examples
           PYTHON_CMD=python3.10 source ./create_venv.sh
-          # Run metal tests
-          tests/scripts/run_cpp_unit_tests.sh
-          TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
-
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardFixture.*"
+          #Tests Metal command queue basic apis
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardProgramFixture.*"
+          #Tests Metal program apis
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardBufferFixture.ShardedBufferLarge*ReadWrites"
+          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=RandomProgramFixture.*
+          ./build/test/tt_metal/unit_tests_api_blackhole --gtest_filter=*SimpleDram*:*SimpleL1*
+          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=CommandQueueSingleCardBufferFixture.*
       - name: cleanup
         if: ${{ always() }}
         run: |
