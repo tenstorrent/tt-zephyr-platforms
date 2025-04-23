@@ -172,7 +172,7 @@ jobs:
           lfs: true
           submodules: true
           ref: abhullar/bh-virtual
-      - name: Run Metal Tests
+      - name: Build UMD Tests
         working-directory: tt-metal
         shell: bash
         env:
@@ -182,11 +182,27 @@ jobs:
         run: |
           # Build metal
           ./build_metal.sh --build-umd-tests --build-programming-examples
+      - name: Run UMD Tests
+        working-directory: tt-metal
+        shell: bash
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+        run: |
           ./build/test/umd/blackhole/unit_tests
-          # PYTHON_CMD=python3.10 source ./create_venv.sh
-          # Run metal tests
-          # tests/scripts/run_cpp_unit_tests.sh
-          # TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+      - name: Build Other Metal Tests
+        shell: bash
+        working-directory: tt-metal
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+        run: |
+          ./build_metal.sh --build-tests --build-programming-examples PYTHON_CMD=python3.10 source ./create_venv.sh
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardFixture.*"
+          #Tests Metal command queue basic apis
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardProgramFixture.*"
+          #Tests Metal program apis
+          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardBufferFixture.ShardedBufferLarge*ReadWrites"
       - name: cleanup
         if: ${{ always() }}
         run: |
