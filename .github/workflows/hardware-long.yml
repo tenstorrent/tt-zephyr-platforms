@@ -159,6 +159,10 @@ jobs:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    env:
+      ARCH_NAME: blackhole
+      TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+      PYTHONPATH: ${{ github.workspace }}/tt-metal
     steps:
       - name: Install Git LFS
         run: |
@@ -204,6 +208,9 @@ jobs:
           TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardProgramFixture.*"
           #Tests Metal program apis
           TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardBufferFixture.ShardedBufferLarge*ReadWrites"
+          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=RandomProgramFixture.*
+          ./build/test/tt_metal/unit_tests_api_blackhole --gtest_filter=*SimpleDram*:*SimpleL1*
+          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=CommandQueueSingleCardBufferFixture.*
       - name: cleanup
         if: ${{ always() }}
         run: |
