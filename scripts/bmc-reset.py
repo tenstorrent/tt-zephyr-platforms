@@ -9,6 +9,14 @@ import subprocess
 import sys
 import yaml
 import logging
+import time
+
+try:
+    import pyluwen
+
+    pyluwen_found = True
+except ModuleNotFoundError:
+    pyluwen_found = False
 
 from pathlib import Path
 
@@ -16,6 +24,48 @@ logger = logging.getLogger(Path(__file__).stem)
 
 OPT_DIR = Path("/opt/tenstorrent")
 SDK_SYSROOT = Path("/opt/zephyr/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux")
+
+TT_PCIE_VID = "0x1e52"
+
+
+def find_tt_bus():
+    """
+    Finds PCIe path for device to power off
+    """
+    for root, dirs, _ in os.walk("/sys/bus/pci/devices"):
+        for d in dirs:
+            with open(os.path.join(root, d, "vendor"), "r") as f:
+                vid = f.read()
+                if vid.strip() == TT_PCIE_VID:
+                    return os.path.join(root, d)
+    return None
+
+
+def rescan_pcie():
+    """
+    Helper to rescan PCIe bus
+    """
+    # First, we must find the PCIe card to power it off
+    dev = find_tt_bus()
+    if dev is not None:
+        print(f"Powering off device at {dev}")
+        try:
+            with open(os.path.join(dev, "remove"), "w") as f:
+                f.write("1")
+        except PermissionError as e:
+            print(
+                "Error, this script must be run with elevated permissions to rescan PCIe bus"
+            )
+            raise e
+    # Now, rescan the bus
+    try:
+        with open("/sys/bus/pci/rescan", "w") as f:
+            f.write("1")
+    except PermissionError as e:
+        print(
+            "Error, this script must be run with elevated permissions to rescan PCIe bus"
+        )
+        raise e
 
 
 def parse_args():
@@ -76,6 +126,12 @@ def parse_args():
         metavar="HEX",
         nargs="?",
         type=Path,
+    )
+    parser.add_argument(
+        "-w",
+        "--wait",
+        action="store_true",
+        help="Wait for SMC to boot after resetting BMC",
     )
 
     args = parser.parse_args()
@@ -148,6 +204,73 @@ def reset_bmc(args):
     return os.EX_OK
 
 
+def wait_for_smc_boot(timeout):
+    """
+    Waits for SMC to complete boot after BMC is reset
+    @param timeout: time to wait for boot in seconds
+    """
+    remaining = timeout
+    delay = 1
+    print(f"Waiting {timeout} seconds for SMC to complete boot")
+    # First stage- rescan pcie
+    while True:
+        try:
+            rescan_pcie()
+        except PermissionError:
+            return os.EX_OSERR
+        if Path("/dev/tenstorrent/0").exists():
+            print("Card detected on PCIe")
+            break
+        print(".", end="", flush=True)
+        time.sleep(delay)
+        remaining -= delay
+        if timeout == 0:
+            print(f"Card did not reappear after {timeout} seconds)")
+            return os.EX_UNAVAILABLE
+    # Second stage- is the card firmware working?
+    if not pyluwen_found:
+        print(
+            "Warning, without pyluwen this script can't verify if the SMC firmware is fully working"
+        )
+        return os.EX_OK
+    # Try to detect the card using pyluwen- this indicates ARC has booted
+    while True:
+        try:
+            chips = pyluwen.detect_chips()
+            print("SMC init complete")
+            chip = chips[0]
+            break
+        except Exception:
+            # Just decrement timeout, which we do below
+            pass
+        remaining -= delay
+        time.sleep(delay)
+        print(".", end="", flush=True)
+        if remaining == 0:
+            print(f"Card did not reappear after {timeout} seconds)")
+            return os.EX_UNAVAILABLE
+    # Check if the SMC ping will work
+    if chip.get_telemetry().m3_app_fw_version < 0x40000:
+        print("Warning: BMC firmware is too old, no support for SMC ping")
+        return os.EX_OK
+    # Try to verify that the SMC can ping the BMC
+    while True:
+        try:
+            rsp = chip.arc_msg(0xC0, True, True, 1, 0)
+            if rsp[0] == 1:
+                print("SMC can communicate with BMC")
+                break
+        except Exception:
+            # Just decrement timeout, which we do below
+            pass
+        remaining -= delay
+        time.sleep(delay)
+        print(".", end="", flush=True)
+        if remaining == 0:
+            print(f"Card did not reappear after {timeout} seconds)")
+            return os.EX_UNAVAILABLE
+
+
 def main():
     args = parse_args()
     if args is None:
@@ -177,7 +300,12 @@ def main():
                 logger.debug(f"Found {dut['platform']} with JTAG ID {dut['id']}")
                 break
 
-    return reset_bmc(args)
+    ret = reset_bmc(args)
+    if ret != os.EX_OK:
+        return ret
+    if args.wait:
+        return wait_for_smc_boot(60)
+    return os.EX_OK
 
 
 if __name__ == "__main__":
