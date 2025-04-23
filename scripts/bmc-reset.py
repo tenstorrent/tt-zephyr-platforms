@@ -22,6 +22,10 @@ from pathlib import Path
 
 logger = logging.getLogger(Path(__file__).stem)
 
+DEFAULT_BMC_CFG = (
+    Path(__file__).parents[1]
+    / "boards/tenstorrent/tt_blackhole/support/tt_blackhole_bmc.cfg"
+)
 OPT_DIR = Path("/opt/tenstorrent")
 SDK_SYSROOT = Path("/opt/zephyr/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux")
 
@@ -73,11 +77,7 @@ def parse_args():
     parser.add_argument(
         "-c",
         "--config",
-        default=OPT_DIR
-        / "fw"
-        / "stable"
-        / "tt_blackhole_tt_blackhole_bmc"
-        / "tt_blackhole_bmc.cfg",
+        default=DEFAULT_BMC_CFG,
         help="OpenOCD config file",
         metavar="FILE",
         type=Path,
