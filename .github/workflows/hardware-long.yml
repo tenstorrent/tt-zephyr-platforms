@@ -180,10 +180,9 @@ jobs:
           TT_METAL_HOME: ${{ github.workspace }}/tt-metal
           PYTHONPATH: ${{ github.workspace }}/tt-metal
         run: |
-          # Debug
-          python3 -V
           # Build metal
           ./build_metal.sh --build-tests --build-programming-examples
+          ./build/test/umd/blackhole/unit_tests
           PYTHON_CMD=python3.10 source ./create_venv.sh
           # Run metal tests
           tests/scripts/run_cpp_unit_tests.sh
