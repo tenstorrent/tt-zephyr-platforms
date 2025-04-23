@@ -84,10 +84,6 @@ def parse_args():
         parser.error(f"Config file {args.config} does not exist")
         return None
 
-    if not args.hw_map.is_file():
-        parser.error(f"Hardware map file {args.hw_map} does not exist")
-        return None
-
     if not (args.openocd.is_file() and os.access(str(args.openocd), os.X_OK)):
         parser.error(f"{args.openocd} is not an executable file")
         return None
@@ -106,9 +102,10 @@ def reset_bmc(args):
         str(args.scripts),
         "-f",
         str(args.config),
-        "-c",
-        f"adapter serial {args.jtag_id}",
     ]
+
+    if args.jtag_id is not None:
+        openocd_cmd.extend(["-c", f"adapter serial {args.jtag_id}"])
 
     if args.hexfile:
         # program the hex file and reset the BMC
@@ -159,7 +156,11 @@ def main():
     if args.debug > 0:
         logging.basicConfig(level=logging.DEBUG)
 
-    if args.jtag_id == "auto":
+    if not args.hw_map.is_file():
+        logger.info("No hardware map provided, using first ST-Link")
+        args.jtag_id = None
+
+    if args.jtag_id == "auto" and args.hw_map.is_file():
         logger.debug("Auto-detecting JTAG ID..")
 
         try:
