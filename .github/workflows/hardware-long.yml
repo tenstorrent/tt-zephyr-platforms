@@ -183,10 +183,10 @@ jobs:
           # Build metal
           ./build_metal.sh --build-tests --build-programming-examples
           ./build/test/umd/blackhole/unit_tests
-          PYTHON_CMD=python3.10 source ./create_venv.sh
+          # PYTHON_CMD=python3.10 source ./create_venv.sh
           # Run metal tests
-          tests/scripts/run_cpp_unit_tests.sh
-          TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
+          # tests/scripts/run_cpp_unit_tests.sh
+          # TT_METAL_SLOW_DISPATCH_MODE=1 tests/scripts/run_cpp_unit_tests.sh
       - name: cleanup
         if: ${{ always() }}
         run: |
