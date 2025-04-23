@@ -197,7 +197,8 @@ jobs:
           ARCH_NAME: blackhole
           TT_METAL_HOME: ${{ github.workspace }}/tt-metal
         run: |
-          ./build_metal.sh --build-tests --build-programming-examples PYTHON_CMD=python3.10 source ./create_venv.sh
+          ./build_metal.sh --build-tests --build-programming-examples
+          PYTHON_CMD=python3.10 source ./create_venv.sh
           TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardFixture.*"
           #Tests Metal command queue basic apis
           TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardProgramFixture.*"
