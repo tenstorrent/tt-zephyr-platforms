@@ -185,7 +185,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/tt-metal
         run: |
           # Build metal
-          ./build_metal.sh --build-umd-tests --build-programming-examples
+          ./build_metal.sh --build-umd-tests
       - name: Run UMD Tests
         working-directory: tt-metal
         shell: bash
