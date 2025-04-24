@@ -73,6 +73,19 @@ def rescan_pcie():
 
 
 def parse_args():
+    # Execute CMake to locate SDK sysroot
+    proc = subprocess.run(
+        ["cmake", "-P", str(Path(__file__).parent / "find_zephyr_sdk.cmake")],
+        capture_output=True,
+    )
+    if "SDK_INSTALL_DIR" in str(proc.stderr):
+        DEFAULT_SDK_INSTALL_DIR = (
+            Path(str(proc.stderr).split(":")[1][:-3])
+            / "sysroots"
+            / "x86_64-pokysdk-linux"
+        )
+    else:
+        DEFAULT_SDK_INSTALL_DIR = SDK_SYSROOT
     parser = argparse.ArgumentParser(description="Reset BMC", allow_abbrev=False)
     parser.add_argument(
         "-c",
@@ -107,7 +120,7 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--openocd",
-        default=SDK_SYSROOT / "usr" / "bin" / "openocd",
+        default=DEFAULT_SDK_INSTALL_DIR / "usr" / "bin" / "openocd",
         help="Use a specific hw-map.yml file",
         metavar="FILE",
         type=Path,
@@ -115,7 +128,7 @@ def parse_args():
     parser.add_argument(
         "-s",
         "--scripts",
-        default=SDK_SYSROOT / "usr" / "share" / "openocd" / "scripts",
+        default=DEFAULT_SDK_INSTALL_DIR / "usr" / "share" / "openocd" / "scripts",
         help="Path to OpenOCD scripts directory",
         metavar="DIR",
         type=Path,
