@@ -303,6 +303,32 @@ int main(void)
 	while (1) {
 		k_sleep(K_MSEC(20));
 
+		/* handler for therm trip */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (atomic_test_and_clear_bit(&chip->data.therm_trip_triggered, 0)) {
+				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+					set_fan_speed(100);
+				}
+				bh_chip_reset_chip(chip, true);
+			}
+		}
+
+		/* handler for PERST */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.trigger_reset) {
+				chip->data.trigger_reset = false;
+				if (chip->data.workaround_applied) {
+					jtag_bootrom_reset_asic(chip);
+					jtag_bootrom_soft_reset_arc(chip);
+					jtag_bootrom_teardown(chip);
+					chip->data.needs_reset = false;
+				} else {
+					chip->data.needs_reset = true;
+				}
+				bh_chip_cancel_bus_transfer_clear(chip);
+			}
+		}
+
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
 		 */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {

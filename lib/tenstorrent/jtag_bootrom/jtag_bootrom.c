@@ -61,20 +61,7 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 {
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		bh_chip_cancel_bus_transfer_set(chip);
-		k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-
-		if (chip->data.workaround_applied) {
-			jtag_bootrom_reset_asic(chip);
-			jtag_bootrom_soft_reset_arc(chip);
-			jtag_bootrom_teardown(chip);
-
-			chip->data.needs_reset = false;
-		} else {
-			chip->data.needs_reset = true;
-		}
-
-		k_mutex_unlock(&chip->data.reset_lock);
-		bh_chip_cancel_bus_transfer_clear(chip);
+		chip->data.trigger_reset = true;
 	}
 }
 

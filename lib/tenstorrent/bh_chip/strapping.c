@@ -17,26 +17,18 @@ struct tt_smbus_stm32_config {
 
 void bh_chip_set_straps(struct bh_chip *chip)
 {
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-
 	bharc_enable_i2cbus(&chip->config.arc);
 	if (chip->config.strapping.gpio6.port != NULL) {
 		gpio_pin_configure_dt(&chip->config.strapping.gpio6, GPIO_OUTPUT_ACTIVE);
 	}
 	bharc_disable_i2cbus(&chip->config.arc);
-
-	k_mutex_unlock(&chip->data.reset_lock);
 }
 
 void bh_chip_unset_straps(struct bh_chip *chip)
 {
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-
 	bharc_enable_i2cbus(&chip->config.arc);
 	if (chip->config.strapping.gpio6.port != NULL) {
 		gpio_pin_configure_dt(&chip->config.strapping.gpio6, GPIO_INPUT);
 	}
 	bharc_disable_i2cbus(&chip->config.arc);
-
-	k_mutex_unlock(&chip->data.reset_lock);
 }

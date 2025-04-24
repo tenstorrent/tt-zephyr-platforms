@@ -36,8 +36,6 @@ struct bh_chip_config {
 };
 
 struct bh_chip_data {
-	struct k_mutex reset_lock;
-
 	/* Flag set when we need to apply the reset regardless of preset state. */
 	bool needs_reset;
 
@@ -51,6 +49,9 @@ struct bh_chip_data {
 	bool arc_just_reset;
 
 	unsigned int bus_cancel_flag;
+
+	/* notify the main thread to apply reset sequence */
+	bool trigger_reset;
 };
 
 struct bh_chip {
@@ -101,11 +102,6 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 			    INIT_STRAP)),                                                          \
 	  ())},                                    \
 				},                                                                 \
-				.data =                                                            \
-					{                                                          \
-						.reset_lock = Z_MUTEX_INITIALIZER(                 \
-							BH_CHIPS[idx].data.reset_lock),            \
-					},                                                         \
 			},
 
 #define BH_CHIP_PRIMARY_INDEX DT_PROP(DT_PATH(chips), primary)

@@ -66,11 +66,9 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
 
 	bh_chip_cancel_bus_transfer_set(chip);
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	if (chip->data.needs_reset) {
 		jtag_bootrom_soft_reset_arc(chip);
 	}
-	k_mutex_unlock(&chip->data.reset_lock);
 #else
 	jtag_bootrom_soft_reset_arc(chip);
 #endif
