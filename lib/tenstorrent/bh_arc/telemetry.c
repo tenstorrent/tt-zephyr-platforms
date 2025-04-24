@@ -29,6 +29,8 @@
 
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
 
+#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
+
 struct telemetry_entry {
 	uint16_t tag;
 	uint16_t offset;
@@ -209,6 +211,15 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[PCIE_USAGE] =
 		((tile_enable.pcie_usage[1] & 0x3) << 2) | (tile_enable.pcie_usage[0] & 0x3);
 	/* telemetry[NOC_TRANSLATION] assumes zero-init, see also UpdateTelemetryNocTranslation. */
+
+	if (get_pcb_type() == PcbTypeP300) {
+		/* For the p300 a value of 1 is the left asic and 0 is the right */
+		telemetry[ASIC_LOCATION] =
+			FIELD_GET(BIT(6), ReadReg(RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR));
+	} else {
+		/* For all other supported boards this value is 0 */
+		telemetry[ASIC_LOCATION] = 0;
+	}
 }
 
 static void update_telemetry(void)
@@ -309,7 +320,8 @@ static void update_tag_table(void)
 	tag_table[47] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
 	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
 	tag_table[49] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
-	tag_table[50] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[50] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
+	tag_table[51] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */

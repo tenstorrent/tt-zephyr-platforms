@@ -66,6 +66,7 @@
 #define TAG_GDDR_6_7_CORR_ERRS   49
 #define TAG_GDDR_UNCORR_ERRS     50
 #define TAG_MAX_GDDR_TEMP        51
+#define TAG_ASIC_LOCATION        52
 
 /* Enums are subject to updates */
 typedef enum {
@@ -141,6 +142,8 @@ typedef enum {
 	GDDR_4_5_CORR_ERRS,
 	GDDR_6_7_CORR_ERRS,
 	GDDR_UNCORR_ERRS,
+
+	ASIC_LOCATION,
 
 	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
 } Telemetry;
