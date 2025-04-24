@@ -177,6 +177,7 @@ def reset_bmc(args):
         openocd_cmd.extend(["-c", f"adapter serial {args.jtag_id}"])
 
     if args.hexfile:
+        print(f"Programming file {args.hexfile} to the BMC")
         # program the hex file and reset the BMC
         openocd_cmd.extend(
             [
