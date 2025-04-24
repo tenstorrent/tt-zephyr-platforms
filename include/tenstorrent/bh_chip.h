@@ -52,6 +52,9 @@ struct bh_chip_data {
 
 	/* notify the main thread to apply reset sequence */
 	bool trigger_reset;
+
+	/* notify the main thread to handle therm trip */
+	bool therm_trip_triggered;
 };
 
 struct bh_chip {
