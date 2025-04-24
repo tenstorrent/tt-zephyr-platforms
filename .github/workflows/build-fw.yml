@@ -18,6 +18,8 @@ on:
       - main
       - v*-branch
 
+# TODO: read boards / board revs from a YAML file (generate a matrix)
+# possibly using https://github.com/marketplace/actions/files-to-matrix
 jobs:
   build:
     runs-on: ubuntu-24.04

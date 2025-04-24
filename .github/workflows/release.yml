@@ -42,36 +42,21 @@ jobs:
           name: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
           path: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
 
-      # FIXME: need a more clever way to download and combine lots of artifacts
-      - name: Download firmware artifact (p100)
+      - name: Download firmware artifacts
         uses: actions/download-artifact@v4
         with:
-          name: firmware-p100
-          path: assets/p100
-
-      - name: Download firmware artifact (p100a)
-        uses: actions/download-artifact@v4
-        with:
-          name: firmware-p100a
-          path: assets/p100a
-
-      - name: Download firmware artifact (p150a)
-        uses: actions/download-artifact@v4
-        with:
-          name: firmware-p150a
-          path: assets/p150a
+          pattern: firmware-*
 
       - name: Package firmware artifacts
         run: |
-          cp assets/p100/update.fwbundle p100.fwbundle
-          cp assets/p100a/update.fwbundle p100a.fwbundle
-          cp assets/p150a/update.fwbundle p150a.fwbundle
+          # TODO: read boards / board revs from a YAML file
+          BOARD_REVS="p100 p100a p150a"
 
-          cd assets
-          zip -r -9 ../tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip \
-            p100 \
-            p100a \
-            p150a
+          for REV in $BOARD_REVS; do
+            cp build-*/update.fwbundle $REV.fwbundle
+          done
+
+          zip -r -9 tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip $BOARD_REVS
 
       - name: Create empty release notes body
         run: |
@@ -85,8 +70,6 @@ jobs:
           draft: true
           prerelease: true
           files: |
-            p100.fwbundle
-            p100a.fwbundle
-            p150a.fwbundle
+            *.fwbundle
             tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip
             tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
