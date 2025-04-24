@@ -47,7 +47,7 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-hardware
         with:
           board: ${{ matrix.config.board }}
-          version: '80.15.0.0'
+          version: '80.17.0.0'
 
       - name: Generate board names
         shell: bash
@@ -166,7 +166,7 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-hardware
         with:
           board: ${{ matrix.config.board }}
-          version: '80.15.0.0'
+          version: '80.17.0.0'
 
       - name: Generate board names
         shell: bash
