@@ -18,6 +18,7 @@
 
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/jtag_bootrom.h>
+#include <tenstorrent/bm_event.h>
 
 bool jtag_axiwait(const struct device *dev, uint32_t addr)
 {
@@ -63,6 +64,7 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 		bh_chip_cancel_bus_transfer_set(chip);
 		chip->data.trigger_reset = true;
 	}
+	bm_event_post(WAKE_BM_MAIN_LOOP);
 }
 
 static struct gpio_callback preset_cb_data;
