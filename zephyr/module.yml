@@ -97,3 +97,21 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_nano_bootcode.bin"
     description: "Modified bootrom to boot Blackhole"
     doc-url: https://tenstorrent.com
+  - path: fw_pack-wormhole.tar.gz
+    sha256: 2e321cbdea7bbafcc41e2ce39d5ce4d6a38a7669dc18c3aad3543fb274d2f45b
+    type: img
+    version: '80.18.0.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/fw_pack-wormhole.tar.gz"
+    description: "Wormhole FW"
+    doc-url: https://tenstorrent.com
+  - path: fw_pack-grayskull.tar.gz
+    sha256: bb0c7f7e500e44fa494e2cb4456c3943498edd2dd4fe00b31163c64a6867cea4
+    type: img
+    version: '80.18.0.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/fw_pack-grayskull.tar.gz"
+    description: "Grayskull FW"
+    doc-url: https://tenstorrent.com
