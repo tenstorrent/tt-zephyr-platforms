@@ -68,7 +68,8 @@ done
 
 echo "Creating fw_pack-$PRELEASE.fwbundle"
 # construct arguments..
-ARGS=""
+ARGS="-c $PWD/$TTZP_BASE/zephyr/blobs/fw_pack-grayskull.tar.gz"
+ARGS="$ARGS -c $PWD/$TTZP_BASE/zephyr/blobs/fw_pack-wormhole.tar.gz"
 for REV in $BOARD_REVS; do
   ARGS="$ARGS -c ${TEMP_DIR}${REV}/update.fwbundle"
 done
