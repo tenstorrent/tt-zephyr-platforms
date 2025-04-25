@@ -37,7 +37,7 @@ jobs:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin:/opt/tenstorrent/bin
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -47,11 +47,6 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
-
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-hardware
-        with:
-          board: ${{ matrix.config.board }}
-          version: '80.17.0.0'
 
       - name: Generate board names
         shell: bash
@@ -156,7 +151,7 @@ jobs:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
         - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin:/opt/tenstorrent/bin
+        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -166,11 +161,6 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
-
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-hardware
-        with:
-          board: ${{ matrix.config.board }}
-          version: '80.17.0.0'
 
       - name: Generate board names
         shell: bash
