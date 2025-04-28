@@ -5,6 +5,8 @@
 
 import logging
 import os
+import subprocess
+
 import pyluwen
 import pytest
 import re
@@ -162,3 +164,25 @@ def test_fw_bundle_version(arc_chip):
         telemetry.fw_bundle_version == exp_bundle_version
     ), f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
     logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
+
+
+@pytest.mark.flash
+def test_smi_reset():
+    """
+    Checks that tt-smi resets are working successfully
+    """
+    smi_reset_cmd = "tt-smi -r"
+    total_tries = 10
+    fail_count = 0
+    for i in range(total_tries):
+        logger.info(f"Iteration {i}:")
+        smi_reset_result = subprocess.run(
+            smi_reset_cmd.split(), capture_output=True, check=False
+        ).returncode
+        logger.info(f"'tt-smi -r' returncode:{smi_reset_result}")
+
+        if smi_reset_result != 0:
+            fail_count += 1
+
+    logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
+    assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
