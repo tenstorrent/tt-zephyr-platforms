@@ -38,6 +38,11 @@ typedef enum {
 } ClockControlMode;
 
 typedef struct {
+	bool enabled;
+	float value;
+} AiclkArb;
+
+typedef struct {
 	uint32_t curr_freq;   /* in MHz */
 	uint32_t targ_freq;   /* in MHz */
 	uint32_t boot_freq;   /* in MHz */
@@ -47,8 +52,8 @@ typedef struct {
 	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
 	uint32_t sweep_low;   /* in MHz */
 	uint32_t sweep_high;  /* in MHz */
-	float arbiter_max[kAiclkArbMaxCount];
-	float arbiter_min[kAiclkArbMinCount];
+	AiclkArb arbiter_max[kAiclkArbMaxCount];
+	AiclkArb arbiter_min[kAiclkArbMinCount];
 } AiclkPPM;
 
 static AiclkPPM aiclk_ppm = {
@@ -60,12 +65,22 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq)
 {
-	aiclk_ppm.arbiter_max[arb_max] = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+	aiclk_ppm.arbiter_max[arb_max].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
 }
 
 void SetAiclkArbMin(AiclkArbMin arb_min, float freq)
 {
-	aiclk_ppm.arbiter_min[arb_min] = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+	aiclk_ppm.arbiter_min[arb_min].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+}
+
+void EnableArbMax(AiclkArbMax arb_max, bool enable)
+{
+	aiclk_ppm.arbiter_max[arb_max].enabled = enable;
+}
+
+void EnableArbMin(AiclkArbMin arb_min, bool enable)
+{
+	aiclk_ppm.arbiter_min[arb_min].enabled = enable;
 }
 
 void CalculateTargAiclk(void)
@@ -77,13 +92,14 @@ void CalculateTargAiclk(void)
 	uint32_t targ_freq = aiclk_ppm.fmin;
 
 	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
-		if (aiclk_ppm.arbiter_min[i] > targ_freq) {
-			targ_freq = aiclk_ppm.arbiter_min[i];
+		if (aiclk_ppm.arbiter_min[i].enabled) {
+			targ_freq = MAX(targ_freq, aiclk_ppm.arbiter_min[i].value);
 		}
 	}
+
 	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
-		if (aiclk_ppm.arbiter_max[i] < targ_freq) {
-			targ_freq = aiclk_ppm.arbiter_max[i];
+		if (aiclk_ppm.arbiter_max[i].enabled) {
+			targ_freq = MIN(targ_freq, aiclk_ppm.arbiter_max[i].value);
 		}
 	}
 
@@ -125,7 +141,7 @@ void IncreaseAiclk(void)
 
 float GetThrottlerArbMax(AiclkArbMax arb_max)
 {
-	return aiclk_ppm.arbiter_max[arb_max];
+	return aiclk_ppm.arbiter_max[arb_max].value;
 }
 
 /* TODO: Write a Zephyr unit test for this function */
@@ -184,11 +200,13 @@ static int InitAiclkPPM(void)
 	aiclk_ppm.sweep_en = 0;
 
 	for (int i = 0; i < kAiclkArbMaxCount; i++) {
-		aiclk_ppm.arbiter_max[i] = aiclk_ppm.fmax;
+		aiclk_ppm.arbiter_max[i].value = aiclk_ppm.fmax;
+		aiclk_ppm.arbiter_max[i].enabled = true;
 	}
 
 	for (int i = 0; i < kAiclkArbMinCount; i++) {
-		aiclk_ppm.arbiter_min[i] = aiclk_ppm.fmin;
+		aiclk_ppm.arbiter_min[i].value = aiclk_ppm.fmin;
+		aiclk_ppm.arbiter_min[i].enabled = true;
 	}
 
 	return 0;
