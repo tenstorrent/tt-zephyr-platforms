@@ -26,6 +26,17 @@ tests:
         - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
+        - "-m not reset"
+  app.e2e-smoke-reset:
+    tags: e2e-reset
+    harness: pytest
+    sysbuild: true
+    harness_config:
+      pytest_root:
+        - pytest/e2e_smoke.py
+      pytest_args:
+        - "--dut-scope=session"
+        - "-m reset"
   app.recovery:
     build_only: true
     extra_overlay_confs:
