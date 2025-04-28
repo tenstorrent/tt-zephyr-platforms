@@ -38,6 +38,12 @@ jobs:
           path: tt-zephyr-platforms
           ref: ${{ github.ref }}
 
+      - name: Download firmware bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-bundles
+          path: firmware
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -109,11 +115,23 @@ jobs:
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
           echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
 
+      - name: Select existing firmware bundle
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) FW_PATH=firmware/p100.fwbundle;;
+            p100a) FW_PATH=firmware/p100a.fwbundle;;
+            p150a) FW_PATH=firmware/p150a.fwbundle;;
+            *) echo "Unknown board type"; exit 1;;
+          esac
+          echo "FW_PATH=$FW_PATH" >> $GITHUB_ENV
+
       - name: Flash Firmware
         working-directory: zephyr
         run: |
           # This needs to be added to the github runner
           export PATH=$PATH:/opt/SEGGER/JLink/
+
+          cp $FW_PATH /opt/tenstorrent/fw/stable/
 
           # TODO: ideally we would use one twister command to build and
           # flash BMC and SMC firmware, but since each chip uses a separate
