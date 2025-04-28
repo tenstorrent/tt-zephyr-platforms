@@ -1,9 +1,7 @@
 name: Build firmware bundle as an artifact
 
-# Run long tests once nightly, at 00:00
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  workflow_call:
   workflow_dispatch:
 
 jobs:
