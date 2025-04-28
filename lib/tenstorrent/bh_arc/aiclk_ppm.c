@@ -33,12 +33,22 @@ AiclkPPM aiclk_ppm;
 
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq)
 {
-	aiclk_ppm.arbiter_max[arb_max] = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+	aiclk_ppm.arbiter_max[arb_max].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
 }
 
 void SetAiclkArbMin(AiclkArbMin arb_min, float freq)
 {
-	aiclk_ppm.arbiter_min[arb_min] = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+	aiclk_ppm.arbiter_min[arb_min].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
+}
+
+void EnableArbMax(AiclkArbMax arb_max, bool enable)
+{
+	aiclk_ppm.arbiter_max[arb_max].enabled = enable;
+}
+
+void EnableArbMin(AiclkArbMin arb_min, bool enable)
+{
+	aiclk_ppm.arbiter_min[arb_min].enabled = enable;
 }
 
 void CalculateTargAiclk(void)
@@ -50,14 +60,13 @@ void CalculateTargAiclk(void)
 	uint32_t targ_freq = aiclk_ppm.fmin;
 
 	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
-		if (aiclk_ppm.arbiter_min[i] > targ_freq) {
-			targ_freq = aiclk_ppm.arbiter_min[i];
-		}
+		if (aiclk_ppm.arbiter_min[i].enabled)
+			targ_freq = MAX(targ_freq, aiclk_ppm.arbiter_min[i].value);
 	}
+
 	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
-		if (aiclk_ppm.arbiter_max[i] < targ_freq) {
-			targ_freq = aiclk_ppm.arbiter_max[i];
-		}
+		if (aiclk_ppm.arbiter_max[i].enabled)
+			targ_freq = MIN(targ_freq, aiclk_ppm.arbiter_max[i].value);
 	}
 
 	/* Make sure target is not below Fmin */
@@ -132,11 +141,13 @@ void InitAiclkPPM(void)
 	aiclk_ppm.forced_freq = 0;
 
 	for (int i = 0; i < kAiclkArbMaxCount; i++) {
-		aiclk_ppm.arbiter_max[i] = aiclk_ppm.fmax;
+		aiclk_ppm.arbiter_max[i].value = aiclk_ppm.fmax;
+		aiclk_ppm.arbiter_max[i].enabled = true;
 	}
 
 	for (int i = 0; i < kAiclkArbMinCount; i++) {
-		aiclk_ppm.arbiter_min[i] = aiclk_ppm.fmin;
+		aiclk_ppm.arbiter_min[i].value = aiclk_ppm.fmin;
+		aiclk_ppm.arbiter_max[i].enabled = true;
 	}
 }
 
