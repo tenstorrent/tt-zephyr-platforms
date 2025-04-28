@@ -81,7 +81,7 @@ static void SpiUpdateOpMode(bool ddr, SpiIoMode io_mode, uint8_t addr_width)
 
 void SpiBufferSetup(void)
 {
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(10),
+	WriteReg(SPI_BUFFER_INFO_REG_ADDR,
 		 ((uint32_t)LOG2(SPI_BUFFER_SIZE) << 24) |
 			 ((uint32_t)spi_global_buffer & 0xFFFFFF));
 }
