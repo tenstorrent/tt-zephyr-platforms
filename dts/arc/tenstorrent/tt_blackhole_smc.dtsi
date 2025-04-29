@@ -45,7 +45,7 @@
 
 	sysclk: system-clock {
 		compatible = "fixed-clock";
-		clock-frequency = <500000000>;
+		clock-frequency = <800000000>;
 		#clock-cells = <0>;
 	};
 
