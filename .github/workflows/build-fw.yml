@@ -103,6 +103,28 @@ jobs:
             build-${{ matrix.board }}/**/zephyr.signed.hex
             build-${{ matrix.board }}/**/zephyr.stat
 
+  bundle:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: firmware
+
+      - name: Create combined firmware bundle
+        run: |
+          mkdir -p combined
+          find firmware -name "*.fwbundle" -exec cp {} combined/ \;
+          tar -cvf combined-fwbundle.tar -C combined .
+
+      - name: Upload combined bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: combined-fwbundle.tar
+
   build-recovery:
     runs-on: ubuntu-24.04
     steps:
