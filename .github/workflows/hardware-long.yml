@@ -38,11 +38,11 @@ jobs:
           path: tt-zephyr-platforms
           ref: ${{ github.ref }}
 
-      - name: Download firmware bundle artifact
+      - name: Download combined firmware bundle
         uses: actions/download-artifact@v4
         with:
-          name: firmware-bundles
-          path: firmware
+          name: combined-fwbundle
+          path: .
 
       - name: Set up Python
         uses: actions/setup-python@v5
