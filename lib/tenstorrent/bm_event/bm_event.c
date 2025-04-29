@@ -17,10 +17,11 @@ uint32_t bm_event_post(uint32_t events)
 
 uint32_t bm_event_wait(uint32_t events, k_timeout_t timeout)
 {
-	uint32_t ret = k_event_wait(&bm_event, events, false, timeout);
+	k_event_wait(&bm_event, events, false, timeout);
+	uint32_t ret = k_event_clear(&bm_event, events);
 
 	if (ret != 0) {
-		LOG_INF("Event wait successful: requested=0x%08X, received=0x%08X", events, ret);
+		LOG_INF("Received wake up event: requested=0x%08X received=0x%08X", events, ret);
 	}
 
 	return ret;
