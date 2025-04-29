@@ -321,6 +321,8 @@ static void process_message_queue(struct message_queue *queue)
 		msgqueue_response_push(queue - message_queues, &response);
 
 		advance_serial(queue, &request);
+
+		k_yield();
 	}
 }
 
