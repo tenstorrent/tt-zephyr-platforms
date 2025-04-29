@@ -89,6 +89,8 @@ jobs:
             -b $BOARD \
             tt-zephyr-platforms/app/smc \
             -- \
+              -DEXTRA_CONF_FILE=vuart.conf \
+              -DDTC_OVERLAY_FILE=vuart.overlay \
               -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
               -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
 
