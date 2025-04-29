@@ -335,17 +335,20 @@ static inline void PVTInterruptConfig(void)
 }
 
 /* PVT clocks works in range of 4-8MHz and are derived from APB clock */
-/* target a PVT clock of 5 MHz */
+/* target a PVT clock of 8 MHz */
 static inline void PVTClkConfig(void)
 {
 	uint32_t apb_clk = GetAPBCLK();
 	PVT_CNTL_CLK_SYNTH_reg_u clk_synt;
 
 	clk_synt.val = PVT_CNTL_CLK_SYNTH_REG_DEFAULT;
-	uint32_t synth = (apb_clk * 0.2 - 2) * 0.5;
 
-	clk_synt.f.clk_synth_lo = synth;
-	clk_synt.f.clk_synth_hi = synth;
+	/* solve for smallest x such that APB/2x <= T, APB/2T <= x, x = round_up(APB/2T) */
+	const uint32_t target_clock_MHz = 8; /* Target 8MHz with 50-50 duty cycle, results in 7.14 MHz */
+	uint32_t half_cycle = DIV_ROUND_UP(apb_clk, 2 * target_clock_MHz);
+
+	clk_synt.f.clk_synth_lo = half_cycle - 1;
+	clk_synt.f.clk_synth_hi = half_cycle - 1;
 	clk_synt.f.clk_synth_hold = 2;
 	clk_synt.f.clk_synth_en = 1;
 	WriteReg(PVT_CNTL_TS_CMN_CLK_SYNTH_REG_ADDR, clk_synt.val);
