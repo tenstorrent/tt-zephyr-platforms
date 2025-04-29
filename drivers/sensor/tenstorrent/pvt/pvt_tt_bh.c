@@ -284,8 +284,8 @@ static inline void pvt_tt_bh_interrupt_config(void)
 	}
 }
 
-/* PVT clocks works in range of 4-8MHz and are derived from APB clock */
-/* target a PVT clock of 5 MHz */
+/* PVT clocks work in range of 4-8MHz and are derived from APB clock */
+/* target a PVT clock of 8 MHz */
 static inline void pvt_tt_bh_clock_config(void)
 {
 	uint32_t apb_clk = 0;
@@ -295,10 +295,18 @@ static inline void pvt_tt_bh_clock_config(void)
 	pvt_cntl_clk_synth_reg_u clk_synt;
 
 	clk_synt.val = PVT_CNTL_CLK_SYNTH_REG_DEFAULT;
-	uint32_t synth = (apb_clk * 0.2f - 2.f) * 0.5f;
 
-	clk_synt.f.clk_synth_lo = synth;
-	clk_synt.f.clk_synth_hi = synth;
+	/* PVT clock is defined by # of APB cycles that it is high/low. We keep the high & low
+	 * counts equal for a 50-50 duty cycle.
+	 * So we want smallest count such that APB/2count <= target.
+	 * APB/2target <= count, so count = ceil(APB/2target).
+	 * For our settings of APB=100MHz, PVT target=8MHz, we get 100MHz/14=7.14MHz.
+	 */
+	const uint32_t target_clock_MHz = 8;
+	uint32_t half_cycle = DIV_ROUND_UP(apb_clk, 2 * target_clock_MHz);
+
+	clk_synt.f.clk_synth_lo = half_cycle - 1;
+	clk_synt.f.clk_synth_hi = half_cycle - 1;
 	clk_synt.f.clk_synth_hold = 2;
 	clk_synt.f.clk_synth_en = 1;
 	sys_write32(clk_synt.val, PVT_CNTL_TS_CMN_CLK_SYNTH_REG_ADDR);
