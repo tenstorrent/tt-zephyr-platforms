@@ -197,8 +197,9 @@ static void write_static_telemetry(uint32_t app_version)
 						     gddr_telemetry.mrisc_fw_version_minor;
 		}
 	}
-	telemetry[BM_APP_FW_VERSION] = 0x00000000;
-	telemetry[BM_BL_FW_VERSION] = 0x00000000;
+	/* BM_APP_FW_VERSION and BM_BL_FW_VERSION assumes zero-init, it might be
+	 * initialized by bh_chip_set_static_info in bmfw already, must not clear.
+	 */
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
 	telemetry[CM_FW_VERSION] = app_version;
 	telemetry[L2CPU_FW_VERSION] = 0x00000000;
