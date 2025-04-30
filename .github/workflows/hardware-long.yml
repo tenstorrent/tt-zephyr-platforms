@@ -159,7 +159,7 @@ jobs:
               - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:latest
+      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:bd47135f35f7b26851eb09066076fb3e6074c54f # Change this to a tag when metal has release versions for this image.
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
@@ -188,7 +188,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: main
+          ref: 12652be514e62224b5ccb160e5248fc83dfd96c1 # Change this when metal revision is available.
           fetch-depth: 500
           fetch-tags: true
       - name: Build Metal UMD Tests
