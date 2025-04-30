@@ -136,7 +136,6 @@ jobs:
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             -T ../tt-zephyr-platforms/app -ll DEBUG
-          ../tt-zephyr-platforms/scripts/rescan-pcie.sh
       - name: Install TT-SMI and reset the device
         run: |
           sed -i -e 's/http/https/g' /etc/apt/sources.list
@@ -191,7 +190,7 @@ jobs:
           ref: abhullar/bh-virtual
           fetch-depth: 500
           fetch-tags: true
-      - name: Build UMD Tests
+      - name: Build Metal UMD Tests
         working-directory: tt-metal
         shell: bash
         env:
@@ -201,7 +200,7 @@ jobs:
         run: |
           # Build metal
           ./build_metal.sh --build-umd-tests
-      - name: Run UMD Tests
+      - name: Run Metal UMD Tests
         working-directory: tt-metal
         shell: bash
         env:
