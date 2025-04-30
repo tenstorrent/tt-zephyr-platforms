@@ -63,7 +63,10 @@ for REV in $BOARD_REVS; do
   fi
 
   echo "Building $BOARD"
-  west build -d "${TEMP_DIR}${REV}" --sysbuild -p -b "$BOARD" app/smc >/dev/null 2>&1
+  west build -d "${TEMP_DIR}${REV}" --sysbuild -p -b "$BOARD" app/smc \
+    -DEXTRA_CONF_FILE=vuart.conf \
+    -DDTC_OVERLAY_FILE=vuart.overlay \
+    >/dev/null 2>&1
 done
 
 echo "Creating fw_pack-$PRELEASE.fwbundle"
