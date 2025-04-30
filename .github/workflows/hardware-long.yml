@@ -37,7 +37,7 @@ jobs:
       - name: Install Git LFS and Cargo (for tt-flash)
         run: |
           apt update
-          apt install -y git-lfs cargo
+          apt install -y git-lfs cargo unzip
       - name: Download the latest firmware bundle
         # Replace this with the reliance on the previous workflow that builds the firmware bundle.
         run: |
