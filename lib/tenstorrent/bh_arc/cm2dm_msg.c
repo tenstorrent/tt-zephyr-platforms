@@ -20,6 +20,8 @@
 #include "asic_state.h"
 #include "fan_ctrl.h"
 #include "telemetry.h"
+#include "reg.h"
+#include "status_reg.h"
 
 typedef struct {
 	uint8_t curr_msg_valid;
@@ -239,6 +241,22 @@ int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 	}
 
 	power = sys_get_le16(data);
+
+	return 0;
+}
+
+int32_t Dm2CmDebugDataHandler(const uint8_t *data, uint8_t size)
+{
+	if (size != 5) {
+		return -1;
+	}
+
+	uint8_t scratch_ram_index = data[0];
+	uint32_t debug_data;
+
+	memcpy(&debug_data, data+1, sizeof(debug_data));
+
+	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(scratch_ram_index), debug_data);
 
 	return 0;
 }

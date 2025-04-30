@@ -42,6 +42,8 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_TEST_READ_BLOCK = 0xDC,
 	/* WO, 32 bits. Write to CMFW scratch register */
 	CMFW_SMBUS_TEST_WRITE_BLOCK = 0xDD,
+	/* WO, 40 bits. Write to specified Tensix-SM scratch RAM. */
+	CMFW_SMBUS_DEBUG_DATA = 0xDE,
 	CMFW_SMBUS_MSG_MAX,
 };
 

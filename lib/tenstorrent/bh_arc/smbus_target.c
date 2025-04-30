@@ -207,6 +207,10 @@ static SmbusConfig smbus_config = {
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = 4,
 			  .handler = {.rcv_handler = &BlockWriteTest}},
+		[CMFW_SMBUS_DEBUG_DATA] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockWrite,
+			  .expected_blocksize = 5,
+			  .handler = {.rcv_handler = &Dm2CmDebugDataHandler}},
 	}};
 
 static SmbusCmdDef *GetCmdDef(uint8_t cmd)

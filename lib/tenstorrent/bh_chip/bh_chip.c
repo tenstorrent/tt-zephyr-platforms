@@ -82,6 +82,23 @@ int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power)
 	return ret;
 }
 
+int bh_chip_debug_data(struct bh_chip *chip, uint8_t scratch_index, uint32_t data)
+{
+	struct {
+		uint8_t scratch_index;
+		uint32_t data;
+	} __packed smbus_data = {
+		scratch_index,
+		data
+	};
+
+	int ret;
+
+	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DEBUG_DATA, sizeof(smbus_data), (uint8_t *)&smbus_data);
+
+	return ret;
+}
+
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
