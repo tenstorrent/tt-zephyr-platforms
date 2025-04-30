@@ -11,142 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  hardware-zephyr-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - board: p100
-            runs-on:
-              - yyz-zephyr-lab-p100
-          - board: p100a
-            runs-on:
-              - yyz-zephyr-lab-p100a
-    runs-on: ${{ matrix.config.runs-on }}
-    env:
-      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
-    container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
-      volumes:
-        - /dev/hugepages-1G:/dev/hugepages-1G
-        - /dev/hugepages:/dev/hugepages
-        - /opt/SEGGER:/opt/SEGGER
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: tt-zephyr-platforms
-          ref: ${{ github.ref }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Log Test SHA
-        working-directory: tt-zephyr-platforms
-        run: |
-          # debug
-          git log  --pretty=oneline | head -n 10
-
-      - name: Install west
-        run: |
-          pip install west
-
-      - name: west setup
-        # FIXME: would be ideal to use a built-in github environment variable
-        # instead of tt-zephyr-platforms
-        run: |
-          rm -Rf .west
-          west init -l tt-zephyr-platforms
-
-      - name: Setup Zephyr modules
-        run: |
-          west config manifest.group-filter -- +optional
-          west update
-
-          # need to install protoc manually here, for some reason
-          pip install -r zephyr/scripts/requirements.txt
-          pip install protobuf grpcio-tools
-
-      - name: Apply patches
-        run: |
-          west patch clean
-          west -v patch apply -r
-
-      - name: Checkout pyluwen
-        uses: actions/checkout@v4
-        with:
-          repository: tenstorrent/luwen
-          path: luwen
-
-      - name: Build pyluwen
-        run: |
-          # Setup cargo, since we run with a different $HOME
-          HOME=/root . /root/.cargo/env
-          # Install maturin for build (we already have cargo)
-          pip install maturin
-          cd luwen/crates/pyluwen
-          maturin build --release
-          pip install ../../target/wheels/*
-
-      - name: Generate board names
-        shell: bash
-        run: |
-          case "${{ matrix.config.board }}" in
-            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
-            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
-            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
-            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
-          esac
-          case "${{ matrix.config.board }}" in
-            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
-            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
-            p150) BMC_BOARD=tt_blackhole@p150/tt_blackhole/bmc;;
-            p300) BMC_BOARD=p300/tt_blackhole/bmc;;
-            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
-          esac
-          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
-          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
-
-      - name: Flash Firmware
-        working-directory: zephyr
-        run: |
-          # This needs to be added to the github runner
-          export PATH=$PATH:/opt/SEGGER/JLink/
-
-          # TODO: ideally we would use one twister command to build and
-          # flash BMC and SMC firmware, but since each chip uses a separate
-          # debug adapter this doesn't work. For now, just flash BMC
-          # then run twister with SMC firmware
-          ../tt-zephyr-platforms/scripts/rescan-pcie.sh
-          ./scripts/twister -i --retry-failed 3 \
-            --retry-interval 5 \
-            --tag e2e \
-            -p $BMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG
-          # Run E2E test to verify BMC and SMC firmware boot, and that
-          # the SMC firmware sets up PCIe and ARC messages
-          ./scripts/twister -i --retry-failed 3 \
-            -p $SMC_BOARD --device-testing \
-            --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG
-      - name: Install TT-SMI and reset the device
-        run: |
-          sed -i -e 's/http/https/g' /etc/apt/sources.list
-          apt update
-          apt install -y cargo
-          pip install git+https://github.com/tenstorrent/tt-smi@v3.0.5
-          tt-smi -r 0
   hardware-metal-test:
-    needs:
-      - hardware-zephyr-test
     strategy:
       fail-fast: false
       matrix:
@@ -169,10 +34,19 @@ jobs:
       TT_METAL_HOME: ${{ github.workspace }}/tt-metal
       PYTHONPATH: ${{ github.workspace }}/tt-metal
     steps:
-      - name: Install Git LFS
+      - name: Install Git LFS and Cargo (for tt-flash)
         run: |
           apt update
-          apt install -y git-lfs
+          apt install -y git-lfs cargo
+      - name: Download the latest firmware bundle
+        # Replace this with the reliance on the previous workflow that builds the firmware bundle.
+        run: |
+          curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
+          unzip combined-fwbundle.zip
+      - name: Flash the firmware
+        run: |
+          pip install git+https://github.com/tenstorrent/tt-flash.git
+          tt-flash --fw-tar fw_pack*.fwbundle --force
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
