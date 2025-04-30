@@ -19,3 +19,33 @@
 &ina228 {
 	status = "disabled";
 };
+
+&gpiox1 {
+	status = "disabled";
+};
+
+&i2c1 {
+	gpiox4: gpio@3c {
+		compatible = "nxp,pca9554";
+		reg = <0x3c>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox5: gpio@3e {
+		compatible = "nxp,pca9554";
+		reg = <0x3e>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+};

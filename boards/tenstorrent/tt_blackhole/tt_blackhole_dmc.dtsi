@@ -209,6 +209,54 @@
 		current-lsb-microamps = <210>;
 		rshunt-micro-ohms = <1000>;
 	};
+
+	gpiox0: gpio@38 {
+		compatible = "nxp,pca9554";
+		reg = <0x38>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox1: gpio@39 {
+		compatible = "nxp,pca9554";
+		reg = <0x39>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox2: gpio@3a {
+		compatible = "nxp,pca9554";
+		reg = <0x3a>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox3: gpio@3b {
+		compatible = "nxp,pca9554";
+		reg = <0x3b>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 };
 
 &smbus1 {
