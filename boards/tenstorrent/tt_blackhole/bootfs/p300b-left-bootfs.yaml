@@ -37,7 +37,7 @@ images:
 
   # Device Mgmt FW (called bmfw here for historical reasons)
   - name: bmfw
-    padto: 0xc000
+    padto: 0xd000
     binary: $BUILD_DIR/dmc/zephyr/zephyr.signed.bin
 
   # Meta data about the flashing process
