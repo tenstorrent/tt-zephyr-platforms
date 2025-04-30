@@ -37,7 +37,7 @@ images:
 
   # Board Mgmt FW
   - name: bmfw
-    padto: 0xc000
+    padto: 0xd000
     binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
 
   # Meta data about the flashing process
