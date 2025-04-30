@@ -43,14 +43,14 @@ jobs:
         run: |
           curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
           unzip combined-fwbundle.zip
-      - name: Flash the firmware
-        run: |
-          pip install git+https://github.com/tenstorrent/tt-flash.git
-          tt-flash --fw-tar fw_pack*.fwbundle --force
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
           . /tmp/rescan-pcie.sh
+      - name: Flash the firmware
+        run: |
+          pip install git+https://github.com/tenstorrent/tt-flash.git
+          tt-flash --fw-tar fw_pack*.fwbundle --force
       - name: Checkout Metal
         uses: actions/checkout@v4
         with:
