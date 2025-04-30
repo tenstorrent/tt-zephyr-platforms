@@ -19,9 +19,9 @@ jobs:
           - board: p100
             runs-on:
               - yyz-zephyr-lab-p100
-          # - board: p100a
-          #   runs-on:
-          #     - yyz-zephyr-lab-p100a
+          - board: p100a
+            runs-on:
+              - yyz-zephyr-lab-p100a
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
@@ -123,6 +123,7 @@ jobs:
           # flash BMC and SMC firmware, but since each chip uses a separate
           # debug adapter this doesn't work. For now, just flash BMC
           # then run twister with SMC firmware
+          ../tt-zephyr-platforms/scripts/rescan-pcie.sh
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             --tag e2e \
