@@ -29,3 +29,6 @@ CONFIG_FLASH=y
 # enable external spi flash
 CONFIG_SPI_NOR=y
 CONFIG_SPI_NOR_FLASH_LAYOUT_PAGE_SIZE=4096
+
+# receive interrupts from gpio expanders
+CONFIG_GPIO_PCA_SERIES_INTERRUPT=y

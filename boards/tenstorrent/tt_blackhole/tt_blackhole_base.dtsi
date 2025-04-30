@@ -39,6 +39,12 @@
 			gpios = <&gpiob 5 GPIO_ACTIVE_LOW>;
 		};
 
+		smba {
+			compatible = "zephyr,gpio-line";
+			label = "SMBus Alert pin";
+			gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+		};
+
 		arc = <&chip0_arc>;
 	};
 
@@ -196,7 +202,7 @@
 };
 
 &i2c1 {
-	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
+	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10 &i2c1_smba_pa1>;
 	pinctrl-names = "default";
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
@@ -208,6 +214,50 @@
 		/* max_current / (2^19) */
 		current-lsb-microamps = <210>;
 		rshunt-micro-ohms = <1000>;
+	};
+
+	gpiox0: gpio@38 {
+		compatible = "nxp,pca9554";
+		reg = <0x38>;
+		status = "okay";
+		ngpios = <8>;
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox1: gpio@39 {
+		compatible = "nxp,pca9554";
+		reg = <0x39>;
+		status = "okay";
+		ngpios = <8>;
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox2: gpio@3a {
+		compatible = "nxp,pca9554";
+		reg = <0x3a>;
+		status = "okay";
+		ngpios = <8>;
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox3: gpio@3b {
+		compatible = "nxp,pca9554";
+		reg = <0x3b>;
+		status = "okay";
+		ngpios = <8>;
+		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
 	};
 };
 
