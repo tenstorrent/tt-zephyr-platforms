@@ -173,14 +173,10 @@ jobs:
         run: |
           apt update
           apt install -y git-lfs
-      - name: Checkout Zephyr Platforms (only for rescan-pcie.sh)
-        uses: actions/checkout@v4
-        with:
-          path: tt-zephyr-platforms
-          ref: ${{ github.ref }}
       - name: Run the rescan-pcie.sh script
         run: |
-          ./tt-zephyr-platforms/scripts/rescan-pcie.sh
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
+          . /tmp/rescan-pcie.sh
       - name: Checkout Metal
         uses: actions/checkout@v4
         with:
