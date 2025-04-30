@@ -42,7 +42,7 @@ jobs:
         # Replace this with the reliance on the previous workflow that builds the firmware bundle.
         run: |
           curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
-          unzip combined-fwbundle.zip
+          unzip -o combined-fwbundle.zip
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
@@ -87,6 +87,13 @@ jobs:
           TT_METAL_HOME: ${{ github.workspace }}/tt-metal
         run: |
           ./build_metal.sh --build-tests --build-programming-examples
+      - name: Run Metal Tests
+        shell: bash
+        working-directory: tt-metal
+        env:
+          ARCH_NAME: blackhole
+          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
+        run: |
           PYTHON_CMD=python3.10 source ./create_venv.sh
           TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardFixture.*"
           #Tests Metal command queue basic apis
@@ -101,3 +108,4 @@ jobs:
         run: |
           # Clean out metal
           rm -rf tt-metal
+          rm -rf combined-fwbundle.zip fw_pack*.fwbundle
