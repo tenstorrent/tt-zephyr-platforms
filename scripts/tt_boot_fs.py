@@ -792,6 +792,29 @@ def ls(
     return fds
 
 
+def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
+    try:
+        data = (
+            base64.b16decode(open(bootfs, "r").read())
+            if input_base64
+            else open(bootfs, "rb").read()
+        )
+        fs = BootFs.from_binary(data)
+
+        entry_data = None
+        for t, entry in fs.entries.items():
+            if t == tag:
+                entry_data = entry.data
+                break
+        if entry_data is None:
+            _logger.error(f"Tag {tag} not found")
+            return os.EX_DATAERR
+        with open(output, "wb") as f:
+            f.write(entry_data)
+    except Exception as e:
+        _logger.error(f"Exception: {e}")
+
+
 def mkbundle(
     output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path]
 ):
@@ -902,6 +925,10 @@ def invoke_ls(args):
     return os.EX_OK
 
 
+def invoke_extract(args):
+    extract(args.bootfs, args.tag, args.output, args.base64)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Utility to manage tt_boot_fs binaries", allow_abbrev=False
@@ -988,6 +1015,27 @@ def parse_args():
         "-v", "--verbose", help="increase verbosity", default=0, action="count"
     )
     ls_parser.set_defaults(func=invoke_ls)
+
+    extract_parser = subparsers.add_parser(
+        "extract", help="extract binary from tt_boot_fs"
+    )
+    extract_parser.add_argument(
+        "bootfs", metavar="FS", help="filesystem to extract from", type=Path
+    )
+    extract_parser.add_argument(
+        "tag", metavar="TAG", help="tt_boot_fs tag to extract binary for", type=str
+    )
+    extract_parser.add_argument(
+        "output", metavar="OUT", help="output path for binary", type=Path
+    )
+    extract_parser.add_argument(
+        "-b",
+        "--base64",
+        help="input is base64-encoded",
+        default=False,
+        action="store_true",
+    )
+    extract_parser.set_defaults(func=invoke_extract)
 
     # Parse arguments
     args = parser.parse_args()

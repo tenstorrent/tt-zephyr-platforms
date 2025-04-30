@@ -28,6 +28,7 @@
 #include "telemetry.h"
 #include "telemetry_internal.h"
 #include "tensix_cg.h"
+#include "timer.h"
 
 #include <stdint.h>
 
@@ -485,6 +486,8 @@ static int InitHW(void)
 	    (PCIeInitOk == PCIeInit(1, &pci1_property_table))) {
 		InitResetInterrupt(1);
 	}
+
+	WriteReg(PCIE_INIT_CPL_TIME_REG_ADDR, TimerTimestamp());
 
 	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 	bool init_errors = false;

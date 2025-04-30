@@ -12,7 +12,11 @@
 #define SPI_RX_TRAIN_ADDR 0x13FFC
 #define SPI_RX_TRAIN_DATA 0xa5a55a5a
 
+#ifdef CONFIG_FLASH
 const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+#else
+const struct device *flash;
+#endif
 
 static int tt_blackhole_init(void)
 {

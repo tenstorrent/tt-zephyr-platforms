@@ -4,3 +4,4 @@ grpcio-tools
 
 # tenstorrent utilities (note: pyluwen is a dependency)
 tt-flash @ git+https://github.com/tenstorrent/tt-flash
+tt-smi @ git+https://github.com/tenstorrent/tt-smi

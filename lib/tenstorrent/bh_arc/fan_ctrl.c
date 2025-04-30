@@ -38,31 +38,6 @@ float max_gddr_temp;
 float max_asic_temp;
 float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
 
-static uint16_t read_max_gddr_temp(void)
-{
-	uint16_t max_temp = 0;
-	gddr_telemetry_table_t telemetry;
-
-	for (uint8_t gddr_inst = 0; gddr_inst < 8; gddr_inst++) {
-		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
-			if (read_gddr_telemetry_table(gddr_inst, &telemetry) < 0) {
-				LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
-					     "reading max GDDR temp");
-				continue;
-			}
-
-			if (telemetry.dram_temperature_bottom > max_temp) {
-				max_temp = telemetry.dram_temperature_bottom;
-			}
-			if (telemetry.dram_temperature_top > max_temp) {
-				max_temp = telemetry.dram_temperature_top;
-			}
-		}
-	}
-
-	return max_temp;
-}
-
 STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
 {
 	/* P150 fan curve: could be a part of device tree once added to the driver model */
@@ -101,7 +76,7 @@ static void update_fan_speed(void)
 		alpha * telemetry_internal_data.asic_temperature + (1 - alpha) * max_asic_temp;
 
 	if (IS_ENABLED(CONFIG_TT_BH_ARC_FAN_CTRL_GDDR_TEMP)) {
-		max_gddr_temp = alpha * read_max_gddr_temp() + (1 - alpha) * max_gddr_temp;
+		max_gddr_temp = alpha * GetMaxGDDRTemp() + (1 - alpha) * max_gddr_temp;
 	} else {
 		max_gddr_temp = 0;
 	}

@@ -282,7 +282,7 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 	SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
 
 	if (smbus_data.state == kSmbusStateIdle) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de1030);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1030);
 		smbus_data.command = val;
 		curr_cmd = GetCmdDef(smbus_data.command);
 		if (!curr_cmd->valid) {
@@ -292,7 +292,7 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		}
 		smbus_data.state = kSmbusStateCmd;
 	} else if (smbus_data.state == kSmbusStateCmd) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de1040);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1040);
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockWrite:
 			smbus_data.blocksize = val;
@@ -318,13 +318,13 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 			return -1;
 		}
 	} else if (smbus_data.state == kSmbusStateRcvData) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de1050);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1050);
 		smbus_data.received_data[smbus_data.rcv_index++] = val;
 		if (smbus_data.rcv_index == smbus_data.blocksize) {
 			smbus_data.state = kSmbusStateRcvPec;
 		}
 	} else if (smbus_data.state == kSmbusStateRcvPec) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de1060);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1060);
 		uint8_t rcv_pec = val;
 
 		/* Calculate the PEC */
@@ -349,8 +349,8 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		smbus_data.state = kSmbusStateWaitIdle;
 		return ret;
 	} else {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
-			 0xc2de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+			 0xc2de0000 | ReadReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR));
 		smbus_data.state = kSmbusStateWaitIdle;
 		return -1;
 	}
@@ -362,7 +362,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 	SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
 
 	if (smbus_data.state == kSmbusStateCmd) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0010);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0010);
 		/* Calculate blocksize for different types of commands */
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockRead:
@@ -382,7 +382,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		}
 		/* Call the send handler to get the data */
 		if (curr_cmd->handler.send_handler(smbus_data.send_data, smbus_data.blocksize)) {
-			WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0020);
+			WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0020);
 			/* Send handler returned error */
 			smbus_data.state = kSmbusStateWaitIdle;
 			*val = 0xFF;
@@ -391,7 +391,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		/* Send the correct data for different types of commands */
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockRead:
-			WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0030);
+			WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0030);
 			*val = smbus_data.blocksize;
 			smbus_data.state = kSmbusStateSendData;
 			break;
@@ -404,20 +404,20 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 			smbus_data.state = kSmbusStateSendData;
 			break;
 		default:
-			WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0040);
+			WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0040);
 			/* Error, invalid command for read */
 			smbus_data.state = kSmbusStateWaitIdle;
 			*val = 0xFF;
 			return -1;
 		}
 	} else if (smbus_data.state == kSmbusStateSendData) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0050);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0050);
 		*val = smbus_data.send_data[smbus_data.send_index++];
 		if (smbus_data.send_index == smbus_data.blocksize) {
 			smbus_data.state = kSmbusStateSendPec;
 		}
 	} else if (smbus_data.state == kSmbusStateSendPec) {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19), 0xc0de0060);
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0060);
 		/* Calculate PEC then send it */
 		uint8_t pec = 0;
 
@@ -433,8 +433,8 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		*val = pec;
 		smbus_data.state = kSmbusStateWaitIdle;
 	} else {
-		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
-			 0xc1de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
+		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+			 0xc1de0000 | ReadReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR));
 		smbus_data.state = kSmbusStateWaitIdle;
 		*val = 0xFF;
 		return -1;
@@ -449,8 +449,8 @@ static int I2CStopHandler(struct i2c_target_config *config)
 	smbus_data.blocksize = 0;
 	smbus_data.rcv_index = 0;
 	smbus_data.send_index = 0;
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19),
-		 0xc3de0000 | ReadReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(19)));
+	WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+		 0xc3de0000 | ReadReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR));
 	/* Don't erase data buffers for efficiency */
 	return 0;
 }
@@ -475,5 +475,5 @@ void InitSmbusTarget(void)
 void PollSmbusTarget(void)
 {
 	PollI2CSlave(CM_I2C_BM_TARGET_INST);
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(20), 0xfaca);
+	WriteReg(I2C0_TARGET_DEBUG_STATE_2_REG_ADDR, 0xfaca);
 }

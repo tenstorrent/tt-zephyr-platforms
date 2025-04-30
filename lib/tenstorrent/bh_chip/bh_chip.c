@@ -6,6 +6,7 @@
 
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/fan_ctrl.h>
+#include <tenstorrent/bm_event.h>
 
 #include <zephyr/kernel.h>
 #include <string.h>
@@ -29,8 +30,6 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 	uint8_t count = sizeof(output.msg);
 	uint8_t buf[32]; /* Max block counter per API */
 
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
-
 	output.ret = bharc_smbus_block_read(&chip->config.arc, 0x10, &count, buf);
 	memcpy(&output.msg, buf, sizeof(output.msg));
 
@@ -46,8 +45,6 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc, 0x11, wire_ack.val);
 	}
 
-	k_mutex_unlock(&chip->data.reset_lock);
-
 	return output;
 }
 
@@ -55,10 +52,8 @@ int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
 {
 	int ret;
 
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_block_write(&chip->config.arc, 0x20, sizeof(bmStaticInfo),
 				      (uint8_t *)info);
-	k_mutex_unlock(&chip->data.reset_lock);
 
 	return ret;
 }
@@ -67,9 +62,7 @@ int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
 {
 	int ret;
 
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_block_write(&chip->config.arc, 0x22, 4, (uint8_t *)current);
-	k_mutex_unlock(&chip->data.reset_lock);
 
 	return ret;
 }
@@ -77,9 +70,7 @@ int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
 
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x23, rpm);
-	k_mutex_unlock(&chip->data.reset_lock);
 
 	return ret;
 }
@@ -88,9 +79,7 @@ int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
 {
 	int ret;
 
-	k_mutex_lock(&chip->data.reset_lock, K_FOREVER);
 	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
-	k_mutex_unlock(&chip->data.reset_lock);
 
 	return ret;
 }
@@ -130,13 +119,9 @@ void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uin
 	if (board_fault_led.port != NULL) {
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
-	/* Ramp up fan */
-	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-		set_fan_speed(100);
-	}
-	/* Assert ASIC reset */
-
-	bh_chip_reset_chip(chip, true);
+	chip->data.therm_trip_triggered = true;
+	bh_chip_cancel_bus_transfer_set(chip);
+	bm_event_post(WAKE_BM_MAIN_LOOP);
 }
 
 int therm_trip_gpio_setup(struct bh_chip *chip)

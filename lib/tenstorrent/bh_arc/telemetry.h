@@ -65,6 +65,8 @@
 #define TAG_GDDR_4_5_CORR_ERRS   48
 #define TAG_GDDR_6_7_CORR_ERRS   49
 #define TAG_GDDR_UNCORR_ERRS     50
+#define TAG_MAX_GDDR_TEMP        51
+#define TAG_ASIC_LOCATION        52
 
 /* Enums are subject to updates */
 typedef enum {
@@ -132,6 +134,7 @@ typedef enum {
 	GDDR_2_3_TEMP,
 	GDDR_4_5_TEMP,
 	GDDR_6_7_TEMP,
+	MAX_GDDR_TEMP,
 
 	/* DDR Errors */
 	GDDR_0_1_CORR_ERRS,
@@ -140,12 +143,15 @@ typedef enum {
 	GDDR_6_7_CORR_ERRS,
 	GDDR_UNCORR_ERRS,
 
+	ASIC_LOCATION,
+
 	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
 } Telemetry;
 
 void init_telemetry(uint32_t app_version);
 uint32_t ConvertFloatToTelemetry(float value);
 float ConvertTelemetryToFloat(int32_t value);
+int GetMaxGDDRTemp(void);
 void StartTelemetryTimer(void);
 void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);

@@ -29,6 +29,8 @@
 
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
 
+#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
+
 struct telemetry_entry {
 	uint16_t tag;
 	uint16_t offset;
@@ -110,7 +112,7 @@ static void UpdateGddrTelemetry(void)
 			 * [15] - Error GDDR 7
 			 */
 			telemetry[GDDR_STATUS] |= (gddr_telemetry.training_complete << (i * 2)) |
-				(gddr_telemetry.gddr_error << (i * 2 + 1));
+						  (gddr_telemetry.gddr_error << (i * 2 + 1));
 
 			/* DDR_x_y_TEMP:
 			 * [31:24] GDDR y top
@@ -146,17 +148,31 @@ static void UpdateGddrTelemetry(void)
 				(gddr_telemetry.uncorr_edc_wr_error << (i * 2 + 1));
 			/* GDDR speed - in Mbps */
 			telemetry[GDDR_SPEED] = gddr_telemetry.dram_speed;
-
 		}
 	}
 }
 
+int GetMaxGDDRTemp(void)
+{
+	int max_gddr_temp = 0;
+
+	for (int i = 0; i < NUM_GDDR; i++) {
+		int shift_val = (i % 2) * 16;
+
+		max_gddr_temp =
+			MAX(max_gddr_temp, (telemetry[GDDR_0_1_TEMP + i / 2] >> shift_val) & 0xFF);
+		max_gddr_temp = MAX(max_gddr_temp,
+				    (telemetry[GDDR_0_1_TEMP + i / 2] >> (shift_val + 8)) & 0xFF);
+	}
+
+	return max_gddr_temp;
+}
+
 static void write_static_telemetry(uint32_t app_version)
 {
-	telemetry_table.version =
-		TELEMETRY_VERSION; /* v0.1.0 - Only update when redefining the
-				    * meaning of an existing tag
-				    */
+	telemetry_table.version = TELEMETRY_VERSION;    /* v0.1.0 - Only update when redefining the
+							 * meaning of an existing tag
+							 */
 	telemetry_table.entry_count = TELEM_ENUM_COUNT; /* Runtime count of telemetry entries */
 
 	/* Get the static values */
@@ -181,8 +197,9 @@ static void write_static_telemetry(uint32_t app_version)
 						     gddr_telemetry.mrisc_fw_version_minor;
 		}
 	}
-	telemetry[BM_APP_FW_VERSION] = 0x00000000;
-	telemetry[BM_BL_FW_VERSION] = 0x00000000;
+	/* BM_APP_FW_VERSION and BM_BL_FW_VERSION assumes zero-init, it might be
+	 * initialized by bh_chip_set_static_info in bmfw already, must not clear.
+	 */
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
 	telemetry[CM_FW_VERSION] = app_version;
 	telemetry[L2CPU_FW_VERSION] = 0x00000000;
@@ -195,6 +212,15 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[PCIE_USAGE] =
 		((tile_enable.pcie_usage[1] & 0x3) << 2) | (tile_enable.pcie_usage[0] & 0x3);
 	/* telemetry[NOC_TRANSLATION] assumes zero-init, see also UpdateTelemetryNocTranslation. */
+
+	if (get_pcb_type() == PcbTypeP300) {
+		/* For the p300 a value of 1 is the left asic and 0 is the right */
+		telemetry[ASIC_LOCATION] =
+			FIELD_GET(BIT(6), ReadReg(RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR));
+	} else {
+		/* For all other supported boards this value is 0 */
+		telemetry[ASIC_LOCATION] = 0;
+	}
 }
 
 static void update_telemetry(void)
@@ -236,6 +262,7 @@ static void update_telemetry(void)
 	telemetry[FAN_SPEED] = GetFanSpeed(); /* Target fan speed - reported in percentage */
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
 	UpdateGddrTelemetry();
+	telemetry[MAX_GDDR_TEMP] = GetMaxGDDRTemp();
 	telemetry[INPUT_CURRENT] =
 		GetInputCurrent();    /* Input current - reported in A in signed int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
@@ -293,7 +320,9 @@ static void update_tag_table(void)
 	tag_table[46] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS, GDDR_4_5_CORR_ERRS};
 	tag_table[47] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
 	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
-	tag_table[49] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[49] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
+	tag_table[50] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
+	tag_table[51] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */
@@ -324,8 +353,8 @@ void init_telemetry(uint32_t app_version)
 	update_telemetry();
 
 	/* Publish the telemetry data pointer for readers in Scratch RAM */
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(12), (uint32_t)&telemetry[0]);
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(13), (uint32_t)&telemetry_table);
+	WriteReg(TELEMETRY_DATA_REG_ADDR, (uint32_t)&telemetry[0]);
+	WriteReg(TELEMETRY_TABLE_REG_ADDR, (uint32_t)&telemetry_table);
 }
 
 void StartTelemetryTimer(void)

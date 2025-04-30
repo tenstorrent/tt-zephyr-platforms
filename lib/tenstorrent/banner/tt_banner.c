@@ -52,6 +52,9 @@ static int tt_boot_banner(void)
 	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_GIT_VERSION)) {
 		printk("*** TT_GIT_VERSION " TT_GIT_VERSION " ***\n");
 	}
+	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_SDK_VERSION)) {
+		printk("*** SDK_VERSION " ZEPHYR_SDK_VERSION " ***\n");
+	}
 
 	return 0;
 }

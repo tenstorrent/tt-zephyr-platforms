@@ -23,6 +23,7 @@
 #include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
+#include <tenstorrent/bm_event.h>
 #include <tenstorrent/jtag_bootrom.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
@@ -301,7 +302,35 @@ int main(void)
 		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
 	while (1) {
-		k_sleep(K_MSEC(20));
+		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(20));
+
+		/* handler for therm trip */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.therm_trip_triggered) {
+				chip->data.therm_trip_triggered = false;
+				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+					set_fan_speed(100);
+				}
+				bh_chip_reset_chip(chip, true);
+				bh_chip_cancel_bus_transfer_clear(chip);
+			}
+		}
+
+		/* handler for PERST */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.trigger_reset) {
+				chip->data.trigger_reset = false;
+				if (chip->data.workaround_applied) {
+					jtag_bootrom_reset_asic(chip);
+					jtag_bootrom_soft_reset_arc(chip);
+					jtag_bootrom_teardown(chip);
+					chip->data.needs_reset = false;
+				} else {
+					chip->data.needs_reset = true;
+				}
+				bh_chip_cancel_bus_transfer_clear(chip);
+			}
+		}
 
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
 		 */
