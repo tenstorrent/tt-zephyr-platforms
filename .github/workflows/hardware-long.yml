@@ -112,3 +112,70 @@ jobs:
           # Clean out metal
           rm -rf tt-metal
           rm -rf combined-fwbundle.zip fw_pack*.fwbundle
+
+  reset-hammer-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - p100-jtag
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+    runs-on: ${{ matrix.config.runs-on }}
+    env:
+      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/:/opt/tenstorrent/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+
+      - name: Generate board names
+        shell: bash
+        run: |
+          case "${{ matrix.config.board }}" in
+            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          case "${{ matrix.config.board }}" in
+            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
+            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
+            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
+            p300) BMC_BOARD=p300/tt_blackhole/bmc;;
+            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
+          esac
+          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
+          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+
+      - name: Run reset test
+        working-directory: tt-zephyr-platforms
+        timeout-minutes: 90
+        shell: bash
+        run: |
+          ./scripts/run-reset-hammer.sh $SMC_BOARD 1000
+
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-zephyr-platforms
+        run: |
+          echo "BMC RTT logs:"
+          python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
