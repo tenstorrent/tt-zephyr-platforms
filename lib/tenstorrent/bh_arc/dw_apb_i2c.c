@@ -226,6 +226,14 @@ static void I2CRecoverBus(uint32_t id)
 	/* Set both pads to output low */
 	WriteReg(GetI2CPadDataAddr(id), 0x0);
 	/*
+	 * First, manually hold SCL low for 150 ms. Per the SMBUS spec,
+	 * we should only need to hold the line low for 25 ms, but that does
+	 * not work reliably and this does...
+	 */
+	i2c_cntl ^= RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK;
+	WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
+	Wait(150 * WAIT_1MS);
+	/*
 	 * Bitbang I2C reset to unstick bus. Hold SDA low, toggle SCL 32 times to create 16
 	 * clock cycles. Note we toggle the TRIEN bit, as when TRIEN is
 	 * set the bus will be released and external pullups will
