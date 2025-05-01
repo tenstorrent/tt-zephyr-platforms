@@ -1,0 +1,7 @@
+tests:
+  boards.tenstorrent.tt_blackhole.bmc.gpiox:
+    tags:
+      - i2c
+      - gpio
+      - smoke
+    filter: dt_compat_enabled("nxp,pca9554")
