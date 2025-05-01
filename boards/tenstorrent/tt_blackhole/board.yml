@@ -7,7 +7,6 @@ boards:
     revisions:
     - name: "p100"
     - name: "p100a"
-    - name: "p150"
     - name: "p150a"
     - name: "p150b"
     - name: "p150c"
