@@ -18,10 +18,13 @@ jobs:
         config:
           - board: p100
             runs-on:
-              - yyz-zephyr-lab-p100
+              - p100-jtag
           - board: p100a
             runs-on:
-              - yyz-zephyr-lab-p100a
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:bd47135f35f7b26851eb09066076fb3e6074c54f # Change this to a tag when metal has release versions for this image.
