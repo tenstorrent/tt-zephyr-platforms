@@ -131,6 +131,15 @@ jobs:
             zephyr/twister-smc-smoke/twister.log
             zephyr/twister-smc-smoke/twister.json
 
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-zephyr-platforms
+        run: |
+          echo "BMC RTT logs:"
+          python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+
   smoke-e2e-test:
     strategy:
       fail-fast: false
@@ -236,3 +245,12 @@ jobs:
           name: E2E Flash results (${{ matrix.config.board }})
           path: |
             zephyr/twister-e2e-flash/**/update.fwbundle
+
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-zephyr-platforms
+        run: |
+          echo "BMC RTT logs:"
+          python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
