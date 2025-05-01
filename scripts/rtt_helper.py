@@ -189,6 +189,12 @@ class RTTHelper:
             default=0,
             help="Increase debugging verbosity (pass -dd for debug, -d for info)",
         )
+        parser.add_argument(
+            "-n",
+            "--non-blocking",
+            action="store_true",
+            help="Dump rtt data in non blocking mode, rather than running interactive server",
+        )
         args = parser.parse_args()
         if args.debug == 2:
             logging.basicConfig(level=logging.DEBUG)
@@ -203,8 +209,18 @@ class RTTHelper:
         self._rtt_port = args.rtt_port
         self._search_base = args.search_base
         self._search_range = args.search_range
+        self._interactive = not args.non_blocking
 
     def run_rtt_server(self):
+        """
+        Run the RTT server, or dump data if interactive mode is off
+        """
+        if self._interactive:
+            self.run_rtt_server_interactive()
+        else:
+            self.dump_rtt_data()
+
+    def run_rtt_server_interactive(self):
         """
         Run the RTT server with the parameters provided
         """
@@ -255,4 +271,30 @@ class RTTHelper:
                         print(resp.decode())
 
         # Finally, shutdown the RTT server
+        openocd.stop_openocd_server()
+
+    def dump_rtt_data(self):
+        """
+        Start RTT server, dump data, and exit
+        """
+        openocd = OpenOCDServer(self._openocd, self._search_dir)
+        openocd.launch_openocd_server(
+            self._cfg,
+            self._rtt_port,
+            self._search_base,
+            self._search_range,
+        )
+        print(f"OpenOCD server started on port {self._rtt_port}")
+        # Start a new socket connection
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(("localhost", self._rtt_port))
+        sock.settimeout(0.5)
+        while True:
+            try:
+                data = sock.recv(2048)
+                print(data.decode())
+            except socket.timeout:
+                # No data was sent within 0.5 seconds, close connection
+                break
+        sock.close()
         openocd.stop_openocd_server()
