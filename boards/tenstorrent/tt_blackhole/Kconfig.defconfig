@@ -3,3 +3,36 @@
 
 config FLASH_EX_OP_ENABLED
 	default y if FLASH_SPI_DW
+
+# Would be ideal if this were automatically generate upstream in Zephyr
+config BOARD_REVISION_P100
+	bool
+	default y if "$(BOARD_REVISION)" = "p100"
+
+config BOARD_REVISION_P100A
+	bool
+	default y if "$(BOARD_REVISION)" = "p100a"
+
+config BOARD_REVISION_P150A
+	bool
+	default y if "$(BOARD_REVISION)" = "p150a"
+
+config BOARD_REVISION_P150B
+	bool
+	default y if "$(BOARD_REVISION)" = "p150b"
+
+config BOARD_REVISION_P150C
+	bool
+	default y if "$(BOARD_REVISION)" = "p150c"
+
+config BOARD_REVISION_P300A
+	bool
+	default y if "$(BOARD_REVISION)" = "p300a"
+
+config BOARD_REVISION_P300B
+	bool
+	default y if "$(BOARD_REVISION)" = "p300b"
+
+config BOARD_REVISION_P300C
+	bool
+	default y if "$(BOARD_REVISION)" = "p300c"
