@@ -23,9 +23,9 @@ def start_bmc_rtt():
     Main function to start RTT console
     """
     rtt_helper = RTTHelper(
-        default_cfg=DEFAULT_CFG,
-        default_search_base=DEFAULT_SEARCH_BASE,
-        default_search_range=DEFAULT_SEARCH_RANGE,
+        cfg=DEFAULT_CFG,
+        search_base=DEFAULT_SEARCH_BASE,
+        search_range=DEFAULT_SEARCH_RANGE,
     )
     rtt_helper.parse_args()
     rtt_helper.run_rtt_server()

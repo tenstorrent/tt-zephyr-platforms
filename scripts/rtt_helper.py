@@ -116,22 +116,30 @@ class RTTHelper:
     Helper to start rtt. Takes arguments from user
     """
 
-    def __init__(self, default_cfg, default_search_base, default_search_range):
+    def __init__(
+        self,
+        cfg,
+        search_base,
+        search_range,
+        openocd=DEFAULT_SYSROOT / "usr" / "bin" / "openocd",
+        rtt_port=DEFAULT_RTT_PORT,
+        search_dir=DEFAULT_SYSROOT / "usr" / "share" / "openocd" / "scripts",
+    ):
         """
         Inits the RTT helper with default values
-        @param default_cfg: default config to use for openocd
-        @param default_search_base: default search base for RTT
-        @param default_search_range: default search range for RTT
+        @param cfg: default config to use for openocd
+        @param search_base: default search base for RTT
+        @param search_range: default search range for RTT
+        @param openocd: default value for openocd executable
+        @param rtt_port: default port to use for rtt
+        @param search_dir: default directory for search
         """
-        self._default_cfg = default_cfg
-        self._default_search_base = default_search_base
-        self._default_search_range = default_search_range
-        self._openocd = None
-        self._search_dir = None
-        self._cfg = None
-        self._rtt_port = None
-        self._search_base = None
-        self._search_range = None
+        self._cfg = cfg
+        self._search_base = search_base
+        self._search_range = search_range
+        self._openocd = openocd
+        self._rtt_port = rtt_port
+        self._search_dir = search_dir
 
     def parse_args(self):
         """
@@ -144,34 +152,34 @@ class RTTHelper:
             "-c",
             "--config",
             type=Path,
-            default=self._default_cfg,
+            default=self._cfg,
             help="OpenOCD config file to use",
         )
         parser.add_argument(
             "-a",
             "--search_base",
             type=int,
-            default=self._default_search_base,
+            default=self._search_base,
             help="Base address to search for RTT block",
         )
         parser.add_argument(
             "-r",
             "--search_range",
             type=int,
-            default=self._default_search_range,
+            default=self._search_range,
             help="Range to search for RTT block",
         )
         parser.add_argument(
             "-p",
             "--rtt_port",
             type=int,
-            default=DEFAULT_RTT_PORT,
+            default=self._rtt_port,
             help="Port to use for RTT server",
         )
         parser.add_argument(
             "-o",
             "--openocd",
-            default=DEFAULT_SYSROOT / "usr" / "bin" / "openocd",
+            default=self._openocd,
             help="Path to OpenOCD executable",
             metavar="FILE",
             type=Path,
@@ -179,7 +187,7 @@ class RTTHelper:
         parser.add_argument(
             "-s",
             "--search_dir",
-            default=DEFAULT_SYSROOT / "usr" / "share" / "openocd" / "scripts",
+            default=self._search_dir,
             help="Path to OpenOCD search directory",
         )
         parser.add_argument(
@@ -295,6 +303,9 @@ class RTTHelper:
                 print(data.decode())
             except socket.timeout:
                 # No data was sent within 0.5 seconds, close connection
+                break
+            except UnicodeDecodeError:
+                print("Invalid byte")
                 break
         sock.close()
         openocd.stop_openocd_server()
