@@ -1,6 +1,6 @@
 patches:
   - path: zephyr/twister-rtt-support.patch
-    sha256sum: c64e1ca07119aea925f482bbdb4e5c76c17dc1843b5616ebecf49c004183bef6
+    sha256sum: c676cd376a4d19dc95ac4e44e179c253853d422b758688a583bb55c3c9137035
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com

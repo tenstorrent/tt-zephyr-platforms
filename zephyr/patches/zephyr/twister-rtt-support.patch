@@ -391,7 +391,7 @@ Date:   Sun Nov 24 12:24:18 2024 -0500
     Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
 
 diff --git a/scripts/west_commands/runners/openocd.py b/scripts/west_commands/runners/openocd.py
-index d30992a30a0..f79ebb4f5cf 100644
+index d30992a30a0..c97faf7f4cd 100644
 --- a/scripts/west_commands/runners/openocd.py
 +++ b/scripts/west_commands/runners/openocd.py
 @@ -59,7 +59,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
@@ -449,16 +449,19 @@ index d30992a30a0..f79ebb4f5cf 100644
          self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
  
      def read_version(self):
-@@ -407,7 +421,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -407,7 +421,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
              # start the internal openocd rtt service via gdb monitor commands
              gdb_cmd.extend(
                  ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])
 -            gdb_cmd.extend(['-ex', 'monitor reset run'])
-+            gdb_cmd.extend(['-ex', 'monitor resume'])
++            if self.rtt_no_reset:
++                gdb_cmd.extend(['-ex', 'monitor resume'])
++            else:
++                gdb_cmd.extend(['-ex', 'monitor reset run'])
              gdb_cmd.extend(['-ex', 'monitor rtt start'])
              gdb_cmd.extend(
                  ['-ex', f'monitor rtt server start {self.rtt_port} 0'])
-@@ -425,8 +439,11 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -425,8 +442,11 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
                  server_proc.terminate()
                  server_proc.wait()
          elif command == 'rtt':
@@ -471,7 +474,7 @@ index d30992a30a0..f79ebb4f5cf 100644
  
              if os_name != 'nt':
                  # Save the terminal settings
-@@ -443,7 +460,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
+@@ -443,7 +463,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
  
              try:
                  # run the binary with gdb, set up the rtt server (runs to completion)
