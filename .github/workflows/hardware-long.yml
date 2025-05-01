@@ -58,7 +58,7 @@ jobs:
           path: tt-metal
           lfs: true
           submodules: true
-          ref: 12652be514e62224b5ccb160e5248fc83dfd96c1 # Change this when metal revision is available.
+          ref: v0.58.0-rc17
           fetch-depth: 500
           fetch-tags: true
       - name: Build Metal UMD Tests
