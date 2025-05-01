@@ -27,7 +27,11 @@ TTZP_BASE="$(dirname "$mPATH")"
 PATH="$mPATH:$PATH"
 
 # TODO: read boards / board revs from a YAML file
-BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c galaxy"
+if [ $# -gt 0 ]; then
+  BOARD_REVS="$*"
+else
+  BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c galaxy"
+fi
 
 MAJOR="$(grep "^VERSION_MAJOR" "$TTZP_BASE/VERSION" | awk '{print $3}')"
 MINOR="$(grep "^VERSION_MINOR" "$TTZP_BASE/VERSION" | awk '{print $3}')"
