@@ -6,7 +6,6 @@ on:
       SIGNATURE_KEY:
         required: true
   workflow_dispatch:
-
   push:
     branches:
       - main
