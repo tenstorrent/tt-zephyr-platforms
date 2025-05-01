@@ -75,7 +75,7 @@
 		flash = <&chip1_flash>;
 		spi_mux {
 			compatible = "zephyr,gpio-line";
-			label = "Line to spi mux, drive low to enable bmfw -> eeprom";
+			label = "Line to spi mux, drive low to enable dmfw -> eeprom";
 			gpios = <&gpiob 6 GPIO_ACTIVE_LOW>;
 		};
 
@@ -84,13 +84,13 @@
 
 	arc_jtag_mux {
 		compatible = "zephyr,gpio-line";
-		label = "Line to SYS JTAG mux, drive low to enable bmfw -> eeprom";
+		label = "Line to SYS JTAG mux, drive low to enable dmfw -> eeprom";
 		gpios = <&gpiod 13 GPIO_ACTIVE_HIGH>;
 	};
 
 	sys_jtag_mux {
 		compatible = "zephyr,gpio-line";
-		label = "Line to SYS JTAG mux, drive low to enable bmfw -> eeprom";
+		label = "Line to SYS JTAG mux, drive low to enable dmfw -> eeprom";
 		gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
 	};
 

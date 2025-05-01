@@ -5,18 +5,22 @@
 
 import logging
 import os
-import time
-import pathlib
-import re
-
 import pyluwen
 import pytest
+import re
+import sys
+import time
 
+from pathlib import Path
 from twister_harness import DeviceAdapter
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(str(Path(__file__).parents[3] / "scripts"))
+
+from pcie_utils import rescan_pcie  # noqa: E402
+
+SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 
 # Constant memory addresses we can read from SMC
 ARC_STATUS = 0x80030060
@@ -24,50 +28,7 @@ BOOT_STATUS = 0x80030408
 
 # ARC messages
 ARC_MSG_TYPE_TEST = 0x90
-ARC_MSG_TYPE_PING_BM = 0xC0
-
-TT_PCIE_VID = "0x1e52"
-
-
-def find_tt_bus():
-    """
-    Finds PCIe path for device to power off
-    """
-    for root, dirs, _ in os.walk("/sys/bus/pci/devices"):
-        for d in dirs:
-            with open(os.path.join(root, d, "vendor"), "r") as f:
-                vid = f.read()
-                if vid.strip() == TT_PCIE_VID:
-                    return os.path.join(root, d)
-    return None
-
-
-def rescan_pcie():
-    """
-    Helper to rescan PCIe bus
-    """
-    # First, we must find the PCIe card to power it off
-    dev = find_tt_bus()
-    if dev is not None:
-        print(f"Powering off device at {dev}")
-        try:
-            with open(os.path.join(dev, "remove"), "w") as f:
-                f.write("1")
-        except PermissionError as e:
-            print(
-                "Error, this script must be run with elevated permissions to rescan PCIe bus"
-            )
-            raise e
-    # Now, rescan the bus
-    try:
-        with open("/sys/bus/pci/rescan", "w") as f:
-            f.write("1")
-            time.sleep(1)
-    except PermissionError as e:
-        print(
-            "Error, this script must be run with elevated permissions to rescan PCIe bus"
-        )
-        raise e
+ARC_MSG_TYPE_PING_DM = 0xC0
 
 
 def get_arc_chip(unlaunched_dut: DeviceAdapter):
@@ -132,15 +93,15 @@ def test_arc_msg(arc_chip):
     assert status == 0xC0DE003F, "SMC firmware has incorrect status"
 
 
-def test_bmc_msg(arc_chip):
+def test_dmc_msg(arc_chip):
     """
-    Validates the BMC firmware is alive and responding to pings
+    Validates the DMC firmware is alive and responding to pings
     """
-    # Send an ARC message to ping the BMC, and validate that it is online
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_BM, True, False, 0, 0, 1000)
-    assert response[0] == 1, "BMC did not respond to ping from SMC"
+    # Send an ARC message to ping the DMC, and validate that it is online
+    response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+    assert response[0] == 1, "DMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
-    logger.info('BMC ping message response "%d"', response[0])
+    logger.info('DMC ping message response "%d"', response[0])
 
 
 def test_boot_status(arc_chip):

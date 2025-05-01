@@ -8,6 +8,6 @@
 
 void InitThrottlers(void);
 void CalculateThrottlers(void);
-int32_t Bm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size);
+int32_t Dm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size);
 
 #endif

@@ -110,14 +110,14 @@ jobs:
             *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
           esac
           case "${{ matrix.config.board }}" in
-            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
-            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
-            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
-            p300) BMC_BOARD=p300/tt_blackhole/bmc;;
+            p100) DMC_BOARD=tt_blackhole@p100/tt_blackhole/dmc;;
+            p100a) DMC_BOARD=tt_blackhole@p100a/tt_blackhole/dmc;;
+            p150a) DMC_BOARD=tt_blackhole@p150a/tt_blackhole/dmc;;
+            p300) DMC_BOARD=p300/tt_blackhole/dmc;;
             *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
           esac
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
-          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
+          echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
       - name: Run reset test
         working-directory: tt-zephyr-platforms
@@ -130,7 +130,7 @@ jobs:
         if: ${{ failure() }}
         working-directory: tt-zephyr-platforms
         run: |
-          echo "BMC RTT logs:"
-          python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          echo "DMC RTT logs:"
+          python3 ./scripts/dmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
           echo "SMC RTT logs:"
           python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt

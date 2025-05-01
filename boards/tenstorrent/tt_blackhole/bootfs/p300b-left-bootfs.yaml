@@ -35,10 +35,10 @@ images:
   - name: ethsdfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
 
-  # Board Mgmt FW
+  # Device Mgmt FW (called bmfw here for historical reasons)
   - name: bmfw
     padto: 0xc000
-    binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
+    binary: $BUILD_DIR/dmc/zephyr/zephyr.signed.bin
 
   # Meta data about the flashing process
   - name: flshinfo

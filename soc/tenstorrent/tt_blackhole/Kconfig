@@ -1,7 +1,7 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-config SOC_TT_BLACKHOLE_BMC
+config SOC_TT_BLACKHOLE_DMC
 	select ARM
 	select CPU_CORTEX_M0PLUS
 	select CPU_CORTEX_M_HAS_VTOR

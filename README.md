@@ -88,16 +88,16 @@ Press Ctrl-a,x to quit
 Tenstorrent Blackhole CMFW 0.9.1
 ```
 
-### Build, Flash, Debug & Test BMC FW
+### Build, Flash, Debug & Test DMC FW
 
 **Build, flash, and view output from the target with `west`**
 ```shell
-# Set up a convenience variable for BMC FW
-BOARD=tt_blackhole/tt_blackhole/bmc
-BOARD_SANITIZED=tt_blackhole_tt_blackhole_bmc
+# Set up a convenience variable for DMC FW
+BOARD=tt_blackhole/tt_blackhole/dmc
+BOARD_SANITIZED=tt_blackhole_tt_blackhole_dmc
 
-# Build BMC firmware
-west build --sysbuild -p -S rtt-console -b $BOARD app/bmc
+# Build DMC firmware
+west build --sysbuild -p -S rtt-console -b $BOARD app/dmc
 
 # Flash mcuboot and the app
 west flash
@@ -139,7 +139,7 @@ The file `fw.hex` is a concatenation of the mcuboot `zephyr.bin` and the `app/sm
 `zephyr.signed.bin` concatenated with the tool `srec_cat`.
 
 ```shell
-./scripts/bmc-reset.py /opt/tenstorrent/fw/stable/$BOARD_SANITIZED/fw.hex
+./scripts/dmc-reset.py /opt/tenstorrent/fw/stable/$BOARD_SANITIZED/fw.hex
 ./scripts/rescan-pcie.sh
 ```
 

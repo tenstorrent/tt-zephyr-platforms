@@ -816,7 +816,7 @@ def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
 
 
 def mkbundle(
-    output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path]
+    output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path] = {}
 ):
     bundle_dir = Path(tempfile.mkdtemp())
     try:

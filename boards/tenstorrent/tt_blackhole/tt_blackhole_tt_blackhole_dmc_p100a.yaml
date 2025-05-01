@@ -1,5 +1,5 @@
-identifier: tt_blackhole@p150a/tt_blackhole/bmc
-name: Tenstorrent Blackhole P150A board (BMC)
+identifier: tt_blackhole@p100a/tt_blackhole/dmc
+name: Tenstorrent Blackhole P100A board (DMC)
 type: mcu
 arch: arm
 toolchain:

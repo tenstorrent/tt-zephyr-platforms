@@ -15,10 +15,10 @@ if("${BUNDLE_VERSION_STRING}" STREQUAL "...")
   message(FATAL_ERROR "Unable to extract bundle version")
 endif()
 
-if("${SB_CONFIG_BMC_BOARD}" STREQUAL "")
+if("${SB_CONFIG_DMC_BOARD}" STREQUAL "")
 	message(FATAL_ERROR
 	"Target ${BOARD}${BOARD_QUALIFIERS} not supported for this sample. "
-	"There is no BMC board selected in Kconfig.sysbuild")
+	"There is no DMC board selected in Kconfig.sysbuild")
 endif()
 
 if (TARGET recovery)
@@ -39,9 +39,9 @@ ExternalZephyrProject_Add(
 )
 
 ExternalZephyrProject_Add(
-	APPLICATION bmc
-	SOURCE_DIR  ${APP_DIR}/../bmc
-	BOARD       ${SB_CONFIG_BMC_BOARD}
+	APPLICATION dmc
+	SOURCE_DIR  ${APP_DIR}/../dmc
+	BOARD       ${SB_CONFIG_DMC_BOARD}
 	BUILD_ONLY 1
 )
 
@@ -60,7 +60,7 @@ endif()
 set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
-set(BMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/bmc/zephyr/zephyr.bin)
+set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
 set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
 set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
 
@@ -76,7 +76,7 @@ add_custom_command(OUTPUT ${OUTPUT_BOOTFS_LEFT}
   ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-left-bootfs.yaml
   ${OUTPUT_BOOTFS_LEFT}
   --build-dir ${CMAKE_BINARY_DIR}
-  DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  DEPENDS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 
 # Generate firmware bundle that can be used to flash this build on a board
 # using tt-flash
@@ -90,7 +90,7 @@ add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE_LEFT}
   DEPENDS ${OUTPUT_BOOTFS_LEFT})
 
 # Add custom target that should always run, so that we will generate
-# firmware bundles whenever the SMC, BMC, or recovery binaries are
+# firmware bundles whenever the SMC, DMC, or recovery binaries are
 # updated
 add_custom_target(fwbundle-left ALL DEPENDS ${OUTPUT_FWBUNDLE_LEFT})
 
@@ -103,7 +103,7 @@ add_custom_command(OUTPUT ${OUTPUT_BOOTFS_RIGHT}
   ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-right-bootfs.yaml
   ${OUTPUT_BOOTFS_RIGHT}
   --build-dir ${CMAKE_BINARY_DIR}
-  DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  DEPENDS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 
 # Generate firmware bundle that can be used to flash this build on a board
 # using tt-flash
@@ -117,7 +117,7 @@ add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE_RIGHT}
   DEPENDS ${OUTPUT_BOOTFS_RIGHT})
 
 # Add custom target that should always run, so that we will generate
-# firmware bundles whenever the SMC, BMC, or recovery binaries are
+# firmware bundles whenever the SMC, DMC, or recovery binaries are
 # updated
 add_custom_target(fwbundle-right ALL DEPENDS ${OUTPUT_FWBUNDLE_RIGHT})
 
@@ -140,7 +140,7 @@ add_custom_command(OUTPUT ${OUTPUT_BOOTFS}
   ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml
   ${OUTPUT_BOOTFS}
   --build-dir ${CMAKE_BINARY_DIR}
-  DEPENDS ${BMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  DEPENDS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 
 # Generate firmware bundle that can be used to flash this build on a board
 # using tt-flash
@@ -154,7 +154,7 @@ add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE}
   DEPENDS ${OUTPUT_BOOTFS})
 
 # Add custom target that should always run, so that we will generate
-# firmware bundles whenever the SMC, BMC, or recovery binaries are
+# firmware bundles whenever the SMC, DMC, or recovery binaries are
 # updated
 add_custom_target(fwbundle ALL DEPENDS ${OUTPUT_FWBUNDLE})
 endif()

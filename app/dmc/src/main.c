@@ -58,7 +58,11 @@ int update_fw(void)
 	gpio_pin_set_dt(&reset_spi, 0);
 
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		/* Check for and apply a new update, if one exists (we disable reboot here) */
+		/*
+		 * Check for and apply a new update, if one exists (we disable reboot here)
+		 * Device Mgmt FW (called bmfw here and elsewhere in this file for historical
+		 * reasons)
+		 */
 		ret = tt_fwupdate("bmfw", false, false);
 		if (ret < 0) {
 			LOG_ERR("%s() failed: %d", "tt_fwupdate", ret);
@@ -73,7 +77,7 @@ int update_fw(void)
 		if (ret == 0) {
 			LOG_DBG("No firmware update required");
 		} else {
-			LOG_INF("Reboot needed in order to apply bmfw update");
+			LOG_INF("Reboot needed in order to apply dmfw update");
 			if (IS_ENABLED(CONFIG_REBOOT)) {
 				sys_reboot(SYS_REBOOT_COLD);
 			}
@@ -85,12 +89,12 @@ int update_fw(void)
 	return ret;
 }
 
-void process_cm2bm_message(struct bh_chip *chip)
+void process_cm2dm_message(struct bh_chip *chip)
 {
-	cm2bmMessageRet msg = bh_chip_get_cm2bm_message(chip);
+	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
 
 	if (msg.ret == 0) {
-		cm2bmMessage message = msg.msg;
+		cm2dmMessage message = msg.msg;
 
 		switch (message.msg_id) {
 		case 0x1:
@@ -99,7 +103,7 @@ void process_cm2bm_message(struct bh_chip *chip)
 				jtag_bootrom_reset_sequence(chip, true);
 				break;
 			case 0x3:
-				/* Trigger reboot; will reset asic and reload bmfw
+				/* Trigger reboot; will reset asic and reload dmfw
 				 */
 				if (IS_ENABLED(CONFIG_REBOOT)) {
 					sys_reboot(SYS_REBOOT_COLD);
@@ -237,7 +241,7 @@ int main(void)
 		if (!tt_fwupdate_is_confirmed()) {
 			if (bist_rc < 0) {
 				LOG_ERR("Firmware update was unsuccessful and will be rolled-back "
-					"after bmfw reboot.");
+					"after dmfw reboot.");
 				if (IS_ENABLED(CONFIG_REBOOT)) {
 					sys_reboot(SYS_REBOOT_COLD);
 				}
@@ -293,15 +297,15 @@ int main(void)
 		LOG_DBG("Bootrom workaround successfully applied");
 	}
 
-	printk("BMFW VERSION " APP_VERSION_STRING "\n");
+	printk("DMFW VERSION " APP_VERSION_STRING "\n");
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
 
 	/* No mechanism for getting bl version... yet */
-	bmStaticInfo static_info =
-		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
+	dmStaticInfo static_info =
+		(dmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
 	uint16_t max_pwr = detect_max_pwr();
 
@@ -365,7 +369,7 @@ int main(void)
 		}
 
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			process_cm2bm_message(chip);
+			process_cm2dm_message(chip);
 		}
 
 		/*

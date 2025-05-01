@@ -4,19 +4,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
-import time
-import sys
-
 import pyluwen
+import sys
+import time
 
 from pathlib import Path
 from twister_harness import DeviceAdapter
 
 # Import tt_boot_fs utilities
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
+
 import tt_boot_fs
 
+from pcie_utils import rescan_pcie
 
 logger = logging.getLogger(__name__)
 
@@ -24,44 +24,6 @@ logger = logging.getLogger(__name__)
 ARC_POSTCODE_STATUS = 0x80030060
 # Boot status register
 ARC_BOOT_STATUS = 0x80030408
-
-TT_PCIE_VID = "0x1e52"
-
-
-def find_tt_bus():
-    """
-    Finds PCIe path for device to power off
-    """
-    for root, dirs, _ in os.walk("/sys/bus/pci/devices"):
-        for d in dirs:
-            with open(os.path.join(root, d, "vendor"), "r") as f:
-                vid = f.read()
-                if vid.strip() == TT_PCIE_VID:
-                    return os.path.join(root, d)
-    return None
-
-
-def rescan_pcie():
-    """
-    Helper to rescan PCIe bus
-    """
-    # First, we must find the PCIe card to power it off
-    dev = find_tt_bus()
-    if dev is None:
-        raise RuntimeError("No tenstorrent card found to power off")
-    print(f"Powering off device at {dev}")
-    try:
-        with open(os.path.join(dev, "remove"), "w") as f:
-            f.write("1")
-    except PermissionError as e:
-        print(
-            "Error, this script must be run with elevated permissions to rescan PCIe bus"
-        )
-        raise e
-    # Now, rescan the bus
-    with open("/sys/bus/pci/rescan", "w") as f:
-        f.write("1")
-        time.sleep(1)
 
 
 def read_boot_status():

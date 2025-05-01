@@ -6,13 +6,13 @@ tests:
     extra_configs:
       - CONFIG_TT_FWUPDATE=n
     platform_allow:
-      - tt_blackhole@p100/tt_blackhole/bmc
-      - tt_blackhole@p100a/tt_blackhole/bmc
-      - tt_blackhole@p150a/tt_blackhole/bmc
-      - p300/tt_blackhole/bmc
+      - tt_blackhole@p100/tt_blackhole/dmc
+      - tt_blackhole@p100a/tt_blackhole/dmc
+      - tt_blackhole@p150a/tt_blackhole/dmc
+      - p300/tt_blackhole/dmc
     tags: e2e
     harness: console
     harness_config:
       type: one_line
       regex:
-        - "BMFW VERSION (.*)"
+        - "DMFW VERSION (.*)"

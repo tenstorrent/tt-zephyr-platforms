@@ -6,12 +6,12 @@ config SOC_TT_BLACKHOLE
 	help
 	  Tenstorrent Blackhole SoC
 
-config SOC_TT_BLACKHOLE_BMC
+config SOC_TT_BLACKHOLE_DMC
 	bool
 	select SOC_SERIES_STM32G0X
 	select SOC_STM32G0B1XX
 	help
-	  Tenstorrent Blackhole BMC
+	  Tenstorrent Blackhole DMC
 
 config SOC_TT_BLACKHOLE_SMC
 	bool

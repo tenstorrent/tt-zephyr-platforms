@@ -1,8 +1,8 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-if SOC_TT_BLACKHOLE_BMC
+if SOC_TT_BLACKHOLE_DMC
 
 source "${ZEPHYR_BASE}/soc/st/stm32/stm32g0x/Kconfig.defconfig.stm32g0b1xx"
 
-endif # SOC_TT_BLACKHOLE_BMC
+endif # SOC_TT_BLACKHOLE_DMC

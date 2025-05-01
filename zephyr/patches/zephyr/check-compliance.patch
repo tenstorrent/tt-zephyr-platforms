@@ -72,7 +72,7 @@ index fe56b715162..c575460db38 100755
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
          # zephyr-keep-sorted-start re(^\s+")
-+        "BMC_BOARD",
++        "DMC_BOARD",
          "FOO",
          "MY_IMAGE", # Used in sysbuild documentation as example
          "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example

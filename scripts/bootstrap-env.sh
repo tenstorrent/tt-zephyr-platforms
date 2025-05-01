@@ -40,7 +40,7 @@ clone_repository() {
   west init -l
 }
 
-# Function to pull manifest revisions needed to build BMFW and CMFW
+# Function to pull manifest revisions needed to build DMFW and CMFW
 pull_manifest_revisions() {
   west config manifest.group-filter +optional
   west config build.dir-fmt "build/{board}/{app}"
@@ -57,8 +57,8 @@ build_firmware() {
   # Builds for SMC
   west build -p always -b tt_blackhole/tt_blackhole/smc app/smc/
 
-  # Builds for BMC
-  west build -p always -b tt_blackhole@p100/tt_blackhole/bmc app/bmc/
+  # Builds for DMC
+  west build -p always -b tt_blackhole@p100/tt_blackhole/dmc app/dmc/
 }
 
 # Main script execution
@@ -75,13 +75,13 @@ main() {
   # Clone the tt-zephyr-platforms repository
   clone_repository
 
-  # Pull manifest revisions needed to build BMFW and CMFW
+  # Pull manifest revisions needed to build DMFW and CMFW
   pull_manifest_revisions
 
   # Apply patches to Zephyr
   apply_patches
 
-  # Build firmware for SMC and BMC to test the environment
+  # Build firmware for SMC and DMC to test the environment
   build_firmware
 
   echo "Setup and build completed successfully."

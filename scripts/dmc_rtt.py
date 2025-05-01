@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Script to open RTT console to BMC
+Script to open RTT console to DMC
 """
 
 from rtt_helper import RTTHelper
@@ -12,13 +12,13 @@ from pathlib import Path
 
 DEFAULT_CFG = (
     Path(__file__).parents[1]
-    / "boards/tenstorrent/tt_blackhole/support/tt_blackhole_bmc.cfg"
+    / "boards/tenstorrent/tt_blackhole/support/tt_blackhole_dmc.cfg"
 )
 DEFAULT_SEARCH_BASE = 0x20000000
 DEFAULT_SEARCH_RANGE = 0x80000
 
 
-def start_bmc_rtt():
+def start_dmc_rtt():
     """
     Main function to start RTT console
     """
@@ -32,4 +32,4 @@ def start_bmc_rtt():
 
 
 if __name__ == "__main__":
-    start_bmc_rtt()
+    start_dmc_rtt()

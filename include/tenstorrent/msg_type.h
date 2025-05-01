@@ -66,7 +66,7 @@ enum msg_type {
 	MSG_TYPE_CLEAR_NUM_AUTO_RESET = 0xBD,
 	MSG_TYPE_SET_LAST_SERIAL = 0xBE,
 	MSG_TYPE_EFUSE_BURN = 0xBF,
-	MSG_TYPE_PING_BM = 0xC0,
+	MSG_TYPE_PING_DM = 0xC0,
 };
 
 #ifdef __cplusplus

@@ -35,9 +35,9 @@ images:
   - name: ethsdfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
 
-  # Board Mgmt FW only exists on the left side
-  # - name: bmfw
-  #   binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
+  # Device Mgmt FW only exists on the left side
+  # - name: dmfw
+  #   binary: $BUILD_DIR/dmc/zephyr/zephyr.signed.bin
 
   # Meta data about the flashing process
   - name: flshinfo

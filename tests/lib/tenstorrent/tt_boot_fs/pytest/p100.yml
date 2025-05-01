@@ -11,7 +11,7 @@ alignment:
 # into tt_boot_fs.py. These could easily be yet another YAML file (specifically a dict).
 #
 # This would typically correspond to sysbuild output directories. E.g.
-# - $BMC_BUILD: build/tt_blackhole@p100/tt_blackhole/bmc/build
+# - $DMC_BUILD: build/tt_blackhole@p100/tt_blackhole/dmc/build
 # - $SMC_BUILD: build/tt_blackhole@p100/tt_blackhole/smc/build
 
 images:
@@ -43,9 +43,8 @@ images:
   - name: ethsdfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
 
-## FIXME: this is generated at build time
-# Board Mgmt FW
-# - name: bmfw
+# Device Mgmt FW
+# - name: dmfw
 #   binary: $BUILD/zephyr/zephyr.signed.bin
 
 ## FIXME: this is generated at build time

@@ -20,56 +20,17 @@ except ModuleNotFoundError:
 
 from pathlib import Path
 
+sys.path.append(str(Path(__file__).parents[3] / "scripts"))
+from pcie_utils import rescan_pcie
+
 logger = logging.getLogger(Path(__file__).stem)
 
-DEFAULT_BMC_CFG = (
+DEFAULT_DMC_CFG = (
     Path(__file__).parents[1]
-    / "boards/tenstorrent/tt_blackhole/support/tt_blackhole_bmc.cfg"
+    / "boards/tenstorrent/tt_blackhole/support/tt_blackhole_dmc.cfg"
 )
 OPT_DIR = Path("/opt/tenstorrent")
 SDK_SYSROOT = Path("/opt/zephyr/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux")
-
-TT_PCIE_VID = "0x1e52"
-
-
-def find_tt_bus():
-    """
-    Finds PCIe path for device to power off
-    """
-    for root, dirs, _ in os.walk("/sys/bus/pci/devices"):
-        for d in dirs:
-            with open(os.path.join(root, d, "vendor"), "r") as f:
-                vid = f.read()
-                if vid.strip() == TT_PCIE_VID:
-                    return os.path.join(root, d)
-    return None
-
-
-def rescan_pcie():
-    """
-    Helper to rescan PCIe bus
-    """
-    # First, we must find the PCIe card to power it off
-    dev = find_tt_bus()
-    if dev is not None:
-        print(f"Powering off device at {dev}")
-        try:
-            with open(os.path.join(dev, "remove"), "w") as f:
-                f.write("1")
-        except PermissionError as e:
-            print(
-                "Error, this script must be run with elevated permissions to rescan PCIe bus"
-            )
-            raise e
-    # Now, rescan the bus
-    try:
-        with open("/sys/bus/pci/rescan", "w") as f:
-            f.write("1")
-    except PermissionError as e:
-        print(
-            "Error, this script must be run with elevated permissions to rescan PCIe bus"
-        )
-        raise e
 
 
 def parse_args():
@@ -86,11 +47,11 @@ def parse_args():
         )
     else:
         DEFAULT_SDK_INSTALL_DIR = SDK_SYSROOT
-    parser = argparse.ArgumentParser(description="Reset BMC", allow_abbrev=False)
+    parser = argparse.ArgumentParser(description="Reset DMC", allow_abbrev=False)
     parser.add_argument(
         "-c",
         "--config",
-        default=DEFAULT_BMC_CFG,
+        default=DEFAULT_DMC_CFG,
         help="OpenOCD config file",
         metavar="FILE",
         type=Path,
@@ -144,7 +105,7 @@ def parse_args():
         "-w",
         "--wait",
         action="store_true",
-        help="Wait for SMC to boot after resetting BMC",
+        help="Wait for SMC to boot after resetting DMC",
     )
 
     args = parser.parse_args()
@@ -164,7 +125,7 @@ def parse_args():
     return args
 
 
-def reset_bmc(args):
+def reset_dmc(args):
     openocd_cmd = [
         str(args.openocd),
         "-s",
@@ -177,8 +138,8 @@ def reset_bmc(args):
         openocd_cmd.extend(["-c", f"adapter serial {args.jtag_id}"])
 
     if args.hexfile:
-        print(f"Programming file {args.hexfile} to the BMC")
-        # program the hex file and reset the BMC
+        print(f"Programming file {args.hexfile} to the DMC")
+        # program the hex file and reset the DMC
         openocd_cmd.extend(
             [
                 "-c",
@@ -194,7 +155,7 @@ def reset_bmc(args):
             ]
         )
     else:
-        # simply reset the BMC
+        # simply reset the DMC
         openocd_cmd.extend(["-c", "init", "-c", "targets", "-c", "reset run; exit"])
 
     if args.debug > 0:
@@ -212,7 +173,7 @@ def reset_bmc(args):
 
     proc = subprocess.run(openocd_cmd, **openocd_kwargs)
     if proc.returncode != 0:
-        logger.error(f"Failed to reset BMC: {proc.stderr}")
+        logger.error(f"Failed to reset DMC: {proc.stderr}")
         return os.EX_SOFTWARE
 
     return os.EX_OK
@@ -220,7 +181,7 @@ def reset_bmc(args):
 
 def wait_for_smc_boot(timeout):
     """
-    Waits for SMC to complete boot after BMC is reset
+    Waits for SMC to complete boot after DMC is reset
     @param timeout: time to wait for boot in seconds
     """
     remaining = timeout
@@ -265,14 +226,14 @@ def wait_for_smc_boot(timeout):
             return os.EX_UNAVAILABLE
     # Check if the SMC ping will work
     if chip.get_telemetry().m3_app_fw_version < 0x40000:
-        print("Warning: BMC firmware is too old, no support for SMC ping")
+        print("Warning: DMC firmware is too old, no support for SMC ping")
         return os.EX_OK
-    # Try to verify that the SMC can ping the BMC
+    # Try to verify that the SMC can ping the DMC
     while True:
         try:
             rsp = chip.arc_msg(0xC0, True, True, 1, 0)
             if rsp[0] == 1:
-                print("SMC can communicate with BMC")
+                print("SMC can communicate with DMC")
                 break
         except Exception:
             # Just decrement timeout, which we do below
@@ -309,12 +270,12 @@ def main():
         for dut in hwmap:
             if not dut["connected"]:
                 continue
-            if dut["platform"].endswith("bmc"):
+            if dut["platform"].endswith("dmc"):
                 setattr(args, "jtag_id", dut["id"])
                 logger.debug(f"Found {dut['platform']} with JTAG ID {dut['id']}")
                 break
 
-    ret = reset_bmc(args)
+    ret = reset_dmc(args)
     if ret != os.EX_OK:
         return ret
     if args.wait:

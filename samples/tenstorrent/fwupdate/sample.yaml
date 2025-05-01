@@ -7,7 +7,7 @@ common:
   harness_config:
     type: one_line
     regex:
-      - ".*verified bmfw with checksum.*"
+      - ".*verified dmfw with checksum.*"
 tests:
   sample.tenstorrent.fwupdate.qemu_x86:
     platform_allow:

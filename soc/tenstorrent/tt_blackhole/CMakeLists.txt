@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
-if(CONFIG_SOC_TT_BLACKHOLE_BMC)
+if(CONFIG_SOC_TT_BLACKHOLE_DMC)
   include(${ZEPHYR_BASE}/soc/st/stm32/stm32g0x/CMakeLists.txt)
 endif()
 

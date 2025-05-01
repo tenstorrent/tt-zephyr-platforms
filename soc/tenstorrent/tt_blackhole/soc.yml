@@ -1,5 +1,5 @@
 socs:
   - name: tt_blackhole
     cpuclusters:
-    - name: bmc
-    - name: smc
+      - name: dmc
+      - name: smc

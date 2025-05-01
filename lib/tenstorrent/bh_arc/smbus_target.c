@@ -7,7 +7,7 @@
 #include "reg.h"
 #include "status_reg.h"
 #include "dw_apb_i2c.h"
-#include "cm2bm_msg.h"
+#include "cm2dm_msg.h"
 #include "throttler.h"
 
 #include <stdint.h>
@@ -15,9 +15,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/i2c.h>
 
-/* BMFW to CMFW i2c interface is on I2C0 of tensix_sm */
-#define CM_I2C_BM_TARGET_INST 0
-/* I2C target address for CMFW to respond to BMFW */
+/* DMFW to CMFW i2c interface is on I2C0 of tensix_sm */
+#define CM_I2C_DM_TARGET_INST 0
+/* I2C target address for CMFW to respond to DMFW */
 #define I2C_TARGET_ADDR       0xA
 #define kMaxSmbusMessageSize  64 /* Increase this if larger messages needed */
 
@@ -157,104 +157,49 @@ static SmbusConfig smbus_config = {
 		[0x10] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = 6,
-			  .handler = {
-
-					  .send_handler = &Cm2BmMsgReqSmbusHandler,
-				  }},
+			  .handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}},
 		[0x11] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
-
-					  .rcv_handler = &Cm2BmMsgAckSmbusHandler,
-				  }},
+			  .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
 		[0x20] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
-			  .expected_blocksize = sizeof(bmStaticInfo),
-			  .handler = {
-
-					  .rcv_handler = &Bm2CmSendDataHandler,
-				  }},
+			  .expected_blocksize = sizeof(dmStaticInfo),
+			  .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
 		[0x21] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
-
-					  .rcv_handler = &Bm2CmPingHandler,
-				  }},
+			  .handler = {.rcv_handler = &Dm2CmPingHandler}},
 		[0x22] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = 4,
-			  .handler = {
-					  .rcv_handler = &Bm2CmSendCurrentHandler
-			  }},
-		[0x23] = {
-			.valid = 1,
-			.trans_type = kSmbusTransWriteWord,
-			.handler = {
-				.rcv_handler = &Bm2CmSendFanRPMHandler
-			}},
+			  .handler = {.rcv_handler = &Dm2CmSendCurrentHandler}},
+		[0x23] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteWord,
+			  .handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}},
 #ifndef CONFIG_TT_SMC_RECOVERY
 		[0x24] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
-					  .rcv_handler = &Bm2CmSetBoardPwrLimit
-			  }},
+			  .handler = {.rcv_handler = &Dm2CmSetBoardPwrLimit}},
 #endif
-		[0xD8] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransReadByte,
-				.handler = {
-
-						.send_handler = &ReadByteTest,
-					},
-			},
-		[0xD9] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransWriteByte,
-				.handler = {
-
-						.rcv_handler = &WriteByteTest,
-					},
-			},
-		[0xDA] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransReadWord,
-				.handler = {
-
-						.send_handler = &ReadWordTest,
-					},
-			},
-		[0xDB] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransWriteWord,
-				.handler = {
-
-						.rcv_handler = &WriteWordTest,
-					},
-			},
-		[0xDC] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransBlockRead,
-				.expected_blocksize = 4,
-				.handler = {
-
-						.send_handler = &BlockReadTest,
-					},
-			},
-		[0xDD] = {
-
-				.valid = 1,
-				.trans_type = kSmbusTransBlockWrite,
-				.expected_blocksize = 4,
-				.handler = {
-
-						.rcv_handler = &BlockWriteTest,
-					},
-			},
+		[0xD8] = {.valid = 1,
+			  .trans_type = kSmbusTransReadByte,
+			  .handler = {.send_handler = &ReadByteTest}},
+		[0xD9] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteByte,
+			  .handler = {.rcv_handler = &WriteByteTest}},
+		[0xDA] = {.valid = 1,
+			  .trans_type = kSmbusTransReadWord,
+			  .handler = {.send_handler = &ReadWordTest}},
+		[0xDB] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteWord,
+			  .handler = {.rcv_handler = &WriteWordTest}},
+		[0xDC] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockRead,
+			  .expected_blocksize = 4,
+			  .handler = {.send_handler = &BlockReadTest}},
+		[0xDD] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockWrite,
+			  .expected_blocksize = 4,
+			  .handler = {.rcv_handler = &BlockWriteTest}},
 	}};
 
 static SmbusCmdDef *GetCmdDef(uint8_t cmd)
@@ -468,12 +413,12 @@ struct i2c_target_config i2c_target_config_impl = {
 
 void InitSmbusTarget(void)
 {
-	I2CInitGPIO(CM_I2C_BM_TARGET_INST);
+	I2CInitGPIO(CM_I2C_DM_TARGET_INST);
 	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
 }
 
 void PollSmbusTarget(void)
 {
-	PollI2CSlave(CM_I2C_BM_TARGET_INST);
+	PollI2CSlave(CM_I2C_DM_TARGET_INST);
 	WriteReg(I2C0_TARGET_DEBUG_STATE_2_REG_ADDR, 0xfaca);
 }

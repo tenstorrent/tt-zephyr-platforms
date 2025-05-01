@@ -433,7 +433,7 @@ int tt_fwupdate_validate_image(const tt_boot_fs_fd *fd)
 		return -ENOENT;
 	}
 
-	LOG_INF("verified bmfw with checksum %08x \\o/", cksum);
+	LOG_INF("verified dmfw with checksum %08x \\o/", cksum);
 
 	return 0;
 }

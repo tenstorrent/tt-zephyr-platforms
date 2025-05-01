@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "cm2bm_msg.h"
+#include "cm2dm_msg.h"
 #include "fan_ctrl.h"
 #include "fw_table.h"
 #include "harvesting.h"
@@ -197,8 +197,8 @@ static void write_static_telemetry(uint32_t app_version)
 						     gddr_telemetry.mrisc_fw_version_minor;
 		}
 	}
-	/* BM_APP_FW_VERSION and BM_BL_FW_VERSION assumes zero-init, it might be
-	 * initialized by bh_chip_set_static_info in bmfw already, must not clear.
+	/* DM_APP_FW_VERSION and DM_BL_FW_VERSION assumes zero-init, it might be
+	 * initialized by bh_chip_set_static_info in dmfw already, must not clear.
 	 */
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
 	telemetry[CM_FW_VERSION] = app_version;
@@ -296,8 +296,8 @@ static void update_tag_table(void)
 	tag_table[22] = (struct telemetry_entry){TAG_GDDR_SPEED, GDDR_SPEED};
 	tag_table[23] = (struct telemetry_entry){TAG_ETH_FW_VERSION, ETH_FW_VERSION};
 	tag_table[24] = (struct telemetry_entry){TAG_GDDR_FW_VERSION, GDDR_FW_VERSION};
-	tag_table[25] = (struct telemetry_entry){TAG_BM_APP_FW_VERSION, BM_APP_FW_VERSION};
-	tag_table[26] = (struct telemetry_entry){TAG_BM_BL_FW_VERSION, BM_BL_FW_VERSION};
+	tag_table[25] = (struct telemetry_entry){TAG_DM_APP_FW_VERSION, DM_APP_FW_VERSION};
+	tag_table[26] = (struct telemetry_entry){TAG_DM_BL_FW_VERSION, DM_BL_FW_VERSION};
 	tag_table[27] = (struct telemetry_entry){TAG_FLASH_BUNDLE_VERSION, FLASH_BUNDLE_VERSION};
 	tag_table[28] = (struct telemetry_entry){TAG_CM_FW_VERSION, CM_FW_VERSION};
 	tag_table[29] = (struct telemetry_entry){TAG_L2CPU_FW_VERSION, L2CPU_FW_VERSION};
@@ -369,10 +369,10 @@ void StartTelemetryTimer(void)
 		      K_MSEC(telem_update_interval));
 }
 
-void UpdateBmFwVersion(uint32_t bl_version, uint32_t app_version)
+void UpdateDmFwVersion(uint32_t bl_version, uint32_t app_version)
 {
-	telemetry[BM_BL_FW_VERSION] = bl_version;
-	telemetry[BM_APP_FW_VERSION] = app_version;
+	telemetry[DM_BL_FW_VERSION] = bl_version;
+	telemetry[DM_APP_FW_VERSION] = app_version;
 }
 
 void UpdateTelemetryNocTranslation(bool translation_enabled)

@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <string.h>
+
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/event.h>
-
 #include <zephyr/kernel.h>
-#include <string.h>
 
 void bh_chip_cancel_bus_transfer_set(struct bh_chip *dev)
 {
@@ -21,9 +21,9 @@ void bh_chip_cancel_bus_transfer_clear(struct bh_chip *dev)
 	dev->data.bus_cancel_flag = 0;
 }
 
-cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
+cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 {
-	cm2bmMessageRet output = {
+	cm2dmMessageRet output = {
 		.ret = -1,
 		.ack_ret = -1,
 	};
@@ -34,11 +34,11 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 	memcpy(&output.msg, buf, sizeof(output.msg));
 
 	if (output.ret == 0 && output.msg.msg_id != 0) {
-		cm2bmAck ack = {0};
+		cm2dmAck ack = {0};
 
 		ack.msg_id = output.msg.msg_id;
 		ack.seq_num = output.msg.seq_num;
-		union cm2bmAckWire wire_ack;
+		union cm2dmAckWire wire_ack;
 
 		wire_ack.f = ack;
 		output.ack = ack;
@@ -48,11 +48,11 @@ cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip)
 	return output;
 }
 
-int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
+int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 {
 	int ret;
 
-	ret = bharc_smbus_block_write(&chip->config.arc, 0x20, sizeof(bmStaticInfo),
+	ret = bharc_smbus_block_write(&chip->config.arc, 0x20, sizeof(dmStaticInfo),
 				      (uint8_t *)info);
 
 	return ret;

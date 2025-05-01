@@ -114,8 +114,8 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset);
 void bh_chip_cancel_bus_transfer_set(struct bh_chip *chip);
 void bh_chip_cancel_bus_transfer_clear(struct bh_chip *chip);
 
-cm2bmMessageRet bh_chip_get_cm2bm_message(struct bh_chip *chip);
-int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info);
+cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip);
+int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info);
 int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current);
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm);
 int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr);

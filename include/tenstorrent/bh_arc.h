@@ -12,7 +12,7 @@
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/drivers/gpio.h>
 
-typedef struct bmStaticInfo {
+typedef struct dmStaticInfo {
 	/*
 	 * Non-zero for valid data
 	 * Allows for breaking changes
@@ -20,21 +20,21 @@ typedef struct bmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
-} __packed bmStaticInfo;
+} __packed dmStaticInfo;
 
-typedef struct cm2bmMessage {
+typedef struct cm2dmMessage {
 	uint8_t msg_id;
 	uint8_t seq_num;
 	uint32_t data;
-} __packed cm2bmMessage;
+} __packed cm2dmMessage;
 
-typedef struct cm2bmAck {
+typedef struct cm2dmAck {
 	uint8_t msg_id;
 	uint8_t seq_num;
-} __packed cm2bmAck;
+} __packed cm2dmAck;
 
-union cm2bmAckWire {
-	cm2bmAck f;
+union cm2dmAckWire {
+	cm2dmAck f;
 	uint16_t val;
 };
 
@@ -43,13 +43,13 @@ struct bh_arc {
 	const struct gpio_dt_spec enable;
 };
 
-typedef struct cm2bmMessageRet {
-	cm2bmMessage msg;
+typedef struct cm2dmMessageRet {
+	cm2dmMessage msg;
 	int ret;
 
-	cm2bmAck ack;
+	cm2dmAck ack;
 	int ack_ret;
-} cm2bmMessageRet;
+} cm2dmMessageRet;
 
 int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count, uint8_t *output);
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input);

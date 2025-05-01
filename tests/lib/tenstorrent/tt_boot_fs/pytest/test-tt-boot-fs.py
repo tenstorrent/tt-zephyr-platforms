@@ -335,6 +335,7 @@ def test_tt_boot_fs_ls(tmp_path: Path):
         },
         {
             "spi_addr": 258048,
+            # Device Mgmt FW (called bmfw here for historical reasons)
             "image_tag": "bmfw",
             "size": 35744,
             "copy_dest": 0,

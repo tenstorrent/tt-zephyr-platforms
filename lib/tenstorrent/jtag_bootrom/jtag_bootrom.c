@@ -7,6 +7,11 @@
 #include "blackhole_offsets.h"
 
 #include <stdint.h>
+
+#include <tenstorrent/bh_chip.h>
+#include <tenstorrent/event.h>
+#include <tenstorrent/jtag_bootrom.h>
+
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/gpio/gpio_emul.h>
@@ -15,10 +20,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
-
-#include <tenstorrent/bh_chip.h>
-#include <tenstorrent/jtag_bootrom.h>
-#include <tenstorrent/event.h>
 
 bool jtag_axiwait(const struct device *dev, uint32_t addr)
 {

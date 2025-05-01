@@ -21,6 +21,7 @@ static void on_button_press(const struct device *port, struct gpio_callback *cb,
 	ARG_UNUSED(cb);
 	ARG_UNUSED(pins);
 
+	/* Device Mgmt FW (called bmfw here and elsewhere in this file for historical reasons) */
 	tt_fwupdate("bmfw", false, true);
 }
 

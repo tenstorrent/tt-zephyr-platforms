@@ -4,7 +4,7 @@
  */
 
 #include "arc_dma.h"
-#include "cm2bm_msg.h"
+#include "cm2dm_msg.h"
 #include "init_common.h"
 #include "irqnum.h"
 #include "reg.h"

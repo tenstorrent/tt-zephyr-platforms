@@ -6,7 +6,7 @@
 
 #include "fan_ctrl.h"
 
-#include "cm2bm_msg.h"
+#include "cm2dm_msg.h"
 #include "fw_table.h"
 #include "gddr.h"
 #include "telemetry_internal.h"
