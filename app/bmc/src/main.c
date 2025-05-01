@@ -308,6 +308,11 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.therm_trip_triggered) {
 				chip->data.therm_trip_triggered = false;
+
+				if (board_fault_led.port != NULL) {
+					gpio_pin_set_dt(&board_fault_led, 1);
+				}
+
 				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 					set_fan_speed(100);
 				}
