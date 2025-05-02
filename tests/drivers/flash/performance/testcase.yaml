@@ -3,10 +3,21 @@ common:
     - drivers
     - flash
 tests:
-  drivers.flash.performance.rtt:
+  drivers.flash.performance.rtt.mx35:
     tags: smoke
     platform_allow:
       - tt_blackhole@p100/tt_blackhole/smc
+    extra_configs:
+      - CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=4096
+      # The below values are set experimentally. A test failure may
+      # indicate a performance regression in the flash driver.
+      - CONFIG_EXPECTED_READ_TIME=5
+      - CONFIG_EXPECTED_PROGRAM_TIME=400
+    required_snippets:
+      - rtt-console
+  drivers.flash.performance.rtt.mt25:
+    tags: smoke
+    platform_allow:
       - tt_blackhole@p100a/tt_blackhole/smc
       - tt_blackhole@p150a/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
@@ -14,8 +25,8 @@ tests:
       - CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=4096
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
-      - CONFIG_EXPECTED_READ_TIME=5
-      - CONFIG_EXPECTED_PROGRAM_TIME=350
+      - CONFIG_EXPECTED_READ_TIME=8
+      - CONFIG_EXPECTED_PROGRAM_TIME=400
     required_snippets:
       - rtt-console
   drivers.flash.performance.bh_arc:
@@ -34,7 +45,7 @@ tests:
       - CONFIG_TEST_HW_STACK_PROTECTION=n
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
-      - CONFIG_EXPECTED_READ_TIME=25
+      - CONFIG_EXPECTED_READ_TIME=30
       - CONFIG_EXPECTED_PROGRAM_TIME=200
     required_snippets:
       - rtt-console

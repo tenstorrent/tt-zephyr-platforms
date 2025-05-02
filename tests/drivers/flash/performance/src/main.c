@@ -77,8 +77,8 @@ ZTEST(flash_driver_perf, test_read_perf)
 	rc = flash_read_wrap(flash_dev, TEST_AREA_OFFSET, buf, EXPECTED_SIZE);
 	delta = k_uptime_delta(&ts);
 	zassert_equal(rc, 0, "Cannot read flash");
+	TC_PRINT("Read performance test ran in %lld ms\n", delta);
 	zassert_true(delta < CONFIG_EXPECTED_READ_TIME, "Read performance test failed");
-	TC_PRINT("Read performance test passed in %lld ms\n", delta);
 }
 
 ZTEST(flash_driver_perf, test_program_perf)
@@ -97,8 +97,8 @@ ZTEST(flash_driver_perf, test_program_perf)
 	rc = flash_program_wrap(flash_dev, TEST_AREA_OFFSET, buf, EXPECTED_SIZE);
 	delta = k_uptime_delta(&ts);
 	zassert_equal(rc, 0, "Cannot program flash");
+	TC_PRINT("Program performance test ran in %lld ms\n", delta);
 	zassert_true(delta < CONFIG_EXPECTED_PROGRAM_TIME, "Program performance test failed");
-	TC_PRINT("Program performance test passed in %lld ms\n", delta);
 	/* Read back the data */
 	rc = flash_read_wrap(flash_dev, TEST_AREA_OFFSET, check_buf, EXPECTED_SIZE);
 	zassert_equal(rc, 0, "Cannot read flash");
