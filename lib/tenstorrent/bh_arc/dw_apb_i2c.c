@@ -210,7 +210,7 @@ static inline uint32_t GetI2CPadDataAddr(uint32_t id)
 }
 
 /* Bitbang recovery sequence on I2C bus */
-static void I2CRecoverBus(uint32_t id)
+void I2CRecoverBus(uint32_t id)
 {
 	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
 	uint32_t i2c_cntl = (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |

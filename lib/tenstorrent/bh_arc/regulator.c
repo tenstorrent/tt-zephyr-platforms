@@ -311,6 +311,8 @@ uint32_t RegulatorInit(PcbType board_type)
 			if (i2c_error) {
 				LOG_WRN("Vcore regulator init retried on cmd %#x with error %#x",
 					regulator_data->cmd, i2c_error);
+				/* First, try a bus recovery */
+				I2CRecoverBus(PMBUS_MST_ID);
 				/* Retry once */
 				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
 					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
