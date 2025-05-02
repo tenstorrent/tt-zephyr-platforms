@@ -75,11 +75,14 @@ jobs:
         run: |
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
+            --retry-interval 5 \
             -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
+            -T samples -T tests -T ../tt-zephyr-platforms/tests \
+            -T ../tt-zephyr-platforms/samples \
             --outdir twister-bmc-smoke
 
       - name: Upload BMC Smoke Tests
@@ -112,11 +115,14 @@ jobs:
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i --retry-failed 3 \
+            --retry-interval 5 \
             -p $SMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
+            -T samples -T tests -T ../tt-zephyr-platforms/tests \
+            -T ../tt-zephyr-platforms/samples \
             --outdir twister-smc-smoke
 
       - name: Upload SMC Smoke Tests
