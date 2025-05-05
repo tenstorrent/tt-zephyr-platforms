@@ -1,6 +1,16 @@
 # Structure in this doc is intentionally borrowed from the Zephyr Project
 # See https://github.com/zephyrproject-rtos/zephyr/tree/main/MAINTAINERS.yml
 
+Continuous Integration:
+  status: maintained
+  maintainers:
+    - cfriedt
+    - danieldegrasse
+  files:
+    - .github/workflows/
+  labels:
+    - "ci ♾️"
+
 Release Notes:
   status: maintained
   maintainers:
