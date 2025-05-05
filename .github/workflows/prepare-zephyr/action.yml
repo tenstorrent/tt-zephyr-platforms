@@ -26,6 +26,8 @@ runs:
       shell: bash
       run: |
         if ! command -v curl &> /dev/null ; then
+          # Patch the HTTP urls to use HTTPs, required on gitlab self hosted runners
+          sed -i 's/http:/https:/g'  /etc/apt/sources.list
           apt-get update
           apt-get install -y curl
         fi
