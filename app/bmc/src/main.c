@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include <app_version.h>
@@ -304,7 +305,7 @@ int main(void)
 
 	uint16_t max_pwr = detect_max_pwr();
 
-	while (1) {
+	while (true) {
 		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(20));
 
 		/* handler for therm trip */
