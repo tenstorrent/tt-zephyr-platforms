@@ -1,0 +1,62 @@
+# Structure in this doc is intentionally borrowed from the Zephyr Project
+# See https://github.com/zephyrproject-rtos/zephyr/tree/main/MAINTAINERS.yml
+
+Release Notes:
+  status: maintained
+  maintainers:
+    - cfriedt
+  files:
+    - doc/release/release-notes-*
+    - doc/release/release-notes-*
+  labels:
+    - "release ✅"
+
+"West project: cmsis":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: hal_stm32":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: mbedtls":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: mcuboot":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: nanopb":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: segger":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
+"West project: zephyr":
+  status: odd fixes
+  files: []
+  labels:
+    - "zephyr 🪁"
+  description: |
+    Maintained upstream.
