@@ -11,6 +11,7 @@
  */
 
 #include <string.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/kernel.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
@@ -229,7 +230,7 @@ int32_t Bm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	current = UNALIGNED_GET((uint32_t *)data);
+	power = sys_get_le32(data) * 12;
 
 	return 0;
 }
@@ -240,7 +241,7 @@ int32_t Bm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	power = UNALIGNED_GET((uint32_t *)data);
+	power = sys_get_le32(data);
 
 	return 0;
 }

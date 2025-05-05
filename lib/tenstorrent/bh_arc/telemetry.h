@@ -123,7 +123,6 @@ typedef enum {
 	/* Board telemetry */
 	FAN_SPEED,
 	FAN_RPM,
-	INPUT_CURRENT,
 	BOARD_PWR_LIMIT,
 	INPUT_POWER,
 

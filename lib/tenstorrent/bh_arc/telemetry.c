@@ -263,8 +263,6 @@ static void update_telemetry(void)
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
 	UpdateGddrTelemetry();
 	telemetry[MAX_GDDR_TEMP] = GetMaxGDDRTemp();
-	telemetry[INPUT_CURRENT] =
-		GetInputCurrent(); /* Input current - reported in A in signed int 16.16 format */
 	telemetry[INPUT_POWER] =
 		GetInputPower();      /* Input power - reported in W in unsigned int 16.16 format */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
@@ -310,23 +308,22 @@ static void update_tag_table(void)
 	tag_table[34] = (struct telemetry_entry){TAG_ENABLED_GDDR, ENABLED_GDDR};
 	tag_table[35] = (struct telemetry_entry){TAG_ENABLED_L2CPU, ENABLED_L2CPU};
 	tag_table[36] = (struct telemetry_entry){TAG_PCIE_USAGE, PCIE_USAGE};
-	tag_table[37] = (struct telemetry_entry){TAG_INPUT_CURRENT, INPUT_CURRENT};
-	tag_table[38] = (struct telemetry_entry){TAG_NOC_TRANSLATION, NOC_TRANSLATION};
-	tag_table[39] = (struct telemetry_entry){TAG_FAN_RPM, FAN_RPM};
-	tag_table[40] = (struct telemetry_entry){TAG_GDDR_0_1_TEMP, GDDR_0_1_TEMP};
-	tag_table[41] = (struct telemetry_entry){TAG_GDDR_2_3_TEMP, GDDR_2_3_TEMP};
-	tag_table[42] = (struct telemetry_entry){TAG_GDDR_4_5_TEMP, GDDR_4_5_TEMP};
-	tag_table[43] = (struct telemetry_entry){TAG_GDDR_6_7_TEMP, GDDR_6_7_TEMP};
-	tag_table[44] = (struct telemetry_entry){TAG_GDDR_0_1_CORR_ERRS, GDDR_0_1_CORR_ERRS};
-	tag_table[45] = (struct telemetry_entry){TAG_GDDR_2_3_CORR_ERRS, GDDR_2_3_CORR_ERRS};
-	tag_table[46] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS, GDDR_4_5_CORR_ERRS};
-	tag_table[47] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
-	tag_table[48] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
-	tag_table[49] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
-	tag_table[50] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
-	tag_table[51] = (struct telemetry_entry){TAG_BOARD_PWR_LIMIT, BOARD_PWR_LIMIT};
-	tag_table[52] = (struct telemetry_entry){TAG_INPUT_POWER, INPUT_POWER};
-	tag_table[53] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
+	tag_table[37] = (struct telemetry_entry){TAG_NOC_TRANSLATION, NOC_TRANSLATION};
+	tag_table[38] = (struct telemetry_entry){TAG_FAN_RPM, FAN_RPM};
+	tag_table[39] = (struct telemetry_entry){TAG_GDDR_0_1_TEMP, GDDR_0_1_TEMP};
+	tag_table[40] = (struct telemetry_entry){TAG_GDDR_2_3_TEMP, GDDR_2_3_TEMP};
+	tag_table[41] = (struct telemetry_entry){TAG_GDDR_4_5_TEMP, GDDR_4_5_TEMP};
+	tag_table[42] = (struct telemetry_entry){TAG_GDDR_6_7_TEMP, GDDR_6_7_TEMP};
+	tag_table[43] = (struct telemetry_entry){TAG_GDDR_0_1_CORR_ERRS, GDDR_0_1_CORR_ERRS};
+	tag_table[44] = (struct telemetry_entry){TAG_GDDR_2_3_CORR_ERRS, GDDR_2_3_CORR_ERRS};
+	tag_table[45] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS, GDDR_4_5_CORR_ERRS};
+	tag_table[46] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS, GDDR_6_7_CORR_ERRS};
+	tag_table[47] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
+	tag_table[48] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
+	tag_table[49] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
+	tag_table[50] = (struct telemetry_entry){TAG_BOARD_PWR_LIMIT, BOARD_PWR_LIMIT};
+	tag_table[51] = (struct telemetry_entry){TAG_INPUT_POWER, INPUT_POWER};
+	tag_table[52] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
 
 /* Handler functions for zephyr timer and worker objects */

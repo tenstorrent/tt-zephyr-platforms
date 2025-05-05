@@ -58,15 +58,6 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 	return ret;
 }
 
-int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
-{
-	int ret;
-
-	ret = bharc_smbus_block_write(&chip->config.arc, 0x22, 4, (uint8_t *)current);
-
-	return ret;
-}
-
 int bh_chip_set_input_pwr(struct bh_chip *chip, uint32_t *power)
 {
 	int ret;

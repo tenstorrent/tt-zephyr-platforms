@@ -28,7 +28,6 @@ typedef struct {
 
 static Cm2DmMsgState cm2dm_msg_state;
 static bool dmfw_ping_valid;
-static int32_t current;
 static uint32_t power;
 K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
 
@@ -231,17 +230,6 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t Dm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
-{
-	if (size != 4) {
-		return -1;
-	}
-
-	current = *(int32_t *)data;
-
-	return 0;
-}
-
 int32_t Dm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 4) {
@@ -254,10 +242,6 @@ int32_t Dm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
 }
 
 /* TODO: Put these somewhere else? */
-int32_t GetInputCurrent(void)
-{
-	return current;
-}
 
 uint32_t GetInputPower(void)
 {
