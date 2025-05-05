@@ -157,107 +157,109 @@ static SmbusConfig smbus_config = {
 		[0x10] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = 6,
-			  .handler = {
+			  .handler =
+				  {
 
 					  .send_handler = &Cm2BmMsgReqSmbusHandler,
 				  }},
 		[0x11] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
+			  .handler =
+				  {
 
 					  .rcv_handler = &Cm2BmMsgAckSmbusHandler,
 				  }},
 		[0x20] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = sizeof(bmStaticInfo),
-			  .handler = {
+			  .handler =
+				  {
 
 					  .rcv_handler = &Bm2CmSendDataHandler,
 				  }},
 		[0x21] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
+			  .handler =
+				  {
 
 					  .rcv_handler = &Bm2CmPingHandler,
 				  }},
-		[0x22] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockWrite,
-			  .expected_blocksize = 4,
-			  .handler = {
-					  .rcv_handler = &Bm2CmSendCurrentHandler
-			  }},
-		[0x23] = {
-			.valid = 1,
-			.trans_type = kSmbusTransWriteWord,
-			.handler = {
-				.rcv_handler = &Bm2CmSendFanRPMHandler
-			}},
+		[0x23] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteWord,
+			  .handler = {.rcv_handler = &Bm2CmSendFanRPMHandler}},
 #ifndef CONFIG_TT_SMC_RECOVERY
 		[0x24] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {
-					  .rcv_handler = &Bm2CmSetBoardPwrLimit
-			  }},
-		[0x25] = {
-			.valid = 1,
-			.trans_type = kSmbusTransBlockWrite,
-			.expected_blocksize = 4,
-			.handler = {
-					.rcv_handler = &Bm2CmSendPwrHandler
-			}},
+			  .handler = {.rcv_handler = &Bm2CmSetBoardPwrLimit}},
+		[0x25] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockWrite,
+			  .expected_blocksize = 4,
+			  .handler = {.rcv_handler = &Bm2CmSendPwrHandler}},
 #endif
-		[0xD8] = {
+		[0xD8] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransReadByte,
-				.handler = {
+				.handler =
+					{
 
 						.send_handler = &ReadByteTest,
 					},
 			},
-		[0xD9] = {
+		[0xD9] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransWriteByte,
-				.handler = {
+				.handler =
+					{
 
 						.rcv_handler = &WriteByteTest,
 					},
 			},
-		[0xDA] = {
+		[0xDA] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransReadWord,
-				.handler = {
+				.handler =
+					{
 
 						.send_handler = &ReadWordTest,
 					},
 			},
-		[0xDB] = {
+		[0xDB] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransWriteWord,
-				.handler = {
+				.handler =
+					{
 
 						.rcv_handler = &WriteWordTest,
 					},
 			},
-		[0xDC] = {
+		[0xDC] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransBlockRead,
 				.expected_blocksize = 4,
-				.handler = {
+				.handler =
+					{
 
 						.send_handler = &BlockReadTest,
 					},
 			},
-		[0xDD] = {
+		[0xDD] =
+			{
 
 				.valid = 1,
 				.trans_type = kSmbusTransBlockWrite,
 				.expected_blocksize = 4,
-				.handler = {
+				.handler =
+					{
 
 						.rcv_handler = &BlockWriteTest,
 					},

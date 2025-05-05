@@ -223,17 +223,6 @@ int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t Bm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
-{
-	if (size != 4) {
-		return -1;
-	}
-
-	current = UNALIGNED_GET((uint32_t *)data);
-
-	return 0;
-}
-
 int32_t Bm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 4) {
