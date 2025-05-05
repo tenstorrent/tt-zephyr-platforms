@@ -176,6 +176,7 @@ uint16_t detect_max_pwr(void)
 		} else {
 			psu_pwr = 0;
 		}
+		gpio_pin_configure_dt(&psu_sense0, GPIO_INPUT);
 	}
 
 	return MIN(board_pwr, psu_pwr);
@@ -301,6 +302,8 @@ int main(void)
 	bmStaticInfo static_info =
 		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
+	uint16_t max_pwr = detect_max_pwr();
+
 	while (1) {
 		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(20));
 
@@ -344,9 +347,6 @@ int main(void)
 				if (bh_chip_set_static_info(chip, &static_info) == 0) {
 					chip->data.arc_just_reset = false;
 				}
-				/* TODO: we don't have to read this per chip */
-				uint16_t max_pwr = detect_max_pwr();
-
 				bh_chip_set_board_pwr_lim(chip, max_pwr);
 			}
 		}
