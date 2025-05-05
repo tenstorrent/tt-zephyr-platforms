@@ -1,0 +1,10 @@
+diff --git a/scripts/west_commands/runners/core.py b/scripts/west_commands/runners/core.py
+index 20e4b72a8c3..0b99dc9ed7f 100644
+--- a/scripts/west_commands/runners/core.py
++++ b/scripts/west_commands/runners/core.py
+@@ -955,4 +955,4 @@ class ZephyrBinaryRunner(abc.ABC):
+                 elif key.fileobj == sock:
+                     resp = sock.recv(2048)
+                     if resp:
+-                        print(resp.decode())
++                        print(resp.decode(), end='')

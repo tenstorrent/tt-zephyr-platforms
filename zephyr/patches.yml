@@ -59,3 +59,12 @@ patches:
     date: 2025-02-08
     comments: |
       Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
+  - path: zephyr/scripts-runners-fix-telnet-decode.patch
+    sha256sum: 3271f85bb538e9146d4bff2fd44e14793799320ad8f9364d9df8a551c0c17961
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-05-05
+    comments: |
+      Fix python implementation of west telnet client to not print newlines
+      after decoding server data
