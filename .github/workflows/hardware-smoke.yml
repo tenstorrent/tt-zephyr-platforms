@@ -158,108 +158,44 @@ jobs:
             runs-on:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
-    env:
-      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.58.0-rc26-5-g668476a4d2
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+        - /dev/hugepages:/dev/hugepages
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: tt-zephyr-platforms
-          ref: ${{ github.ref }}
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
-
-      - name: Generate board names
+    env:
+      ARCH_NAME: blackhole
+    defaults:
+      run:
         shell: bash
+        working-directory: /home/user/tt-metal/
+    steps:
+      - name: Install Unzip
         run: |
-          case "${{ matrix.config.board }}" in
-            p100) SMC_BOARD=tt_blackhole@p100/tt_blackhole/smc;;
-            p100a) SMC_BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
-            p150a) SMC_BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
-            p300a) SMC_BOARD=tt_blackhole@p300a/tt_blackhole/smc;;
-            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
-          esac
-          case "${{ matrix.config.board }}" in
-            p100) BMC_BOARD=tt_blackhole@p100/tt_blackhole/bmc;;
-            p100a) BMC_BOARD=tt_blackhole@p100a/tt_blackhole/bmc;;
-            p150a) BMC_BOARD=tt_blackhole@p150a/tt_blackhole/bmc;;
-            p300) BMC_BOARD=p300/tt_blackhole/bmc;;
-            *) echo "Unknown board: ${{ matrix.config.board }}"; exit 1;;
-          esac
-          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
-          echo "BMC_BOARD=$BMC_BOARD" >> "$GITHUB_ENV"
-
-      - name: run-e2e-tests
-        working-directory: zephyr
+          sudo apt update
+          sudo apt install -y unzip protobuf-compiler
+      - name: Download the latest firmware bundle
+        # Replace this with the reliance on the previous workflow that builds the firmware bundle.
         run: |
-          # TODO: ideally we would use one twister command to build and
-          # flash BMC and SMC firmware, but since each chip uses a separate
-          # debug adapter this doesn't work. For now, just flash BMC
-          # then run twister with SMC firmware
-          ./scripts/twister -i --retry-failed 3 \
-            --retry-interval 5 \
-            --tag e2e \
-            -p $BMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
-            --outdir twister-bmc-e2e
-          # Run E2E test to verify BMC and SMC firmware boot, and that
-          # the SMC firmware sets up PCIe and ARC messages
-          ./scripts/twister -i --retry-failed 3 \
-            -p $SMC_BOARD --device-testing \
-            --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
-            --outdir twister-smc-e2e
-
-      - name: Upload E2E Test results
+          curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
+          unzip -o combined-fwbundle.zip
+      - name: Run the rescan-pcie.sh script
+        run: |
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
+          source /tmp/rescan-pcie.sh
+      - name: Flash the firmware
+        run: |
+          sudo chmod -R a+rwX $HOME/.cargo $HOME/.cache
+          python -m venv .env
+          source .env/bin/activate
+          pip install git+https://github.com/tenstorrent/tt-flash.git
+          tt-flash --fw-tar fw_pack*.fwbundle --force
+      - name: Run Container Test
+        run: |
+          sh -c "$TEST_COMMAND"
+      - name: cleanup
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: E2E test results (${{ matrix.config.board }})
-          path: |
-            zephyr/twister-*-e2e/**/handler.log
-            zephyr/twister-*-e2e/**/zephyr.dts
-            zephyr/twister-*-e2e/**/.config
-            zephyr/twister-*-e2e/**/*.map
-            zephyr/twister-*-e2e/**/zephyr.elf
-            zephyr/twister-*-e2e/**/*.lst
-            zephyr/twister-*-e2e/twister.log
-            zephyr/twister-*-e2e/twister.json
-
-      - name: run-e2e-flash-test
-        working-directory: zephyr
         run: |
-          # Run a full flash test, using tt-flash as the runner
-          ./scripts/twister -i -p $SMC_BOARD \
-            --tag e2e-flash -T ../tt-zephyr-platforms/app \
-            --west-flash="--force" \
-            --west-runner tt_flash \
-            --device-testing -c -ll DEBUG \
-            --device-serial-pty rtt \
-            --outdir twister-e2e-flash
-
-      - name: Upload E2E Flash Results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: E2E Flash results (${{ matrix.config.board }})
-          path: |
-            zephyr/twister-e2e-flash/**/update.fwbundle
-
-      - name: Print RTT logs
-        if: ${{ failure() }}
-        working-directory: tt-zephyr-platforms
-        run: |
-          echo "BMC RTT logs:"
-          python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
-          echo "SMC RTT logs:"
-          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          # Clean out metal
+          rm -rf combined-fwbundle.zip fw_pack*.fwbundle
