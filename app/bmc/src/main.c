@@ -304,8 +304,11 @@ int main(void)
 
 	uint16_t max_pwr = detect_max_pwr();
 
+	int main_loop_start_time = k_uptime_get();
+	int main_loop_elapsed_time;
+
 	while (1) {
-		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(20));
+		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(1));
 
 		/* handler for therm trip */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
@@ -340,8 +343,9 @@ int main(void)
 			}
 		}
 
-		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
-		 */
+		/* TODO(drosen): Turn this into a task which will re-arm until static data
+		* is sent
+		*/
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_just_reset) {
 				if (bh_chip_set_static_info(chip, &static_info) == 0) {
@@ -351,28 +355,35 @@ int main(void)
 			}
 		}
 
+		/* Send TBP readings to ASIC */
 		if (IS_ENABLED(CONFIG_INA228)) {
 			ina228_current_update();
 		}
 
-		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-			uint16_t rpm = get_fan_rpm();
+		main_loop_elapsed_time = k_uptime_get() - main_loop_start_time;
+
+		if (main_loop_elapsed_time > 20) {
+			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+				uint16_t rpm = get_fan_rpm();
+
+				ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+					bh_chip_set_fan_rpm(chip, rpm);
+				}
+			}
 
 			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-				bh_chip_set_fan_rpm(chip, rpm);
+				process_cm2bm_message(chip);
 			}
-		}
 
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			process_cm2bm_message(chip);
-		}
+			/*
+			 * Really only matters if running without security... but
+			 * cm should register that it is on the pcie bus and therefore can be an
+			 * update candidate. If chips that are on the bus see that an update has
+			 * been requested they can update?
+			 */
 
-		/*
-		 * Really only matters if running without security... but
-		 * cm should register that it is on the pcie bus and therefore can be an update
-		 * candidate. If chips that are on the bus see that an update has been requested
-		 * they can update?
-		 */
+			main_loop_start_time = k_uptime_get();
+		}
 	}
 
 	return EXIT_SUCCESS;
