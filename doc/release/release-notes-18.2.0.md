@@ -15,6 +15,9 @@ Major enhancements with this release include:
   * Added ETH mailbox with 2 messages
   * ETH msg LINK_STATUS_CHECK: checks for link status
   * ETH msg RELEASE_CORE: Releases control of RISC0 to run function at specified L1 addr
+* Virtual UART now enabled by default for Blackhole firmware bundles
+  * Creates an in-memory virtual uart for firmware observability and debugging
+  * Use `tt-console` to view `printk()` and `LOG_*()` messages from the host
 
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
