@@ -141,8 +141,6 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset);
 int therm_trip_gpio_setup(struct bh_chip *chip);
 int pgood_gpio_setup(struct bh_chip *chip);
 
-void pgood_fault_work_handler(struct k_work *work);
-
 #ifdef __cplusplus
 }
 #endif
