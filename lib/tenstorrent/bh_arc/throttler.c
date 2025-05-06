@@ -130,8 +130,8 @@ static Throttler throttler[kThrottlerCount] = {
 			.params = {
 
 					.alpha_filter = 1.0,
-					.p_gain = 0.2,
-					.d_gain = 0,
+					.p_gain = 0.1,
+					.d_gain = 0.1,
 			}
 	},
 	[kThrottlerGDDRThm] = {
