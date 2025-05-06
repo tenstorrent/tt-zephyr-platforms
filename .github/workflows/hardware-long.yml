@@ -155,7 +155,6 @@ jobs:
           apt update
           apt install -y git-lfs cargo unzip
       - name: Download the latest firmware bundle
-        # How do I do this?
         uses: actions/download-artifact@v4
         with:
           name: combined-fwbundle
