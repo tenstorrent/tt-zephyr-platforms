@@ -10,3 +10,11 @@
 &i2c2 {
 	status = "disabled";
 };
+
+/*
+ * ARC clock will be raised to 800MHz in the application
+ */
+&sysclk {
+	status = "okay";
+	clock-frequency = <800000000>;
+};

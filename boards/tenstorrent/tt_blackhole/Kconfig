@@ -3,7 +3,7 @@
 
 config FLASH_TRAINING_PRIORITY
 	int "Flash training priority"
-	default 85
+	default 95
 	help
 	  Initialization priority for flash training. This is used to train the
 	  SSI RX DELAY value for the best reliability. Must be greater than

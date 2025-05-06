@@ -206,5 +206,16 @@ static int flash_training_init(void)
 	return mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
 }
 
+static int flash_training_pre_reclock(void)
+{
+	return flash_training_init();
+}
+
+static int flash_training_post_reclock(void)
+{
+	return flash_training_init();
+}
+
 SYS_INIT(flash_reset_init, POST_KERNEL, CONFIG_FLASH_RESET_PRIORITY);
-SYS_INIT(flash_training_init, POST_KERNEL, CONFIG_FLASH_TRAINING_PRIORITY);
+SYS_INIT(flash_training_pre_reclock, POST_KERNEL, CONFIG_FLASH_TRAINING_PRIORITY);
+SYS_INIT(flash_training_post_reclock, APPLICATION, CONFIG_FLASH_TRAINING_PRIORITY);
