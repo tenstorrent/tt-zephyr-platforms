@@ -24,7 +24,7 @@
 #include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
-#include <tenstorrent/bm_event.h>
+#include <tenstorrent/event.h>
 #include <tenstorrent/jtag_bootrom.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
@@ -306,7 +306,7 @@ int main(void)
 	uint16_t max_pwr = detect_max_pwr();
 
 	while (true) {
-		bm_event_wait(BM_EVENT_WAKE, K_MSEC(20));
+		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
 
 		/* handler for therm trip */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {

@@ -6,7 +6,7 @@ config TT_JTAG_BOOTROM
 	depends on JTAG
 	depends on TT_BH_CHIP
 	depends on GPIO
-	depends on TT_BM_EVENT
+	depends on TT_EVENT
 	help
 	  Use JTAG to load bootrom.
 

@@ -6,7 +6,7 @@
 
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/fan_ctrl.h>
-#include <tenstorrent/bm_event.h>
+#include <tenstorrent/event.h>
 
 #include <zephyr/kernel.h>
 #include <string.h>
@@ -114,7 +114,7 @@ void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uin
 	struct bh_chip *chip = CONTAINER_OF(cb, struct bh_chip, therm_trip_cb);
 	chip->data.therm_trip_triggered = true;
 	bh_chip_cancel_bus_transfer_set(chip);
-	bm_event_post(BM_EVENT_WAKE);
+	tt_event_post(TT_EVENT_WAKE);
 }
 
 int therm_trip_gpio_setup(struct bh_chip *chip)

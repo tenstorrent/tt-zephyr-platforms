@@ -1,0 +1,16 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_EVENT
+	bool "Tenstorrent event support"
+	depends on EVENTS
+	help
+	  Tenstorrent event support. This is a simple wrapper around the k_event API with predefined
+	  events specific to Tenstorrent products. It is useful for local dispatching independent
+	  events accumulated from software and hardware sources to event handlers that may or may not
+	  operate in parallel or in sequence. Like the k_event API, events are not queued; they are
+	  either pending or not pending and maybe be combined together as a bitmask.
+
+module = TT_EVENT
+module-str = TT Event
+source "subsys/logging/Kconfig.template.log_config"
