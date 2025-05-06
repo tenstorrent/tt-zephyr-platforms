@@ -79,14 +79,22 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter):
         )
     unlaunched_dut._flash_and_run()
     time.sleep(1)
-    try:
-        chips = pyluwen.detect_chips()
-    except Exception:
-        print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
+    start = time.time()
+    # Attempt to detect the ARC chip for 15 seconds
+    timeout = 15
+    chips = []
+    while True:
+        try:
+            chips = pyluwen.detect_chips()
+        except Exception:
+            print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
+        if len(chips) > 0:
+            logger.info("Detected ARC chip")
+            break
+        time.sleep(0.5)
+        if time.time() - start > timeout:
+            raise RuntimeError("Did not detect ARC chip within timeout period")
         rescan_pcie()
-        chips = pyluwen.detect_chips()
-    if len(chips) == 0:
-        raise RuntimeError("PCIe card was not detected on this system")
     chip = chips[0]
     try:
         status = chip.axi_read32(ARC_STATUS)
