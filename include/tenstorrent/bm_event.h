@@ -10,9 +10,17 @@
 #include <stdint.h>
 #include <zephyr/kernel.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define WAKE_BM_MAIN_LOOP 1
 
 uint32_t bm_event_post(uint32_t events);
 uint32_t bm_event_wait(uint32_t events, k_timeout_t timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
