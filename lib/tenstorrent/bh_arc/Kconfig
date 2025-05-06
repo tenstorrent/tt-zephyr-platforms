@@ -64,3 +64,10 @@ config TT_BH_ARC_SYSINIT
 	  Initialize blackhole firmware and hardware prior to starting the application.
 
 	  This allows our library drivers to work better with Zephyr's driver model.
+
+config TT_BH_ARC_SYSINIT_PRIORITY
+	int "Priority of bh_arc FW and HW init"
+	default 93
+	depends on TT_BH_ARC_SYSINIT
+	help
+	  Priority of the SYS_INIT call that initializes blackhole firmware and hardware.

@@ -89,7 +89,7 @@ static int _InitFW(void)
 	return InitFW(APPVERSION);
 }
 
-SYS_INIT(_InitFW, APPLICATION, 98);
+SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
 
 #ifdef CONFIG_UART_TT_VIRT
 #include "status_reg.h"
