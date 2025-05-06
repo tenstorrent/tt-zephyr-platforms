@@ -27,20 +27,22 @@ jobs:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/tt-metalium/ubuntu-22.04-dev-amd64:bd47135f35f7b26851eb09066076fb3e6074c54f # Change this to a tag when metal has release versions for this image.
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.58.0-rc26-5-g668476a4d2
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     env:
       ARCH_NAME: blackhole
-      TT_METAL_HOME: ${{ github.workspace }}/tt-metal
-      PYTHONPATH: ${{ github.workspace }}/tt-metal
+    defaults:
+      run:
+        shell: bash
+        working-directory: /home/user/tt-metal/
     steps:
-      - name: Install Git LFS and Cargo (for tt-flash)
+      - name: Install Unzip
         run: |
-          apt update
-          apt install -y git-lfs cargo unzip
+          sudo apt update
+          sudo apt install -y unzip protobuf-compiler
       - name: Download the latest firmware bundle
         # Replace this with the reliance on the previous workflow that builds the firmware bundle.
         run: |
@@ -49,68 +51,21 @@ jobs:
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
-          . /tmp/rescan-pcie.sh
+          source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |
+          sudo chmod -R a+rwX $HOME/.cargo $HOME/.cache
+          python -m venv .env
+          source .env/bin/activate
           pip install git+https://github.com/tenstorrent/tt-flash.git
           tt-flash --fw-tar fw_pack*.fwbundle --force
-      - name: Checkout Metal
-        uses: actions/checkout@v4
-        with:
-          repository: tenstorrent/tt-metal
-          path: tt-metal
-          lfs: true
-          submodules: true
-          ref: v0.58.0-rc17
-          fetch-depth: 500
-          fetch-tags: true
-      - name: Build Metal UMD Tests
-        working-directory: tt-metal
-        shell: bash
-        env:
-          ARCH_NAME: blackhole
-          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
-          PYTHONPATH: ${{ github.workspace }}/tt-metal
+      - name: Run Container Test
         run: |
-          # Build metal
-          ./build_metal.sh --build-umd-tests
-      - name: Run Metal UMD Tests
-        working-directory: tt-metal
-        shell: bash
-        env:
-          ARCH_NAME: blackhole
-          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
-        run: |
-          ./build/test/umd/blackhole/unit_tests
-      - name: Build Other Metal Tests
-        shell: bash
-        working-directory: tt-metal
-        env:
-          ARCH_NAME: blackhole
-          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
-        run: |
-          ./build_metal.sh --build-tests --build-programming-examples
-      - name: Run Metal Tests
-        shell: bash
-        working-directory: tt-metal
-        env:
-          ARCH_NAME: blackhole
-          TT_METAL_HOME: ${{ github.workspace }}/tt-metal
-        run: |
-          PYTHON_CMD=python3.10 source ./create_venv.sh
-          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardFixture.*"
-          #Tests Metal command queue basic apis
-          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardProgramFixture.*"
-          #Tests Metal program apis
-          TT_METAL_SKIP_ETH_CORES_WITH_RETRAIN=1 ./build/test/tt_metal/unit_tests_dispatch --gtest_filter="CommandQueueSingleCardBufferFixture.ShardedBufferLarge*ReadWrites"
-          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=RandomProgramFixture.*
-          ./build/test/tt_metal/unit_tests_api_blackhole --gtest_filter=*SimpleDram*:*SimpleL1*
-          ./build/test/tt_metal/unit_tests_dispatch --gtest_filter=CommandQueueSingleCardBufferFixture.*
+          sh -c "$TEST_COMMAND"
       - name: cleanup
         if: ${{ always() }}
         run: |
           # Clean out metal
-          rm -rf tt-metal
           rm -rf combined-fwbundle.zip fw_pack*.fwbundle
 
   reset-hammer-test:
