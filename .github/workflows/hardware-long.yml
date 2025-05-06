@@ -11,6 +11,119 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - p100
+          - p100a
+          - p150a
+          - p150b
+          - p150c
+          - p300a
+          - p300b
+          - p300c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+
+      - name: Generate BOARD
+        shell: bash
+        run: |
+          case "${{ matrix.board }}" in
+            p100) BOARD=tt_blackhole@p100/tt_blackhole/smc;;
+            p100a) BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
+            p150a) BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
+            p150b) BOARD=tt_blackhole@p150b/tt_blackhole/smc;;
+            p150c) BOARD=tt_blackhole@p150c/tt_blackhole/smc;;
+            p300a) BOARD=tt_blackhole@p300a/tt_blackhole/smc;;
+            p300b) BOARD=tt_blackhole@p300b/tt_blackhole/smc;;
+            p300c) BOARD=tt_blackhole@p300c/tt_blackhole/smc;;
+            *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
+          esac
+          echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
+
+      - name: Check signing key
+        shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -gt 42 ]; then
+            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build firmware bundle
+        shell: bash
+        run: |
+          if [ "$BOARD" = "" ]; then
+            echo "BOARD is not set"
+            exit 1
+          fi
+
+          west build \
+            -d build-${{ matrix.board }} \
+            --sysbuild \
+            -p \
+            -b $BOARD \
+            tt-zephyr-platforms/app/smc \
+            -- \
+              -DEXTRA_CONF_FILE=vuart.conf \
+              -DDTC_OVERLAY_FILE=vuart.overlay \
+              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
+              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
+
+      - name: Upload firmware assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: |
+            build-${{ matrix.board }}/update.fwbundle
+            build-${{ matrix.board }}/**/.config
+            build-${{ matrix.board }}/**/devicetree_generated.h
+            build-${{ matrix.board }}/**/zephyr.bin
+            build-${{ matrix.board }}/**/zephyr.dts
+            build-${{ matrix.board }}/**/zephyr.elf
+            build-${{ matrix.board }}/**/zephyr.hex
+            build-${{ matrix.board }}/**/zephyr.map
+            build-${{ matrix.board }}/**/zephyr.signed.bin
+            build-${{ matrix.board }}/**/zephyr.signed.hex
+            build-${{ matrix.board }}/**/zephyr.stat
+  build-combined-fwbundle:
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+
+      - name: Download firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: tt-zephyr-platforms
+
+      - name: Build Combined Firmware Bundle
+        shell: bash
+        run: |
+          pip install pykwalify
+          BUNDLE_TEMP_PREFIX="$PWD/tt-zephyr-platforms/firmware-" \
+            ./tt-zephyr-platforms/scripts/build-combined-fwbundle.sh
+
+      - name: Upload Combined Firmware Bundle Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: |
+            fw_pack*.fwbundle
   hardware-metal-test:
     strategy:
       fail-fast: false
@@ -42,10 +155,11 @@ jobs:
           apt update
           apt install -y git-lfs cargo unzip
       - name: Download the latest firmware bundle
-        # Replace this with the reliance on the previous workflow that builds the firmware bundle.
-        run: |
-          curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
-          unzip -o combined-fwbundle.zip
+        # How do I do this?
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: .
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
