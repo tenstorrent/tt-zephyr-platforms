@@ -46,7 +46,7 @@ jobs:
       - name: Download the latest firmware bundle
         # Replace this with the reliance on the previous workflow that builds the firmware bundle.
         run: |
-          curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
+          curl -L -o combined-fwbundle.zip https://github.com/tenstorrent/tt-zephyr-platforms/actions/runs/14777637991/artifacts/3044949010
           unzip -o combined-fwbundle.zip
       - name: Run the rescan-pcie.sh script
         run: |
