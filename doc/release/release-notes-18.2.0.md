@@ -8,8 +8,24 @@ Major enhancements with this release include:
 
 [comment]: <> (H3 Performance Improvements, if applicable)
 [comment]: <> (H3 New and Experimental Features, if applicable)
+
+### New Features
+
+* Update Blackhole ERISC FW to v1.4.0
+  * Added ETH mailbox with 2 messages
+  * ETH msg LINK_STATUS_CHECK: checks for link status
+  * ETH msg RELEASE_CORE: Releases control of RISC0 to run function at specified L1 addr
+
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
+
+### Stability Improvements
+
+* Update Blackhole ERISC FW to v1.4.0
+  * Improve link training sequence for greater success rate on loopback cases
+* Fix synchronization issue in BMFW that could result in potential deadlock / failure to enumerate
+* Improve SMC I2C recovery function, resulting in reset and re-enumeration success rate of 99.6%
+* PCIe Maximum Payload Size (MPS) now set by TT-KMD, improving VM stability
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
