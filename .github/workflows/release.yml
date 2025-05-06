@@ -7,25 +7,14 @@ on:
       - 'v*rc*'
 
 jobs:
-  build-release:
-    uses: ./.github/workflows/build-fw.yml
-    secrets:
-      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
-
-  publish-release:
-    needs: build-release
+  build-spdx:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
           ref: ${{ github.ref }}
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
-
-      - name: Get the version
-        id: get_version
+      - id: get_version
         run: |
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           echo "TRIMMED_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -35,12 +24,25 @@ jobs:
         with:
           args: spdx -o tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
 
-      - name: upload-spdx
+      - name: Upload SPDX
         uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
           name: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
           path: tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.spdx
+
+  build-release:
+    uses: ./.github/workflows/build-fw.yml
+    secrets:
+      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
+
+  publish-release:
+    needs: [build-release, build-spdx]
+    runs-on: ubuntu-24.04
+    steps:
+      - id: get_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "TRIMMED_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Download firmware artifacts
         uses: actions/download-artifact@v4
@@ -58,7 +60,8 @@ jobs:
           BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c"
 
           for REV in $BOARD_REVS; do
-            cp build-*/update.fwbundle $REV.fwbundle
+            mv firmware-$REV $REV
+            mv $REV/update.fwbundle $REV.fwbundle
           done
 
           zip -r -9 tt-zephyr-platforms-${{ steps.get_version.outputs.VERSION }}.zip $BOARD_REVS
