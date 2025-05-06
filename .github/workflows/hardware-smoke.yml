@@ -107,7 +107,7 @@ jobs:
             --tag e2e \
             -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
+            -T ../tt-zephyr-platforms/app \
             --outdir twister-bmc-e2e
 
           # Run tests tagged with "smoke"
@@ -209,7 +209,7 @@ jobs:
             --tag e2e \
             -p $BMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
+            -T ../tt-zephyr-platforms/app \
             --outdir twister-bmc-e2e
           # Run E2E test to verify BMC and SMC firmware boot, and that
           # the SMC firmware sets up PCIe and ARC messages
@@ -217,7 +217,7 @@ jobs:
             -p $SMC_BOARD --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app -ll DEBUG \
+            -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
 
       - name: Upload E2E Test results
@@ -243,7 +243,7 @@ jobs:
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
-            --device-testing -c -ll DEBUG \
+            --device-testing -c \
             --device-serial-pty rtt \
             --outdir twister-e2e-flash
 
