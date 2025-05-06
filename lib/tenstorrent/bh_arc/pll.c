@@ -331,11 +331,6 @@ void PLLUpdate(PLLNum pll, const PLLSettings *pll_settings)
 
 	WaitNs(300);
 
-	if (pll == PLL1) {
-		/* Only need to reinitialize spiclk if ARCCLK is updated */
-		/* ARCCLK is on PLL1, so use this for simplicity */
-		ReinitSpiclk();
-	}
 }
 
 static void enable_clk_counters(void)
@@ -401,7 +396,6 @@ void PLLInit(void)
 	WaitNs(300);
 
 	enable_clk_counters();
-	ReinitSpiclk();
 }
 
 uint32_t GetExtPostdiv(uint8_t postdiv_index, PLL_CNTL_PLL_CNTL_5_reg_u pll_cntl_5,
