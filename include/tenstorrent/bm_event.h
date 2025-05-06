@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define WAKE_BM_MAIN_LOOP 1
+#define BM_EVENT_WAKE 1
 
 uint32_t bm_event_post(uint32_t events);
 uint32_t bm_event_wait(uint32_t events, k_timeout_t timeout);

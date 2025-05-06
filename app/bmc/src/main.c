@@ -306,7 +306,7 @@ int main(void)
 	uint16_t max_pwr = detect_max_pwr();
 
 	while (true) {
-		bm_event_wait(WAKE_BM_MAIN_LOOP, K_MSEC(20));
+		bm_event_wait(BM_EVENT_WAKE, K_MSEC(20));
 
 		/* handler for therm trip */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
