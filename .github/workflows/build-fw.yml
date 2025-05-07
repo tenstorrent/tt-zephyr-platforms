@@ -7,7 +7,7 @@ on:
         required: true
     outputs:
       combined-fwbundle-artifact:
-        description: "Name the combined firmware bundle artifact"
+        description: "Name of the combined firmware bundle artifact"
   push:
     branches:
       - main
