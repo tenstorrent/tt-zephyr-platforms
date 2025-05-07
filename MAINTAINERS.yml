@@ -63,6 +63,13 @@ Release Notes:
   description: |
     Maintained upstream.
 
+"West project: libjaylink":
+  status: odd fixes
+  files: []
+  labels: []
+  description: |
+    Maintained upstream.
+
 "West project: zephyr":
   status: odd fixes
   files: []

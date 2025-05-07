@@ -1,4 +1,6 @@
+.libs/*
 .deps/*
+ar-lib
 Makefile
 Makefile.in
 aclocal.m4
@@ -7,8 +9,14 @@ compile
 config.h
 config.h.in
 config.status
+config.guess
+config.sub
 configure
 depcomp
 install-sh
 missing
+libmemdriver*
+libtool
+ltmain.sh
 stamp-h1
+tt-console

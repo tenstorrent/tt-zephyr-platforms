@@ -17,12 +17,19 @@ runs:
       with:
         python-version: '3.10'
 
-    - name: Install curl
+    - name: Install dependencies
       shell: bash
       run: |
         if ! command -v curl &> /dev/null ; then
-          apt-get update
-          apt-get install -y curl
+          sudo apt-get update
+          sudo apt-get install -y curl
+        fi
+        if pkg-config --exists libusb-1.0; then
+          echo "Found libusb"
+        else
+          echo "Installing libusb"
+          sudo apt-get update
+          sudo apt-get install -y libusb-1.0-0-dev
         fi
 
     - name: Install Rust
