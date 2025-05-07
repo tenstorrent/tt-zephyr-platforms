@@ -14,7 +14,6 @@ jobs:
   build-fw-artifact:
     uses: ./.github/workflows/build-fw.yml
     secrets: inherit
-    
   hardware-metal-test:
     needs: build-fw-artifact
     strategy:
