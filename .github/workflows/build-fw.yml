@@ -5,6 +5,9 @@ on:
     secrets:
       SIGNATURE_KEY:
         required: true
+    outputs:
+      combined-fwbundle-artifact:
+        description: "Name the combined firmware bundle artifact"
   push:
     branches:
       - main
@@ -151,6 +154,8 @@ jobs:
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
     needs: build
+    outputs:
+      combined-fwbundle-artifact: ${{ steps.set-output.outputs.combined_fwbundle_artifact }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -176,3 +181,7 @@ jobs:
           name: combined-fwbundle
           path: |
             fw_pack*.fwbundle
+
+      - name: Set combined firmware bundle output
+        id: set-output
+        run: echo "combined_fwbundle_artifact=combined-fwbundle" >> $GITHUB_OUTPUT
