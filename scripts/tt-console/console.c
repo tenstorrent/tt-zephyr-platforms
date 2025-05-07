@@ -4,11 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
- * Build with:
- * gcc -O0 -g -Wall -Wextra -Werror -std=gnu11 -I ../../include -o tt-console console.c
- */
-
 #ifndef __ZEPHYR__
 #include "attrs.x"
 #endif
