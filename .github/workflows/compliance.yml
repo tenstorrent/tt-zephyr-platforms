@@ -109,7 +109,6 @@ jobs:
           export ZEPHYR_BASE=$PWD/zephyr
           cd tt-zephyr-platforms
           if [[ ! -s "compliance.xml" ]]; then
-            echo "failed here 1 kk"
             exit 1;
           fi
 
