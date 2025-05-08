@@ -127,7 +127,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 	}
 }
 
-void ina228_pwr_update(void)
+void ina228_power_update(void)
 {
 	struct sensor_value sensor_val;
 
@@ -137,11 +137,11 @@ void ina228_pwr_update(void)
 	int32_t power = (sensor_val.val1 << 16) + (sensor_val.val2 * 65536ULL) / 1000000ULL;
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		bh_chip_set_input_pwr(chip, &power);
+		bh_chip_set_input_power(chip, &power);
 	}
 }
 
-uint16_t detect_max_pwr(void)
+uint16_t detect_max_power(void)
 {
 	static const struct gpio_dt_spec psu_sense0 =
 		GPIO_DT_SPEC_GET_OR(DT_PATH(psu_sense0), gpios, {0});
@@ -154,28 +154,28 @@ uint16_t detect_max_pwr(void)
 	int sense0_val = gpio_pin_get_dt(&psu_sense0);
 	int sense1_val = gpio_pin_get_dt(&psu_sense1);
 
-	uint16_t psu_pwr;
+	uint16_t psu_power;
 
 	if (!sense0_val && !sense1_val) {
-		psu_pwr = 600;
+		psu_power = 600;
 	} else if (sense0_val && !sense1_val) {
-		psu_pwr = 450;
+		psu_power = 450;
 	} else if (!sense0_val && sense1_val) {
-		psu_pwr = 300;
+		psu_power = 300;
 	} else {
 		/* Pins could either be open or shorted together */
 		/* Pull down one and check the other */
 		gpio_pin_configure_dt(&psu_sense0, GPIO_OUTPUT_LOW);
 		if (!gpio_pin_get_dt(&psu_sense1)) {
 			/* If shorted together then max power is 150W */
-			psu_pwr = 150;
+			psu_power = 150;
 		} else {
-			psu_pwr = 0;
+			psu_power = 0;
 		}
 		gpio_pin_configure_dt(&psu_sense0, GPIO_INPUT);
 	}
 
-	return psu_pwr;
+	return psu_power;
 }
 
 int main(void)
@@ -298,7 +298,7 @@ int main(void)
 	dmStaticInfo static_info =
 		(dmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
-	uint16_t max_pwr = detect_max_pwr();
+	uint16_t max_power = detect_max_power();
 
 	while (true) {
 		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
@@ -341,14 +341,14 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_needs_init_msg) {
 				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
-				    bh_chip_set_board_pwr_lim(chip, max_pwr) == 0) {
+				    bh_chip_set_input_power_lim(chip, max_power) == 0) {
 					chip->data.arc_needs_init_msg = false;
 				}
 			}
 		}
 
 		if (IS_ENABLED(CONFIG_INA228)) {
-			ina228_pwr_update();
+			ina228_power_update();
 		}
 
 		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {

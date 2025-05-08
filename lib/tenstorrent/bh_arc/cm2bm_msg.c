@@ -224,6 +224,7 @@ int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
+
 int32_t Bm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 4) {
@@ -235,7 +236,7 @@ int32_t Bm2CmSendCurrentHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t Bm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
+int32_t Bm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 4) {
 		return -1;

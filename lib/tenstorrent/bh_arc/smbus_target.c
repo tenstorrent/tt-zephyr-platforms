@@ -174,13 +174,13 @@ static SmbusConfig smbus_config = {
 #ifndef CONFIG_TT_SMC_RECOVERY
 		[0x24] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmSetBoardPwrLimit}},
+			  .handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}},
 		[0x25] = {
 			.valid = 1,
 			.trans_type = kSmbusTransBlockWrite,
 			.expected_blocksize = 4,
 			.handler = {
-					.rcv_handler = &Dm2CmSendPwrHandler
+					.rcv_handler = &Dm2CmSendPowerHandler
 			}},
 #endif
 		[0xD8] = {.valid = 1,

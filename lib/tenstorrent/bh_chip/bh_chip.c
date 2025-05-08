@@ -58,7 +58,7 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 	return ret;
 }
 
-int bh_chip_set_input_pwr(struct bh_chip *chip, uint32_t *power)
+int bh_chip_set_input_power(struct bh_chip *chip, uint32_t *power)
 {
 	int ret;
 
@@ -67,11 +67,11 @@ int bh_chip_set_input_pwr(struct bh_chip *chip, uint32_t *power)
 	return ret;
 }
 
-int bh_chip_set_input_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
+int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power)
 {
 	int ret;
 
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_power);
 
 	return ret;
 }

@@ -230,7 +230,7 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t Dm2CmSendPwrHandler(const uint8_t *data, uint8_t size)
+int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 4) {
 		return -1;
