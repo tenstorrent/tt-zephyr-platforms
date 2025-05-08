@@ -263,8 +263,7 @@ static void update_telemetry(void)
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
 	UpdateGddrTelemetry();
 	telemetry[MAX_GDDR_TEMP] = GetMaxGDDRTemp();
-	telemetry[INPUT_POWER] =
-		GetInputPower();      /* Input power - reported in W in unsigned int 16.16 format */
+	telemetry[INPUT_POWER] = GetInputPower(); /* Input power - reported in W */
 	telemetry[TIMER_HEARTBEAT]++; /* Incremented every time the timer is called */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }

@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/byteorder.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
@@ -28,7 +29,7 @@ typedef struct {
 
 static Cm2DmMsgState cm2dm_msg_state;
 static bool dmfw_ping_valid;
-static uint32_t power;
+static uint16_t power;
 K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
 
 int32_t EnqueueCm2DmMsg(const Cm2DmMsg *msg)
@@ -232,18 +233,18 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size)
 
 int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 {
-	if (size != 4) {
+	if (size != 2) {
 		return -1;
 	}
 
-	power = *(uint32_t *)data;
+	power = sys_get_le16(data);
 
 	return 0;
 }
 
 /* TODO: Put these somewhere else? */
 
-uint32_t GetInputPower(void)
+uint16_t GetInputPower(void)
 {
 	return power;
 }
@@ -255,7 +256,7 @@ int32_t Dm2CmSendFanRPMHandler(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	SetFanRPM(*(uint16_t *)data);
+	SetFanRPM(sys_get_le16(data));
 
 	return 0;
 #endif

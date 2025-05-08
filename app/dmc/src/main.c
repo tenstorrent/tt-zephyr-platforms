@@ -134,10 +134,11 @@ void ina228_power_update(void)
 	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_POWER);
 	sensor_channel_get(ina228, SENSOR_CHAN_POWER, &sensor_val);
 
-	int32_t power = (sensor_val.val1 << 16) + (sensor_val.val2 * 65536ULL) / 1000000ULL;
+	/* Only use integer part of sensor value */
+	int16_t power = sensor_val.val1 & 0xFFFF;
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		bh_chip_set_input_power(chip, &power);
+		bh_chip_set_input_power(chip, power);
 	}
 }
 

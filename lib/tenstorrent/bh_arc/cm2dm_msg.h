@@ -55,7 +55,7 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size);
 int32_t Dm2CmSendCurrentHandler(const uint8_t *data, uint8_t size);
 int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size);
 int32_t GetInputCurrent(void);
-uint32_t GetInputPower(void);
+uint16_t GetInputPower(void);
 int32_t Dm2CmSendFanRPMHandler(const uint8_t *data, uint8_t size);
 
 #endif
