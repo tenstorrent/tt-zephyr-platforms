@@ -192,8 +192,7 @@ static SmbusConfig smbus_config = {
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Bm2CmSetBoardPowerLimit}},
 		[0x25] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockWrite,
-			  .expected_blocksize = 4,
+			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Bm2CmSendPowerHandler}},
 #endif
 		[0xD8] =
