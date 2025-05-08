@@ -50,7 +50,7 @@ typedef struct bmStaticInfo {
 
 int32_t Bm2CmSendDataHandler(const uint8_t *data, uint8_t size);
 int32_t Bm2CmPingHandler(const uint8_t *data, uint8_t size);
-int32_t Bm2CmSendPwrHandler(const uint8_t *data, uint8_t size);
+int32_t Bm2CmSendPowerHandler(const uint8_t *data, uint8_t size);
 int32_t GetInputCurrent(void);
 uint32_t GetInputPower(void);
 int32_t Bm2CmSendFanRPMHandler(const uint8_t *data, uint8_t size);

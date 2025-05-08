@@ -13,14 +13,14 @@
 #include "telemetry.h"
 
 #define kThrottlerAiclkScaleFactor 500.0F
-#define DEFAULT_BOARD_PWR_LIMIT 150
+#define DEFAULT_BOARD_POWER_LIMIT  150
 
 typedef enum {
 	kThrottlerTDP,
 	kThrottlerFastTDC,
 	kThrottlerTDC,
 	kThrottlerThm,
-	kThrottlerBoardPwr,
+	kThrottlerBoardPower,
 	kThrottlerGDDRThm,
 	kThrottlerCount,
 } ThrottlerId;
@@ -34,35 +34,29 @@ typedef struct {
 /* They are passed in from the FW table in SPI */
 static const ThrottlerLimitRange throttler_limit_ranges[kThrottlerCount] = {
 	[kThrottlerTDP] = {
-
 			.min = 50,
 			.max = 500,
 		},
 	[kThrottlerFastTDC] = {
-
 			.min = 50,
 			.max = 500,
 		},
 	[kThrottlerTDC] = {
-
 			.min = 50,
 			.max = 400,
 		},
 	[kThrottlerThm] = {
-
 			.min = 50,
 			.max = 100,
 		},
-	[kThrottlerBoardPwr] = {
-
+	[kThrottlerBoardPower] = {
 			.min = 50,
 			.max = 600,
 		},
 	[kThrottlerGDDRThm] = {
-			.min = 50,
-			.max = 100,
-	}
-};
+		.min = 50,
+		.max = 100,
+	}};
 
 typedef struct {
 	float alpha_filter;
@@ -122,8 +116,8 @@ static Throttler throttler[kThrottlerCount] = {
 					.d_gain = 0,
 				},
 		},
-	[kThrottlerBoardPwr] = {
-			.arb_max = kAiclkArbMaxBoardPwr,
+	[kThrottlerBoardPower] = {
+			.arb_max = kAiclkArbMaxBoardPower,
 			.params = {
 
 					.alpha_filter = 1.0,
@@ -154,7 +148,7 @@ void InitThrottlers(void)
 	SetThrottlerLimit(kThrottlerFastTDC, get_fw_table()->chip_limits.tdc_fast_limit);
 	SetThrottlerLimit(kThrottlerTDC, get_fw_table()->chip_limits.tdc_limit);
 	SetThrottlerLimit(kThrottlerThm, get_fw_table()->chip_limits.thm_limit);
-	SetThrottlerLimit(kThrottlerBoardPwr, DEFAULT_BOARD_PWR_LIMIT);
+	SetThrottlerLimit(kThrottlerBoardPower, DEFAULT_BOARD_POWER_LIMIT);
 	SetThrottlerLimit(kThrottlerGDDRThm, get_fw_table()->chip_limits.gddr_thm_limit);
 }
 
@@ -189,7 +183,7 @@ void CalculateThrottlers(void)
 	UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
-	UpdateThrottler(kThrottlerBoardPwr, ConvertTelemetryToFloat(GetInputPower()));
+	UpdateThrottler(kThrottlerBoardPower, ConvertTelemetryToFloat(GetInputPower()));
 	UpdateThrottler(kThrottlerGDDRThm, GetMaxGDDRTemp());
 
 	for (ThrottlerId i = 0; i < kThrottlerCount; i++) {
@@ -197,16 +191,16 @@ void CalculateThrottlers(void)
 	}
 }
 
-int32_t Bm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size)
+int32_t Bm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 {
 	if (size != 2) {
 		return -1;
 	}
 
-	uint16_t pwr_limit = *(uint16_t *)data;
+	uint16_t power_limit = *(uint16_t *)data;
 
-	SetThrottlerLimit(kThrottlerBoardPwr, pwr_limit);
-	UpdateTelemetryBoardPwrLimit(pwr_limit);
+	SetThrottlerLimit(kThrottlerBoardPower, power_limit);
+	UpdateTelemetryBoardPowerLimit(power_limit);
 
 	return 0;
 }

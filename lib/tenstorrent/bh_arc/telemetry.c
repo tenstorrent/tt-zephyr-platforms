@@ -321,7 +321,7 @@ static void update_tag_table(void)
 	tag_table[47] = (struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, GDDR_UNCORR_ERRS};
 	tag_table[48] = (struct telemetry_entry){TAG_MAX_GDDR_TEMP, MAX_GDDR_TEMP};
 	tag_table[49] = (struct telemetry_entry){TAG_ASIC_LOCATION, ASIC_LOCATION};
-	tag_table[50] = (struct telemetry_entry){TAG_BOARD_PWR_LIMIT, BOARD_PWR_LIMIT};
+	tag_table[50] = (struct telemetry_entry){TAG_BOARD_POWER_LIMIT, BOARD_POWER_LIMIT};
 	tag_table[51] = (struct telemetry_entry){TAG_INPUT_POWER, INPUT_POWER};
 	tag_table[52] = (struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_ENUM_COUNT};
 }
@@ -381,7 +381,7 @@ void UpdateTelemetryNocTranslation(bool translation_enabled)
 	telemetry[NOC_TRANSLATION] = translation_enabled;
 }
 
-void UpdateTelemetryBoardPwrLimit(uint32_t pwr_limit)
+void UpdateTelemetryBoardPowerLimit(uint32_t power_limit)
 {
-	telemetry[BOARD_PWR_LIMIT] = pwr_limit;
+	telemetry[BOARD_POWER_LIMIT] = power_limit;
 }
