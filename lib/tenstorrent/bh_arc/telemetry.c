@@ -362,8 +362,8 @@ void init_telemetry(uint32_t app_version)
 	update_telemetry();
 
 	/* Publish the telemetry data pointer for readers in Scratch RAM */
-	WriteReg(TELEMETRY_DATA_REG_ADDR, (uint32_t)&telemetry[0]);
-	WriteReg(TELEMETRY_TABLE_REG_ADDR, (uint32_t)&telemetry_table);
+	WriteReg(TELEMETRY_DATA_REG_ADDR, POINTER_TO_UINT(&telemetry[0]));
+	WriteReg(TELEMETRY_TABLE_REG_ADDR, POINTER_TO_UINT(&telemetry_table));
 }
 
 void StartTelemetryTimer(void)
