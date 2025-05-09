@@ -120,22 +120,22 @@ void process_cm2bm_message(struct bh_chip *chip)
 	}
 }
 
-void ina228_current_update(void)
+void ina228_power_update(void)
 {
-	struct sensor_value current_sensor_val;
+	struct sensor_value sensor_val;
 
-	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
-	sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &current_sensor_val);
+	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_POWER);
+	sensor_channel_get(ina228, SENSOR_CHAN_POWER, &sensor_val);
 
-	int32_t current =
-		(current_sensor_val.val1 << 16) + (current_sensor_val.val2 * 65536ULL) / 1000000ULL;
+	/* Only use integer part of sensor value */
+	int16_t power = sensor_val.val1 & 0xFFFF;
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		bh_chip_set_input_current(chip, &current);
+		bh_chip_set_input_power(chip, power);
 	}
 }
 
-uint16_t detect_max_pwr(void)
+uint16_t detect_max_power(void)
 {
 	static const struct gpio_dt_spec psu_sense0 =
 		GPIO_DT_SPEC_GET_OR(DT_PATH(psu_sense0), gpios, {0});
@@ -152,35 +152,35 @@ uint16_t detect_max_pwr(void)
 	int sense1_val = gpio_pin_get_dt(&psu_sense1);
 	int board_id0_val = gpio_pin_get_dt(&board_id0);
 
-	uint16_t board_pwr;
-	uint16_t psu_pwr;
+	uint16_t board_power;
+	uint16_t psu_power;
 
 	if (board_id0_val) {
-		board_pwr = 450;
+		board_power = 450;
 	} else {
-		board_pwr = 300;
+		board_power = 300;
 	}
 
 	if (!sense0_val && !sense1_val) {
-		psu_pwr = 600;
+		psu_power = 600;
 	} else if (sense0_val && !sense1_val) {
-		psu_pwr = 450;
+		psu_power = 450;
 	} else if (!sense0_val && sense1_val) {
-		psu_pwr = 300;
+		psu_power = 300;
 	} else {
 		/* Pins could either be open or shorted together */
 		/* Pull down one and check the other */
 		gpio_pin_configure_dt(&psu_sense0, GPIO_OUTPUT_LOW);
 		if (!gpio_pin_get_dt(&psu_sense1)) {
 			/* If shorted together then max power is 150W */
-			psu_pwr = 150;
+			psu_power = 150;
 		} else {
-			psu_pwr = 0;
+			psu_power = 0;
 		}
 		gpio_pin_configure_dt(&psu_sense0, GPIO_INPUT);
 	}
 
-	return MIN(board_pwr, psu_pwr);
+	return MIN(board_power, psu_power);
 }
 
 int main(void)
@@ -303,7 +303,7 @@ int main(void)
 	bmStaticInfo static_info =
 		(bmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
 
-	uint16_t max_pwr = detect_max_pwr();
+	uint16_t max_power = detect_max_power();
 
 	while (true) {
 		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
@@ -348,12 +348,12 @@ int main(void)
 				if (bh_chip_set_static_info(chip, &static_info) == 0) {
 					chip->data.arc_just_reset = false;
 				}
-				bh_chip_set_board_pwr_lim(chip, max_pwr);
+				bh_chip_set_input_power_lim(chip, max_power);
 			}
 		}
 
 		if (IS_ENABLED(CONFIG_INA228)) {
-			ina228_current_update();
+			ina228_power_update();
 		}
 
 		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {

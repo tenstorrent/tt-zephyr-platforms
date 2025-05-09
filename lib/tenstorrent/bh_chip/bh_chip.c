@@ -58,28 +58,29 @@ int bh_chip_set_static_info(struct bh_chip *chip, bmStaticInfo *info)
 	return ret;
 }
 
-int bh_chip_set_input_current(struct bh_chip *chip, int32_t *current)
+int bh_chip_set_input_power(struct bh_chip *chip, uint16_t power)
 {
 	int ret;
 
-	ret = bharc_smbus_block_write(&chip->config.arc, 0x22, 4, (uint8_t *)current);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x25, power);
 
 	return ret;
 }
+
+int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power)
+{
+	int ret;
+
+	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_power);
+
+	return ret;
+}
+
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
 
 	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x23, rpm);
-
-	return ret;
-}
-
-int bh_chip_set_board_pwr_lim(struct bh_chip *chip, uint16_t max_pwr)
-{
-	int ret;
-
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_pwr);
 
 	return ret;
 }
