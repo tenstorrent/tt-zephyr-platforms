@@ -40,13 +40,13 @@ struct telemetry_table {
 	uint32_t version;
 	uint32_t entry_count;
 	struct telemetry_entry tag_table[TELEM_ENUM_COUNT];
-	uint32_t telemetry[TELEM_ENUM_COUNT];
 };
 
-/* Global variables */
+	/* Global variables */
 static struct telemetry_table telemetry_table;
-static uint32_t *telemetry = &telemetry_table.telemetry[0];
 static struct telemetry_entry *tag_table = &telemetry_table.tag_table[0];
+static uint32_t telemetry[TELEM_ENUM_COUNT];
+
 
 static struct k_timer telem_update_timer;
 static struct k_work telem_update_worker;
