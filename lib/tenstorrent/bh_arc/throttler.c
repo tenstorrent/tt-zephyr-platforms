@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <tenstorrent/msg_type.h>
+#include <tenstorrent/msgqueue.h>
 #include <zephyr/sys/util.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
@@ -16,9 +18,6 @@
 #define DEFAULT_BOARD_PWR_LIMIT 150
 
 typedef enum {
-	kThrottlerTDP,
-	kThrottlerFastTDC,
-	kThrottlerTDC,
 	kThrottlerThm,
 	kThrottlerBoardPwr,
 	kThrottlerGDDRThm,
@@ -33,36 +32,22 @@ typedef struct {
 /* This table is used to restrict the throttler limits to reasonable ranges. */
 /* They are passed in from the FW table in SPI */
 static const ThrottlerLimitRange throttler_limit_ranges[kThrottlerCount] = {
-	[kThrottlerTDP] = {
-
-			.min = 50,
-			.max = 500,
-		},
-	[kThrottlerFastTDC] = {
-
-			.min = 50,
-			.max = 500,
-		},
-	[kThrottlerTDC] = {
-
-			.min = 50,
-			.max = 400,
-		},
-	[kThrottlerThm] = {
+	[kThrottlerThm] =
+		{
 
 			.min = 50,
 			.max = 100,
 		},
-	[kThrottlerBoardPwr] = {
+	[kThrottlerBoardPwr] =
+		{
 
 			.min = 50,
 			.max = 600,
 		},
 	[kThrottlerGDDRThm] = {
-			.min = 50,
-			.max = 100,
-	}
-};
+		.min = 50,
+		.max = 100,
+	}};
 
 typedef struct {
 	float alpha_filter;
@@ -73,7 +58,7 @@ typedef struct {
 typedef struct {
 	const AiclkArbMax arb_max; /* The arbiter associated with this throttler */
 
-	const ThrottlerParams params;
+	ThrottlerParams params;
 	float limit;
 	float value;
 	float error;
@@ -82,65 +67,37 @@ typedef struct {
 } Throttler;
 
 static Throttler throttler[kThrottlerCount] = {
-	[kThrottlerTDP] = {
-
-			.arb_max = kAiclkArbMaxTDP,
-			.params = {
-
-					.alpha_filter = 1.0,
-					.p_gain = 0.2,
-					.d_gain = 0,
-				},
-		},
-	[kThrottlerFastTDC] = {
-
-			.arb_max = kAiclkArbMaxFastTDC,
-			.params = {
-
-					.alpha_filter = 1.0,
-					.p_gain = 0.5,
-					.d_gain = 0,
-				},
-		},
-	[kThrottlerTDC] = {
-
-			.arb_max = kAiclkArbMaxTDC,
-			.params = {
-
-					.alpha_filter = 0.1,
-					.p_gain = 0.2,
-					.d_gain = 0,
-				},
-		},
-	[kThrottlerThm] = {
+	[kThrottlerThm] =
+		{
 
 			.arb_max = kAiclkArbMaxThm,
-			.params = {
+			.params =
+				{
 
 					.alpha_filter = 1.0,
 					.p_gain = 0.2,
 					.d_gain = 0,
 				},
 		},
-	[kThrottlerBoardPwr] = {
-			.arb_max = kAiclkArbMaxBoardPwr,
-			.params = {
+	[kThrottlerBoardPwr] = {.arb_max = kAiclkArbMaxBoardPwr,
+				.params =
+					{
 
 					.alpha_filter = 1.0,
-					.p_gain = 0.2,
-					.d_gain = 0,
+					.p_gain = 0.1,
+					.d_gain = 0.1,
 			}
 	},
 	[kThrottlerGDDRThm] = {
-			.arb_max = kAiclkArbMaxGDDRThm,
-			.params = {
+		.arb_max = kAiclkArbMaxGDDRThm,
+		.params =
+			{
 
-					.alpha_filter = 1.0,
-					.p_gain = 0.2,
-					.d_gain = 0,
-				},
-	}
-};
+				.alpha_filter = 1.0,
+				.p_gain = 0.2,
+				.d_gain = 0,
+			},
+	}};
 
 static void SetThrottlerLimit(ThrottlerId id, float limit)
 {
@@ -150,9 +107,6 @@ static void SetThrottlerLimit(ThrottlerId id, float limit)
 
 void InitThrottlers(void)
 {
-	SetThrottlerLimit(kThrottlerTDP, get_fw_table()->chip_limits.tdp_limit);
-	SetThrottlerLimit(kThrottlerFastTDC, get_fw_table()->chip_limits.tdc_fast_limit);
-	SetThrottlerLimit(kThrottlerTDC, get_fw_table()->chip_limits.tdc_limit);
 	SetThrottlerLimit(kThrottlerThm, get_fw_table()->chip_limits.thm_limit);
 	SetThrottlerLimit(kThrottlerBoardPwr, DEFAULT_BOARD_PWR_LIMIT);
 	SetThrottlerLimit(kThrottlerGDDRThm, get_fw_table()->chip_limits.gddr_thm_limit);
@@ -185,9 +139,6 @@ void CalculateThrottlers(void)
 
 	ReadTelemetryInternal(1, &telemetry_internal_data);
 
-	UpdateThrottler(kThrottlerTDP, telemetry_internal_data.vcore_power);
-	UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
-	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
 	UpdateThrottler(kThrottlerBoardPwr, 12 * ConvertTelemetryToFloat(GetInputCurrent()));
 	UpdateThrottler(kThrottlerGDDRThm, GetMaxGDDRTemp());
@@ -210,3 +161,34 @@ int32_t Bm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size)
 
 	return 0;
 }
+
+static uint8_t UpdateBoardPowerP(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float p = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.p_gain = p;
+
+	return 0;
+}
+
+static uint8_t UpdateBoardPowerD(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float d = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.d_gain = d;
+
+	return 0;
+}
+
+static uint8_t UpdateBoardPowerAlpha(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float alpha = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.alpha_filter = alpha;
+
+	return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_P, UpdateBoardPowerP);
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_D, UpdateBoardPowerD);
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_A, UpdateBoardPowerAlpha);
