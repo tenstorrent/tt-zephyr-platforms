@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <tenstorrent/msg_type.h>
+#include <tenstorrent/msgqueue.h>
 #include <zephyr/sys/util.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
@@ -56,7 +58,7 @@ typedef struct {
 typedef struct {
 	const AiclkArbMax arb_max; /* The arbiter associated with this throttler */
 
-	const ThrottlerParams params;
+	ThrottlerParams params;
 	float limit;
 	float value;
 	float error;
@@ -159,3 +161,34 @@ int32_t Bm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size)
 
 	return 0;
 }
+
+static uint8_t UpdateBoardPowerP(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float p = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.p_gain = p;
+
+	return 0;
+}
+
+static uint8_t UpdateBoardPowerD(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float d = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.d_gain = d;
+
+	return 0;
+}
+
+static uint8_t UpdateBoardPowerAlpha(uint32_t msg_code, const struct request *request, struct response *response)
+{
+	float alpha = (float)request->data[1] / 100;
+
+	throttler[kThrottlerBoardPwr].params.alpha_filter = alpha;
+
+	return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_P, UpdateBoardPowerP);
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_D, UpdateBoardPowerD);
+REGISTER_MESSAGE(MSG_TYPE_SET_BOARD_POWER_A, UpdateBoardPowerAlpha);
