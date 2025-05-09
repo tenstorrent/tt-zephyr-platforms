@@ -8,7 +8,6 @@
 #include "init_common.h"
 #include "irqnum.h"
 #include "reg.h"
-#include "spi_controller.h"
 #include "spi_eeprom.h"
 #include "status_reg.h"
 
@@ -19,18 +18,16 @@
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
 {
-	SpiBlockRead(addr, size, dst);
+	if (SpiBlockRead(addr, size, dst) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
 	return TT_BOOT_FS_OK;
 }
 
 void InitSpiFS(void)
 {
-	/* Toggle SPI reset to clear state left by bootcode */
-	SpiControllerReset();
-
 	EepromSetup();
 	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
-	SpiBufferSetup();
 }
 
 void InitResetInterrupt(uint8_t pcie_inst)

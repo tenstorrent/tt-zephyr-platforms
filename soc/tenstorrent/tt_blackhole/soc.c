@@ -30,8 +30,8 @@ void soc_early_init_hook(void)
 		/* Clear reset bit */
 		*RESET_UNIT_I2C_CNTL = (reg & ~BIT(4));
 	}
-	if (DT_HAS_COMPAT_STATUS_OKAY(snps_designware_spi) &&
-	    IS_ENABLED(CONFIG_FLASH)) {
+	if (DT_HAS_COMPAT_STATUS_OKAY(snps_designware_ssi) &&
+	    IS_ENABLED(CONFIG_MSPI)) {
 		/* Manually toggle the SPI reset control bits */
 		volatile uint32_t *RESET_UNIT_SPI_CNTL = (uint32_t *)0x800300F8;
 		*RESET_UNIT_SPI_CNTL |= BIT(4);

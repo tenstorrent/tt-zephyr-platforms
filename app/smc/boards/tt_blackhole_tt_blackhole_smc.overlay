@@ -10,3 +10,17 @@
 &i2c2 {
 	status = "disabled";
 };
+
+/*
+ * ARC clock will be raised to 800MHz in the application
+ */
+&sysclk {
+	status = "okay";
+	clock-frequency = <800000000>;
+};
+
+/* Drop the target frequency of the SPI flash to ensure reliable operation */
+&spi_flash {
+	status = "okay";
+	mspi-max-frequency = <DT_FREQ_M(5)>;
+};
