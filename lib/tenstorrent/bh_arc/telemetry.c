@@ -140,14 +140,11 @@ float ConvertTelemetryToFloat(int32_t value)
 
 static void UpdateGddrTelemetry(void)
 {
-	/* We pack multiple metrics into one field, so need to clear first. */
-	for (int i = 0; i < NUM_GDDR / 2; i++) {
-		telemetry[GDDR_0_1_TEMP + i] = 0;
-		telemetry[GDDR_0_1_CORR_ERRS + i] = 0;
-	}
+	uint32_t temperature[NUM_GDDR / 2] = {0,};
+	uint32_t corr_errs[NUM_GDDR / 2] = {0,};
 
-	telemetry[GDDR_UNCORR_ERRS] = 0;
-	telemetry[GDDR_STATUS] = 0;
+	uint32_t uncorr_errs = 0;
+	uint32_t status = 0;
 
 	for (int i = 0; i < NUM_GDDR; i++) {
 		gddr_telemetry_table_t gddr_telemetry;
@@ -167,8 +164,8 @@ static void UpdateGddrTelemetry(void)
 			 * [14] - Training Complete GDDR 7
 			 * [15] - Error GDDR 7
 			 */
-			telemetry[GDDR_STATUS] |= (gddr_telemetry.training_complete << (i * 2)) |
-						  (gddr_telemetry.gddr_error << (i * 2 + 1));
+			status |= (gddr_telemetry.training_complete << (i * 2)) |
+				(gddr_telemetry.gddr_error << (i * 2 + 1));
 
 			/* DDR_x_y_TEMP:
 			 * [31:24] GDDR y top
@@ -178,7 +175,7 @@ static void UpdateGddrTelemetry(void)
 			 */
 			int shift_val = (i % 2) * 16;
 
-			telemetry[GDDR_0_1_TEMP + i / 2] |=
+			temperature[i / 2] |=
 				((gddr_telemetry.dram_temperature_top & 0xff) << (8 + shift_val)) |
 				((gddr_telemetry.dram_temperature_bottom & 0xff) << shift_val);
 
@@ -188,7 +185,7 @@ static void UpdateGddrTelemetry(void)
 			 * [15:8]  GDDR x Corrected Write EDC errors
 			 * [7:0]   GDDR y Corrected Read EDC Errors
 			 */
-			telemetry[GDDR_0_1_CORR_ERRS + i / 2] |=
+			corr_errs[i / 2] |=
 				((gddr_telemetry.corr_edc_wr_errors & 0xff) << (8 + shift_val)) |
 				((gddr_telemetry.corr_edc_rd_errors & 0xff) << shift_val);
 
@@ -199,13 +196,19 @@ static void UpdateGddrTelemetry(void)
 			 * ...
 			 * [15] GDDR 7 Uncorrected Write EDC error
 			 */
-			telemetry[GDDR_UNCORR_ERRS] |=
+			uncorr_errs |=
 				(gddr_telemetry.uncorr_edc_rd_error << (i * 2)) |
 				(gddr_telemetry.uncorr_edc_wr_error << (i * 2 + 1));
 			/* GDDR speed - in Mbps */
 			telemetry[GDDR_SPEED] = gddr_telemetry.dram_speed;
 		}
 	}
+
+	memcpy(telemetry + GDDR_0_1_TEMP, temperature, sizeof(temperature));
+	memcpy(telemetry + GDDR_0_1_CORR_ERRS, corr_errs, sizeof(corr_errs));
+
+	telemetry[GDDR_UNCORR_ERRS] = uncorr_errs;
+	telemetry[GDDR_STATUS] = status;
 }
 
 int GetMaxGDDRTemp(void)
