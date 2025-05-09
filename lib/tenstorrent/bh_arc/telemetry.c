@@ -49,17 +49,11 @@ static struct telemetry_table telemetry_table = {
 	.tag_table = {
 		{TAG_BOARD_ID_HIGH, BOARD_ID_HIGH},
 		{TAG_BOARD_ID_LOW, BOARD_ID_LOW},
-		{TAG_ASIC_ID, ASIC_ID},
-		{TAG_HARVESTING_STATE, HARVESTING_STATE},
 		{TAG_UPDATE_TELEM_SPEED, UPDATE_TELEM_SPEED},
 		{TAG_VCORE, VCORE},
 		{TAG_TDP, TDP},
 		{TAG_TDC, TDC},
-		{TAG_VDD_LIMITS, VDD_LIMITS},
-		{TAG_THM_LIMITS, THM_LIMITS},
 		{TAG_ASIC_TEMPERATURE, ASIC_TEMPERATURE},
-		{TAG_VREG_TEMPERATURE, VREG_TEMPERATURE},
-		{TAG_BOARD_TEMPERATURE, BOARD_TEMPERATURE},
 		{TAG_AICLK, AICLK},
 		{TAG_AXICLK, AXICLK},
 		{TAG_ARCCLK, ARCCLK},
@@ -67,16 +61,13 @@ static struct telemetry_table telemetry_table = {
 		{TAG_L2CPUCLK1, L2CPUCLK1},
 		{TAG_L2CPUCLK2, L2CPUCLK2},
 		{TAG_L2CPUCLK3, L2CPUCLK3},
-		{TAG_ETH_LIVE_STATUS, ETH_LIVE_STATUS},
 		{TAG_GDDR_STATUS, GDDR_STATUS},
 		{TAG_GDDR_SPEED, GDDR_SPEED},
-		{TAG_ETH_FW_VERSION, ETH_FW_VERSION},
 		{TAG_GDDR_FW_VERSION, GDDR_FW_VERSION},
 		{TAG_BM_APP_FW_VERSION, BM_APP_FW_VERSION},
 		{TAG_BM_BL_FW_VERSION, BM_BL_FW_VERSION},
 		{TAG_FLASH_BUNDLE_VERSION, FLASH_BUNDLE_VERSION},
 		{TAG_CM_FW_VERSION, CM_FW_VERSION},
-		{TAG_L2CPU_FW_VERSION, L2CPU_FW_VERSION},
 		{TAG_FAN_SPEED, FAN_SPEED},
 		{TAG_TIMER_HEARTBEAT, TIMER_HEARTBEAT},
 		{TAG_ENABLED_TENSIX_COL, ENABLED_TENSIX_COL},
@@ -229,12 +220,8 @@ static void write_static_telemetry(uint32_t app_version)
 	/* Get the static values */
 	telemetry[BOARD_ID_HIGH] = get_read_only_table()->board_id >> 32;
 	telemetry[BOARD_ID_LOW] = get_read_only_table()->board_id & 0xFFFFFFFF;
-	telemetry[ASIC_ID] = 0x00000000; /* Might be subject to redesign */
-	telemetry[HARVESTING_STATE] = 0x00000000;
 	telemetry[UPDATE_TELEM_SPEED] = telem_update_interval; /* Expected speed of update in ms */
 
-	/* TODO: Gather FW versions from FW themselves */
-	telemetry[ETH_FW_VERSION] = 0x00000000;
 	if (tile_enable.gddr_enabled != 0) {
 		gddr_telemetry_table_t gddr_telemetry;
 		/* Use first available instance. */
@@ -253,7 +240,6 @@ static void write_static_telemetry(uint32_t app_version)
 	 */
 	telemetry[FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
 	telemetry[CM_FW_VERSION] = app_version;
-	telemetry[L2CPU_FW_VERSION] = 0x00000000;
 
 	/* Tile enablement / harvesting information */
 	telemetry[ENABLED_TENSIX_COL] = tile_enable.tensix_col_enabled;
@@ -289,14 +275,10 @@ static void update_telemetry(void)
 				 .vcore_power; /* reported in W, will be truncated to uint32_t */
 	telemetry[TDC] = telemetry_internal_data
 				 .vcore_current; /* reported in A, will be truncated to uint32_t */
-	telemetry[VDD_LIMITS] = 0x00000000;      /* VDD limits - Not Available yet */
-	telemetry[THM_LIMITS] = 0x00000000;      /* THM limits - Not Available yet */
 	telemetry[ASIC_TEMPERATURE] = ConvertFloatToTelemetry(
 		telemetry_internal_data.asic_temperature); /* ASIC temperature - reported in signed
 							    * int 16.16 format
 							    */
-	telemetry[VREG_TEMPERATURE] = 0x000000;            /* VREG temperature - need I2C line */
-	telemetry[BOARD_TEMPERATURE] = 0x000000;           /* Board temperature - need I2C line */
 	telemetry[AICLK] = GetAICLK(); /* first 16 bits - MAX ASIC FREQ (Not Available yet), lower
 					* 16 bits - current AICLK
 					*/
@@ -306,10 +288,7 @@ static void update_telemetry(void)
 	telemetry[L2CPUCLK1] = GetL2CPUCLK(1);
 	telemetry[L2CPUCLK2] = GetL2CPUCLK(2);
 	telemetry[L2CPUCLK3] = GetL2CPUCLK(3);
-	telemetry[ETH_LIVE_STATUS] =
-		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
-			     * retrain_status - Not Available yet
-			     */
+
 	telemetry[FAN_SPEED] = GetFanSpeed(); /* Target fan speed - reported in percentage */
 	telemetry[FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
 	UpdateGddrTelemetry();
