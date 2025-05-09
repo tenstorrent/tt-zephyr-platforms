@@ -47,7 +47,7 @@
 #define TAG_L2CPU_FW_VERSION     30
 #define TAG_FAN_SPEED            31
 #define TAG_TIMER_HEARTBEAT      32
-#define TAG_TELEM_ENUM_COUNT     33
+#define TAG_TELEM_ENUM_COUNT     33 /* do not use */
 #define TAG_ENABLED_TENSIX_COL   34
 #define TAG_ENABLED_ETH          35
 #define TAG_ENABLED_GDDR         36
