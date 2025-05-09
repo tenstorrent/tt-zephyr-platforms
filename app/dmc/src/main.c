@@ -120,6 +120,9 @@ void process_cm2dm_message(struct bh_chip *chip)
 				set_fan_speed((uint8_t)message.data & 0xFF);
 			}
 			break;
+		case 0x4:
+			chip->data.cm_ready_for_msgs = true;
+			break;
 		}
 	}
 }
@@ -348,7 +351,7 @@ int main(void)
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
 		 */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.arc_just_reset) {
+			if (chip->data.arc_just_reset && chip->data.cm_ready_for_msgs) {
 				if (bh_chip_set_static_info(chip, &static_info) == 0) {
 					chip->data.arc_just_reset = false;
 				}

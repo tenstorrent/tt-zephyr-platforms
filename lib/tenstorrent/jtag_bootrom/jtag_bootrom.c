@@ -276,6 +276,7 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, 0);
 
 	chip->data.needs_reset = false;
+	chip->data.cm_ready_for_msgs = false;
 	chip->data.arc_just_reset = true;
 #endif
 }

@@ -115,6 +115,15 @@ void UpdateFanSpeedRequest(uint32_t fan_speed)
 	EnqueueCm2DmMsg(&msg);
 }
 
+void Dm2CmReadyRequest(void)
+{
+	/* Send a message to dmfw to indicate ready to receive messages */
+	Cm2DmMsg msg = {
+		.msg_id = kCm2DmMsgIdReady,
+	};
+	EnqueueCm2DmMsg(&msg);
+}
+
 /* Report the current message and automatically acknowledge it. */
 int32_t ResetBoardByte(uint8_t *data, uint8_t size)
 {

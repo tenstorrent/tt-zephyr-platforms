@@ -14,6 +14,7 @@ typedef enum {
 	kCm2DmMsgIdResetReq = 1,
 	kCm2DmMsgIdPing = 2,
 	kCm2DmMsgIdFanSpeedUpdate = 3,
+	kCm2DmMsgIdReady = 4,
 } Cm2DmMsgId;
 
 typedef struct {
@@ -39,6 +40,7 @@ int32_t ResetBoardByte(uint8_t *data, uint8_t size);
 
 void ChipResetRequest(void *arg);
 void UpdateFanSpeedRequest(uint32_t fan_speed);
+void Dm2CmReadyRequest(void);
 
 typedef struct dmStaticInfo {
 	/* Non-zero for valid data */
