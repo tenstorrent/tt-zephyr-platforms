@@ -9,6 +9,15 @@ alignment:
 
 images:
 
+  # Board Mgmt FW Update Partition
+  - name: bmfw
+    # Fixed offset
+    source: "0x14000"
+    # Fixed size. Must equal BMC internal flash minus MCUBoot size.
+    # So, 512 kiB - 64 kiB = 448 kiB
+    padto: 0x70000
+    binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
+
   - name: cmfwcfg
     binary: $BUILD_DIR/smc/generated_board_cfg/P150C/fw_table.bin
 
@@ -38,11 +47,6 @@ images:
 
   - name: ethsdfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
-
-  # Board Mgmt FW
-  - name: bmfw
-    padto: 0xb000
-    binary: $BUILD_DIR/bmc/zephyr/zephyr.signed.bin
 
   # Meta data about the flashing process
   - name: flshinfo

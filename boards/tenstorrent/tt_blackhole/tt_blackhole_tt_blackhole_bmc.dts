@@ -5,8 +5,7 @@
  */
 
 /dts-v1/;
-#include <st/g0/stm32g0b1Xe.dtsi>
-#include <st/g0/stm32g0b1c(b-c-e)tx-pinctrl.dtsi>
+#include <tenstorrent/tt_blackhole_bmc.dtsi>
 
 / {
 	model = "Tenstorrent Blackhole board";
@@ -18,8 +17,6 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 };
-
-#include "tt_blackhole_base.dtsi"
 
 &chip0 {
     jtag0: jtag {
