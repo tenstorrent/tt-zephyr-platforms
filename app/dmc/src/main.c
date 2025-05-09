@@ -352,10 +352,10 @@ int main(void)
 		 */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_needs_init_msg) {
-				if (bh_chip_set_static_info(chip, &static_info) == 0) {
+				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
+				    bh_chip_set_board_pwr_lim(chip, max_pwr) == 0) {
 					chip->data.arc_needs_init_msg = false;
 				}
-				bh_chip_set_board_pwr_lim(chip, max_pwr);
 			}
 		}
 
