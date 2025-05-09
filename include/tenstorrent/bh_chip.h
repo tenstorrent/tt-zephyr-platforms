@@ -43,11 +43,10 @@ struct bh_chip_data {
 	bool workaround_applied;
 
 	/*
-	 * Flags set when need to send or receive 1 time info to chip.
+	 * Flag set when need to send or receive 1 time info to chip.
 	 * Could be used for static data or config of peripherals.
 	 */
-	bool arc_just_reset;
-	bool cm_ready_for_msgs;
+	bool arc_needs_init_msg;
 
 	unsigned int bus_cancel_flag;
 
