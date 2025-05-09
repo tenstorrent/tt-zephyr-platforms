@@ -5,15 +5,19 @@ patches:
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
     date: 2024-11-24
+    upstreamable: false
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/81837
     comments: |
       This works. It might go through a few more rounds of review though. No sense in delaying.
+      The PR was rejected by the testing maintainer because he wants rtt support to be delegated
+      to a separate binary.
   - path: zephyr/multiple_icntl.patch
     sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
     module: zephyr
     author: Samridhi Bansal
     email: sbansal@tenstorrent.com
     date: 2025-02-07
+    upstreamable: true
     comments: |
       This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
       It also enhances the driver to support multiple instances on the same platform.
@@ -23,6 +27,7 @@ patches:
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2024-10-10
+    upstreamable: true
     comments: |
       This patch moves BSS and noinit sections to the end.
   - path: zephyr/check-compliance.patch
@@ -31,7 +36,10 @@ patches:
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
     date: 2025-01-15
+    upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/84054
+    merge-status: true
+    merge-date: 2025-04-22
     comments: |
       Fix upstream check_compliance.py to be usable by other modules.
   - path: zephyr/arc-multilvl-int.patch
@@ -40,6 +48,7 @@ patches:
     author: Aaron Fong
     email: afong@tenstorrent.com
     date: 2025-02-07
+    upstreamable: true
     comments: |
       Add support for multilevel interrupts on the ARC architecture.
   - path: zephyr/i2c-dw-multi-ints.patch
@@ -57,6 +66,7 @@ patches:
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
     date: 2025-02-08
+    upstreamable: true
     comments: |
       Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
   - path: zephyr/scripts-runners-fix-telnet-decode.patch
