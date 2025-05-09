@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cm2bm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
 #include "fw_table.h"
@@ -65,6 +66,8 @@ int main(void)
 			StartDVFSTimer();
 		}
 	}
+
+	Bm2CmReadyRequest();
 
 	while (1) {
 		k_msleep(1000);
