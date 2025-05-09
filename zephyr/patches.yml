@@ -78,3 +78,14 @@ patches:
     comments: |
       Fix python implementation of west telnet client to not print newlines
       after decoding server data
+  - path: zephyr/k-event-wait-safe.patch
+    sha256sum: 33a271699fe20d1870fb3549db03ae50c24137a5b8916c0bb5df56b9665d4a88
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-05-07
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
+    comments: |
+      Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantome
+      events.
