@@ -24,6 +24,11 @@ boards:
 runners:
   - file: scripts/tt_flash_runner.py
 
+package-managers:
+  pip:
+    requirement-files:
+      - scripts/requirements.txt
+
 blobs:
   - path: tt_blackhole_erisc.bin
     sha256: c0fa6016a0dc9a7aedb5712af9ebfa843eb9201111e6bf5356b857125a1fe1f7
