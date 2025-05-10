@@ -17,11 +17,6 @@ runs:
       with:
         python-version: '3.10'
 
-    - name: Install west
-      shell: bash
-      run: |
-        pip install west
-
     - name: Install curl
       shell: bash
       run: |
