@@ -38,6 +38,8 @@
 };
 
 &i2c0 {
+	pinctrl-0 = <&i2c0_scl_default &i2c0_sda_default>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
