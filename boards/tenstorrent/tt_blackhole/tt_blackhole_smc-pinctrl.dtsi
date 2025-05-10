@@ -17,4 +17,37 @@
 		bias-disable;
 		input-enable;
 	};
+
+	/* I2C0 */
+	/omit-if-no-ref/ i2c0_scl_default: i2c0_scl_default {
+		pinmux = <TT_BH_PINMUX(C, 33, I2C0_SCL)>;
+		bias-pull-up;
+	};
+	/omit-if-no-ref/ i2c0_sda_default: i2c0_sda_default {
+		pinmux = <TT_BH_PINMUX(D, 32, I2C0_SDA)>;
+		bias-pull-up;
+		input-enable;
+	};
+
+	/* I2C1 */
+	/omit-if-no-ref/ i2c1_scl_default: i2c1_scl_default {
+		pinmux = <TT_BH_PINMUX(D, 27, I2C1_SCL)>;
+		bias-pull-up;
+	};
+	/omit-if-no-ref/ i2c1_sda_default: i2c1_sda_default {
+		pinmux = <TT_BH_PINMUX(D, 25, I2C1_SDA)>;
+		bias-pull-up;
+		input-enable;
+	};
+
+	/* I2C2 */
+	/omit-if-no-ref/ i2c2_scl_default: i2c2_scl_default {
+		pinmux = <TT_BH_PINMUX(B, 34, I2C2_SCL)>;
+		bias-pull-up;
+	};
+	/omit-if-no-ref/ i2c2_sda_default: i2c2_sda_default {
+		pinmux = <TT_BH_PINMUX(A, 33, I2C2_SDA)>;
+		bias-pull-up;
+		input-enable;
+	};
 };

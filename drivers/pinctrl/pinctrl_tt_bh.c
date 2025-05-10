@@ -85,6 +85,18 @@ static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 	case 48: /* uart0_tx_default */
 	case 49: /* uart0_rx_default */
 		break;
+	case 0xfffffffe: /* fake pin for i2c0 scl */
+		break;
+	case 0xfffffffd: /* fake pin for i2c0 sda */
+		break;
+	case 0xfffffffc: /* fake pin for i2c1 scl */
+		break;
+	case 0xfffffffb: /* fake pin for i2c1 sda */
+		break;
+	case 0xfffffffa: /* fake pin for i2c2 scl */
+		break;
+	case 0xfffffff9: /* fake pin for i2c2 sda */
+		break;
 	default:
 		LOG_DBG("No alternate function for pin %u", pin);
 		return -EIO;

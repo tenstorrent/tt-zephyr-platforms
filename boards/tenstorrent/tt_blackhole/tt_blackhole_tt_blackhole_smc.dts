@@ -34,14 +34,20 @@
 };
 
 &i2c0 {
+	pinctrl-0 = <&i2c0_scl_default &i2c0_sda_default>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &i2c1 {
+	pinctrl-0 = <&i2c1_scl_default &i2c1_sda_default>;
+	pinctrl-names = "default";
 	status = "disabled";
 };
 
 &i2c2 {
+	pinctrl-0 = <&i2c1_scl_default &i2c1_sda_default>;
+	pinctrl-names = "default";
 	status = "disabled";
 
 	fanctl0: max6639@58 {
