@@ -1,12 +1,12 @@
 #  Copyright (c) 2025 Tenstorrent AI ULC
 #  SPDX-License-Identifier: Apache-2.0
 
-if FLASH
+if MSPI
 
-menu "Flash drivers"
+menu "MSPI drivers"
 
 # zephyr-keep-sorted-start
-rsource "Kconfig.mspi"
+rsource "Kconfig.dw"
 # zephyr-keep-sorted-stop
 
 endmenu
