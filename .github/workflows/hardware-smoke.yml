@@ -269,3 +269,15 @@ jobs:
           python3 ./scripts/bmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
           echo "SMC RTT logs:"
           python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+
+      - name: run-e2e-reset-test
+        working-directory: zephyr
+        run: |
+          # Run a full flash test, using tt-flash as the runner
+          ./scripts/twister -i -p $SMC_BOARD \
+            --tag e2e-reset -T ../tt-zephyr-platforms/app \
+            --west-flash="--force" \
+            --west-runner tt_flash \
+            --device-testing -c -ll DEBUG \
+            --device-serial-pty rtt \
+            --outdir twister-e2e-reset
