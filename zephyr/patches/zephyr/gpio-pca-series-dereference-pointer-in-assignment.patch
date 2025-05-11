@@ -1,0 +1,35 @@
+From 6647917901f7311a44dcf5c3991e7ab330ce51bf Mon Sep 17 00:00:00 2001
+From: Chris Friedt <cfriedt@tenstorrent.com>
+Date: Sun, 11 May 2025 13:00:47 -0400
+Subject: [PATCH] drivers: gpio: pca series: dereference pointer in assignment
+
+Properly dereference the value pointer in assignment.
+
+```
+In function 'gpio_pca_series_port_read_standard':
+warning: assignment to 'gpio_port_value_t *' {aka 'unsigned int *'} \
+  from 'uint32_t' {aka 'unsigned int'} makes pointer from integer   \
+  without a cast [-Wint-conversion]
+ 1071 |                 value = sys_le32_to_cpu(input_data);
+      |                       ^
+```
+
+Signed-off-by: Chris Friedt <cfriedt@tenstorrent.com>
+---
+ drivers/gpio/gpio_pca_series.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio_pca_series.c b/drivers/gpio/gpio_pca_series.c
+index e3038c937449..e62fed5c8d87 100644
+--- a/drivers/gpio/gpio_pca_series.c
++++ b/drivers/gpio/gpio_pca_series.c
+@@ -1068,7 +1068,7 @@ static int gpio_pca_series_port_read_standard(
+ 	if (ret) {
+ 		LOG_ERR("port read error %d", ret);
+ 	} else {
+-		value = sys_le32_to_cpu(input_data);
++		*value = (gpio_port_value_t)sys_le32_to_cpu(input_data);
+ 	}
+ 	k_sem_give(&data->lock);
+ #endif /* CONFIG_GPIO_PCA_SERIES_INTERRUPT */
+

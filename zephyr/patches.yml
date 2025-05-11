@@ -89,3 +89,15 @@ patches:
     comments: |
       Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantome
       events.
+  - path: zephyr/gpio-pca-series-dereference-pointer-in-assignment.patch
+    sha256sum: 1bd7c141bfc019c97dc8a183000d80bcdf7b5fd951e3f573f8d7d604dcae764e
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-05-11
+    upstreamable: true
+    issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
+    comments: |
+      We cannot use interrupts for this driver, since they are tied to the same pin on the
+      stm32. By disabling interrupts, I was able to discover and fix a regression in the driver.
