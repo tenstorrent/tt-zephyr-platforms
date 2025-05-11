@@ -19,7 +19,7 @@
 	};
 };
 
-#include "tt_blackhole_base.dtsi"
+#include "tt_blackhole_dmc.dtsi"
 
 &chip0 {
     jtag0: jtag {
