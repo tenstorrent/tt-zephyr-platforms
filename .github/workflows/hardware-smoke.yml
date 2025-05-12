@@ -230,23 +230,6 @@ jobs:
             -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
 
-      - name: Upload E2E Test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: E2E test results (${{ matrix.config.board }})
-	  include-hidden-files: true
-          path: |
-            zephyr/twister-*-e2e/**/handler.log
-            zephyr/twister-*-e2e/**/twister_harness.log
-            zephyr/twister-*-e2e/**/zephyr.dts
-            zephyr/twister-*-e2e/**/.config
-            zephyr/twister-*-e2e/**/*.map
-            zephyr/twister-*-e2e/**/zephyr.elf
-            zephyr/twister-*-e2e/**/*.lst
-            zephyr/twister-*-e2e/twister.log
-            zephyr/twister-*-e2e/twister.json
-
       - name: run-e2e-flash-test
         working-directory: zephyr
         run: |
@@ -259,14 +242,23 @@ jobs:
             --device-serial-pty rtt \
             --outdir twister-e2e-flash
 
-      - name: Upload E2E Flash Results
+      - name: Upload E2E Test results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: E2E Flash results (${{ matrix.config.board }})
+          name: E2E test results (${{ matrix.config.board }})
           include-hidden-files: true
           path: |
-            zephyr/twister-e2e-flash/**/update.fwbundle
+            zephyr/twister-*e2e*/**/handler.log
+            zephyr/twister-*e2e*/**/twister_harness.log
+            zephyr/twister-*e2e*/**/zephyr.dts
+            zephyr/twister-*e2e*/**/.config
+            zephyr/twister-*e2e*/**/*.map
+            zephyr/twister-*e2e*/**/zephyr.elf
+            zephyr/twister-*e2e*/**/*.lst
+            zephyr/twister-*e2e*/twister.log
+            zephyr/twister-*e2e*/twister.json
+            zephyr/twister-*e2e*/**/update.fwbundle
 
       - name: Print RTT logs
         if: ${{ failure() }}
