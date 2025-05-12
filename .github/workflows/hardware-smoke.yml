@@ -90,6 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DMC Smoke test results (${{ matrix.config.board }})
+          include-hidden-files: true
           path: |
             zephyr/twister-dmc-smoke/**/handler.log
             zephyr/twister-dmc-smoke/**/zephyr.dts
@@ -130,6 +131,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SMC Smoke test results (${{ matrix.config.board }})
+          include-hidden-files: true
           path: |
             zephyr/twister-smc-smoke/**/handler.log
             zephyr/twister-smc-smoke/**/zephyr.dts
@@ -231,6 +233,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: E2E test results (${{ matrix.config.board }})
+	  include-hidden-files: true
           path: |
             zephyr/twister-*-e2e/**/handler.log
             zephyr/twister-*-e2e/**/zephyr.dts
@@ -258,6 +261,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: E2E Flash results (${{ matrix.config.board }})
+          include-hidden-files: true
           path: |
             zephyr/twister-e2e-flash/**/update.fwbundle
 
