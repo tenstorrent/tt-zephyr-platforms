@@ -10,6 +10,14 @@
 
 #include "tt_blackhole_base.dtsi"
 
+/* These two I/O have external pull-ups to 1.8V */
+&i2c1_scl_pa9 {
+	/delete-property/ bias-pull-up;
+};
+&i2c1_sda_pa10 {
+	/delete-property/ bias-pull-up;
+};
+
 /*
  * Left chip is local (comes up in non bifercation mode) this is referred to as chip1
  * in the schematics
