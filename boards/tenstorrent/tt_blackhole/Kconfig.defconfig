@@ -3,3 +3,21 @@
 
 config FLASH_EX_OP_ENABLED
 	default y if FLASH_SPI_DW
+
+if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_DMC
+
+# Use deferred logging for DMC, since it allows us to capture the entirety of ZTest output
+# https://github.com/zephyrproject-rtos/zephyr/blob/main/subsys/testsuite/ztest/src/ztest.c#L723
+choice LOG_MODE
+	# Required for CONFIG_TEST_LOGGING_FLUSH_AFTER_TEST
+	default LOG_MODE_DEFERRED
+endchoice
+choice LOG_BACKEND_RTT_MODE
+	# Do not block the logging thread in case of a full buffer
+	default LOG_BACKEND_RTT_MODE_DROP
+endchoice
+# RTT is the primary log backend for devices connected via JTAG or SWD without UARTs
+config LOG_BACKEND_RTT
+	default y if LOG
+
+endif
