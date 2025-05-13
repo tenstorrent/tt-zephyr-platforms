@@ -32,21 +32,24 @@ DEFAULT_DMC_CFG = (
 OPT_DIR = Path("/opt/tenstorrent")
 SDK_SYSROOT = Path("/opt/zephyr/zephyr-sdk-0.17.0/sysroots/x86_64-pokysdk-linux")
 
+# Execute CMake to locate SDK sysroot
+proc = subprocess.run(
+    ["cmake", "-P", str(Path(__file__).parent / "find_zephyr_sdk.cmake")],
+    capture_output=True,
+)
+if "SDK_INSTALL_DIR" in str(proc.stderr):
+    DEFAULT_SDK_INSTALL_DIR = (
+        Path(str(proc.stderr).split(":")[1][:-3]) / "sysroots" / "x86_64-pokysdk-linux"
+    )
+else:
+    DEFAULT_SDK_INSTALL_DIR = SDK_SYSROOT
+
+DEFAULT_OPENOCD = DEFAULT_SDK_INSTALL_DIR / "usr" / "bin" / "openocd"
+DEFAULT_SCRIPTS_DIR = DEFAULT_SDK_INSTALL_DIR / "usr" / "share" / "openocd" / "scripts"
+DEFAULT_HW_MAP = OPT_DIR / "twister" / "hw-map.yml"
+
 
 def parse_args():
-    # Execute CMake to locate SDK sysroot
-    proc = subprocess.run(
-        ["cmake", "-P", str(Path(__file__).parent / "find_zephyr_sdk.cmake")],
-        capture_output=True,
-    )
-    if "SDK_INSTALL_DIR" in str(proc.stderr):
-        DEFAULT_SDK_INSTALL_DIR = (
-            Path(str(proc.stderr).split(":")[1][:-3])
-            / "sysroots"
-            / "x86_64-pokysdk-linux"
-        )
-    else:
-        DEFAULT_SDK_INSTALL_DIR = SDK_SYSROOT
     parser = argparse.ArgumentParser(description="Reset DMC", allow_abbrev=False)
     parser.add_argument(
         "-c",
@@ -73,7 +76,7 @@ def parse_args():
     parser.add_argument(
         "-m",
         "--hw-map",
-        default=OPT_DIR / "twister" / "hw-map.yml",
+        default=DEFAULT_HW_MAP,
         help="Use a specific hw-map.yml file",
         metavar="MAP",
         type=Path,
@@ -81,15 +84,15 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--openocd",
-        default=DEFAULT_SDK_INSTALL_DIR / "usr" / "bin" / "openocd",
-        help="Use a specific hw-map.yml file",
+        default=DEFAULT_OPENOCD,
+        help="Use a specific openocd executable",
         metavar="FILE",
         type=Path,
     )
     parser.add_argument(
         "-s",
         "--scripts",
-        default=DEFAULT_SDK_INSTALL_DIR / "usr" / "share" / "openocd" / "scripts",
+        default=DEFAULT_SCRIPTS_DIR,
         help="Path to OpenOCD scripts directory",
         metavar="DIR",
         type=Path,
