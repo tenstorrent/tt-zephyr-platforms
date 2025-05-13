@@ -6,6 +6,7 @@
 
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
 #include "cm2dm_msg.h"
@@ -208,7 +209,10 @@ int32_t Dm2CmSetBoardPwrLimit(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	uint16_t pwr_limit = *(uint16_t *)data;
+	uint32_t pwr_limit = sys_get_le16(data);
+
+	LOG_INF("Cable Power Limit: %u\n", pwr_limit);
+	pwr_limit = MIN(pwr_limit, get_fw_table()->chip_limits.board_power_limit);
 
 	SetThrottlerLimit(kThrottlerBoardPwr, pwr_limit);
 	UpdateTelemetryBoardPwrLimit(pwr_limit);
