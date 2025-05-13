@@ -247,6 +247,7 @@ def wait_for_smc_boot(timeout):
         if remaining == 0:
             print(f"Card did not reappear after {timeout} seconds)")
             return os.EX_UNAVAILABLE
+    return os.EX_OK
 
 
 def main():

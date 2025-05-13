@@ -6,21 +6,20 @@
 import logging
 import os
 import subprocess
-
-import pyluwen
-import pytest
 import re
 import sys
 import time
-
 from pathlib import Path
+
+import pyluwen
+import pytest
 from twister_harness import DeviceAdapter
 
-logger = logging.getLogger(__name__)
-
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
+from pcie_utils import rescan_pcie
+import dmc_reset
 
-from pcie_utils import rescan_pcie  # noqa: E402
+logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -186,3 +185,41 @@ def test_smi_reset():
 
     logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
+
+
+@pytest.mark.flash
+def test_dirty_reset():
+    """
+    Checks that the SMC comes up correctly after a "dirty" reset, where the
+    DMC resets without the SMC requesting it. This is similar to the conditions
+    that might be encountered after a NOC hang
+    """
+    total_tries = 10
+    timeout = 60  # seconds to wait for SMC boot
+    fail_count = 0
+
+    # Use dmc-reset script as a library to reset the DMC
+    def args():
+        return None
+
+    args.config = dmc_reset.DEFAULT_DMC_CFG
+    args.debug = 0
+    args.openocd = dmc_reset.DEFAULT_OPENOCD
+    args.scripts = dmc_reset.DEFAULT_SCRIPTS_DIR
+    args.jtag_id = None
+    args.hexfile = None
+    for i in range(total_tries):
+        logger.info(f"Iteration {i}:")
+        ret = dmc_reset.reset_dmc(args)
+        if ret != os.EX_OK:
+            logger.warning(f"DMC reset failed on iteration {i}")
+            fail_count += 1
+            continue
+        ret = dmc_reset.wait_for_smc_boot(timeout)
+        if ret != os.EX_OK:
+            logger.warning(f"SMC did not boot after dirty reset on iteration {i}")
+            fail_count += 1
+            continue
+        logger.info(f"Iteration {i} of dirty reset test passed")
+    logger.info(f"dirty reset failed {fail_count}/{total_tries} times.")
+    assert fail_count == 0, "dirty reset failed a non-zero number of times."
