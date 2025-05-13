@@ -1,0 +1,45 @@
+diff --git a/cmake/modules/kconfig.cmake b/cmake/modules/kconfig.cmake
+index af8c1e33fa7..f79b06ce450 100644
+--- a/cmake/modules/kconfig.cmake
++++ b/cmake/modules/kconfig.cmake
+@@ -90,6 +90,14 @@ if(DEFINED BOARD_REVISION)
+     message(DEPRECATION "Use of '${board_rev_file}.conf' is deprecated, please switch to '${board_rev_file}_defconfig'")
+     set_ifndef(BOARD_REVISION_CONFIG ${BOARD_DIR}/${board_rev_file}.conf)
+   endif()
++
++  # Generate boolean board revision kconfig option
++  zephyr_string(SANITIZE TOUPPER BOARD_REVISION_GEN_CONFIG_VAR "BOARD_REVISION_${BOARD_REVISION}")
++
++  file(APPEND ${KCONFIG_BOARD_DIR}/Kconfig
++       "config ${BOARD_REVISION_GEN_CONFIG_VAR}\n"
++       "\tdef_bool y\n"
++  )
+ endif()
+ 
+ set(DOTCONFIG                  ${PROJECT_BINARY_DIR}/.config)
+diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
+index fe56b715162..e27da6704ac 100755
+--- a/scripts/ci/check_compliance.py
++++ b/scripts/ci/check_compliance.py
+@@ -1009,6 +1009,7 @@ flagged.
+         "BOARD_MPS2_AN521_CPUTEST", # Used for board and SoC extension feature tests
+         "BOARD_NATIVE_SIM_NATIVE_64_TWO", # Used for board and SoC extension feature tests
+         "BOARD_NATIVE_SIM_NATIVE_ONE", # Used for board and SoC extension feature tests
++        "BOARD_REVISION_",  # Used for automating boolean board revision options
+         "BOOT_DIRECT_XIP", # Used in sysbuild for MCUboot configuration
+         "BOOT_DIRECT_XIP_REVERT", # Used in sysbuild for MCUboot configuration
+         "BOOT_ENCRYPTION_KEY_FILE", # Used in sysbuild
+diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
+index 22ebfd230dc..1e878ce9fc5 100755
+--- a/scripts/ci/check_compliance.py
++++ b/scripts/ci/check_compliance.py
+@@ -958,7 +958,8 @@ Missing SoC names or CONFIG_SOC vs soc.yml out of sync:
+                 sym_name = sym_name[len(self.CONFIG_):]  # Strip CONFIG_
+                 if sym_name not in defined_syms and \
+                    sym_name not in self.UNDEF_KCONFIG_ALLOWLIST and \
+-                   not (sym_name.endswith("_MODULE") and sym_name[:-7] in defined_syms):
++                   not (sym_name.endswith("_MODULE") and sym_name[:-7] in defined_syms) \
++                   and not sym_name.startswith("BOARD_REVISION_"):
+ 
+                     undef_to_locs[sym_name].append(f"{path}:{lineno}")
+ 

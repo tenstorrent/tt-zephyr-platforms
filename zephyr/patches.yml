@@ -112,3 +112,14 @@ patches:
     comments: |
       The gpio_pca_series driver did not have pin_get_config() implemented. This change adds
       that functionality, with the exception of reading drive strength.
+  - path: zephyr/generate-boolean-board-revision-kconfig.patch
+    sha256sum: e519edac40d4b1d4a244d1815ee922cd8ebb138a4d8b6f54e3858f5954409f23
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-05-12
+    upstreamable: true
+    issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89859
+    comments: |
+      Automatically generate a boolean Kconfig option for the active board revision.
