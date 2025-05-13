@@ -38,9 +38,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -174,9 +172,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/fw/stable:/opt/tenstorrent/fw/stable
-        - /opt/tenstorrent/twister:/opt/tenstorrent/twister
-        - /opt/tenstorrent/bin/openocd-rtt:/opt/tenstorrent/bin/openocd-rtt
+        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
