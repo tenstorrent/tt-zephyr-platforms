@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	asic_reset {
+	       compatible = "zephyr,gpio-line";
+	       label = "Emulated ASIC reset line";
+	       gpios = <&gpio0 0 GPIO_ACTIVE_LOW>;
+	};
+
+	pgood {
+	       compatible = "zephyr,gpio-line";
+	       label = "Emulated power good indicator";
+	       gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+	};
+
+	board_fault_led {
+	       compatible = "zephyr,gpio-line";
+	       label = "Emulated board fault LED";
+	       gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+	};
+};
