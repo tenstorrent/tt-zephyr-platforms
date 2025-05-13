@@ -5,6 +5,7 @@
  */
 
 #include <zephyr/sys/util.h>
+#include <zephyr/logging/log.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
 #include "cm2dm_msg.h"
@@ -15,6 +16,7 @@
 #define kThrottlerAiclkScaleFactor 500.0F
 #define DEFAULT_BOARD_PWR_LIMIT 150
 
+LOG_MODULE_REGISTER(throttler);
 typedef enum {
 	kThrottlerTDP,
 	kThrottlerFastTDC,
@@ -144,8 +146,11 @@ static Throttler throttler[kThrottlerCount] = {
 
 static void SetThrottlerLimit(ThrottlerId id, float limit)
 {
-	throttler[id].limit =
+	float clamped_limit =
 		CLAMP(limit, throttler_limit_ranges[id].min, throttler_limit_ranges[id].max);
+
+	LOG_INF("Throttler %d limit set to %d\n", id, (uint32_t)clamped_limit);
+	throttler[id].limit = clamped_limit;
 }
 
 void InitThrottlers(void)
