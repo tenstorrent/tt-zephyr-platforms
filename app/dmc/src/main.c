@@ -148,25 +148,14 @@ uint16_t detect_max_pwr(void)
 		GPIO_DT_SPEC_GET_OR(DT_PATH(psu_sense0), gpios, {0});
 	static const struct gpio_dt_spec psu_sense1 =
 		GPIO_DT_SPEC_GET_OR(DT_PATH(psu_sense1), gpios, {0});
-	static const struct gpio_dt_spec board_id0 =
-		GPIO_DT_SPEC_GET_OR(DT_PATH(board_id0), gpios, {0});
 
 	gpio_pin_configure_dt(&psu_sense0, GPIO_INPUT);
 	gpio_pin_configure_dt(&psu_sense1, GPIO_INPUT);
-	gpio_pin_configure_dt(&board_id0, GPIO_INPUT);
 
 	int sense0_val = gpio_pin_get_dt(&psu_sense0);
 	int sense1_val = gpio_pin_get_dt(&psu_sense1);
-	int board_id0_val = gpio_pin_get_dt(&board_id0);
 
-	uint16_t board_pwr;
 	uint16_t psu_pwr;
-
-	if (board_id0_val) {
-		board_pwr = 450;
-	} else {
-		board_pwr = 300;
-	}
 
 	if (!sense0_val && !sense1_val) {
 		psu_pwr = 600;
@@ -187,7 +176,7 @@ uint16_t detect_max_pwr(void)
 		gpio_pin_configure_dt(&psu_sense0, GPIO_INPUT);
 	}
 
-	return MIN(board_pwr, psu_pwr);
+	return psu_pwr;
 }
 
 int main(void)
