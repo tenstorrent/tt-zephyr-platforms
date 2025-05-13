@@ -345,29 +345,7 @@ int main(void)
 
 		/* handler for PGOOD */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.pgood_fall_triggered && !chip->data.pgood_severe_fault) {
-				int64_t current_uptime_ms = k_uptime_get();
-				/* Assert board fault */
-				gpio_pin_set_dt(&board_fault_led, 1);
-				/* Report over SMBus - to add later */
-				/* Assert ASIC reset */
-				bh_chip_assert_asic_reset(chip);
-				/* If pgood went down again within 1 second */
-				if (chip->data.pgood_last_trip_ms != 0 &&
-				    current_uptime_ms - chip->data.pgood_last_trip_ms < 1000) {
-					/* Assert more severe fault over IPMI - to add later */
-					chip->data.pgood_severe_fault = true;
-				}
-				chip->data.pgood_last_trip_ms = current_uptime_ms;
-				chip->data.pgood_fall_triggered = false;
-			}
-			if (chip->data.pgood_rise_triggered && !chip->data.pgood_severe_fault) {
-				/* Follow out of reset procedure */
-				bh_chip_reset_chip(chip, true);
-				/* Clear board fault */
-				gpio_pin_set_dt(&board_fault_led, 0);
-				chip->data.pgood_rise_triggered = false;
-			}
+			handle_pgood_event(chip, board_fault_led);
 		}
 
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
