@@ -20,3 +20,4 @@ libtool
 ltmain.sh
 stamp-h1
 tt-console
+tt-console-memtest
