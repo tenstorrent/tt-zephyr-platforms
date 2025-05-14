@@ -30,7 +30,6 @@ manifest_base=$(west list -f "{abspath}" manifest)
 $zep_base/scripts/ci/check_compliance.py \
 	-e Kconfig \
 	-e ClangFormat \
-	-e Ruff \
 	-n -o /dev/null \
 	-c main..$HEAD
 
