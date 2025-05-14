@@ -1,4 +1,4 @@
-# Migration Guide: TT-Zephyr-Platforms v18.2.0
+# Migration Guide: TT-Zephyr-Platforms v18.3.0
 
 ---
 
