@@ -14,6 +14,7 @@ boards:
     - name: "p300a"
     - name: "p300b"
     - name: "p300c"
+    - name: "galaxy"
   socs:
   - name: tt_blackhole
 
