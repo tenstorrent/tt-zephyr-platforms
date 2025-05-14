@@ -264,3 +264,64 @@ jobs:
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
           python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+
+  build-fw-artifact:
+    uses: ./.github/workflows/build-fw.yml
+    secrets:
+      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
+  metal-test:
+    needs: build-fw-artifact
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - board: p100
+            runs-on:
+              - p100-jtag
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.58.0-rc26-5-g668476a4d2
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /dev/hugepages:/dev/hugepages
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    env:
+      ARCH_NAME: blackhole
+    defaults:
+      run:
+        shell: bash
+        working-directory: /home/user/tt-metal/
+    steps:
+      - id: mkdir-home-user-tt-metal
+        run: |
+          mkdir -p /home/user/tt-metal
+      - name: Download the latest firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
+          path: /home/user/tt-metal
+      - name: Run the rescan-pcie.sh script
+        run: |
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/rescan-pcie.sh
+          source /tmp/rescan-pcie.sh
+      - name: Flash the firmware
+        run: |
+          sudo chmod -R a+rwX $HOME/.cargo $HOME/.cache
+          python -m venv .env
+          source .env/bin/activate
+          pip install git+https://github.com/tenstorrent/tt-flash.git
+          tt-flash --fw-tar /home/user/tt-metal/fw_pack-*.fwbundle --force
+      - name: Run Container Test
+        run: |
+          sh -c "$TEST_COMMAND"
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean out metal
+          rm -f /home/user/tt-metal/fw_pack-*.fwbundle
