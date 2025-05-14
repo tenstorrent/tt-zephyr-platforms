@@ -41,6 +41,10 @@
 #define UART_TT_VIRT_DISCOVERY_ADDR 0x800304a0
 #endif
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 #define UART_TT_VIRT_INVALID_ADDR 0xDEADBEAF
 
 #define STATUS_POST_CODE_REG_ADDR 0x80030060
@@ -302,9 +306,11 @@ static inline void vuart_putc(struct mem_access_driver *driver, struct console *
 	}
 }
 
-static inline int vuart_getc(struct mem_access_driver *driver, struct console *cons)
+static inline int vuart_read(struct mem_access_driver *driver, struct console *cons,
+			     uint8_t *buf, size_t len)
 {
 	struct tt_vuart vuart;
+	size_t read_len;
 
 	if (driver->read(cons->vuart_addr, (uint8_t *)&vuart, sizeof(vuart)) < 0) {
 		E("failed to read vuart descriptor");
@@ -319,20 +325,21 @@ static inline int vuart_getc(struct mem_access_driver *driver, struct console *c
 		return EOF;
 	}
 
-	int ch;
+	read_len = MIN(len, tt_vuart_buf_size(vuart.tx_head, vuart.tx_tail));
+
 	uint32_t buf_addr = cons->vuart_addr + offsetof(struct tt_vuart, buf) +
 		(vuart.tx_head % vuart.tx_cap);
-	if (driver->read(buf_addr, (uint8_t *)&ch, sizeof(ch)) < 0) {
+	if (driver->read(buf_addr, buf, read_len) < 0) {
 		E("failed to read vuart buffer");
 		return EOF;
 	}
-	vuart.tx_head++;
+	vuart.tx_head += read_len;
 	if (driver->write(cons->vuart_addr, (uint8_t *)&vuart, sizeof(vuart)) < 0) {
 		E("failed to write vuart descriptor");
 		return EOF;
 	}
 
-	return ch;
+	return read_len;
 }
 
 
@@ -371,14 +378,17 @@ static int loop(struct mem_access_driver *driver)
 			break;
 		}
 
+		uint8_t rbuf[256];
 		int ch;
 
 		/* dump anything available from the console before sending anything */
-		while ((ch = vuart_getc(driver, &_cons)) != EOF) {
-			if (ch == '\n') {
-				putchar('\r');
+		while ((ret = vuart_read(driver, &_cons, rbuf, sizeof(rbuf))) != EOF) {
+			for (int i = 0; i < ret; ++i) {
+				if (rbuf[i] == '\n') {
+					putchar('\r');
+				}
+				(void)putchar(rbuf[i]);
 			}
-			(void)putchar(ch);
 		}
 
 		fd_set fds;

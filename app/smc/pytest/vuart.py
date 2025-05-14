@@ -55,8 +55,8 @@ def test_boot_banner_pcie(tt_console: Path, arc_chip):
 def test_boot_banner_jtag(tt_console: Path, arc_chip):
     arc_chip.axi_read32(ARC_STATUS)
 
-    # run 'tt-console' in quiet mode, and timeout after 10 seconds
-    cmd = f"{tt_console} -q -j -w 10000"
+    # run 'tt-console' in quiet mode, and timeout after 2 seconds
+    cmd = f"{tt_console} -q -j -w 2000"
     proc = subprocess.run(cmd.split(), capture_output=True, check=True)
 
     out = proc.stdout.decode("utf-8")
