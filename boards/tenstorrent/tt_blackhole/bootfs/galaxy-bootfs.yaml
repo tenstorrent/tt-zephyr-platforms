@@ -1,7 +1,7 @@
-name: P300A-1_left
+name: GALAXY-1
 
-product_name: P300A
-gen_name: P300A_L
+product_name: GALAXY
+gen_name: GALAXY
 
 alignment:
   flash_device_size: 0x1000000
@@ -10,7 +10,11 @@ alignment:
 images:
 
   - name: cmfwcfg
-    binary: $BUILD_DIR/smc/generated_board_cfg/P300A_L/fw_table.bin
+    binary: $BUILD_DIR/smc/generated_board_cfg/GALAXY/fw_table.bin
+
+  # Copy of cmfwcfg for tt-mod restore
+  - name: origcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/GALAXY/fw_table.bin
 
   - name: cmfw
     binary: $BUILD_DIR/smc/zephyr/zephyr.bin
@@ -24,7 +28,7 @@ images:
     binary: $ROOT/zephyr/blobs/tt_blackhole_erisc.bin
 
   - name: memfwcfg
-    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params_P300A.bin
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params_GALAXY.bin
 
   - name: memfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin
@@ -35,18 +39,15 @@ images:
   - name: ethsdfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
 
-  # Device Mgmt FW (called bmfw here for historical reasons)
-  - name: bmfw
-    padto: 0xd000
-    binary: $BUILD_DIR/dmc/zephyr/zephyr.signed.bin
+  # Galaxy does not have Device Mgmt FW
 
   # Meta data about the flashing process
   - name: flshinfo
-    binary: $BUILD_DIR/smc/generated_board_cfg/P300A_L/flash_info.bin
+    binary: $BUILD_DIR/smc/generated_board_cfg/GALAXY/flash_info.bin
 
   # Read only board config data
   - name: boardcfg
-    binary: $BUILD_DIR/smc/generated_board_cfg/P300A_L/read_only.bin
+    binary: $BUILD_DIR/smc/generated_board_cfg/GALAXY/read_only.bin
     source: $END - 0x1000
     provisioning_only: true
 
