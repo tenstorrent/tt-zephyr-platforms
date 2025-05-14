@@ -30,6 +30,7 @@
 
 #include <tenstorrent/uart_tt_virt.h>
 
+#include "arc_jtag.h"
 #include "arc_tlb.h"
 
 #ifndef UART_TT_VIRT_MAGIC
@@ -90,7 +91,9 @@ struct mem_access_driver {
 
 static struct console _cons;
 static int verbose;
+static bool use_jtag;
 
+static struct jtag_init_data jtag_init_data;
 static struct tlb_init_data tlb_init_data = {
 	.dev_name = TT_DEVICE,
 	.pci_device_id = BH_SCRAPPY_PCI_DEVICE_ID,
@@ -437,8 +440,10 @@ static void usage(const char *progname)
 	  "-d <path>          : path to device node (default: %s)\n"
 	  "-h                 : print this help message\n"
 	  "-i <pci_device_id> : pci device id (default: %04x)\n"
+	  "-j                 : Use JLink to connect to the device\n"
 	  "-m <magic>         : vuart magic (default: %08x)\n"
 	  "-q                 : decrease debug verbosity\n"
+	  "-s <serial>        : Serial number of JLink device\n"
 	  "-t <tlb_id>        : 2MiB TLB index (default: %u)\n"
 	  "-v                 : increase debug verbosity\n"
 	  "-w <timeout>       : wait timeout ms and exit\n",
@@ -450,7 +455,7 @@ static int parse_args(struct console *cons, int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt(argc, argv, ":a:d:hi:m:qt:vw:")) != -1) {
+	while ((c = getopt(argc, argv, ":a:d:hi:jm:qs:t:vw:")) != -1) {
 		switch (c) {
 		case 'a': {
 			unsigned long addr;
@@ -485,6 +490,9 @@ static int parse_args(struct console *cons, int argc, char **argv)
 			}
 			tlb_init_data.pci_device_id = (uint16_t)pci_device_id;
 		} break;
+		case 'j': {
+			use_jtag = true;
+		} break;
 		case 'm': {
 			unsigned long magic;
 
@@ -500,6 +508,9 @@ static int parse_args(struct console *cons, int argc, char **argv)
 		} break;
 		case 'q':
 			--verbose;
+			break;
+		case 's':
+			jtag_init_data.serial_number = optarg;
 			break;
 		case 't': {
 			long tlb_id;
@@ -571,6 +582,13 @@ struct mem_access_driver tlb_driver = {
 	.stop = tlb_exit,
 };
 
+struct mem_access_driver jtag_driver = {
+	.start = arc_jtag_init,
+	.read = arc_jtag_read_mem,
+	.write = arc_jtag_write_mem,
+	.stop = arc_jtag_exit,
+};
+
 int main(int argc, char **argv)
 {
 	struct mem_access_driver *driver;
@@ -586,9 +604,15 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	tlb_init_data.verbose = verbose;
-	init_data = &tlb_init_data;
-	driver = &tlb_driver;
+	if (use_jtag) {
+		jtag_init_data.verbose = verbose;
+		init_data = &jtag_init_data;
+		driver = &jtag_driver;
+	} else {
+		tlb_init_data.verbose = verbose;
+		init_data = &tlb_init_data;
+		driver = &tlb_driver;
+	}
 
 	if (driver->start(init_data) < 0) {
 		goto error;

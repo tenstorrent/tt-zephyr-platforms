@@ -45,8 +45,6 @@ tests:
     harness_config:
       pytest_root:
         - pytest/vuart.py
-      pytest_args:
-        - "--dut-scope=session"
     extra_dtc_overlay_files:
       - vuart.overlay
     extra_overlay_confs:
