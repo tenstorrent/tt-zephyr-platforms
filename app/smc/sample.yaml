@@ -2,6 +2,7 @@ sample:
   description: Tenstorrent Blackhole Chip Management Firmware
   name: bh-cmfw
 common:
+  timeout: 120
   platform_allow:
     - tt_blackhole@p100/tt_blackhole/smc
     - tt_blackhole@p100a/tt_blackhole/smc
