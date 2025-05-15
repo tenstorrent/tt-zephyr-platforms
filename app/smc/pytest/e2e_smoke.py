@@ -138,6 +138,42 @@ def test_smbus_status(arc_chip):
     logger.info('SMC SMBUS status: "0x%x"', status)
 
 
+def test_flash_write(arc_chip):
+    """
+    Validates that flash read/write works via pyluwen,
+    since this is the same interface used by tt-flash
+    """
+    SPI_RX_TRAIN_ADDR = 0x13FFC
+    SPI_RX_TRAIN_DATA = 0xA5A55A5A
+    SCRATCH_REGION = 0x2800000
+    SCRATCH_REGION_SIZE = 0x10000
+    WRITE_SIZE = 0x8000
+    NUM_ITERATIONS = 5
+
+    # Read the SPI RX training region and validate that it is correct
+    data = bytes(4)
+    check_data = SPI_RX_TRAIN_DATA.to_bytes(4, byteorder="little")
+    arc_chip.as_bh().spi_read(SPI_RX_TRAIN_ADDR, data)
+    assert data == check_data, "SMC SPI RX training region is not valid"
+    logger.info(
+        f"SPI RX training region: 0x{int.from_bytes(data, byteorder='little'):x}"
+    )
+
+    # To best simulate the write pattern of tt-flash, write large chunks
+    for i in range(NUM_ITERATIONS):
+        for addr in range(
+            SCRATCH_REGION, SCRATCH_REGION + SCRATCH_REGION_SIZE, WRITE_SIZE
+        ):
+            data = bytes(os.urandom(WRITE_SIZE))
+            check_data = bytes(WRITE_SIZE)
+            arc_chip.as_bh().spi_write(addr, data)
+            arc_chip.as_bh().spi_read(addr, check_data)
+
+            assert data == check_data, "SMC SPI write failed"
+            logger.info(f"Write to scratch region: 0x{addr:x} passed")
+        logger.info("Flash test %d of %d passed", i + 1, NUM_ITERATIONS)
+
+
 def get_int_version_from_file(filename) -> int:
     with open(filename, "r") as f:
         version_data = f.readlines()
@@ -240,9 +276,9 @@ def test_fw_bundle_version(arc_chip):
     telemetry = arc_chip.get_telemetry()
 
     exp_bundle_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "VERSION")
-    assert (
-        telemetry.fw_bundle_version == exp_bundle_version
-    ), f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    assert telemetry.fw_bundle_version == exp_bundle_version, (
+        f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    )
     logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
 
 
@@ -363,8 +399,8 @@ def test_tensix_reset(arc_chip):
         scratch_get = arc_chip.noc_read32(
             noc_id=0, x=1, y=2, addr=ETH_RISC_PREFECTH_CTRL_ADDR
         )
-        assert (
-            scratch_get & 1 == 0
-        ), "Tensix scratch bit not cleared. Tensix reset failed"
+        assert scratch_get & 1 == 0, (
+            "Tensix scratch bit not cleared. Tensix reset failed"
+        )
 
         logger.info(f"Tensix reset test iteration {i} passed")
