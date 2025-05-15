@@ -16,3 +16,5 @@ This document lists recommended and required changes for those migrating from th
   Management Controller (BMC) which is part of the [Intelligent Platform Management Interface](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface)
   (IPMI) specification. Any automation or scripts that refer to that "cpu cluster" (in Zephyr
   terminology) or application (`app/bmc`) should be adjusted accordingly.
+
+* SMC FW telemetry removes board input current reporting, and replaces it with board input power. Any tools using the telemetry entry `TAG_INPUT_CURRENT (39)` should be updated to use `TAG_INPUT_POWER (54)`

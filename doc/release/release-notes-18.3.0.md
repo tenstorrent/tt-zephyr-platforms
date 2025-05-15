@@ -11,6 +11,12 @@ Major enhancements with this release include:
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
 
+### New Features
+
+* DMC now reads and sends power (instead of current) from INA228 device to SMC
+  * SMC now uses power reading as input to Total Board Power (TBP) throttler instead of `12 * current`
+* DMC support for accessing tca9554a GPIO expanders added
+
 ### Stability Improvements
 
 * Add I2C handshake between SMC and DMC FW to ensure that initialization messages are received
@@ -35,9 +41,14 @@ An overview of required and recommended changes to make when migrating from the 
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
+### Removed APIs
+* Telemetry no longer reports TAG_INPUT_CURRENT
+
 [comment]: <> (H3 Deprecated APIs, if applicable)
 
 [comment]: <> (H3 New APIs, if applicable)
+### New APIs
+* Telemetry now reports TAG_INPUT_POWER to replace TAG_INPUT_CURRENT
 
 [comment]: <> (H2 New Boards, if applicable)
 
