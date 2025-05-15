@@ -10,6 +10,12 @@ Major enhancements with this release include:
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
+
+### Stability Improvements
+
+* Add I2C handshake between SMC and DMC FW to ensure that initialization messages are received
+* Total Board Power (TBP) throttler parameters have been tuned, and TBP limit is now set in the fwtable to guarantee product definition is followed
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## Migration guide
