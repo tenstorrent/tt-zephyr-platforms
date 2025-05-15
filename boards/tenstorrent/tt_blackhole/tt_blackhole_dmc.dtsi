@@ -105,7 +105,6 @@
 	pinctrl-names = "default";
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
-	compatible = "st,tt-stm32-i2c";
 
 	scl-gpios = <&gpioa 7 GPIO_OPEN_DRAIN>;
 	sda-gpios = <&gpiob 4 GPIO_OPEN_DRAIN>;
@@ -260,6 +259,5 @@
 };
 
 &smbus1 {
-	compatible = "st,tt-stm32-smbus";
 	status = "okay";
 };

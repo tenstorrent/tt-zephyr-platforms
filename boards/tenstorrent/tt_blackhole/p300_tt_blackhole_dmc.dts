@@ -207,7 +207,6 @@
  */
 &smbus1 {
 	status = "okay";
-	compatible = "st,tt-stm32-smbus";
 
 	chip0_arc: bh_arc@A {
 		compatible = "tenstorrent,bh-arc";
