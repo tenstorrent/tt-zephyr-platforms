@@ -2,14 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 chip_limits {
-  asic_fmax: 1000
+  asic_fmax: 1350
+  asic_fmin: 800
   vdd_max: 0
   vdd_min: 0
   voltage_margin: 50
-  tdp_limit: 0
-  tdc_limit: 0
-  thm_limit: 0
-  tdc_fast_limit: 0
+  tdp_limit: 150
+  tdc_limit: 200
+  thm_limit: 90
+  tdc_fast_limit: 220
   therm_trip_l1_limit: 0
   bus_peak_limit: 0
   frequency_margin: 0
@@ -54,7 +55,7 @@ pci0_property_table {
 }
 
 pci1_property_table {
-  max_pcie_speed: 0
+  max_pcie_speed: 4
   pcie_bar0_size: 0
   pcie_bar2_size: 0
   pcie_bar4_size: 0

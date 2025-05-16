@@ -43,6 +43,7 @@ jobs:
           - p300a
           - p300b
           - p300c
+          - galaxy
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +65,7 @@ jobs:
             p300a) BOARD=tt_blackhole@p300a/tt_blackhole/smc;;
             p300b) BOARD=tt_blackhole@p300b/tt_blackhole/smc;;
             p300c) BOARD=tt_blackhole@p300c/tt_blackhole/smc;;
+            galaxy) BOARD=tt_blackhole@galaxy/tt_blackhole/smc;;
             *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
           esac
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
