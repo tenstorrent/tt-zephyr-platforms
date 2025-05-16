@@ -28,7 +28,7 @@ images:
     binary: $ROOT/zephyr/blobs/tt_blackhole_erisc.bin
 
   - name: memfwcfg
-    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params.bin
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params_P150C.bin
 
   - name: memfw
     binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin
