@@ -100,6 +100,10 @@ void bh_chip_auto_reset(struct k_timer *timer)
 	struct bh_chip *chip = CONTAINER_OF(timer, struct bh_chip, auto_reset_timer);
 
 	chip->data.last_reset_was_automatic = true;
+	/* Ramp up fan */
+	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+		set_fan_speed(100);
+	}
 	bh_chip_reset_chip(chip, true);
 }
 
