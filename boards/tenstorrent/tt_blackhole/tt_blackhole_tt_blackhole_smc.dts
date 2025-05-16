@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include <arc/tenstorrent/tt_blackhole_smc.dtsi>
-#include "tt_blackhole-pinctrl.dtsi"
+#include "tt_blackhole_smc-pinctrl.dtsi"
 
 #include <freq.h>
 
@@ -34,14 +34,20 @@
 };
 
 &i2c0 {
+	pinctrl-0 = <&i2c0_scl_default &i2c0_sda_default>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &i2c1 {
+	pinctrl-0 = <&i2c1_scl_default &i2c1_sda_default>;
+	pinctrl-names = "default";
 	status = "disabled";
 };
 
 &i2c2 {
+	pinctrl-0 = <&i2c1_scl_default &i2c1_sda_default>;
+	pinctrl-names = "default";
 	status = "disabled";
 
 	fanctl0: max6639@58 {
@@ -61,4 +67,9 @@
 		reg = <0x73>;
 		status = "disabled";
 	};
+};
+
+&uart0 {
+	pinctrl-0 = <&uart0_tx_default &uart0_rx_default>;
+	pinctrl-names = "default";
 };
