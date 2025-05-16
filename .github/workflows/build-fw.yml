@@ -176,7 +176,7 @@ jobs:
           BUNDLE_TEMP_PREFIX="$PWD/tt-zephyr-platforms/firmware-" \
             ./tt-zephyr-platforms/scripts/build-combined-fwbundle.sh
 
-      - name: Upload Combined Firmware Bundle Assets
+      - name: Upload Combined Firmware Bundle Asset
         uses: actions/upload-artifact@v4
         with:
           name: combined-fwbundle
