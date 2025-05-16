@@ -94,23 +94,79 @@ Lastly, for final releases,
 
 6. Find the generated
     [draft release](https://github.com/tenstorrent/tt-zephyr-platforms/releases), edit the release
-    notes, and publish the release.
+    notes, and publish the release. It is recommended to copy the contents of
+    `doc/release/release-notes-1.2.3.md` into the release-notes area.
 
 7. Announce the release via official Tenstorrent channels and provide a link to the
     GitHub release page.
 
 ### Publishing a Combined Firmware Bundle to `tt-firmware`
 
-Find the `.fwbundle` file and combine it with closed-source firmware versions for older Tenstorrent
-products.
+Make a pull request to [tt-firmware](https://github.com/tenstorrent/tt-firmware) with the new
+combined firmware bundle and accompanying required changes.
+
+As part of the pull request:
+
+1. Clone the `tt-firmware` repository (if it has not already been cloned).
 
 ```shell
-scripts/tt_boot_fs.py fwbundle \
-  -o fw_pack-MAJOR.MINOR.PATCH.0.fwbundle \
-  -v "MAJOR.MINOR.PATCH.0"
-  -c tt-zephyr-platforms-MAJOR.MINOR.PATCH.0.fwbundle \
-  -c closed-frmware-pack-MAJOR.MINOR.PATCH.0.fwbundle
+if [ ! -d ~/tt-firmware ]; then
+  git clone git@github.com:tenstorrent/tt-firmware.git ~/tt-firmware
+  cd ~/tt-firmware
+fi
 ```
 
-Make a pull request to [tt-firmware](https://github.com/tenstorrent/tt-firmware) with the new
-combined firmware bundle.
+2. Create a branch to make modifications for the release.
+
+```shell
+git checkout -b release-v1.2.3
+```
+
+3. Download the `fw_pack-<version>.fwbundle` file in the associated `tt-zephyr-platforms`
+    [release](https://github.com/tenstorrent/tt-zephyr-platforms/releases).
+
+```shell
+wget https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v1.2.3/fw_pack-1.2.3.fwbundle
+```
+
+4. Change the `latest.fwbundle` symbolic link to point to the new firmware bundle and remove the
+    older version, staging the files for commit.
+
+```shell
+git rm -f $(readlink latest.fwbundle) latest.fwbundle
+ln -sf fw_pack-1.2.3.fwbundle latest.fwbundle
+git add *.fwbundle
+```
+
+5. Edit the `README.md` file following the existing structure. Update the "Available Firmware"
+    and "Release Notes" sections, staging the file for commit.
+
+```shell
+$EDITOR README.md
+git add README.md
+```
+
+6. Make a signed commit (`git commit -s`) for the changes using the commit subject and body below.
+
+```
+release: fw bundle v1.2.3
+
+Release FW Bundle v1.2.3
+
+Signed-off-by: Your Name <your@email.com>
+```
+
+7. Create a pull request for the changes. After the PR has been merged, refresh the `main` branch,
+    and tag the release with a signed commit.
+
+```shell
+git checkout main
+git pull
+git tag -s -m "tt-firmware 1.2.3" v1.2.3
+git push --tags
+```
+
+8. Create a new `tt-firmware`
+    [release from the new tag](https://github.com/tenstorrent/tt-firmware/releases/new) by
+    copying the contents of `doc/release/release-notes-1.2.3.md` into the release notes for
+    the new `tt-firmware` release.

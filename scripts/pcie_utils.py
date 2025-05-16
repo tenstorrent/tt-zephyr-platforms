@@ -27,18 +27,23 @@ def rescan_pcie():
     """
     # First, we must find the PCIe card to power it off
     dev = find_tt_bus()
-    if dev is None:
-        raise RuntimeError("No tenstorrent card found to power off")
-    print(f"Powering off device at {dev}")
+    if dev is not None:
+        print(f"Powering off device at {dev}")
+        try:
+            with open(os.path.join(dev, "remove"), "w") as f:
+                f.write("1")
+        except PermissionError as e:
+            print(
+                "Error, this script must be run with elevated permissions to rescan PCIe bus"
+            )
+            raise e
+    # Now, rescan the bus
     try:
-        with open(os.path.join(dev, "remove"), "w") as f:
+        with open("/sys/bus/pci/rescan", "w") as f:
             f.write("1")
+            time.sleep(1)
     except PermissionError as e:
         print(
             "Error, this script must be run with elevated permissions to rescan PCIe bus"
         )
         raise e
-    # Now, rescan the bus
-    with open("/sys/bus/pci/rescan", "w") as f:
-        f.write("1")
-        time.sleep(1)
