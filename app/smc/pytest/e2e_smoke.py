@@ -115,6 +115,42 @@ def test_boot_status(arc_chip):
     logger.info('SMC boot status "%d"', status)
 
 
+def test_flash_write(arc_chip):
+    """
+    Validates that flash read/write works via pyluwen,
+    since this is the same interface used by tt-flash
+    """
+    SPI_RX_TRAIN_ADDR = 0x13FFC
+    SPI_RX_TRAIN_DATA = 0xA5A55A5A
+    SCRATCH_REGION = 0x3000000
+    WRITE_SIZE = 0x1000
+    SCRATCH_REGION_SIZE = 0x10000
+    NUM_ITERATIONS = 10
+
+    # Read the SPI RX training region and validate that it is correct
+    data = bytes(4)
+    check_data = SPI_RX_TRAIN_DATA.to_bytes(4, byteorder="little")
+    arc_chip.as_bh().spi_read(SPI_RX_TRAIN_ADDR, data)
+    assert data == check_data, "SMC SPI RX training region is not valid"
+    logger.info(
+        f"SPI RX training region: 0x{int.from_bytes(data, byteorder='little'):x}"
+    )
+
+    for i in range(NUM_ITERATIONS):
+        # To best simulate the write pattern of tt-flash, write multiple 4KB chunks
+        for addr in range(
+            SCRATCH_REGION, SCRATCH_REGION + SCRATCH_REGION_SIZE, WRITE_SIZE
+        ):
+            data = bytes(os.urandom(WRITE_SIZE))
+            check_data = bytes(WRITE_SIZE)
+            arc_chip.as_bh().spi_write(addr, data)
+            arc_chip.as_bh().spi_read(addr, check_data)
+
+            assert data == check_data, "SMC SPI write failed"
+            logger.info(f"Write to scratch region: 0x{addr:x} passed")
+        logger.info("Flash test %d of %d passed", i + 1, NUM_ITERATIONS)
+
+
 def get_int_version_from_file(filename) -> int:
     with open(filename, "r") as f:
         version_data = f.readlines()
