@@ -12,6 +12,14 @@
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/drivers/gpio.h>
 
+typedef enum {
+	kCm2DmMsgIdNull = 0,
+	kCm2DmMsgIdResetReq = 1,
+	kCm2DmMsgIdPing = 2,
+	kCm2DmMsgIdFanSpeedUpdate = 3,
+	kCm2DmMsgIdReady = 4,
+} Cm2DmMsgId;
+
 typedef struct dmStaticInfo {
 	/*
 	 * Non-zero for valid data

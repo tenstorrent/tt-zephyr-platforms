@@ -24,7 +24,7 @@
 typedef struct {
 	uint8_t curr_msg_valid;
 	uint8_t next_seq_num;
-	Cm2DmSmbusReqMsg curr_msg;
+	cm2dmMessage curr_msg;
 } Cm2DmMsgState;
 
 static Cm2DmMsgState cm2dm_msg_state;
@@ -67,12 +67,12 @@ int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
 
 int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size)
 {
-	BUILD_ASSERT(sizeof(Cm2DmSmbusAckMsg) == 2, "Unexpected size of Cm2DmSmbusAckMsg");
-	if (size != sizeof(Cm2DmSmbusAckMsg)) {
+	BUILD_ASSERT(sizeof(cm2dmAck) == 2, "Unexpected size of cm2dmAck");
+	if (size != sizeof(cm2dmAck)) {
 		return -1;
 	}
 
-	Cm2DmSmbusAckMsg *ack = (Cm2DmSmbusAckMsg *)data;
+	cm2dmAck *ack = (cm2dmAck *)data;
 
 	if (cm2dm_msg_state.curr_msg_valid && ack->msg_id == cm2dm_msg_state.curr_msg.msg_id &&
 	    ack->seq_num == cm2dm_msg_state.curr_msg.seq_num) {

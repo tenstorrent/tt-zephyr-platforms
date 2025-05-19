@@ -98,7 +98,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 		cm2dmMessage message = msg.msg;
 
 		switch (message.msg_id) {
-		case 0x1:
+		case kCm2DmMsgIdResetReq:
 			switch (message.data) {
 			case 0x0:
 				jtag_bootrom_reset_sequence(chip, true);
@@ -112,16 +112,16 @@ void process_cm2dm_message(struct bh_chip *chip)
 				break;
 			}
 			break;
-		case 0x2:
+		case kCm2DmMsgIdPing:
 			/* Respond to ping request from CMFW */
 			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
 			break;
-		case 0x3:
+		case kCm2DmMsgIdFanSpeedUpdate:
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 				set_fan_speed((uint8_t)message.data & 0xFF);
 			}
 			break;
-		case 0x4:
+		case kCm2DmMsgIdReady:
 			chip->data.arc_needs_init_msg = true;
 			break;
 		}
