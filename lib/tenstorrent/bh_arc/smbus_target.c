@@ -14,6 +14,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/i2c.h>
+#include <tenstorrent/tt_smbus_regs.h>
 
 /* DMFW to CMFW i2c interface is on I2C0 of tensix_sm */
 #define CM_I2C_DM_TARGET_INST 0
@@ -154,48 +155,48 @@ static SmbusData smbus_data = {
 };
 static SmbusConfig smbus_config = {
 	.cmd_defs = {
-		[0x10] = {.valid = 1,
+		[CMFW_SMBUS_REQ] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = 6,
 			  .handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}},
-		[0x11] = {.valid = 1,
+		[CMFW_SMBUS_ACK] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
-		[0x20] = {.valid = 1,
+		[CMFW_SMBUS_DM_FW_VERSION] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = sizeof(dmStaticInfo),
 			  .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
-		[0x21] = {.valid = 1,
+		[CMFW_SMBUS_PING] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Dm2CmPingHandler}},
-		[0x23] = {.valid = 1,
+		[CMFW_SMBUS_FAN_RPM] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}},
 #ifndef CONFIG_TT_SMC_RECOVERY
-		[0x24] = {.valid = 1,
+		[CMFW_SMBUS_POWER_LIMIT] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}},
-		[0x25] = {.valid = 1,
+		[CMFW_SMBUS_POWER_INSTANT] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Dm2CmSendPowerHandler}},
 #endif
-		[0xD8] = {.valid = 1,
+		[CMFW_SMBUS_TEST_READ] = {.valid = 1,
 			  .trans_type = kSmbusTransReadByte,
 			  .handler = {.send_handler = &ReadByteTest}},
-		[0xD9] = {.valid = 1,
+		[CMFW_SMBUS_TEST_WRITE] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteByte,
 			  .handler = {.rcv_handler = &WriteByteTest}},
-		[0xDA] = {.valid = 1,
+		[CMFW_SMBUS_TEST_READ_WORD] = {.valid = 1,
 			  .trans_type = kSmbusTransReadWord,
 			  .handler = {.send_handler = &ReadWordTest}},
-		[0xDB] = {.valid = 1,
+		[CMFW_SMBUS_TEST_WRITE_WORD] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &WriteWordTest}},
-		[0xDC] = {.valid = 1,
+		[CMFW_SMBUS_TEST_READ_BLOCK] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = 4,
 			  .handler = {.send_handler = &BlockReadTest}},
-		[0xDD] = {.valid = 1,
+		[CMFW_SMBUS_TEST_WRITE_BLOCK] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = 4,
 			  .handler = {.rcv_handler = &BlockWriteTest}},

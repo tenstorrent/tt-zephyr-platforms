@@ -9,6 +9,7 @@
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/event.h>
+#include <tenstorrent/tt_smbus_regs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <string.h>
@@ -34,7 +35,7 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 	uint8_t count = sizeof(output.msg);
 	uint8_t buf[32]; /* Max block counter per API */
 
-	output.ret = bharc_smbus_block_read(&chip->config.arc, 0x10, &count, buf);
+	output.ret = bharc_smbus_block_read(&chip->config.arc, CMFW_SMBUS_REQ, &count, buf);
 	memcpy(&output.msg, buf, sizeof(output.msg));
 
 	if (output.ret == 0 && output.msg.msg_id != 0) {
@@ -46,7 +47,8 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 
 		wire_ack.f = ack;
 		output.ack = ack;
-		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc, 0x11, wire_ack.val);
+		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc,
+							     CMFW_SMBUS_ACK, wire_ack.val);
 	}
 
 	return output;
@@ -56,8 +58,8 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 {
 	int ret;
 
-	ret = bharc_smbus_block_write(&chip->config.arc, 0x20, sizeof(dmStaticInfo),
-				      (uint8_t *)info);
+	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DM_FW_VERSION,
+				      sizeof(dmStaticInfo), (uint8_t *)info);
 
 	return ret;
 }
@@ -66,7 +68,7 @@ int bh_chip_set_input_power(struct bh_chip *chip, uint16_t power)
 {
 	int ret;
 
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x25, power);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_POWER_INSTANT, power);
 
 	return ret;
 }
@@ -75,7 +77,7 @@ int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power)
 {
 	int ret;
 
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x24, max_power);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_POWER_LIMIT, max_power);
 
 	return ret;
 }
@@ -84,7 +86,7 @@ int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 {
 	int ret;
 
-	ret = bharc_smbus_word_data_write(&chip->config.arc, 0x23, rpm);
+	ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_FAN_RPM, rpm);
 
 	return ret;
 }

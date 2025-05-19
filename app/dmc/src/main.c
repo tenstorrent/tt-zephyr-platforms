@@ -26,6 +26,7 @@
 #include <tenstorrent/bh_arc.h>
 #include <tenstorrent/event.h>
 #include <tenstorrent/jtag_bootrom.h>
+#include <tenstorrent/tt_smbus_regs.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -113,7 +114,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 			break;
 		case 0x2:
 			/* Respond to ping request from CMFW */
-			bharc_smbus_word_data_write(&chip->config.arc, 0x21, 0xA5A5);
+			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
 			break;
 		case 0x3:
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
