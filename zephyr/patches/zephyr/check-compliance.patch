@@ -60,6 +60,14 @@ index fe56b715162..c575460db38 100755
  
          # Generate combined list of configs and choices from the main Kconfig tree.
          kconf_syms = kconf.unique_defined_syms + kconf.unique_choices
+@@ -1047,6 +1046,7 @@ flagged.
+         "CRC",  # Used in TI CC13x2 / CC26x2 SDK comment
+         "DEEP_SLEEP",  # #defined by RV32M1 in ext/
+         "DESCRIPTION",
++        "DMC_RUN_SMBUS_TESTS",
+         "ERR",
+         "ESP_DIF_LIBRARY",  # Referenced in CMake comment
+         "EXPERIMENTAL",
 @@ -1076,6 +1073,7 @@ flagged.
          "MCUBOOT_CLEANUP_ARM_CORE", # Used in (sysbuild-based) test
          "MCUBOOT_DOWNGRADE_PREVENTION", # but symbols are defined in MCUboot
