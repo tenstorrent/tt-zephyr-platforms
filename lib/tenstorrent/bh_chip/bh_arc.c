@@ -91,3 +91,24 @@ int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t
 
 	return ret;
 }
+
+int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word)
+{
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_byte_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
+}

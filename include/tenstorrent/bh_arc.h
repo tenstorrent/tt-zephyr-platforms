@@ -54,6 +54,7 @@ typedef struct cm2dmMessageRet {
 int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count, uint8_t *output);
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input);
 int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t word);
+int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word);
 
 #define BH_ARC_INIT(n)                                                                             \
 	{.smbus = SMBUS_DT_SPEC_GET(n),                                                            \
