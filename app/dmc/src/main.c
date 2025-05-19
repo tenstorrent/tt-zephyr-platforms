@@ -179,6 +179,50 @@ uint16_t detect_max_power(void)
 	return psu_power;
 }
 
+/*
+ * Runs a series of SMBUS tests when `CONFIG_DMC_RUN_SMBUS_TESTS` is enabled.
+ * These tests aren't intended to be run on production firmware.
+ */
+static int bh_chip_run_smbus_tests(struct bh_chip *chip)
+{
+#ifdef CONFIG_DMC_RUN_SMBUS_TESTS
+	int ret;
+	int pass_val = 0xFEEDFACE;
+	uint8_t count;
+	uint8_t data[32]; /* Max size of SMBUS block read */
+
+	/* Test SMBUS telemetry by selecting TAG_DM_APP_FW_VERSION and reading it back */
+	ret = bharc_smbus_byte_data_write(&chip->config.arc, 0x26, 26);
+	if (ret < 0) {
+		LOG_ERR("Failed to write to SMBUS telemetry register");
+		return ret;
+	}
+	ret = bharc_smbus_block_read(&chip->config.arc, 0x27, &count, data);
+	if (ret < 0) {
+		LOG_ERR("Failed to read from SMBUS telemetry register");
+		return ret;
+	}
+	if (count != 4) {
+		LOG_ERR("SMBUS telemetry read returned unexpected count: %d", count);
+		return -EIO;
+	}
+	if ((*(uint32_t *)data) != APPVERSION) {
+		LOG_ERR("SMBUS telemetry read returned unexpected value: %08x", *(uint32_t *)data);
+		return -EIO;
+	}
+
+	/* Record test status into scratch register */
+	ret = bharc_smbus_block_write(&chip->config.arc, 0xDD, sizeof(pass_val),
+				      (uint8_t *)&pass_val);
+	if (ret < 0) {
+		LOG_ERR("Failed to write to SMBUS scratch register");
+		return ret;
+	}
+	printk("SMBUS tests passed\n");
+#endif
+	return 0;
+}
+
 int main(void)
 {
 	int ret;
@@ -353,7 +397,8 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_needs_init_msg) {
 				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
-				    bh_chip_set_input_power_lim(chip, max_power) == 0) {
+				    bh_chip_set_input_power_lim(chip, max_power) == 0 &&
+				    bh_chip_run_smbus_tests(chip) == 0) {
 					chip->data.arc_needs_init_msg = false;
 				}
 			}

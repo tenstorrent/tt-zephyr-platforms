@@ -115,6 +115,19 @@ def test_boot_status(arc_chip):
     logger.info('SMC boot status "%d"', status)
 
 
+def test_smbus_status(arc_chip):
+    """
+    Validates that the SMBUS tests run from the DMC firmware passed
+    """
+    # We have limited visibility into the DMC firmware, so we read
+    # the ARC scratch register the DMC should have set within SMBUS
+    # tests to check that they passed
+    ARC_SCRATCH_63 = 0x80030400 + (63 * 4)
+    status = arc_chip.axi_read32(ARC_SCRATCH_63)
+    assert status == 0xFEEDFACE, "SMC firmware did not pass SMBUS tests"
+    logger.info('SMC SMBUS status: "0x%x"', status)
+
+
 def get_int_version_from_file(filename) -> int:
     with open(filename, "r") as f:
         version_data = f.readlines()
