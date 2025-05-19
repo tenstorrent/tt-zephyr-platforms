@@ -85,5 +85,6 @@ void StartTelemetryTimer(void);
 void UpdateDmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);
 void UpdateTelemetryBoardPowerLimit(uint32_t power_limit);
+uint32_t GetTelemetryTag(uint16_t tag);
 
 #endif

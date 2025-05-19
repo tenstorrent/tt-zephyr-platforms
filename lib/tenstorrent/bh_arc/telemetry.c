@@ -389,3 +389,11 @@ void UpdateTelemetryBoardPowerLimit(uint32_t power_limit)
 {
 	telemetry[TAG_BOARD_POWER_LIMIT] = power_limit;
 }
+
+uint32_t GetTelemetryTag(uint16_t tag)
+{
+	if (tag >= TAG_COUNT) {
+		return -1;
+	}
+	return telemetry[tag];
+}

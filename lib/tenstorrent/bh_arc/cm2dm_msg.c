@@ -30,6 +30,7 @@ typedef struct {
 static Cm2DmMsgState cm2dm_msg_state;
 static bool dmfw_ping_valid;
 static uint16_t power;
+static uint16_t telemetry_reg;
 K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
 
 int32_t EnqueueCm2DmMsg(const Cm2DmMsg *msg)
@@ -262,4 +263,28 @@ int32_t Dm2CmSendFanRPMHandler(const uint8_t *data, uint8_t size)
 #endif
 
 	return -1;
+}
+
+int32_t SMBusTelemRegHandler(const uint8_t *data, uint8_t size)
+{
+	if (size != 1) {
+		return -1;
+	}
+
+	/* Load telemetry register with data */
+	telemetry_reg = data[0];
+	return 0;
+}
+
+int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size)
+{
+	uint32_t telemetry_data;
+
+	if (size != sizeof(telemetry_data)) {
+		return -1;
+	}
+
+	telemetry_data = GetTelemetryTag(telemetry_reg);
+	memcpy(data, &telemetry_data, sizeof(telemetry_data));
+	return 0;
 }

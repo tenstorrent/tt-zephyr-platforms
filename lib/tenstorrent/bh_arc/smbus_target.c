@@ -178,6 +178,13 @@ static SmbusConfig smbus_config = {
 		[0x25] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Dm2CmSendPowerHandler}},
+		[0x26] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteByte,
+			  .handler = {.rcv_handler = &SMBusTelemRegHandler}},
+		[0x27] = {.valid = 1,
+			  .trans_type = kSmbusTransBlockRead,
+			  .expected_blocksize = sizeof(uint32_t),
+			  .handler = {.send_handler = &SMBusTelemDataHandler}},
 #endif
 		[0xD8] = {.valid = 1,
 			  .trans_type = kSmbusTransReadByte,
