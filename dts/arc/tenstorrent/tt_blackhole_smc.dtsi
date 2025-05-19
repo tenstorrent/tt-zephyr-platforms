@@ -66,7 +66,7 @@
 		compatible = "snps,designware-intc";
 		reg = <0x800c0000 0x1000>;
 		interrupt-parent = <&intc>;
-		interrupts = <33 0>;
+		interrupts = <33 1>;
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		num-irqs = <34>;
@@ -76,7 +76,7 @@
 		compatible = "snps,designware-intc";
 		reg = <0x800d0000 0x1000>;
 		interrupt-parent = <&intc>;
-		interrupts = <34 0>;
+		interrupts = <34 1>;
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		num-irqs = <22>;
@@ -86,7 +86,7 @@
 		compatible = "snps,designware-intc";
 		reg = <0x800e0000 0x1000>;
 		interrupt-parent = <&intc>;
-		interrupts = <35 0>;
+		interrupts = <35 1>;
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		num-irqs = <64>;
