@@ -69,89 +69,13 @@
 #define TAG_ASIC_LOCATION        52
 #define TAG_BOARD_POWER_LIMIT    53
 #define TAG_INPUT_POWER          54
+/* Not a real tag, signifies the last tag in the list.
+ * MUST be incremented if new tags are defined
+ */
+#define TAG_COUNT                55
 
-/* Enums are subject to updates */
-typedef enum {
-	/* Board static information */
-	BOARD_ID_HIGH,
-	BOARD_ID_LOW,
-	ASIC_ID,
-	HARVESTING_STATE,
-
-	/* Telemetry timing data */
-	UPDATE_TELEM_SPEED, /* Expected speed of update to telemetry in ms */
-
-	/* Regulator information */
-	VCORE,
-	TDP,
-	TDC,
-	VDD_LIMITS,
-	THM_LIMITS,
-
-	/* Temperature information */
-	ASIC_TEMPERATURE,
-	VREG_TEMPERATURE,
-	BOARD_TEMPERATURE,
-
-	/* Clock information */
-	AICLK,
-	AXICLK,
-	ARCCLK,
-	L2CPUCLK0,
-	L2CPUCLK1,
-	L2CPUCLK2,
-	L2CPUCLK3,
-
-	/* IO information */
-	ETH_LIVE_STATUS, /* Lower 16 bits - heartbeat status, upper 16 bits - retrain_status */
-	GDDR_STATUS,
-	GDDR_SPEED,
-
-	/* FW versions */
-	ETH_FW_VERSION,
-	GDDR_FW_VERSION,
-	/* Board manager fw versions */
-	DM_APP_FW_VERSION,
-	DM_BL_FW_VERSION,
-	FLASH_BUNDLE_VERSION,
-	CM_FW_VERSION,
-	L2CPU_FW_VERSION,
-
-	/* MISC */
-	TIMER_HEARTBEAT, /* Incremented every time the timer is called */
-
-	/* Board telemetry */
-	FAN_SPEED,
-	FAN_RPM,
-	BOARD_POWER_LIMIT,
-	INPUT_POWER,
-
-	/* Tile enablement/harvesting information */
-	ENABLED_TENSIX_COL,
-	ENABLED_ETH,
-	ENABLED_GDDR,
-	ENABLED_L2CPU,
-	PCIE_USAGE,
-	NOC_TRANSLATION,
-
-	/* DRAM Temperatures */
-	GDDR_0_1_TEMP,
-	GDDR_2_3_TEMP,
-	GDDR_4_5_TEMP,
-	GDDR_6_7_TEMP,
-	MAX_GDDR_TEMP,
-
-	/* DDR Errors */
-	GDDR_0_1_CORR_ERRS,
-	GDDR_2_3_CORR_ERRS,
-	GDDR_4_5_CORR_ERRS,
-	GDDR_6_7_CORR_ERRS,
-	GDDR_UNCORR_ERRS,
-
-	ASIC_LOCATION,
-
-	TELEM_ENUM_COUNT, /* Count to check how large the enum is */
-} Telemetry;
+/* Telemetry tags are at offset `tag` in the telemetry buffer */
+#define TELEM_OFFSET(tag) (tag)
 
 void init_telemetry(uint32_t app_version);
 uint32_t ConvertFloatToTelemetry(float value);
