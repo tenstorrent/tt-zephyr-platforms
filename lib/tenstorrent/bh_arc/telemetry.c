@@ -44,13 +44,70 @@ struct telemetry_table {
 };
 
 /* Global variables */
-static struct telemetry_table telemetry_table;
+static struct telemetry_table telemetry_table = {
+	.tag_table = {
+		[0] = {TAG_BOARD_ID_HIGH, TELEM_OFFSET(TAG_BOARD_ID_HIGH)},
+		[1] = {TAG_BOARD_ID_LOW, TELEM_OFFSET(TAG_BOARD_ID_LOW)},
+		[2] = {TAG_ASIC_ID, TELEM_OFFSET(TAG_ASIC_ID)},
+		[3] = {TAG_HARVESTING_STATE, TELEM_OFFSET(TAG_HARVESTING_STATE)},
+		[4] = {TAG_UPDATE_TELEM_SPEED, TELEM_OFFSET(TAG_UPDATE_TELEM_SPEED)},
+		[5] = {TAG_VCORE, TELEM_OFFSET(TAG_VCORE)},
+		[6] = {TAG_TDP, TELEM_OFFSET(TAG_TDP)},
+		[7] = {TAG_TDC, TELEM_OFFSET(TAG_TDC)},
+		[8] = {TAG_VDD_LIMITS, TELEM_OFFSET(TAG_VDD_LIMITS)},
+		[9] = {TAG_THM_LIMITS, TELEM_OFFSET(TAG_THM_LIMITS)},
+		[10] = {TAG_ASIC_TEMPERATURE, TELEM_OFFSET(TAG_ASIC_TEMPERATURE)},
+		[11] = {TAG_VREG_TEMPERATURE, TELEM_OFFSET(TAG_VREG_TEMPERATURE)},
+		[12] = {TAG_BOARD_TEMPERATURE, TELEM_OFFSET(TAG_BOARD_TEMPERATURE)},
+		[13] = {TAG_AICLK, TELEM_OFFSET(TAG_AICLK)},
+		[14] = {TAG_AXICLK, TELEM_OFFSET(TAG_AXICLK)},
+		[15] = {TAG_ARCCLK, TELEM_OFFSET(TAG_ARCCLK)},
+		[16] = {TAG_L2CPUCLK0, TELEM_OFFSET(TAG_L2CPUCLK0)},
+		[17] = {TAG_L2CPUCLK1, TELEM_OFFSET(TAG_L2CPUCLK1)},
+		[18] = {TAG_L2CPUCLK2, TELEM_OFFSET(TAG_L2CPUCLK2)},
+		[19] = {TAG_L2CPUCLK3, TELEM_OFFSET(TAG_L2CPUCLK3)},
+		[20] = {TAG_ETH_LIVE_STATUS, TELEM_OFFSET(TAG_ETH_LIVE_STATUS)},
+		[21] = {TAG_GDDR_STATUS, TELEM_OFFSET(TAG_GDDR_STATUS)},
+		[22] = {TAG_GDDR_SPEED, TELEM_OFFSET(TAG_GDDR_SPEED)},
+		[23] = {TAG_ETH_FW_VERSION, TELEM_OFFSET(TAG_ETH_FW_VERSION)},
+		[24] = {TAG_GDDR_FW_VERSION, TELEM_OFFSET(TAG_GDDR_FW_VERSION)},
+		[25] = {TAG_DM_APP_FW_VERSION, TELEM_OFFSET(TAG_DM_APP_FW_VERSION)},
+		[26] = {TAG_DM_BL_FW_VERSION, TELEM_OFFSET(TAG_DM_BL_FW_VERSION)},
+		[27] = {TAG_FLASH_BUNDLE_VERSION, TELEM_OFFSET(TAG_FLASH_BUNDLE_VERSION)},
+		[28] = {TAG_CM_FW_VERSION, TELEM_OFFSET(TAG_CM_FW_VERSION)},
+		[29] = {TAG_L2CPU_FW_VERSION, TELEM_OFFSET(TAG_L2CPU_FW_VERSION)},
+		[30] = {TAG_FAN_SPEED, TELEM_OFFSET(TAG_FAN_SPEED)},
+		[31] = {TAG_TIMER_HEARTBEAT, TELEM_OFFSET(TAG_TIMER_HEARTBEAT)},
+		[32] = {TAG_ENABLED_TENSIX_COL, TELEM_OFFSET(TAG_ENABLED_TENSIX_COL)},
+		[33] = {TAG_ENABLED_ETH, TELEM_OFFSET(TAG_ENABLED_ETH)},
+		[34] = {TAG_ENABLED_GDDR, TELEM_OFFSET(TAG_ENABLED_GDDR)},
+		[35] = {TAG_ENABLED_L2CPU, TELEM_OFFSET(TAG_ENABLED_L2CPU)},
+		[36] = {TAG_PCIE_USAGE, TELEM_OFFSET(TAG_PCIE_USAGE)},
+		[37] = {TAG_NOC_TRANSLATION, TELEM_OFFSET(TAG_NOC_TRANSLATION)},
+		[38] = {TAG_FAN_RPM, TELEM_OFFSET(TAG_FAN_RPM)},
+		[39] = {TAG_GDDR_0_1_TEMP, TELEM_OFFSET(TAG_GDDR_0_1_TEMP)},
+		[40] = {TAG_GDDR_2_3_TEMP, TELEM_OFFSET(TAG_GDDR_2_3_TEMP)},
+		[41] = {TAG_GDDR_4_5_TEMP, TELEM_OFFSET(TAG_GDDR_4_5_TEMP)},
+		[42] = {TAG_GDDR_6_7_TEMP, TELEM_OFFSET(TAG_GDDR_6_7_TEMP)},
+		[43] = {TAG_GDDR_0_1_CORR_ERRS, TELEM_OFFSET(TAG_GDDR_0_1_CORR_ERRS)},
+		[44] = {TAG_GDDR_2_3_CORR_ERRS, TELEM_OFFSET(TAG_GDDR_2_3_CORR_ERRS)},
+		[45] = {TAG_GDDR_4_5_CORR_ERRS, TELEM_OFFSET(TAG_GDDR_4_5_CORR_ERRS)},
+		[46] = {TAG_GDDR_6_7_CORR_ERRS, TELEM_OFFSET(TAG_GDDR_6_7_CORR_ERRS)},
+		[47] = {TAG_GDDR_UNCORR_ERRS, TELEM_OFFSET(TAG_GDDR_UNCORR_ERRS)},
+		[48] = {TAG_MAX_GDDR_TEMP, TELEM_OFFSET(TAG_MAX_GDDR_TEMP)},
+		[49] = {TAG_ASIC_LOCATION, TELEM_OFFSET(TAG_ASIC_LOCATION)},
+		[50] = {TAG_BOARD_POWER_LIMIT, TELEM_OFFSET(TAG_BOARD_POWER_LIMIT)},
+		[51] = {TAG_INPUT_POWER, TELEM_OFFSET(TAG_INPUT_POWER)},
+		[52] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
+	},
+};
 static uint32_t *telemetry = &telemetry_table.telemetry[0];
-static struct telemetry_entry *tag_table = &telemetry_table.tag_table[0];
 
 static struct k_timer telem_update_timer;
 static struct k_work telem_update_worker;
 static int telem_update_interval = 100;
+
+
 
 uint32_t ConvertFloatToTelemetry(float value)
 {
@@ -274,93 +331,6 @@ static void update_telemetry(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_TELEMETRY_END);
 }
 
-static void update_tag_table(void)
-{
-	tag_table[0] = (struct telemetry_entry){TAG_BOARD_ID_HIGH, TELEM_OFFSET(TAG_BOARD_ID_HIGH)};
-	tag_table[1] = (struct telemetry_entry){TAG_BOARD_ID_LOW, TELEM_OFFSET(TAG_BOARD_ID_LOW)};
-	tag_table[2] = (struct telemetry_entry){TAG_ASIC_ID, TELEM_OFFSET(TAG_ASIC_ID)};
-	tag_table[3] =
-		(struct telemetry_entry){TAG_HARVESTING_STATE, TELEM_OFFSET(TAG_HARVESTING_STATE)};
-	tag_table[4] = (struct telemetry_entry){TAG_UPDATE_TELEM_SPEED,
-						TELEM_OFFSET(TAG_UPDATE_TELEM_SPEED)};
-	tag_table[5] = (struct telemetry_entry){TAG_VCORE, TELEM_OFFSET(TAG_VCORE)};
-	tag_table[6] = (struct telemetry_entry){TAG_TDP, TELEM_OFFSET(TAG_TDP)};
-	tag_table[7] = (struct telemetry_entry){TAG_TDC, TELEM_OFFSET(TAG_TDC)};
-	tag_table[8] = (struct telemetry_entry){TAG_VDD_LIMITS, TELEM_OFFSET(TAG_VDD_LIMITS)};
-	tag_table[9] = (struct telemetry_entry){TAG_THM_LIMITS, TELEM_OFFSET(TAG_THM_LIMITS)};
-	tag_table[10] =
-		(struct telemetry_entry){TAG_ASIC_TEMPERATURE, TELEM_OFFSET(TAG_ASIC_TEMPERATURE)};
-	tag_table[11] =
-		(struct telemetry_entry){TAG_VREG_TEMPERATURE, TELEM_OFFSET(TAG_VREG_TEMPERATURE)};
-	tag_table[12] = (struct telemetry_entry){TAG_BOARD_TEMPERATURE,
-						 TELEM_OFFSET(TAG_BOARD_TEMPERATURE)};
-	tag_table[13] = (struct telemetry_entry){TAG_AICLK, TELEM_OFFSET(TAG_AICLK)};
-	tag_table[14] = (struct telemetry_entry){TAG_AXICLK, TELEM_OFFSET(TAG_AXICLK)};
-	tag_table[15] = (struct telemetry_entry){TAG_ARCCLK, TELEM_OFFSET(TAG_ARCCLK)};
-	tag_table[16] = (struct telemetry_entry){TAG_L2CPUCLK0, TELEM_OFFSET(TAG_L2CPUCLK0)};
-	tag_table[17] = (struct telemetry_entry){TAG_L2CPUCLK1, TELEM_OFFSET(TAG_L2CPUCLK1)};
-	tag_table[18] = (struct telemetry_entry){TAG_L2CPUCLK2, TELEM_OFFSET(TAG_L2CPUCLK2)};
-	tag_table[19] = (struct telemetry_entry){TAG_L2CPUCLK3, TELEM_OFFSET(TAG_L2CPUCLK3)};
-	tag_table[20] =
-		(struct telemetry_entry){TAG_ETH_LIVE_STATUS, TELEM_OFFSET(TAG_ETH_LIVE_STATUS)};
-	tag_table[21] = (struct telemetry_entry){TAG_GDDR_STATUS, TELEM_OFFSET(TAG_GDDR_STATUS)};
-	tag_table[22] = (struct telemetry_entry){TAG_GDDR_SPEED, TELEM_OFFSET(TAG_GDDR_SPEED)};
-	tag_table[23] =
-		(struct telemetry_entry){TAG_ETH_FW_VERSION, TELEM_OFFSET(TAG_ETH_FW_VERSION)};
-	tag_table[24] =
-		(struct telemetry_entry){TAG_GDDR_FW_VERSION, TELEM_OFFSET(TAG_GDDR_FW_VERSION)};
-	tag_table[25] = (struct telemetry_entry){TAG_DM_APP_FW_VERSION,
-						 TELEM_OFFSET(TAG_DM_APP_FW_VERSION)};
-	tag_table[26] =
-		(struct telemetry_entry){TAG_DM_BL_FW_VERSION, TELEM_OFFSET(TAG_DM_BL_FW_VERSION)};
-	tag_table[27] = (struct telemetry_entry){TAG_FLASH_BUNDLE_VERSION,
-						 TELEM_OFFSET(TAG_FLASH_BUNDLE_VERSION)};
-	tag_table[28] =
-		(struct telemetry_entry){TAG_CM_FW_VERSION, TELEM_OFFSET(TAG_CM_FW_VERSION)};
-	tag_table[29] =
-		(struct telemetry_entry){TAG_L2CPU_FW_VERSION, TELEM_OFFSET(TAG_L2CPU_FW_VERSION)};
-	tag_table[30] = (struct telemetry_entry){TAG_FAN_SPEED, TELEM_OFFSET(TAG_FAN_SPEED)};
-	tag_table[31] =
-		(struct telemetry_entry){TAG_TIMER_HEARTBEAT, TELEM_OFFSET(TAG_TIMER_HEARTBEAT)};
-	tag_table[32] = (struct telemetry_entry){TAG_ENABLED_TENSIX_COL,
-						 TELEM_OFFSET(TAG_ENABLED_TENSIX_COL)};
-	tag_table[33] = (struct telemetry_entry){TAG_ENABLED_ETH, TELEM_OFFSET(TAG_ENABLED_ETH)};
-	tag_table[34] = (struct telemetry_entry){TAG_ENABLED_GDDR, TELEM_OFFSET(TAG_ENABLED_GDDR)};
-	tag_table[35] =
-		(struct telemetry_entry){TAG_ENABLED_L2CPU, TELEM_OFFSET(TAG_ENABLED_L2CPU)};
-	tag_table[36] = (struct telemetry_entry){TAG_PCIE_USAGE, TELEM_OFFSET(TAG_PCIE_USAGE)};
-	tag_table[37] =
-		(struct telemetry_entry){TAG_NOC_TRANSLATION, TELEM_OFFSET(TAG_NOC_TRANSLATION)};
-	tag_table[38] = (struct telemetry_entry){TAG_FAN_RPM, TELEM_OFFSET(TAG_FAN_RPM)};
-	tag_table[39] =
-		(struct telemetry_entry){TAG_GDDR_0_1_TEMP, TELEM_OFFSET(TAG_GDDR_0_1_TEMP)};
-	tag_table[40] =
-		(struct telemetry_entry){TAG_GDDR_2_3_TEMP, TELEM_OFFSET(TAG_GDDR_2_3_TEMP)};
-	tag_table[41] =
-		(struct telemetry_entry){TAG_GDDR_4_5_TEMP, TELEM_OFFSET(TAG_GDDR_4_5_TEMP)};
-	tag_table[42] =
-		(struct telemetry_entry){TAG_GDDR_6_7_TEMP, TELEM_OFFSET(TAG_GDDR_6_7_TEMP)};
-	tag_table[43] = (struct telemetry_entry){TAG_GDDR_0_1_CORR_ERRS,
-						 TELEM_OFFSET(TAG_GDDR_0_1_CORR_ERRS)};
-	tag_table[44] = (struct telemetry_entry){TAG_GDDR_2_3_CORR_ERRS,
-						 TELEM_OFFSET(TAG_GDDR_2_3_CORR_ERRS)};
-	tag_table[45] = (struct telemetry_entry){TAG_GDDR_4_5_CORR_ERRS,
-						 TELEM_OFFSET(TAG_GDDR_4_5_CORR_ERRS)};
-	tag_table[46] = (struct telemetry_entry){TAG_GDDR_6_7_CORR_ERRS,
-						 TELEM_OFFSET(TAG_GDDR_6_7_CORR_ERRS)};
-	tag_table[47] =
-		(struct telemetry_entry){TAG_GDDR_UNCORR_ERRS, TELEM_OFFSET(TAG_GDDR_UNCORR_ERRS)};
-	tag_table[48] =
-		(struct telemetry_entry){TAG_MAX_GDDR_TEMP, TELEM_OFFSET(TAG_MAX_GDDR_TEMP)};
-	tag_table[49] =
-		(struct telemetry_entry){TAG_ASIC_LOCATION, TELEM_OFFSET(TAG_ASIC_LOCATION)};
-	tag_table[50] = (struct telemetry_entry){TAG_BOARD_POWER_LIMIT,
-						 TELEM_OFFSET(TAG_BOARD_POWER_LIMIT)};
-	tag_table[51] = (struct telemetry_entry){TAG_INPUT_POWER, TELEM_OFFSET(TAG_INPUT_POWER)};
-	tag_table[52] =
-		(struct telemetry_entry){TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)};
-}
-
 /* Handler functions for zephyr timer and worker objects */
 static void telemetry_work_handler(struct k_work *work)
 {
@@ -383,7 +353,6 @@ static K_TIMER_DEFINE(telem_update_timer, telemetry_timer_handler, NULL);
 
 void init_telemetry(uint32_t app_version)
 {
-	update_tag_table();
 	write_static_telemetry(app_version);
 	/* fill the dynamic values once before starting timed updates */
 	update_telemetry();
