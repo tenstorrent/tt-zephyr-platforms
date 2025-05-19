@@ -203,6 +203,11 @@ jobs:
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
+      - name: Check pyluwen version
+        run: |
+          pip3 show pyluwen
+          pip3 freeze | grep pyluwen
+
       - name: run-e2e-tests
         working-directory: zephyr
         run: |

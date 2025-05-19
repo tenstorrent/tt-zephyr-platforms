@@ -122,7 +122,7 @@ def test_flash_write(arc_chip):
     """
     SPI_RX_TRAIN_ADDR = 0x13FFC
     SPI_RX_TRAIN_DATA = 0xA5A55A5A
-    SCRATCH_REGION = 0x3000000
+    SCRATCH_REGION = 0x2000000
     WRITE_SIZE = 0x1000
     SCRATCH_REGION_SIZE = 0x10000
     NUM_ITERATIONS = 10
@@ -135,6 +135,8 @@ def test_flash_write(arc_chip):
     logger.info(
         f"SPI RX training region: 0x{int.from_bytes(data, byteorder='little'):x}"
     )
+    telem = arc_chip.get_telemetry()
+    print(f"M3 app version: 0x{telem.m3_app_fw_version:x}")
 
     for i in range(NUM_ITERATIONS):
         # To best simulate the write pattern of tt-flash, write multiple 4KB chunks
@@ -145,7 +147,12 @@ def test_flash_write(arc_chip):
             check_data = bytes(WRITE_SIZE)
             arc_chip.as_bh().spi_write(addr, data)
             arc_chip.as_bh().spi_read(addr, check_data)
-
+            for j in range(WRITE_SIZE):
+                if data[j] != check_data[j]:
+                    logger.error(
+                        f"SMC SPI write failed at address 0x{addr:x} "
+                        f"byte {j}: {data[j]:x} != {check_data[j]:x}"
+                    )
             assert data == check_data, "SMC SPI write failed"
             logger.info(f"Write to scratch region: 0x{addr:x} passed")
         logger.info("Flash test %d of %d passed", i + 1, NUM_ITERATIONS)
