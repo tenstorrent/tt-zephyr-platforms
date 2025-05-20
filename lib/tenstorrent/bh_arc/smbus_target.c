@@ -400,6 +400,13 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 
 static int I2CStopHandler(struct i2c_target_config *config)
 {
+	if (smbus_data.state == kSmbusStateRcvPec) {
+		/* No PEC, just accept data. */
+		SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
+		curr_cmd->handler.rcv_handler(smbus_data.received_data,
+					      smbus_data.blocksize);
+	}
+
 	smbus_data.state = kSmbusStateIdle;
 	smbus_data.command = 0;
 	smbus_data.blocksize = 0;
