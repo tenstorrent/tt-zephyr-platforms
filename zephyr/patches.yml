@@ -143,3 +143,15 @@ patches:
 
       The code checked that there's no following stop/restart before enabling
       reload mode, but once in reload mode, it never checked again.
+  - path: zephyr/fix-stm32-block-write.patch
+    sha256sum: 7268d5f04027341b339a13542612121613f799c06ce65af9a2d9bbce1c4bce71
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Fix smbus_stm32_block_write
+
+      Send "count" byte. The SMBus block write protocol requires this byte.
+
+      Use I2C_MSG_WRITE named flag instead of 0.
