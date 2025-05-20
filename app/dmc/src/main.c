@@ -143,6 +143,66 @@ void ina228_power_update(void)
 	}
 }
 
+#if 0
+static void ina228_repeat_test(void)
+{
+	/* loop until we detect an change in ina228 current.
+	 * record current time
+	 * loop until we detect another change in ina228 current.
+	 * compute elapsed time, update min time between changes
+	 * repeat 5x
+	 */
+
+	bh_chip_debug_data(&BH_CHIPS[0], 58, 0xFFFFFFFF);
+
+	struct sensor_value c1, c2;
+
+	sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
+	sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &c1);
+
+	uint32_t emergency_break = 0;
+
+	while (true) {
+		sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
+		sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &c2);
+
+		if (c1.val2 != c2.val2 || c1.val1 != c2.val1) {
+			break;
+		}
+
+		if (++emergency_break >= 100000) return;
+	}
+
+	/* okay we just saw an edge, latest reading in c2 */
+
+	uint64_t shortest_time_so_far = UINT64_MAX;
+
+	for (unsigned int i = 0; i < 5; i++) {
+		emergency_break = 0;
+		uint64_t start_time = k_cycle_get_64();
+		while (true) {
+			sensor_sample_fetch_chan(ina228, SENSOR_CHAN_CURRENT);
+			sensor_channel_get(ina228, SENSOR_CHAN_CURRENT, &c1);
+
+			if (c1.val2 != c2.val2 || c1.val1 != c2.val1) {
+				break;
+			}
+
+			if (++emergency_break >= 100000) return;
+		}
+		uint64_t elapsed_time = k_cycle_get_64() - start_time;
+		/* now elapsed_time is edge-to-edge */
+
+		if (elapsed_time < shortest_time_so_far)
+			shortest_time_so_far = elapsed_time;
+
+		c2 = c1;
+	}
+
+	bh_chip_debug_data(&BH_CHIPS[0], 58, shortest_time_so_far);
+}
+#endif
+
 uint16_t detect_max_power(void)
 {
 	static const struct gpio_dt_spec psu_sense0 =
