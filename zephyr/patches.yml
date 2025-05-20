@@ -123,3 +123,9 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89859
     comments: |
       Automatically generate a boolean Kconfig option for the active board revision.
+  - path: zephyr/fix-stm32-block-write.patch
+    sha256sum: 980c7ea2eb451808fbf616a0a1d8bc12eb971e12ae7587c0807b64798efa6a19
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-05-20
