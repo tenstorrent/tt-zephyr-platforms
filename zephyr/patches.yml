@@ -103,3 +103,9 @@ patches:
     merge-status: false
     comments: |
       Correct system-wide timekeeping utilities (used by multiple subsystems).
+  - path: zephyr/fix-stm32-block-write.patch
+    sha256sum: 48123502c9ba027117ad8e7136e3ad29a0b1322bb16773e3f89690fff1eb6d69
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-06-16
