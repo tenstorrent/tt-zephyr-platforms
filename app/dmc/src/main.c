@@ -369,6 +369,8 @@ int main(void)
 				}
 				bh_chip_reset_chip(chip, true);
 				bh_chip_cancel_bus_transfer_clear(chip);
+
+				chip->data.therm_trip_count++;
 			}
 		}
 
@@ -384,6 +386,7 @@ int main(void)
 				} else {
 					chip->data.needs_reset = true;
 				}
+				chip->data.therm_trip_count = 0;
 				bh_chip_cancel_bus_transfer_clear(chip);
 			}
 		}
@@ -399,6 +402,8 @@ int main(void)
 			if (chip->data.arc_needs_init_msg) {
 				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
 				    bh_chip_set_input_power_lim(chip, max_power) == 0 &&
+				    bh_chip_set_therm_trip_count(
+					    chip, chip->data.therm_trip_count) == 0 &&
 				    bh_chip_run_smbus_tests(chip) == 0) {
 					chip->data.arc_needs_init_msg = false;
 				}

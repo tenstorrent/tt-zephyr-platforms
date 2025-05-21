@@ -69,6 +69,7 @@
 #define TAG_ASIC_LOCATION        52
 #define TAG_BOARD_POWER_LIMIT    53
 #define TAG_INPUT_POWER          54
+#define TAG_THERM_TRIP_COUNT	 61
 #define TAG_ASIC_ID_HIGH         62
 #define TAG_ASIC_ID_LOW          63
 /* Not a real tag, signifies the last tag in the list.
@@ -87,6 +88,7 @@ void StartTelemetryTimer(void);
 void UpdateDmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);
 void UpdateTelemetryBoardPowerLimit(uint32_t power_limit);
+void UpdateTelemetryThermTripCount(uint16_t therm_trip_count);
 uint32_t GetTelemetryTag(uint16_t tag);
 
 #endif

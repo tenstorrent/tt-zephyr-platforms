@@ -33,5 +33,6 @@ uint16_t GetInputPower(void);
 int32_t Dm2CmSendFanRPMHandler(const uint8_t *data, uint8_t size);
 int32_t SMBusTelemRegHandler(const uint8_t *data, uint8_t size);
 int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size);
+int32_t Dm2CmSendThermTripCountHandler(const uint8_t *data, uint8_t size);
 
 #endif
