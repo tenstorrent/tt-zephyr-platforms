@@ -30,6 +30,8 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_POWER_LIMIT = 0x24,
 	/* WO, 16 bits. Write with current input power for board */
 	CMFW_SMBUS_POWER_INSTANT = 0x25,
+	/* WO, 16 bits. Write with therm trip count */
+	CMFW_SMBUS_THERM_TRIP_COUNT = 0x28,
 	/* RO, 8 bits. Issue a test read from CMFW scratch register */
 	CMFW_SMBUS_TEST_READ = 0xD8,
 	/* WO, 8 bits. Write to CMFW scratch register */

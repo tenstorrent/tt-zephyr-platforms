@@ -91,6 +91,16 @@ int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 	return ret;
 }
 
+int bh_chip_set_therm_trip_count(struct bh_chip *chip, uint16_t therm_trip_count)
+{
+	int ret;
+
+	ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_THERM_TRIP_COUNT,
+					  therm_trip_count);
+
+	return ret;
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);
