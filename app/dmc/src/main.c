@@ -414,9 +414,10 @@ int main(void)
 
 	uint16_t max_power = detect_max_power();
 
-	while (true) {
-		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
+	/* Trigger immediately the first time, subsequently 20ms. */
+	k_timepoint_t slow_code = sys_timepoint_calc(K_NO_WAIT);
 
+	while (true) {
 		/* handler for therm trip */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.therm_trip_triggered) {
@@ -471,16 +472,20 @@ int main(void)
 			ina228_power_update();
 		}
 
-		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-			uint16_t rpm = get_fan_rpm();
+		if (sys_timepoint_expired(slow_code)) {
+			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+				uint16_t rpm = get_fan_rpm();
+
+				ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+					bh_chip_set_fan_rpm(chip, rpm);
+				}
+			}
 
 			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-				bh_chip_set_fan_rpm(chip, rpm);
+				process_cm2dm_message(chip);
 			}
-		}
 
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			process_cm2dm_message(chip);
+			slow_code = sys_timepoint_calc(K_MSEC(20));
 		}
 
 		/*
