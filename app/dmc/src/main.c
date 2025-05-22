@@ -11,6 +11,7 @@
 #include <tenstorrent/bist.h>
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/fwupdate.h>
+#include <tenstorrent/qsfp_dd.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
@@ -344,6 +345,14 @@ int main(void)
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
 		gpio_pin_set_dt(&board_fault_led, 1);
+	}
+
+	if (IS_ENABLED(CONFIG_TT_QSFP_DD)) {
+		ret = enable_active_qsfp_dd();
+		if (ret != 0) {
+			LOG_ERR("%s() failed: %d", "enable_active_qsfp_dd", ret);
+			return ret;
+		}
 	}
 
 	/* No mechanism for getting bl version... yet */
