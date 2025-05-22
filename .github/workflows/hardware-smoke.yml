@@ -275,9 +275,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - board: p100
-            runs-on:
-              - p100-jtag
+          # disabled until #253 is resolved
+          # - board: p100
+          #  runs-on:
+          #    - p100-jtag
           - board: p100a
             runs-on:
               - p100a-jtag
