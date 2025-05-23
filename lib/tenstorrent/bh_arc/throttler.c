@@ -13,6 +13,11 @@
 #include "fw_table.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
+#include "noc2axi.h"
+
+static const bool doppler = false;
+
+static uint32_t power_limit;
 
 #define kThrottlerAiclkScaleFactor 500.0F
 #define DEFAULT_BOARD_POWER_LIMIT  150
@@ -179,17 +184,75 @@ static void UpdateThrottlerArb(ThrottlerId id)
 	SetAiclkArbMax(t->arb_max, arb_val);
 }
 
+static uint16_t board_power_history[1000] = {0,};
+static uint16_t *board_power_history_cursor = board_power_history;
+static uint32_t board_power_sum = 0;
+static bool board_power_throttling = false;
+
+#define ADVANCE_CIRCULAR_POINTER(pointer, array)		\
+	do {							\
+		if (++(pointer) == (array) + ARRAY_SIZE(array))	\
+			(pointer) = (array);			\
+	} while (false)
+
+static uint16_t UpdateMovingAveragePower(uint16_t current_power)
+{
+	board_power_sum += current_power - *board_power_history_cursor;
+	*board_power_history_cursor = current_power;
+
+	ADVANCE_CIRCULAR_POINTER(board_power_history_cursor, board_power_history);
+
+	return board_power_sum / ARRAY_SIZE(board_power_history);
+}
+
+/* must only be called when throttle state changes */
+static void SendKernelThrottlingMessage(bool throttle)
+{
+	const uint8_t kNocRing = 0;
+	const uint8_t kNocTlb = 1; /* should reserve and pre-program a TLB for this */
+	const uint32_t kKernelThrottleAddress = 0x10;
+
+	/* The LLK uses fast = even, slow = odd, but for debug purposes, they'd like to
+	 * know how many times throttling has happened. Just in case CMFW somehow gets
+	 * out of sync internally, double-check the parity. */
+	static uint32_t throttle_counter = 0;
+	throttle_counter++;
+	if ((throttle_counter & 1) != throttle)
+		throttle_counter++;
+
+	/* should reserve a TLB for this */
+	NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kKernelThrottleAddress, kNoc2AxiOrderingStrict);
+	NOC2AXIWrite32(kNocRing, kNocTlb, kKernelThrottleAddress, throttle_counter);
+}
+
 void CalculateThrottlers(void)
 {
 	TelemetryInternalData telemetry_internal_data;
 
 	ReadTelemetryInternal(1, &telemetry_internal_data);
 
-	UpdateThrottler(kThrottlerTDP, telemetry_internal_data.vcore_power);
-	UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
-	UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
+	uint16_t moving_average_power = UpdateMovingAveragePower(GetInputPower());
+
+	/* need to ensure all proper arbiters are enabled/disabled */
+	if (doppler && power_limit > 0) {
+		bool new_board_power_throttling = (moving_average_power >= power_limit);
+
+		if (new_board_power_throttling != board_power_throttling) {
+			SendKernelThrottlingMessage(new_board_power_throttling);
+
+			SetAiclkArbMax(kAiclkArbMaxAverageBoardPower,
+				       new_board_power_throttling ? 800 : 1300);
+
+			board_power_throttling = new_board_power_throttling;
+		}
+	} else {
+		UpdateThrottler(kThrottlerTDP, telemetry_internal_data.vcore_power);
+		UpdateThrottler(kThrottlerFastTDC, telemetry_internal_data.vcore_current);
+		UpdateThrottler(kThrottlerTDC, telemetry_internal_data.vcore_current);
+		UpdateThrottler(kThrottlerBoardPower, GetInputPower());
+	}
+
 	UpdateThrottler(kThrottlerThm, telemetry_internal_data.asic_temperature);
-	UpdateThrottler(kThrottlerBoardPower, GetInputPower());
 	UpdateThrottler(kThrottlerGDDRThm, GetMaxGDDRTemp());
 
 	for (ThrottlerId i = 0; i < kThrottlerCount; i++) {
@@ -203,7 +266,7 @@ int32_t Dm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	uint32_t power_limit = sys_get_le16(data);
+	power_limit = sys_get_le16(data);
 
 	LOG_INF("Cable Power Limit: %u\n", power_limit);
 	power_limit = MIN(power_limit, get_fw_table()->chip_limits.board_power_limit);
