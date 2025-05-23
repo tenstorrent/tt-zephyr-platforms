@@ -12,8 +12,8 @@
 
 #define FUSE_ASIC_ID_OLD_START_BIT                    1056
 #define FUSE_ASIC_ID_OLD_END_BIT                      1071
-#define FUSE_ASIC_ID_START_BIT                        1600
-#define FUSE_ASIC_ID_END_BIT                          1615
+#define FUSE_ASIC_ID_LOW_START_BIT                    1600
+#define FUSE_ASIC_ID_LOW_END_BIT                      1631
 #define FUSE_ATE_TENSIX_ROW0_TEST_STATUS_START_BIT    3168
 #define FUSE_ATE_TENSIX_ROW0_TEST_STATUS_END_BIT      3199
 #define FUSE_ATE_TENSIX_ROW1_TEST_STATUS_START_BIT    3200
@@ -68,6 +68,8 @@
 #define FUSE_SLT_ETH_CTRL_TEST_STATUS_END_BIT         5535
 #define FUSE_SLT_HARVESTED_TENSIX_COLUMNS_START_BIT   5536
 #define FUSE_SLT_HARVESTED_TENSIX_COLUMNS_END_BIT     5551
+#define FUSE_ASIC_ID_HIGH_START_BIT                   5568
+#define FUSE_ASIC_ID_HIGH_END_BIT                     5599
 
 /* Use this helper macro to read functional efuse fields */
 /* Note that it only works for fields that are 32-bits or smaller */
