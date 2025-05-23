@@ -69,10 +69,11 @@
 #define TAG_ASIC_LOCATION        52
 #define TAG_BOARD_POWER_LIMIT    53
 #define TAG_INPUT_POWER          54
+#define TAG_THERM_TRIP_COUNT	 55
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined
  */
-#define TAG_COUNT                55
+#define TAG_COUNT                56
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)
@@ -85,6 +86,7 @@ void StartTelemetryTimer(void);
 void UpdateDmFwVersion(uint32_t bl_version, uint32_t app_version);
 void UpdateTelemetryNocTranslation(bool translation_enabled);
 void UpdateTelemetryBoardPowerLimit(uint32_t power_limit);
+void UpdateTelemetryThermTripCount(uint16_t therm_trip_count);
 uint32_t GetTelemetryTag(uint16_t tag);
 
 #endif

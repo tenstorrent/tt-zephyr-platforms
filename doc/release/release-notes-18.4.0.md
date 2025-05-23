@@ -12,6 +12,12 @@ Major enhancements with this release include:
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
 
+### New Features
+
+* DMC now increments a counter for thermal trips and reports the count to SMC
+  * SMC now reports this value in the telemetry table
+  * This counter is reset on PERST
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes

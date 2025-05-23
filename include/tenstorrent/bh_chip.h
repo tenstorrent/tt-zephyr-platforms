@@ -55,6 +55,7 @@ struct bh_chip_data {
 
 	/* notify the main thread to handle therm trip */
 	volatile bool therm_trip_triggered;
+	uint16_t therm_trip_count;
 
 	/* notify the main thread to handle pgood events */
 	volatile bool pgood_fall_triggered;
@@ -126,6 +127,7 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info);
 int bh_chip_set_input_power(struct bh_chip *chip, uint16_t power);
 int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power);
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm);
+int bh_chip_set_therm_trip_count(struct bh_chip *chip, uint16_t therm_trip_count);
 
 void bh_chip_assert_asic_reset(const struct bh_chip *chip);
 void bh_chip_deassert_asic_reset(const struct bh_chip *chip);

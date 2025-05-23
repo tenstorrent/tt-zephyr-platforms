@@ -288,3 +288,15 @@ int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size)
 	memcpy(data, &telemetry_data, sizeof(telemetry_data));
 	return 0;
 }
+
+int32_t Dm2CmSendThermTripCountHandler(const uint8_t *data, uint8_t size)
+{
+	if (size != 2) {
+		return -1;
+	}
+
+	uint32_t therm_trip_count = sys_get_le16(data);
+
+	UpdateTelemetryThermTripCount(therm_trip_count);
+	return 0;
+}

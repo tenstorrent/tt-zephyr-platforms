@@ -98,7 +98,8 @@ static struct telemetry_table telemetry_table = {
 		[49] = {TAG_ASIC_LOCATION, TELEM_OFFSET(TAG_ASIC_LOCATION)},
 		[50] = {TAG_BOARD_POWER_LIMIT, TELEM_OFFSET(TAG_BOARD_POWER_LIMIT)},
 		[51] = {TAG_INPUT_POWER, TELEM_OFFSET(TAG_INPUT_POWER)},
-		[52] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
+		[52] = {TAG_THERM_TRIP_COUNT, TELEM_OFFSET(TAG_THERM_TRIP_COUNT)},
+		[53] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
 	},
 };
 static uint32_t *telemetry = &telemetry_table.telemetry[0];
@@ -388,6 +389,11 @@ void UpdateTelemetryNocTranslation(bool translation_enabled)
 void UpdateTelemetryBoardPowerLimit(uint32_t power_limit)
 {
 	telemetry[TAG_BOARD_POWER_LIMIT] = power_limit;
+}
+
+void UpdateTelemetryThermTripCount(uint16_t therm_trip_count)
+{
+	telemetry[TAG_THERM_TRIP_COUNT] = therm_trip_count;
 }
 
 uint32_t GetTelemetryTag(uint16_t tag)

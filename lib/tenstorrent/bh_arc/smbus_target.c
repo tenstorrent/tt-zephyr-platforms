@@ -186,6 +186,9 @@ static SmbusConfig smbus_config = {
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = sizeof(uint32_t),
 			  .handler = {.send_handler = &SMBusTelemDataHandler}},
+		[CMFW_SMBUS_THERM_TRIP_COUNT] = {.valid = 1,
+			  .trans_type = kSmbusTransWriteWord,
+			  .handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}},
 #endif
 		[CMFW_SMBUS_TEST_READ] = {.valid = 1,
 			  .trans_type = kSmbusTransReadByte,
