@@ -11,14 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-fw-artifact:
+    uses: ./.github/workflows/build-fw.yml
+    secrets:
+      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
   hardware-metal-test:
+    needs: build-fw-artifact
     strategy:
       fail-fast: false
       matrix:
         config:
-          - board: p100
-            runs-on:
-              - p100-jtag
+          # disabled until #253 is resolved
+          # - board: p100
+          #  runs-on:
+          #    - p100-jtag
           - board: p100a
             runs-on:
               - p100a-jtag
@@ -39,18 +45,17 @@ jobs:
         shell: bash
         working-directory: /home/user/tt-metal/
     steps:
-      - name: Install Unzip
+      - id: mkdir-home-user-tt-metal
         run: |
-          sudo apt update
-          sudo apt install -y unzip protobuf-compiler
+          mkdir -p /home/user/tt-metal
       - name: Download the latest firmware bundle
-        # Replace this with the reliance on the previous workflow that builds the firmware bundle.
-        run: |
-          curl -L -o combined-fwbundle.zip https://nightly.link/tenstorrent/tt-zephyr-platforms/workflows/build-fw/main/combined-fwbundle.zip
-          unzip -o combined-fwbundle.zip
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
+          path: /home/user/tt-metal
       - name: Run the rescan-pcie.sh script
         run: |
-          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.ref }}/scripts/rescan-pcie.sh
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/rescan-pcie.sh
           source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |
@@ -58,7 +63,7 @@ jobs:
           python -m venv .env
           source .env/bin/activate
           pip install git+https://github.com/tenstorrent/tt-flash.git
-          tt-flash --fw-tar fw_pack*.fwbundle --force
+          tt-flash --fw-tar /home/user/tt-metal/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
           sh -c "$TEST_COMMAND"
@@ -66,7 +71,7 @@ jobs:
         if: ${{ always() }}
         run: |
           # Clean out metal
-          rm -rf combined-fwbundle.zip fw_pack*.fwbundle
+          rm -f /home/user/tt-metal/fw_pack-*.fwbundle
 
   reset-hammer-test:
     strategy:
