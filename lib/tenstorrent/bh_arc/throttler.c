@@ -14,6 +14,8 @@
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "noc2axi.h"
+#include "status_reg.h"
+#include "reg.h"
 
 static const bool doppler = false;
 
@@ -198,6 +200,7 @@ static bool board_power_throttling = false;
 static uint16_t UpdateMovingAveragePower(uint16_t current_power)
 {
 	board_power_sum += current_power - *board_power_history_cursor;
+	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(62), board_power_sum);
 	*board_power_history_cursor = current_power;
 
 	ADVANCE_CIRCULAR_POINTER(board_power_history_cursor, board_power_history);
