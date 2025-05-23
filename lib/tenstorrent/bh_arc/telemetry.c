@@ -6,6 +6,7 @@
 
 #include "cm2dm_msg.h"
 #include "fan_ctrl.h"
+#include "functional_efuse.h"
 #include "fw_table.h"
 #include "harvesting.h"
 #include "pll.h"
@@ -48,7 +49,6 @@ static struct telemetry_table telemetry_table = {
 	.tag_table = {
 		[0] = {TAG_BOARD_ID_HIGH, TELEM_OFFSET(TAG_BOARD_ID_HIGH)},
 		[1] = {TAG_BOARD_ID_LOW, TELEM_OFFSET(TAG_BOARD_ID_LOW)},
-		[2] = {TAG_ASIC_ID, TELEM_OFFSET(TAG_ASIC_ID)},
 		[3] = {TAG_HARVESTING_STATE, TELEM_OFFSET(TAG_HARVESTING_STATE)},
 		[4] = {TAG_UPDATE_TELEM_SPEED, TELEM_OFFSET(TAG_UPDATE_TELEM_SPEED)},
 		[5] = {TAG_VCORE, TELEM_OFFSET(TAG_VCORE)},
@@ -98,7 +98,9 @@ static struct telemetry_table telemetry_table = {
 		[49] = {TAG_ASIC_LOCATION, TELEM_OFFSET(TAG_ASIC_LOCATION)},
 		[50] = {TAG_BOARD_POWER_LIMIT, TELEM_OFFSET(TAG_BOARD_POWER_LIMIT)},
 		[51] = {TAG_INPUT_POWER, TELEM_OFFSET(TAG_INPUT_POWER)},
-		[52] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
+		[52] = {TAG_ASIC_ID_HIGH, TELEM_OFFSET(TAG_ASIC_ID_HIGH)},
+		[53] = {TAG_ASIC_ID_LOW, TELEM_OFFSET(TAG_ASIC_ID_LOW)},
+		[54] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
 	},
 };
 static uint32_t *telemetry = &telemetry_table.telemetry[0];
@@ -235,7 +237,8 @@ static void write_static_telemetry(uint32_t app_version)
 	/* Get the static values */
 	telemetry[TAG_BOARD_ID_HIGH] = get_read_only_table()->board_id >> 32;
 	telemetry[TAG_BOARD_ID_LOW] = get_read_only_table()->board_id & 0xFFFFFFFF;
-	telemetry[TAG_ASIC_ID] = 0x00000000; /* Might be subject to redesign */
+	telemetry[TAG_ASIC_ID_HIGH] = READ_FUNCTIONAL_EFUSE(ASIC_ID_HIGH);
+	telemetry[TAG_ASIC_ID_LOW] = READ_FUNCTIONAL_EFUSE(ASIC_ID_LOW);
 	telemetry[TAG_HARVESTING_STATE] = 0x00000000;
 	telemetry[TAG_UPDATE_TELEM_SPEED] = telem_update_interval; /* Expected speed of
 								    * update in ms
