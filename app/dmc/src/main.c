@@ -243,8 +243,10 @@ int main(void)
 			continue;
 		}
 
-		tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
-					     &((&chip->data)->bus_cancel_flag));
+		if (false) {
+			tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
+						     &((&chip->data)->bus_cancel_flag));
+		}
 	}
 
 	bist_rc = 0;
