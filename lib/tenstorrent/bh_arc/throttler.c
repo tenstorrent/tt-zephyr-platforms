@@ -17,7 +17,7 @@
 #include "status_reg.h"
 #include "reg.h"
 
-static const bool doppler = false;
+static const bool doppler = true;
 
 static uint32_t power_limit;
 
