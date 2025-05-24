@@ -21,39 +21,82 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
+LOG_MODULE_REGISTER(jtag_bootrom, CONFIG_TT_JTAG_BOOTROM_LOG_LEVEL);
+
 static bool perst_seen;
 static uint32_t arc_start_time;
 static uint32_t perst_start_time;
 static uint32_t dm_init_done;
 
-bool jtag_axiwait(const struct device *dev, uint32_t addr)
+static int jtag_bitbang_wait_for_pgood(const struct gpio_dt_spec *spec, k_timeout_t timeout)
 {
-	/* If we are using the emulated driver then always return true */
-	if (DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)) {
-		return true;
-	}
+	k_timepoint_t end = sys_timepoint_calc(timeout);
 
-	jtag_reset(dev);
+	do {
+#if DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
+		/* No need to wait for id in simulation */
+		return 0;
+#endif
 
-	/* Returns true on g2g */
-	uint32_t value = 0;
+		if (gpio_pin_get_dt(spec) == 1) {
+			return 0;
+		}
+	} while (!sys_timepoint_expired(end));
 
-	return !jtag_axi_read32(dev, addr, &value);
+	LOG_ERR("%s() failed", __func__);
+
+	return -ETIMEDOUT;
 }
 
-void jtag_bitbang_wait_for_id(const struct device *dev)
+static int jtag_bitbang_wait_for_id(const struct device *dev, uint32_t id, k_timeout_t timeout)
 {
 	uint32_t reset_id = 0;
+	k_timepoint_t end = sys_timepoint_calc(timeout);
 
-	while (true) {
+	do {
 		jtag_reset(dev);
+
+#if DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
+		/* No need to wait for id in simulation */
+		return 0;
+#endif
+
 		jtag_read_id(dev, &reset_id);
 
-		if (reset_id == 0x138A5) {
-			break;
+		if (reset_id == id) {
+			return 0;
 		}
+
 		k_yield();
-	}
+
+	} while (!sys_timepoint_expired(end));
+
+	LOG_ERR("%s() failed", __func__);
+
+	return -ETIMEDOUT;
+}
+
+static int jtag_bitbang_axiwait(const struct device *dev, uint32_t addr, k_timeout_t timeout)
+{
+	uint32_t value = 0;
+	k_timepoint_t end = sys_timepoint_calc(timeout);
+
+	do {
+		jtag_reset(dev);
+
+#if DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
+		/* No need to wait for id in simulation */
+		return 0;
+#endif
+
+		if (jtag_axi_read32(dev, addr, &value) == 0) {
+			return 0;
+		}
+	} while (!sys_timepoint_expired(end));
+
+	LOG_ERR("%s() failed", __func__);
+
+	return -ETIMEDOUT;
 }
 
 static const __maybe_unused struct gpio_dt_spec arc_rambus_jtag_mux_sel =
@@ -85,18 +128,19 @@ static struct gpio_callback preset_cb_data;
 
 int jtag_bootrom_reset_asic(struct bh_chip *chip)
 {
-	/* Only check for pgood if we aren't emulating */
-#if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
-	while (!gpio_pin_get_dt(&chip->config.pgood)) {
+	int ret;
+
+	ret = jtag_bitbang_wait_for_pgood(&chip->config.pgood,
+					  K_MSEC(CONFIG_JTAG_BOOTROM_COMMON_TIMEOUT_MS));
+	if (ret < 0) {
+		return ret;
 	}
-#endif
 
 	bh_chip_assert_asic_reset(chip);
 	bh_chip_assert_spi_reset(chip);
 
-	int ret = jtag_setup(chip->config.jtag);
-
-	if (ret) {
+	ret = jtag_setup(chip->config.jtag);
+	if (ret < 0) {
 		return ret;
 	}
 
@@ -111,16 +155,16 @@ int jtag_bootrom_reset_asic(struct bh_chip *chip)
 	/* k_sleep(K_MSEC(2)); */
 	k_busy_wait(2000);
 
-	jtag_reset(chip->config.jtag);
+	ret = jtag_bitbang_wait_for_id(chip->config.jtag, 0x138A5,
+				       K_MSEC(CONFIG_JTAG_BOOTROM_COMMON_TIMEOUT_MS));
+	if (ret < 0) {
+		return ret;
+	}
 
-#if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
-	jtag_bitbang_wait_for_id(chip->config.jtag);
-#endif
-
-	jtag_reset(chip->config.jtag);
-
-	while (!jtag_axiwait(chip->config.jtag, STATUS_POST_CODE_REG_ADDR)) {
-		k_yield();
+	ret = jtag_bitbang_axiwait(chip->config.jtag, STATUS_POST_CODE_REG_ADDR,
+				   K_MSEC(CONFIG_JTAG_BOOTROM_COMMON_TIMEOUT_MS));
+	if (ret < 0) {
+		return ret;
 	}
 
 	jtag_reset(chip->config.jtag);
@@ -238,9 +282,9 @@ int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t 
 #endif
 
 		if (patch[i] != readback) {
-			printk("Bootcode mismatch at %03x. expected: %08x actual: %08x "
-			       "¯\\_(ツ)_/¯\n",
-			       i * 4, patch[i], readback);
+			LOG_DBG("Bootcode mismatch at %03x. expected: %08x actual: %08x "
+				"¯\\_(ツ)_/¯",
+				i * 4, patch[i], readback);
 
 			jtag_axi_write32(dev, STATUS_POST_CODE_REG_ADDR, 0x6);
 			return 1;
