@@ -91,6 +91,18 @@ int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm)
 	return ret;
 }
 
+void bh_chip_auto_reset(struct k_timer *timer)
+{
+	struct bh_chip *chip = CONTAINER_OF(timer, struct bh_chip, auto_reset_timer);
+
+	chip->data.last_reset_was_automatic = true;
+	/* Ramp up fan */
+	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+		set_fan_speed(100);
+	}
+	bh_chip_reset_chip(chip, true);
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);

@@ -18,6 +18,8 @@ typedef enum {
 	kCm2DmMsgIdPing = 2,
 	kCm2DmMsgIdFanSpeedUpdate = 3,
 	kCm2DmMsgIdReady = 4,
+	kCm2DmMsgIdAutoResetTimeoutUpdate = 5,
+	kCm2DmMsgTelemHeartbeatUpdate = 6,
 } Cm2DmMsgId;
 
 typedef struct dmStaticInfo {
@@ -28,6 +30,7 @@ typedef struct dmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
+	uint32_t last_reset_was_automatic;
 } __packed dmStaticInfo;
 
 typedef struct cm2dmMessage {
