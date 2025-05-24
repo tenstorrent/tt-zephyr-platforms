@@ -33,6 +33,10 @@ config JTAG_LOAD_BOOTROM
 	help
 	  Skip bootrom load, only deassert resets
 
+config JTAG_BOOTROM_WAIT_FOR_ID_TIMEOUT_MS
+	int "Timeout for waiting for JTAG ID in milliseconds"
+	default 5000
+
 module = TT_JTAG_BOOTROM
 module-str = JTAG Bootrom Loader
 source "subsys/logging/Kconfig.template.log_config"
