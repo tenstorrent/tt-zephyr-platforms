@@ -98,6 +98,8 @@ patches:
     upstreamable: true
     issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
+    merge-date: 2025-05-13
+    merge-status: true
     comments: |
       We cannot use interrupts for this driver, since they are tied to the same pin on the
       stm32. By disabling interrupts, I was able to discover and fix a regression in the driver.
@@ -121,5 +123,7 @@ patches:
     upstreamable: true
     issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89859
+    merge-date: 2025-05-16
+    merge-status: true
     comments: |
       Automatically generate a boolean Kconfig option for the active board revision.
