@@ -130,14 +130,18 @@ void init_fan_ctrl(void)
 static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
-	if (request->data[1] == 0xFFFFFFFF) { /* unforce */
-		k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
-				K_MSEC(fan_ctrl_update_interval));
-	} else { /* force */
-		k_timer_stop(&fan_ctrl_update_timer);
-		fan_speed = request->data[1];
-		UpdateFanSpeedRequest(fan_speed);
+	if (get_fw_table()->feature_enable.fan_ctrl_en) {
+		if (request->data[1] == 0xFFFFFFFF) { /* unforce */
+			k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
+				      K_MSEC(fan_ctrl_update_interval));
+		} else { /* force */
+			k_timer_stop(&fan_ctrl_update_timer);
+			fan_speed = request->data[1];
+			UpdateFanSpeedRequest(fan_speed);
+		}
+		return 0;
 	}
-	return 0;
+
+	return 1;
 }
 REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
