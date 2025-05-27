@@ -316,8 +316,9 @@ int main(void)
 				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 					set_fan_speed(100);
 				}
-				bh_chip_reset_chip(chip, true);
 				bh_chip_cancel_bus_transfer_clear(chip);
+
+				bh_chip_reset_chip(chip, true);
 			}
 		}
 
@@ -325,6 +326,7 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.trigger_reset) {
 				chip->data.trigger_reset = false;
+				bh_chip_cancel_bus_transfer_clear(chip);
 				if (chip->data.workaround_applied) {
 					jtag_bootrom_reset_asic(chip);
 					jtag_bootrom_soft_reset_arc(chip);
