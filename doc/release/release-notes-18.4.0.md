@@ -18,6 +18,18 @@ Major enhancements with this release include:
   * SMC now reports this value in the telemetry table
   * This counter is reset on PERST
 
+### Performance Improvements
+
+* Wormhole FW blob updated
+  * SPI bootrom 3.13.0.0
+    * Remove PCIe MPS limit (**Note: tt-kmd >= 1.33 is required**)
+  * CMFW 2.33.0.0
+    * Fix to decrease variation across TMONs at idle
+    * Make therm trip limit a SPI parameter
+    * Backport BH-style telemetry tables
+  * ERISC FW 6.6.15.0
+    * Training improvements for 6U UBB Galaxy
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes
