@@ -316,26 +316,53 @@ int main(void)
 				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 					set_fan_speed(100);
 				}
-				bh_chip_cancel_bus_transfer_clear(chip);
 
-				bh_chip_reset_chip(chip, true);
+				/* Prioritize the system rebooting over the therm trip handler */
+				if (!atomic_get(&chip->data.trigger_reset)) {
+					/* Technically trigger_reset could have been set here but I
+					 * think I'm happy to eat the non-enum in that case
+					 */
+					chip->data.performing_reset = true;
+					/* Set the bus cancel following the logic of
+					 * (reset_triggered && !performing_reset)
+					 */
+					bh_chip_cancel_bus_transfer_clear(chip);
+
+					bh_chip_reset_chip(chip, true);
+
+					/* Set the bus cancel following the logic of
+					 * (reset_triggered && !performing_reset)
+					 */
+					if (atomic_get(&chip->data.trigger_reset)) {
+						bh_chip_cancel_bus_transfer_set(chip);
+					}
+					chip->data.performing_reset = false;
+				}
 			}
 		}
 
 		/* handler for PERST */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.trigger_reset) {
-				chip->data.trigger_reset = false;
+			if (atomic_set(&chip->data.trigger_reset, false)) {
+				chip->data.performing_reset = true;
+				/*
+				 * Set the bus cancel following the logic of (reset_triggered &&
+				 * !performing_reset)
+				 */
 				bh_chip_cancel_bus_transfer_clear(chip);
-				if (chip->data.workaround_applied) {
-					jtag_bootrom_reset_asic(chip);
-					jtag_bootrom_soft_reset_arc(chip);
-					jtag_bootrom_teardown(chip);
-					chip->data.needs_reset = false;
-				} else {
-					chip->data.needs_reset = true;
+
+				jtag_bootrom_reset_asic(chip);
+				jtag_bootrom_soft_reset_arc(chip);
+				jtag_bootrom_teardown(chip);
+
+				/*
+				 * Set the bus cancel following the logic of (reset_triggered &&
+				 * !performing_reset)
+				 */
+				if (atomic_get(&chip->data.trigger_reset)) {
+					bh_chip_cancel_bus_transfer_set(chip);
 				}
-				bh_chip_cancel_bus_transfer_clear(chip);
+				chip->data.performing_reset = false;
 			}
 		}
 
