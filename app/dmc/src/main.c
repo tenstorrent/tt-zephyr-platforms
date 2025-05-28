@@ -117,12 +117,32 @@ void process_cm2dm_message(struct bh_chip *chip)
 			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
 			break;
 		case kCm2DmMsgIdFanSpeedUpdate:
+			/* Update fan PWM */
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
 				set_fan_speed((uint8_t)message.data & 0xFF);
 			}
 			break;
 		case kCm2DmMsgIdReady:
 			chip->data.arc_needs_init_msg = true;
+			break;
+		case kCm2DmMsgIdAutoResetTimeoutUpdate:
+			/* Update auto reset timeout */
+			chip->data.auto_reset_timeout = message.data;
+			if (chip->data.auto_reset_timeout == 0) {
+				k_timer_stop(&chip->auto_reset_timer);
+			}
+			break;
+		case 0x6:
+			/* Update telemetry heartbeat */
+			if (chip->data.telemetry_heartbeat != message.data) {
+				/* Telemetry heartbeat is moving */
+				chip->data.telemetry_heartbeat = message.data;
+				if (chip->data.auto_reset_timeout != 0) {
+					k_timer_start(&chip->auto_reset_timer,
+						      K_MSEC(chip->data.auto_reset_timeout),
+						      K_NO_WAIT);
+				}
+			}
 			break;
 		}
 	}
@@ -346,9 +366,17 @@ int main(void)
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
 
+	/* Start auto-reset timer */
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		chip->data.auto_reset_timeout = 1000;
+		k_timer_start(&chip->auto_reset_timer, K_MSEC(chip->data.auto_reset_timeout),
+			      K_NO_WAIT);
+	}
+
 	/* No mechanism for getting bl version... yet */
 	dmStaticInfo static_info =
-		(dmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
+		(dmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION, 
+						  .last_reset_was_automatic = false};
 
 	uint16_t max_power = detect_max_power();
 
@@ -397,10 +425,13 @@ int main(void)
 		 */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_needs_init_msg) {
+				static_info.last_reset_was_automatic =
+					chip->data.last_reset_was_automatic;
 				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
 				    bh_chip_set_input_power_lim(chip, max_power) == 0 &&
 				    bh_chip_run_smbus_tests(chip) == 0) {
 					chip->data.arc_needs_init_msg = false;
+					chip->data.last_reset_was_automatic = false;
 				}
 			}
 		}

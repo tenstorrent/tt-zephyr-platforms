@@ -1,0 +1,14 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+if WATCHDOG
+
+menu "Watchdog drivers"
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.tt_bh"
+# zephyr-keep-sorted-stop
+
+endmenu
+
+endif

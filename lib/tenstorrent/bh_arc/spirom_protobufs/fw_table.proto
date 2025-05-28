@@ -34,6 +34,7 @@ message FwTable {
     uint32 asic_fmin = 12;
     uint32 gddr_thm_limit = 13;
     uint32 board_power_limit = 14;
+    uint32 auto_reset_timeout = 15;
   }
 
   message FeatureEnable {

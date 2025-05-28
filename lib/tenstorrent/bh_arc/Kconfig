@@ -28,13 +28,13 @@ config TT_BH_ARC_FAN_CTRL_ALPHA
 	int "Fan control alpha value"
 	default 50
 	help
-		Value of alpha for filtering fan curve input temp
+	  Value of alpha for filtering fan curve input temp
 
 config TT_BH_ARC_FAN_CTRL_GDDR_TEMP
 	bool "Use GDDR temp as fan curve input"
 	default y
 	help
-		Enable to use GDDR temp in fan speed calculation
+	  Enable to use GDDR temp in fan speed calculation
 
 config TT_BH_ARC_I2C_TIMEOUT
 	bool "Time out if I2C transaction exceeds given duration"
@@ -74,3 +74,11 @@ config TT_BH_ARC_SYSINIT_PRIORITY
 	depends on TT_BH_ARC_SYSINIT
 	help
 	  Priority of the SYS_INIT call that initializes blackhole firmware and hardware.
+
+config TT_AUTO_RESET
+	bool "Send telemetry heartbeat to BMFW periodically"
+	default y
+	help
+	  Enable to send telemetry heartbeat to BMFW periodically to update the auto reset
+	  timer. If auto reset timeout is enabled in BMFW and a telemetry heartbeat update is
+	  not received within the auto reset timeout interval, a chip reset will be issued.
