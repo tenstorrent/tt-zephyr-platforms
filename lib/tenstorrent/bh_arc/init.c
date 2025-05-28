@@ -361,6 +361,26 @@ static void EthInit(void)
 }
 
 #ifndef CONFIG_TT_SMC_RECOVERY
+static uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req, struct response *rsp)
+{
+	/* Assert reset (active low) */
+	RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = {.val = 0};
+
+	for (uint32_t i = 0; i < 8; i++) {
+		WriteReg(RESET_UNIT_TENSIX_RESET_0_REG_ADDR + i * 4, tensix_reset.val);
+	}
+
+	/* Deassert reset */
+	tensix_reset.val = 0xffffffff;
+	for (uint32_t i = 0; i < 8; i++) {
+		WriteReg(RESET_UNIT_TENSIX_RESET_0_REG_ADDR + i * 4, tensix_reset.val);
+	}
+
+	return 0;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_TOGGLE_TENSIX_RESET, ToggleTensixReset);
+
 /**
  * @brief Redo Tensix init that gets cleared on Tensix reset
  *
