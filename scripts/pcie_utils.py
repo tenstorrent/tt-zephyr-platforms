@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import subprocess
 import time
 
+from pathlib import Path
 
 TT_PCIE_VID = "0x1e52"
 
@@ -29,21 +31,27 @@ def rescan_pcie():
     dev = find_tt_bus()
     if dev is not None:
         print(f"Powering off device at {dev}")
+        remove_path = Path(dev) / "remove"
         try:
-            with open(os.path.join(dev, "remove"), "w") as f:
+            with open(remove_path, "w") as f:
                 f.write("1")
-        except PermissionError as e:
-            print(
-                "Error, this script must be run with elevated permissions to rescan PCIe bus"
-            )
-            raise e
+        except PermissionError:
+            try:
+                subprocess.call(f"echo 1 | sudo tee {remove_path}", shell=True)
+            except Exception as e:
+                print("Error, this script must be run with elevated permissions")
+                raise e
+
     # Now, rescan the bus
+    rescan_path = Path("/sys/bus/pci/rescan")
     try:
-        with open("/sys/bus/pci/rescan", "w") as f:
+        with open(rescan_path, "w") as f:
             f.write("1")
             time.sleep(1)
-    except PermissionError as e:
-        print(
-            "Error, this script must be run with elevated permissions to rescan PCIe bus"
-        )
-        raise e
+    except PermissionError:
+        try:
+            subprocess.call(f"echo 1 | sudo tee {rescan_path}", shell=True)
+            time.sleep(1)
+        except Exception as e:
+            print("Error, this script must be run with elevated permissions")
+            raise e
