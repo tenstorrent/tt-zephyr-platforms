@@ -28,7 +28,10 @@ ARC_STATUS = 0x80030060
 BOOT_STATUS = 0x80030408
 
 # ARC messages
+ARC_MSG_TYPE_REINIT_TENSIX = 0x20
+ARC_MSG_TYPE_FORCE_AICLK = 0x33
 ARC_MSG_TYPE_TEST = 0x90
+ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
 ARC_MSG_TYPE_PING_DM = 0xC0
 
 
@@ -236,3 +239,67 @@ def test_dirty_reset():
         logger.info(f"Iteration {i} of dirty reset test passed")
     logger.info(f"dirty reset failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "dirty reset failed a non-zero number of times."
+
+
+def tensix_reset_sequence(arc_chip):
+    """
+    Careful sequence to reset all the Tensixes
+    """
+    TENSIX_RISC_RESET_ADDR = [0x80030040 + i * 4 for i in range(8)]
+    SOFT_RESET_ADDR = 0xFFB121B0
+    SOFT_RESET_DATA = 0x47800
+
+    # Force AICLK to safe frequency
+    arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, arg0=250, arg1=0)
+    # Clear RISC reset registers
+    for addr in TENSIX_RISC_RESET_ADDR:
+        arc_chip.axi_write32(addr, 0)
+
+    # The tensix reset message
+    response = arc_chip.arc_msg(ARC_MSG_TYPE_TOGGLE_TENSIX_RESET)
+    assert response[1] == 0, "SMC response invalid to toggle tensix reset message"
+    response = arc_chip.arc_msg(ARC_MSG_TYPE_REINIT_TENSIX)
+    assert response[1] == 0, "SMC response invalid to reinit tensix message"
+
+    # Set soft reset registers inside Tensix
+    arc_chip.noc_broadcast32(1, SOFT_RESET_ADDR, SOFT_RESET_DATA)
+
+    # Release RISC reset registers
+    for addr in TENSIX_RISC_RESET_ADDR:
+        arc_chip.axi_write32(addr, 0xFFFFFFFF)
+
+    # Unforce AICLK
+    arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, arg0=0, arg1=0)
+
+
+def test_tensix_reset(arc_chip):
+    """
+    Validates the Tensix reset sequence
+    """
+    # Unused register in Tensix. Use bit 0 as a scratch bit
+    # "PREFECTH" is a typo carried over from the register name in the RTL
+    ETH_RISC_PREFECTH_CTRL_ADDR = 0xFFB120B8
+    # This Tensix coordinate (1-2) should be available in all current harvesting configs
+    scratch_set = arc_chip.noc_read32(
+        noc_id=0, x=1, y=2, addr=ETH_RISC_PREFECTH_CTRL_ADDR
+    )
+    scratch_set |= 1  # Set bit 0 as a scratch flag
+
+    for i in range(10):
+        logger.info(f"Starting Tensix reset test iteration {i}")
+        # Set scratch bit before reset
+        arc_chip.noc_write32(
+            noc_id=0, x=1, y=2, addr=ETH_RISC_PREFECTH_CTRL_ADDR, data=scratch_set
+        )
+
+        tensix_reset_sequence(arc_chip)
+
+        # Check that the Tensix reset worked by checking the scratch bit is cleared
+        scratch_get = arc_chip.noc_read32(
+            noc_id=0, x=1, y=2, addr=ETH_RISC_PREFECTH_CTRL_ADDR
+        )
+        assert (
+            scratch_get & 1 == 0
+        ), "Tensix scratch bit not cleared. Tensix reset failed"
+
+        logger.info(f"Tensix reset test iteration {i} passed")
