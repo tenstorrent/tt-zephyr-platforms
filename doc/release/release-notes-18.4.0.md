@@ -17,6 +17,7 @@ Major enhancements with this release include:
 * DMC now increments a counter for thermal trips and reports the count to SMC
   * SMC now reports this value in the telemetry table
   * This counter is reset on PERST
+* Add an SMC message to toggle Tensix resets for testing purposes
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
