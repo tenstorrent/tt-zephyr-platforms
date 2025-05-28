@@ -49,6 +49,13 @@
 
 #define PINCTRL_TT_BH_UART_CNTL_REG_OFFSET 0x00000608
 
+#define RESET_UNIT_I2C_PAD_CNTL_REG_ADDR  0x800301C0
+#define RESET_UNIT_I2C1_PAD_CNTL_REG_ADDR 0x800305CC
+#define RESET_UNIT_I2C2_PAD_CNTL_REG_ADDR 0x800305D8
+#define RESET_UNIT_I2C_PAD_DATA_REG_ADDR  0x800301C4
+#define RESET_UNIT_I2C1_PAD_DATA_REG_ADDR 0x800305D0
+#define RESET_UNIT_I2C2_PAD_DATA_REG_ADDR 0x800305DC
+
 LOG_MODULE_REGISTER(bh_arc_pinctrl, CONFIG_PINCTRL_LOG_LEVEL);
 
 static inline uint32_t pinctrl_tt_bh_pin_to_bank(uint32_t pin);
@@ -271,4 +278,55 @@ static inline uintptr_t pinctrl_tt_bh_drvs_reg(uint32_t pin)
 static inline uint32_t pinctrl_tt_bh_drvs_shift(uint32_t pin)
 {
 	return (pin * PINCTRL_TT_BH_DRVS_BITS) & BIT_MASK(LOG2(32));
+}
+
+/* Bitbang recovery sequence on I2C bus */
+void I2CRecoverBus(uint32_t id)
+{
+	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
+	uint32_t i2c_cntl = (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+				RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK;
+	uint32_t i2c_rst_cntl = ReadReg(RESET_UNIT_I2C_CNTL_REG_ADDR);
+
+	/* Disable I2C controller */
+	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 0);
+	/* Release control of pads from I2C controller */
+	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl & ~BIT(id));
+	/* Init I2C pads for I2C controller */
+	WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
+	/* Set both pads to output low */
+	WriteReg(GetI2CPadDataAddr(id), 0x0);
+	/*
+	 * First, manually hold SCL low for 150 ms. Per the SMBUS spec,
+	 * we should only need to hold the line low for 25 ms, but that does
+	 * not work reliably and this does...
+	 */
+	i2c_cntl ^= RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK;
+	WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
+	Wait(150 * WAIT_1MS);
+	/*
+	 * Bitbang I2C reset to unstick bus. Hold SDA low, toggle SCL 32 times to create 16
+	 * clock cycles. Note we toggle the TRIEN bit, as when TRIEN is
+	 * set the bus will be released and external pullups will
+	 * drive SCL high.
+	 */
+	for (int i = 0; i < 32; i++) {
+		i2c_cntl ^= RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK;
+		WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
+		Wait(100 * WAIT_1US);
+	}
+	/* Add stop condition- transition SDA to high while SCL is high. */
+	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
+	Wait(100 * WAIT_1US);
+	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK |
+					RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
+	Wait(100 * WAIT_1US);
+	/* Restore pads to input mode */
+	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+						RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK |
+						RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
+	/* Return control of pads to I2C controller */
+	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl | BIT(id));
+	/* Reenable I2C controller */
+	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 1);
 }
