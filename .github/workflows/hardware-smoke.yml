@@ -26,7 +26,7 @@ jobs:
         config:
           - board: p100
             runs-on:
-              - p100-jtag
+              - tt-lab-runners-syseng-p100a
           - board: p100a
             runs-on:
               - p100a-jtag
