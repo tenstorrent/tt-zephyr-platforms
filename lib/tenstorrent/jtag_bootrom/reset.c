@@ -36,12 +36,14 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
 
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
 	if (force_reset) {
-		chip->data.needs_reset = true;
+		chip->data.trigger_reset = true;
 	}
 #endif
 
 	int64_t start = k_uptime_get();
 
+	/* Need to be able to send an i2c transaction to set the straps on the p300 */
+	bh_chip_cancel_bus_transfer_clear(chip);
 	int ret = jtag_bootrom_reset_asic(chip);
 
 	if (ret) {
@@ -64,15 +66,14 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
 
 	start = k_uptime_get();
 
-	bh_chip_cancel_bus_transfer_set(chip);
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
-	if (chip->data.needs_reset) {
+	if (chip->data.trigger_reset) {
 		jtag_bootrom_soft_reset_arc(chip);
+		chip->data.trigger_reset = false;
 	}
 #else
 	jtag_bootrom_soft_reset_arc(chip);
 #endif
-	bh_chip_cancel_bus_transfer_clear(chip);
 
 	jtag_bootrom_teardown(chip);
 
