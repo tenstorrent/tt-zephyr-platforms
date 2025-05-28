@@ -397,6 +397,10 @@ uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf)
 
 void I2CInitGPIO(uint32_t id)
 {
+	if (id == 0) {
+		return;
+	}
+
 	/* initialize I2C pads for i2c controller */
 	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
 

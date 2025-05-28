@@ -423,7 +423,6 @@ struct i2c_target_config i2c_target_config_impl = {
 
 void InitSmbusTarget(void)
 {
-	I2CInitGPIO(CM_I2C_DM_TARGET_INST);
 	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
 }
 

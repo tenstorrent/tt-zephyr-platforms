@@ -49,12 +49,24 @@
 
 #define PINCTRL_TT_BH_UART_CNTL_REG_OFFSET 0x00000608
 
+#define DW_APB_I2C_REG_MAP_BASE_ADDR    0x80060000
+#define DW_APB_I2C1_REG_MAP_BASE_ADDR   0x80090000
+#define DW_APB_I2C2_REG_MAP_BASE_ADDR   0x800A0000
+#define DW_APB_I2C_IC_ENABLE_REG_OFFSET 0x0000060C
+
 #define RESET_UNIT_I2C_PAD_CNTL_REG_ADDR  0x800301C0
 #define RESET_UNIT_I2C1_PAD_CNTL_REG_ADDR 0x800305CC
 #define RESET_UNIT_I2C2_PAD_CNTL_REG_ADDR 0x800305D8
 #define RESET_UNIT_I2C_PAD_DATA_REG_ADDR  0x800301C4
 #define RESET_UNIT_I2C1_PAD_DATA_REG_ADDR 0x800305D0
 #define RESET_UNIT_I2C2_PAD_DATA_REG_ADDR 0x800305DC
+#define RESET_UNIT_I2C_CNTL_REG_ADDR      0x800300F0
+
+#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK 0x1
+#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK 0x2
+#define RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK      0xC0
+#define RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK     0x3
+#define RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT      10
 
 LOG_MODULE_REGISTER(bh_arc_pinctrl, CONFIG_PINCTRL_LOG_LEVEL);
 
@@ -70,6 +82,24 @@ static inline uintptr_t pinctrl_tt_bh_sten_reg(uint32_t pin);
 static inline uintptr_t pinctrl_tt_bh_drvs_reg(uint32_t pin);
 static inline uint32_t pinctrl_tt_bh_drvs_shift(uint32_t pin);
 
+static inline uintptr_t get_i2c_pad_cntl_addr(uint32_t id);
+static inline uintptr_t get_i2c_pad_data_addr(uint32_t id);
+static inline uintptr_t get_i2c_reg_addr(uint32_t id, uint32_t offset);
+
+void i2c_gpio_init(uint32_t id)
+{
+	/* initialize I2C pads for i2c controller */
+	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
+
+	sys_write32(get_i2c_pad_cntl_addr(id),
+		    (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+			    RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK | RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
+	sys_write32(get_i2c_pad_data_addr(id), 0);
+
+	uint32_t i2c_cntl = sys_read32(RESET_UNIT_I2C_CNTL_REG_ADDR);
+
+	sys_write32(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_cntl | 1 << id);
+}
 static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 {
 	uint32_t idx;
@@ -93,17 +123,20 @@ static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 	case 49: /* uart0_rx_default */
 		break;
 	case 0xfffffffe: /* fake pin for i2c0 scl */
-		break;
 	case 0xfffffffd: /* fake pin for i2c0 sda */
+		i2c_gpio_init(0);
 		break;
+
 	case 0xfffffffc: /* fake pin for i2c1 scl */
-		break;
 	case 0xfffffffb: /* fake pin for i2c1 sda */
+		i2c_gpio_init(1);
 		break;
+
 	case 0xfffffffa: /* fake pin for i2c2 scl */
-		break;
 	case 0xfffffff9: /* fake pin for i2c2 sda */
+		i2c_gpio_init(2);
 		break;
+
 	default:
 		LOG_DBG("No alternate function for pin %u", pin);
 		return -EIO;
@@ -281,29 +314,29 @@ static inline uint32_t pinctrl_tt_bh_drvs_shift(uint32_t pin)
 }
 
 /* Bitbang recovery sequence on I2C bus */
-void I2CRecoverBus(uint32_t id)
+void pinctrl_i2c_bus_recover(uint32_t id)
 {
 	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
 	uint32_t i2c_cntl = (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
-				RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK;
-	uint32_t i2c_rst_cntl = ReadReg(RESET_UNIT_I2C_CNTL_REG_ADDR);
+			    RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK;
+	uint32_t i2c_rst_cntl = sys_read32(RESET_UNIT_I2C_CNTL_REG_ADDR);
 
 	/* Disable I2C controller */
-	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 0);
+	sys_write32(get_i2c_reg_addr(id, DW_APB_I2C_IC_ENABLE_REG_OFFSET), 0);
 	/* Release control of pads from I2C controller */
-	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl & ~BIT(id));
+	sys_write32(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl & ~BIT(id));
 	/* Init I2C pads for I2C controller */
-	WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
+	sys_write32(get_i2c_pad_cntl_addr(id), i2c_cntl);
 	/* Set both pads to output low */
-	WriteReg(GetI2CPadDataAddr(id), 0x0);
+	sys_write32(get_i2c_pad_data_addr(id), 0x0);
 	/*
 	 * First, manually hold SCL low for 150 ms. Per the SMBUS spec,
 	 * we should only need to hold the line low for 25 ms, but that does
 	 * not work reliably and this does...
 	 */
 	i2c_cntl ^= RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK;
-	WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
-	Wait(150 * WAIT_1MS);
+	sys_write32(get_i2c_pad_cntl_addr(id), i2c_cntl);
+	k_busy_wait(150000);
 	/*
 	 * Bitbang I2C reset to unstick bus. Hold SDA low, toggle SCL 32 times to create 16
 	 * clock cycles. Note we toggle the TRIEN bit, as when TRIEN is
@@ -312,21 +345,70 @@ void I2CRecoverBus(uint32_t id)
 	 */
 	for (int i = 0; i < 32; i++) {
 		i2c_cntl ^= RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK;
-		WriteReg(GetI2CPadCntlAddr(id), i2c_cntl);
-		Wait(100 * WAIT_1US);
+		sys_write32(get_i2c_pad_cntl_addr(id), i2c_cntl);
+		k_busy_wait(100);
 	}
 	/* Add stop condition- transition SDA to high while SCL is high. */
-	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
-	Wait(100 * WAIT_1US);
-	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK |
-					RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
-	Wait(100 * WAIT_1US);
+	sys_write32(get_i2c_pad_cntl_addr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
+	k_busy_wait(100);
+	sys_write32(get_i2c_pad_cntl_addr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK |
+						       RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
+	k_busy_wait(100);
 	/* Restore pads to input mode */
-	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
-						RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK |
-						RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
+	sys_write32(get_i2c_pad_cntl_addr(id),
+		    (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+			    RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK | RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK);
 	/* Return control of pads to I2C controller */
-	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl | BIT(id));
+	sys_write32(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl | BIT(id));
 	/* Reenable I2C controller */
-	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 1);
+	sys_write32(get_i2c_reg_addr(id, DW_APB_I2C_IC_ENABLE_REG_OFFSET), 1);
+}
+
+static inline uint32_t get_i2c_base_addr(uint32_t id)
+{
+	switch (id) {
+	case 0:
+		return DW_APB_I2C_REG_MAP_BASE_ADDR;
+	case 1:
+		return DW_APB_I2C1_REG_MAP_BASE_ADDR;
+	case 2:
+		return DW_APB_I2C2_REG_MAP_BASE_ADDR;
+	default:
+		return 0;
+	}
+}
+
+static inline uintptr_t get_i2c_reg_addr(uint32_t id, uint32_t offset)
+{
+	return get_i2c_base_addr(id) + offset;
+}
+
+/* Get I2C_PAD_CNTL register offset with respect to RESET_UNIT. */
+static inline uintptr_t get_i2c_pad_cntl_addr(uint32_t id)
+{
+	switch (id) {
+	case 0:
+		return RESET_UNIT_I2C_PAD_CNTL_REG_ADDR;
+	case 1:
+		return RESET_UNIT_I2C1_PAD_CNTL_REG_ADDR;
+	case 2:
+		return RESET_UNIT_I2C2_PAD_CNTL_REG_ADDR;
+	default:
+		return 0;
+	}
+}
+
+/* Get I2C_PAD_DATA register offset with respect to RESET_UNIT. */
+static inline uintptr_t get_i2c_pad_data_addr(uint32_t id)
+{
+	switch (id) {
+	case 0:
+		return RESET_UNIT_I2C_PAD_DATA_REG_ADDR;
+	case 1:
+		return RESET_UNIT_I2C1_PAD_DATA_REG_ADDR;
+	case 2:
+		return RESET_UNIT_I2C2_PAD_DATA_REG_ADDR;
+	default:
+		return 0;
+	}
 }
