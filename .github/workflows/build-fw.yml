@@ -23,7 +23,7 @@ on:
       - v*-branch
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 # TODO: read boards / board revs from a YAML file (generate a matrix)
