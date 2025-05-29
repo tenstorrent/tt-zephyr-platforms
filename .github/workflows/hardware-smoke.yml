@@ -24,15 +24,22 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - board: p100
-            runs-on:
-              - tt-lab-runners-syseng-p100a
           - board: p100a
             runs-on:
-              - p100a-jtag
+              - tt-lab-runners-syseng-p100a
           - board: p150a
             runs-on:
-              - p150a-jtag
+              - tt-lab-runners-syseng-p150a
+          - board: n150
+            runs-on:
+              - tt-lab-runners-syseng-n150
+          - board: n300
+            runs-on:
+              - tt-lab-runners-syseng-n300
+          - board: n300-loudbox
+            runs-on:
+              - tt-lab-runners-syseng-loudbox-wh
+
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
