@@ -234,6 +234,7 @@ static void write_static_telemetry(uint32_t app_version)
 							 * meaning of an existing tag
 							 */
 	telemetry_table.entry_count = TAG_COUNT; /* Runtime count of telemetry entries */
+	telemetry[TAG_TELEM_ENUM_COUNT] = TAG_COUNT; /* Count of telemetry tags */
 
 	/* Get the static values */
 	telemetry[TAG_BOARD_ID_HIGH] = get_read_only_table()->board_id >> 32;
