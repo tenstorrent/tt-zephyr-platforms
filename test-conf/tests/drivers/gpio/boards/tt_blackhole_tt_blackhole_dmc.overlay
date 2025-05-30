@@ -1,0 +1,12 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	test_gpio_external_pulldown {
+		compatible = "test-gpio-external-pulldown";
+		gpios = <&gpio0 5 GPIO_PULL_DOWN>;
+		status = "okay";
+	};
+};
