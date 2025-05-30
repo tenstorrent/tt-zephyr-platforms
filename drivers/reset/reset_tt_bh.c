@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT tenstorrent_blackhole_reset
+#define DT_DRV_COMPAT tenstorrent_bh_reset
 
 #include <stdbool.h>
 #include <stdint.h>
