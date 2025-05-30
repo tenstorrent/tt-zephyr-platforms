@@ -18,19 +18,20 @@ int init_fan(void)
 {
 	uint8_t read_data;
 
-	/* enable PWM manual mode, RPM to max */
-	int ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_1, 0x83);
+	/* disable fan spin-up, disable pulse stretching, deassert THERM, set PWM frequency to high
+	 */
+	int ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, 0xA3);
 
+	if (ret != 0) {
+		return ret;
+	}
+	/* enable PWM manual mode, RPM to max */
+	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_1, 0x83);
 	if (ret != 0) {
 		return ret;
 	}
 	/* select high PWM frequency output range */
 	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, GLOBAL_CONFIG, 0x38);
-	if (ret != 0) {
-		return ret;
-	}
-	/* disable pulse stretching, deassert THERM, set PWM frequency to high */
-	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, 0x23);
 	if (ret != 0) {
 		return ret;
 	}
