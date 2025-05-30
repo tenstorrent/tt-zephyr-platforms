@@ -18,6 +18,10 @@ manifest:
           - mcuboot
           - nanopb
           - segger
+    - name: libjaylink
+      url: https://gitlab.zapb.de/libjaylink/libjaylink.git
+      revision: 0.3.1
+      path: modules/libjaylink
 
   group-filter:
     - +optional
