@@ -1,0 +1,12 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	tt_avs: tt_avs@80100000 {
+		compatible = "tenstorrent,avs";
+		reg = <0x80100000 0x60>;
+		status = "okay";
+	};
+};
