@@ -67,6 +67,8 @@ Major enhancements with this release include:
 
 [comment]: <> (H2 New Boards, if applicable)
 
+[comment]: <> (Converted GPIO library driver to Zephyr driver)
+
 ## Migration guide
 
 An overview of required and recommended changes to make when migrating from the previous v18.3.0 release can be found in [v18.4.0 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-v18.4.0.md).
