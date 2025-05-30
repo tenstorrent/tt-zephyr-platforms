@@ -29,8 +29,9 @@ int init_fan(void)
 	if (ret != 0) {
 		return ret;
 	}
-	/* disable pulse stretching, deassert THERM, set PWM frequency to high */
-	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, 0x23);
+	/* disable fan spin-up, disable pulse stretching, deassert THERM, set PWM frequency to high
+	 */
+	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, 0xA3);
 	if (ret != 0) {
 		return ret;
 	}
