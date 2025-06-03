@@ -12,6 +12,7 @@
 #include "telemetry.h"
 #include "status_reg.h"
 #include "reg.h"
+#include "timer.h"
 
 #include <stdint.h>
 
@@ -90,6 +91,14 @@ static int _InitFW(void)
 }
 
 SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
+
+static int record_cmfw_start_time(void)
+{
+	WriteReg(CMFW_START_TIME_REG_ADDR, TimerTimestamp());
+	return 0;
+}
+
+SYS_INIT(record_cmfw_start_time, EARLY, 0);
 
 #ifdef CONFIG_UART_TT_VIRT
 #include "status_reg.h"

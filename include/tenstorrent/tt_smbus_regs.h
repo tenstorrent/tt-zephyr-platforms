@@ -18,8 +18,8 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_REQ = 0x10,
 	/* WO, 16 bits. Write with sequence number and message ID to ack cm2dmMessage */
 	CMFW_SMBUS_ACK = 0x11,
-	/* WO, 96 bits. Write with dmStaticInfo struct including DMFW version */
-	CMFW_SMBUS_DM_FW_VERSION = 0x20,
+	/* WO, 160 bits. Write with dmStaticInfo struct including DMFW version */
+	CMFW_SMBUS_DM_STATIC_INFO = 0x20,
 	/* WO, 16 bits. Write with 0xA5A5 to respond to CMFW request `kCm2DmMsgIdPing` */
 	CMFW_SMBUS_PING = 0x21,
 	/* WO, 16 bits. Write with fan speed to responsd to CMFW request

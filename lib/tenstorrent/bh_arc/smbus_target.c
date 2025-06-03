@@ -162,7 +162,7 @@ static SmbusConfig smbus_config = {
 		[CMFW_SMBUS_ACK] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteWord,
 			  .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
-		[CMFW_SMBUS_DM_FW_VERSION] = {.valid = 1,
+		[CMFW_SMBUS_DM_STATIC_INFO] = {.valid = 1,
 			  .trans_type = kSmbusTransBlockWrite,
 			  .expected_blocksize = sizeof(dmStaticInfo),
 			  .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
