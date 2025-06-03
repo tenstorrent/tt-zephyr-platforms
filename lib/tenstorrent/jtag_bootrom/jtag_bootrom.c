@@ -21,6 +21,11 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
+static bool perst_seen;
+static uint32_t arc_start_time;
+static uint32_t perst_start_time;
+static uint32_t dm_init_done;
+
 bool jtag_axiwait(const struct device *dev, uint32_t addr)
 {
 	/* If we are using the emulated driver then always return true */
@@ -61,6 +66,9 @@ static const struct gpio_dt_spec preset_trigger = GPIO_DT_SPEC_GET(DT_PATH(prese
 
 void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *cb, uint32_t pins)
 {
+	perst_seen = true;
+	perst_start_time = k_cycle_get_32();
+
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		atomic_set(&chip->data.trigger_reset, true);
 		/* Set the bus cancel following the logic of (reset_triggered && !performing_reset)
@@ -244,6 +252,21 @@ int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t 
 	return 0;
 }
 
+uint32_t get_arc_start_time(void)
+{
+	return arc_start_time;
+}
+
+uint32_t get_dm_init_duration(void)
+{
+	uint32_t delta_cycles = 0;
+
+	if (perst_seen) {
+		delta_cycles = dm_init_done - perst_start_time;
+	}
+	return delta_cycles;
+}
+
 void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 {
 #ifdef CONFIG_JTAG_LOAD_BOOTROM
@@ -265,6 +288,14 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 
 	/* Write reset_vector (rom_memory[0]) */
 	jtag_axi_write32(dev, ROM_MEMORY_MEM_BASE_ADDR, 0x84);
+
+	/* store DMC init done timestamp */
+	if (perst_seen) {
+		dm_init_done = k_cycle_get_32();
+	}
+
+	/* store ASIC refclk timestamp of DMC starts bootcode execution as a reference for cmfw. */
+	jtag_axi_read32(dev, RESET_UNIT_REFCLK_CNT_LO_REG_ADDR, &arc_start_time);
 
 	/* Toggle soft-reset */
 	/* ARC_MISC_CNTL.soft_reset (12th bit) */

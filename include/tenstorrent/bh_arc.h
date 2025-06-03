@@ -28,6 +28,8 @@ typedef struct dmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
+	uint32_t arc_start_time;  /* Timestamp in ASIC refclk (50 MHz) */
+	uint32_t dm_init_duration; /* Duration in DMC refclk (64 MHz) */
 } __packed dmStaticInfo;
 
 typedef struct cm2dmMessage {

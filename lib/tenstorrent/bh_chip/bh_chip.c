@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include <tenstorrent/jtag_bootrom.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/event.h>
@@ -58,7 +59,9 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 {
 	int ret;
 
-	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DM_FW_VERSION,
+	info->arc_start_time = get_arc_start_time();
+	info->dm_init_duration = get_dm_init_duration();
+	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DM_STATIC_INFO,
 				      sizeof(dmStaticInfo), (uint8_t *)info);
 
 	return ret;
