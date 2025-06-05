@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "blackhole_offsets.h"
+#include "bh_reg_def.h"
 
 #include <stdint.h>
 
@@ -111,7 +111,7 @@ int jtag_bootrom_reset_asic(struct bh_chip *chip)
 
 	jtag_reset(chip->config.jtag);
 
-	while (!jtag_axiwait(chip->config.jtag, BH_RESET_BASE + 0x60)) {
+	while (!jtag_axiwait(chip->config.jtag, STATUS_POST_CODE_REG_ADDR)) {
 		k_yield();
 	}
 
@@ -188,24 +188,24 @@ int jtag_bootrom_patch_offset(struct bh_chip *chip, const uint32_t *patch, size_
 	/* HALT THE ARC CORE!!!!! */
 	uint32_t arc_misc_cntl = 0;
 
-	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	jtag_axi_read32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, &arc_misc_cntl);
 
 	arc_misc_cntl |= (0b1111 << 4);
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, arc_misc_cntl);
 	/* Reset it back to zero */
-	jtag_axi_read32(dev, BH_RESET_BASE + 0x100, &arc_misc_cntl);
+	jtag_axi_read32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, &arc_misc_cntl);
 	arc_misc_cntl &= ~(0b1111 << 4);
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, arc_misc_cntl);
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, arc_misc_cntl);
 
 	/* Enable gpio trien */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x1A0, 0xff00);
+	jtag_axi_write32(dev, RESET_UNIT_GPIO_PAD_TRIEN_CNTL_REG_ADDR, 0xff00);
 
 	/* Write to postcode */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x60, 0xF2);
+	jtag_axi_write32(dev, STATUS_POST_CODE_REG_ADDR, 0xF2);
 
 	jtag_axi_block_write(dev, start_addr, patch, patch_len);
 
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x60, 0xF3);
+	jtag_axi_write32(dev, STATUS_POST_CODE_REG_ADDR, 0xF3);
 
 	chip->data.workaround_applied = true;
 #endif
@@ -234,7 +234,7 @@ int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t 
 			       "¯\\_(ツ)_/¯\n",
 			       i * 4, patch[i], readback);
 
-			jtag_axi_write32(dev, BH_RESET_BASE + 0x60, 0x6);
+			jtag_axi_write32(dev, STATUS_POST_CODE_REG_ADDR, 0x6);
 			return 1;
 		}
 	}
@@ -256,28 +256,28 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 	/* NOTE(drosen): Assuming that it is okay to set the register to 0b1111 << 4, this saves
 	 * some cycles but may lead to errors in the future.
 	 */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, GENMASK(7, 4));
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, GENMASK(7, 4));
 	/* Reset it back to zero */
 	/* NOTE(drosen): Assuming that it is okay to set the register back to zero, this saves some
 	 * cycles but may lead to errors in the future.
 	 */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, 0);
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, 0);
 
 	/* Write reset_vector (rom_memory[0]) */
-	jtag_axi_write32(dev, BH_ROM_BASE, 0x84);
+	jtag_axi_write32(dev, ROM_MEMORY_MEM_BASE_ADDR, 0x84);
 
 	/* Toggle soft-reset */
 	/* ARC_MISC_CNTL.soft_reset (12th bit) */
 	/* NOTE(drosen): Assuming that it is okay to set the register to 1 << 12, this saves some
 	 * cycles but may lead to errors in the future.
 	 */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, BIT(12));
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, BIT(12));
 
 	/* Set to 0 */
 	/* NOTE(drosen): Assuming that it is okay to set the register back to zero, this saves some
 	 * cycles but may lead to errors in the future.
 	 */
-	jtag_axi_write32(dev, BH_RESET_BASE + 0x100, 0);
+	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, 0);
 #endif
 }
 
