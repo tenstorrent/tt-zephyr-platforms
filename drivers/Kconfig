@@ -5,13 +5,11 @@ menu "Device Drivers"
 
 # zephyr-keep-sorted-start
 rsource "flash/Kconfig"
-rsource "i2c/Kconfig"
 rsource "jtag/Kconfig"
 rsource "mspi/Kconfig"
 rsource "reset/Kconfig"
 rsource "sensor/Kconfig"
 rsource "serial/Kconfig"
-rsource "smbus/Kconfig"
 # zephyr-keep-sorted-stop
 
 endmenu
