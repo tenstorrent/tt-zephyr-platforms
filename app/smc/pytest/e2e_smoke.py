@@ -23,9 +23,14 @@ logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 
+REFCLK_HZ = 50_000_000
+
 # Constant memory addresses we can read from SMC
 ARC_STATUS = 0x80030060
 BOOT_STATUS = 0x80030408
+PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
+CMFW_START_TIME_REG_ADDR = 0x8003043C
+ARC_START_TIME_REG_ADDR = 0x80030440
 
 # ARC messages
 ARC_MSG_TYPE_REINIT_TENSIX = 0x20
@@ -165,6 +170,28 @@ def get_int_version_from_file(filename) -> int:
         | version_rc
     )
     return version_int
+
+
+@pytest.mark.flash
+def test_pcie_fw_load_time(arc_chip):
+    """
+    Checks PCIe firmware load time is within 40ms.
+    This test needs to be run after production reset.
+    """
+
+    pcie_init_cpl_time = arc_chip.axi_read32(PCIE_INIT_CPL_TIME_REG_ADDR)
+    cmfw_start_time = arc_chip.axi_read32(CMFW_START_TIME_REG_ADDR)
+    arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
+
+    duration_in_ms = (pcie_init_cpl_time - arc_start_time) / REFCLK_HZ * 1000
+
+    logger.info(
+        f"BOOTROM start timestamp: {arc_start_time}, "
+        f"CMFW start timestamp: {cmfw_start_time}, "
+        f"PCIe init completion timestamp: {pcie_init_cpl_time}."
+    )
+
+    assert duration_in_ms < 40, f"duration {duration_in_ms:.4f}ms, exceeds 40ms"
 
 
 @pytest.mark.flash
