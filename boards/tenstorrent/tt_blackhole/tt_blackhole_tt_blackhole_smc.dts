@@ -70,4 +70,5 @@
 &uart0 {
 	pinctrl-0 = <&uart0_tx_default &uart0_rx_default>;
 	pinctrl-names = "default";
+	status = "disabled";
 };
