@@ -274,14 +274,17 @@ static void TogglePerst(void)
 	/* GPIO34 is TRISTATE of level shifter, GPIO37 is PERST input to the level shifter */
 	GpioEnableOutput(GPIO_PCIE_TRISTATE_CTRL);
 	GpioEnableOutput(GPIO_CEM0_PERST);
+	GpioEnableOutput(GPIO_CEM1_PERST);
 
 	/* put device into reset for 1 ms */
 	GpioSet(GPIO_PCIE_TRISTATE_CTRL, 1);
 	GpioSet(GPIO_CEM0_PERST, 0);
+	GpioSet(GPIO_CEM1_PERST, 0);
 	WaitMs(1);
 
 	/* take device out of reset */
 	GpioSet(GPIO_CEM0_PERST, 1);
+	GpioSet(GPIO_CEM1_PERST, 1);
 }
 
 static PCIeInitStatus PollForLinkUp(uint8_t pcie_inst)
