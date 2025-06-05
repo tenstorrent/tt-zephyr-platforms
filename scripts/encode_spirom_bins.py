@@ -156,20 +156,12 @@ def main():
     convert_proto_txt_to_bin_file(
         args.board, args.output, "flash_info", flash_info_pb2.FlashInfoTable, False
     )
-    board_type = (
-        int(os.environ.get("DEFAULT_BOARD_TYPE"), 0)
-        if os.environ.get("DEFAULT_BOARD_TYPE")
-        else 0
-    )
-    # Leave rev as 0 to indicate a bad flash
-    board_id = board_type << 36
     convert_proto_txt_to_bin_file(
         args.board,
         args.output,
         "read_only",
         read_only_pb2.ReadOnly,
         False,
-        override={"board_id": board_id},
     )
 
 
