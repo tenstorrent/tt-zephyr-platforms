@@ -43,6 +43,58 @@
 
 	};
 
+	gpio0: gpio@800301a0 {
+		compatible = "tenstorrent,bh-gpio";
+		reg = <0x800301a0 0x4>,
+			<0x800301ac 0x4>,
+			<0x800301b4 0x4>;
+		reg-names = "trien",
+					"rxen",
+					"data";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
+
+	gpio1: gpio@80030240 {
+		compatible = "tenstorrent,bh-gpio";
+		reg = <0x80030240 0x4>,
+			<0x8003025c 0x4>,
+			<0x80030254 0x4>;
+		reg-names = "trien",
+					"rxen",
+					"data";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
+
+	gpio2: gpio@80030580 {
+		compatible = "tenstorrent,bh-gpio";
+		reg = <0x80030580 0x4>,
+			<0x8003058c 0x4>,
+			<0x80030594 0x4>;
+		reg-names = "trien",
+					"rxen",
+					"data";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
+
+	gpio3: gpio@800305a0 {
+		compatible = "tenstorrent,bh-gpio";
+		reg = <0x800305a0 0x4>,
+			<0x800305ac 0x4>,
+			<0x800305b4 0x4>;
+		reg-names = "trien",
+					"rxen",
+					"data";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+	};
+
 	sysclk: system-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <500000000>;
