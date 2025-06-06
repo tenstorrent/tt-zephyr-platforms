@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrent Blackhole Firmware Table
+
+compatible: "tenstorrent,bh-fwtable"
+
+include: base.yaml
+
+properties:
+
+  flash-dev:
+    type: phandle
+    description: |
+      Phandle to the flash device the firmware table resides in. If this property is
+      not specified, the firmware table will not be read from SPI flash.
