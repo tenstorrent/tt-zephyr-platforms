@@ -1,0 +1,18 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrent Blackhole Firmware Table
+
+compatible: "tenstorrent,bh-fwtable"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: false
+    description: Optional address of the firmware table in memory or flash.
+
+  flash-dev:
+    type: phandle
+    required: true
+    description: phandle to the flash device the firmware table resides in.
