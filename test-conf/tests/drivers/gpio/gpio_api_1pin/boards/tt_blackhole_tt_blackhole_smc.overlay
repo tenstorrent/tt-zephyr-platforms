@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	test-gpio-external-pulldown {
+		compatible = "test-gpio-external-pulldown";
+		gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
