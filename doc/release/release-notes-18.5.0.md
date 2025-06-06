@@ -10,7 +10,12 @@ Major enhancements with this release include:
 [comment]: <> (H3 Performance Improvements, if applicable)
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
-[comment]: <> (H3 Stability Improvements, if applicable)
+
+### Stability Improvements
+
+* Update Blackhole ERISC FW to v1.4.1
+  * Fixed bug in FW where training would stall when enabling training on P300 ports that do not connect
+    outside of the Chip at all
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
