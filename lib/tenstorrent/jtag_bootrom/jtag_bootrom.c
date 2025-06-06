@@ -87,6 +87,9 @@ int jtag_bootrom_reset_asic(struct bh_chip *chip)
 {
 	/* Only check for pgood if we aren't emulating */
 #if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
+	if (!gpio_pin_get_dt(&chip->config.pgood)) {
+		printk("Waiting for pgood to rise...\n");
+	}
 	while (!gpio_pin_get_dt(&chip->config.pgood)) {
 	}
 #endif
