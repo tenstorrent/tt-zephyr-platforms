@@ -12,6 +12,7 @@ toolchain:
   - arcmwdt
 supported:
   - smp
+  - gpio
 testing:
   ignore_tags:
     - net
