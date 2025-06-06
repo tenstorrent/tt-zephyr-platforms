@@ -135,6 +135,11 @@ def test_smbus_status(arc_chip):
     assert status == 0xFEEDFACE, "SMC firmware did not pass SMBUS tests"
     logger.info('SMC SMBUS status: "0x%x"', status)
 
+def test_bricking_flash(arc_chip):
+    # a lovely little malicious test that will erase part of the SPI eeprom :)
+    data = bytes(0x1000)
+    arc_chip.as_bh().spi_write(0x0, data)
+    logger.info("Erased 0x1000 bytes of SPI flash at address 0x0. This is a malicious test, please do not run it on production hardware.")
 
 def get_int_version_from_file(filename) -> int:
     with open(filename, "r") as f:
