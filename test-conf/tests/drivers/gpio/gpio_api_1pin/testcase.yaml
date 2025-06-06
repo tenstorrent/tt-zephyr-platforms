@@ -1,0 +1,102 @@
+common:
+  tags:
+    - drivers
+    - gpio
+  depends_on: gpio
+tests:
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+  drivers.gpio.1pin.external_pull_down:
+=======
+  drivers.gpio.1pin:
+    tags: smoke
+>>>>>>> Stashed changes
+=======
+  drivers.gpio.1pin:
+    tags: smoke
+>>>>>>> Stashed changes
+=======
+  drivers.gpio.1pin:
+    tags: smoke
+>>>>>>> Stashed changes
+    platform_allow:
+      - tt_blackhole@p100/tt_blackhole/smc
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
+    extra_args:
+      - "platform:tt_blackhole@p100/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p100/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p100a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p150a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         /home/aapostolu/tt-zephyrproject/tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p150b/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         /home/aapostolu/tt-zephyrproject/tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p300a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
+=======
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p100/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p100a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p150a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p150b/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         /boards/tt_blackhole_tt_blackhole_smc.conf"
+      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_blackhole@p300a/tt_blackhole/smc:EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+         boards/tt_blackhole_tt_blackhole_smc.conf"
+    harness_config:
+      fixture: gpio_external_pull_down
