@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config GPIO_TT_BH
+	bool "Tenstorrent Blackhole GPIO"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_GPIO_ENABLED
+	help
+		Enable the Tenstorrent Blackhole GPIO driver.
