@@ -10,7 +10,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(jtag_bootrom, CONFIG_TT_JTAG_BOOTROM_LOG_LEVEL);
+LOG_MODULE_DECLARE(jtag_bootrom, CONFIG_TT_JTAG_BOOTROM_LOG_LEVEL);
 
 __aligned(sizeof(uint32_t)) static const uint8_t bootcode[] = {
 #include "bootcode.h"
