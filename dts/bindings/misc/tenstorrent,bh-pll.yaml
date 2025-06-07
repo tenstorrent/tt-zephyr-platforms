@@ -1,0 +1,49 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrent Blackhole PLL
+
+compatible: "tenstorrent,bh-pll"
+
+include: [base.yaml]
+
+properties:
+  pll-stride:
+    type: int
+    required: true
+
+  refdiv:
+    type: int
+    required: true
+  
+  fbdiv:
+    type: int
+    required: true
+  
+  ctrl-bus1:
+    type: int
+    required: true
+  
+  ctrl-bus5:
+    type: int
+    required: true
+
+  postdiv0:
+    type: int
+    required: true
+
+  postdiv1:
+    type: int
+    required: true
+
+  postdiv2:
+    type: int
+    required: true
+
+  postdiv3:
+    type: int
+    required: true
+
+  use-postdiv:
+    type: int
+    required: true

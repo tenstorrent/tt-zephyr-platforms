@@ -20,6 +20,128 @@
 		zephyr,shell-uart = &uart0;
 	};
 
+	refclk_ttbh: refclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <1000000000>;
+		label = "REFCLK_TTBH";
+		status = "okay";
+	};
+
+	pll0: pll@80020100 {
+		compatible = "tenstorrent,bh-pll";
+
+		pll-stride = <0x100>;
+
+		reg = <0x80020100 0x100>;
+
+		refdiv = <2>;
+		fbdiv = <128>;
+		
+		ctrl-bus1 = <0x18>;
+		ctrl-bus5 = <1>;
+
+		postdiv0 = <3>;
+		postdiv1 = <0>;
+		postdiv2 = <0>;
+		postdiv3 = <0>;
+		
+		use-postdiv = <0xF>;
+
+		status = "okay";
+	};
+
+	pll1: pll@80020200 {
+		compatible = "tenstorrent,bh-pll";
+		
+		pll-stride = <0x100>;
+
+		reg = <0x80020200 0x100>;
+
+		refdiv = <2>;
+		fbdiv = <192>;
+
+		ctrl-bus1 = <0x18>;
+		ctrl-bus5 = <1>;
+
+		postdiv0 = <5>;
+		postdiv1 = <4>;
+		postdiv2 = <23>;
+		postdiv3 = <0>;
+
+		use-postdiv = <0xF>;
+		
+		status = "okay";
+	};
+
+	pll2: pll@80020300 {
+		compatible = "tenstorrent,bh-pll";
+
+		pll-stride = <0x100>;
+
+		reg = <0x80020300 0x100>;
+
+		refdiv = <2>;
+		fbdiv = <68>;
+
+		ctrl-bus1 = <0x18>;
+		ctrl-bus5 = <1>;
+
+		postdiv0 = <1>;
+		postdiv1 = <0>;
+		postdiv2 = <0>;
+		postdiv3 = <0>;
+
+		use-postdiv = <0xF>;
+		
+		status = "okay";
+	};
+
+	pll3: pll@80020400 {
+		compatible = "tenstorrent,bh-pll";
+		
+		pll-stride = <0x100>;
+
+		reg = <0x80020400 0x100>;
+
+		refdiv = <2>;
+		fbdiv = <120>;
+
+		ctrl-bus1 = <0x18>;
+		ctrl-bus5 = <1>;
+
+		postdiv0 = <3>;
+		postdiv1 = <0>;
+		postdiv2 = <0>;
+		postdiv3 = <0>;
+
+		use-postdiv = <0xF>;
+		
+		status = "okay";
+	};
+
+	pll4: pll@80020500 {
+		compatible = "tenstorrent,bh-pll";
+		
+		pll-stride = <0x100>;
+
+		reg = <0x80020500 0x100>;
+
+		refdiv = <2>;
+		fbdiv = <64>;
+
+		ctrl-bus1 = <0x18>;
+		ctrl-bus5 = <1>;
+
+		postdiv0 = <1>;
+		postdiv1 = <1>;
+		postdiv2 = <1>;
+		postdiv3 = <1>;
+
+		use-postdiv = <0xF>;
+		
+		status = "okay";
+	};
 };
 
 &spi0 {
