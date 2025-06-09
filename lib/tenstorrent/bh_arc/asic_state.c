@@ -24,7 +24,7 @@ static void enter_state0(void)
 
 static void enter_state3(void)
 {
-#ifndef CONFIG_TT_SMC_RECOVERY
+#if !(defined(CONFIG_TT_SMC_RECOVERY) || defined(CONFIG_BH_FWTABLE))
 	ForceAiclk(800);
 	ForceVdd(750);
 #endif
