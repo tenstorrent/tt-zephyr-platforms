@@ -259,11 +259,7 @@ uint32_t get_arc_start_time(void)
 
 uint32_t get_dm_init_duration(void)
 {
-	uint32_t delta_cycles = 0;
-
-	if (perst_seen) {
-		delta_cycles = dm_init_done - perst_start_time;
-	}
+	uint32_t delta_cycles = dm_init_done - perst_start_time;
 	return delta_cycles;
 }
 
@@ -292,6 +288,7 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 	/* store DMC init done timestamp */
 	if (perst_seen) {
 		dm_init_done = k_cycle_get_32();
+		perst_seen = false;
 	}
 
 	/* store ASIC refclk timestamp of DMC starts bootcode execution as a reference for cmfw. */
