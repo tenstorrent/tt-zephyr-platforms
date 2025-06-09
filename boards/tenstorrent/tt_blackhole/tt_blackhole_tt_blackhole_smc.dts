@@ -108,3 +108,8 @@
 		status = "disabled";
 	};
 };
+
+&fwtable {
+	flash-dev = <&spi_flash>;
+	status = "disabled";
+};
