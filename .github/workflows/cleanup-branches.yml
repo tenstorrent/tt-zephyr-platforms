@@ -1,0 +1,44 @@
+name: 'Nightly Branch Cleanup'
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  cleanup-branches:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch all branches
+          fetch-depth: 0
+
+      - name: Clean Branches
+        run: |
+          ALL_BRANCHES=$(git branch -r | grep -v 'HEAD' | awk '{print $1}' | sed 's|origin/||')
+
+          for branch in $ALL_BRANCHES; do
+            echo -n "Found branch $branch..."
+
+            if [[ "$branch" == "main" || "$branch" =~ ^v.*-branch$ ]]; then
+              echo -e "  \033[32mSkipping\033[0m"
+              continue
+            fi
+
+            echo -e "  \033[31mDeleting\033[0m"
+
+            if [[ "${{ github.event.inputs.dry_run }}" == "false" ]]; then
+              git push origin --delete "$branch"
+            fi
+          done
+
+          echo "Done"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
