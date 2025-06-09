@@ -212,11 +212,7 @@ int32_t Dm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 	if (info->version != 0) {
 		UpdateDmFwVersion(info->bl_version, info->app_version);
 		WriteReg(ARC_START_TIME_REG_ADDR, info->arc_start_time);
-
-		/* prevent overwrite from smi reset as it is invalid */
-		if (info->dm_init_duration != 0) {
-			WriteReg(PERST_TO_DMFW_INIT_DONE_REG_ADDR, info->dm_init_duration);
-		}
+		WriteReg(PERST_TO_DMFW_INIT_DONE_REG_ADDR, info->dm_init_duration);
 		return 0;
 	}
 #endif
