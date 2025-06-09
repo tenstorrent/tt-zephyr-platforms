@@ -13,6 +13,7 @@ import shutil
 import socket
 import sys
 import selectors
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +296,8 @@ class RTTHelper:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(("localhost", self._rtt_port))
         sock.settimeout(0.5)
-        while True:
+        timeout = time.time() + 60  # Hard timeout of 60 seconds to dump logs
+        while time.time() < timeout:
             try:
                 data = sock.recv(2048)
                 print(data.decode())
