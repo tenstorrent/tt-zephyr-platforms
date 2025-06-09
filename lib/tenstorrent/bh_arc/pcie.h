@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 #include "noc2axi.h"
-#include "spirom_protobufs/fw_table.pb.h"
+#include "fw_table.pb.h"
 
 typedef enum {
 	EndPoint = 0,

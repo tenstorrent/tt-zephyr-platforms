@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "spirom_protobufs/fw_table.pb.h"
+#include "fw_table.pb.h"
 
 #ifdef __cplusplus
 extern "C" {

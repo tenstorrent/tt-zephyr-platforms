@@ -1,0 +1,26 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config BH_FWTABLE
+	bool "Tenstorrent Blackhole Firmware Table"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_FWTABLE_ENABLED
+	depends on TT_BOOT_FS
+	help
+		Enable the Tenstorrent Blackhole Firmware Table.
+
+if BH_FWTABLE
+
+config BH_FWTABLE_INIT_PRIORITY
+	int "Tenstorrent Blackhole firmware table init priority"
+	default 90
+	help
+		Set the initialization priority for the Tenstorrent Blackhole firmware table.
+
+		This priority should be selected so that bh_fwtable is initialized after the SPI EEPROM.
+
+module = BH_FWTABLE
+module-str = bh_fwtable
+source "subsys/logging/Kconfig.template.log_config"
+
+endif
