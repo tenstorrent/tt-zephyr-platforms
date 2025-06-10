@@ -154,6 +154,86 @@ jobs:
             build-recovery/**/zephyr.map
             build-recovery/**/zephyr.stat
 
+  build-assembly-test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - p150
+          - p300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+
+      - name: Generate BOARD
+        shell: bash
+        run: |
+          case "${{ matrix.board }}" in
+            p150) BOARD=tt_blackhole@p150a/tt_blackhole/dmc;;
+            p300) BOARD=p300/tt_blackhole/dmc;;
+
+            *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
+          esac
+          echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
+
+      - name: Build assembly firmware
+        shell: bash
+        run: |
+          if [ "$BOARD" = "" ]; then
+            echo "BOARD is not set"
+            exit 1
+          fi
+
+          west build \
+            -d build-assembly-test-${{ matrix.board }} \
+            --sysbuild \
+            -S rtt-console \
+            -p \
+            -b $BOARD \
+            tt-zephyr-platforms/app/dmc \
+            -- \
+              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
+              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\" \
+              -DCONFIG_TT_ASSEMBLY_TEST=y
+
+      - name: Upload firmware assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: assembly-fw-${{ matrix.board }}
+          path: |
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/.config
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/**/devicetree_generated.h
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.bin
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.dts
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.elf
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.hex
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.map
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.signed.bin
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.signed.hex
+            build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.stat
+
+      - name: Upload mcuboot assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: assembly-mcuboot-${{ matrix.board }}
+          path: |
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/.config
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/**/devicetree_generated.h
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.bin
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.dts
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.elf
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.hex
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.map
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.signed.bin
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.signed.hex
+            build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.stat
+
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
     needs: build
