@@ -67,6 +67,7 @@ enum msg_type {
 	MSG_TYPE_SET_LAST_SERIAL = 0xBE,
 	MSG_TYPE_EFUSE_BURN = 0xBF,
 	MSG_TYPE_PING_DM = 0xC0,
+	MSG_TYPE_SET_WDT_TIMEOUT = 0xC1,
 };
 
 #ifdef __cplusplus
