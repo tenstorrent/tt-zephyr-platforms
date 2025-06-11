@@ -27,6 +27,7 @@ REFCLK_HZ = 50_000_000
 
 # Constant memory addresses we can read from SMC
 ARC_STATUS = 0x80030060
+ARC_MISC_CTRL = 0x80030100
 BOOT_STATUS = 0x80030408
 PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
 CMFW_START_TIME_REG_ADDR = 0x8003043C
@@ -38,6 +39,7 @@ ARC_MSG_TYPE_FORCE_AICLK = 0x33
 ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
 ARC_MSG_TYPE_PING_DM = 0xC0
+ARC_MSG_TYPE_SET_WDT = 0xC1
 
 
 def get_arc_chip(unlaunched_dut: DeviceAdapter):
@@ -170,6 +172,42 @@ def get_int_version_from_file(filename) -> int:
         | version_rc
     )
     return version_int
+
+
+@pytest.mark.flash
+def test_arc_watchdog(arc_chip):
+    """
+    Validates that the DMC firmware watchdog for the ARC will correctly
+    reset the chip
+    """
+    wdt_timeout = 1000
+    # Setup ARC watchdog for a 1000ms timeout
+    arc_chip.arc_msg(ARC_MSG_TYPE_SET_WDT, True, False, wdt_timeout, 0, 1000)
+    # Sleep 1500, make sure we can still ping arc
+    time.sleep(1.5)
+    response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 1, 0, 1000)
+    assert response[0] == 2, "SMC did not respond to test message"
+    assert response[1] == 0, "SMC response invalid"
+    # Halt the ARC cores.
+    arc_chip.axi_write32(ARC_MISC_CTRL, 0xF0)
+    # Make sure we can still detect ARC core after 500 ms
+    time.sleep(0.5)
+    arc_chip = pyluwen.detect_chips()[0]
+    # Delay 500 more ms. Make sure the ARC has been reset.
+    time.sleep(0.5)
+    # Ideally we would catch a more narrow exception, but this is what pyluwen raises
+    with pytest.raises(Exception):
+        # This should fail, since the ARC should have been reset
+        arc_chip = pyluwen.detect_chips()[0]
+    time.sleep(0.5)
+    rescan_pcie()
+    # ARC should now be back online
+    arc_chip = pyluwen.detect_chips()[0]
+    # Make sure ARC can still ping the DMC
+    response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+    assert response[0] == 1, "DMC did not respond to ping from SMC"
+    assert response[1] == 0, "SMC response invalid"
+    logger.info('DMC ping message response "%d"', response[0])
 
 
 @pytest.mark.flash
