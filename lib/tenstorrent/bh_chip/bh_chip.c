@@ -104,6 +104,16 @@ int bh_chip_set_therm_trip_count(struct bh_chip *chip, uint16_t therm_trip_count
 	return ret;
 }
 
+void bh_chip_auto_reset(struct k_timer *timer)
+{
+	struct bh_chip *chip = CONTAINER_OF(timer, struct bh_chip, auto_reset_timer);
+
+	chip->data.arc_wdog_triggered = true;
+	/* Cancel bus transfers, ARC is likely hung */
+	bh_chip_cancel_bus_transfer_set(chip);
+	tt_event_post(TT_EVENT_WAKE);
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);

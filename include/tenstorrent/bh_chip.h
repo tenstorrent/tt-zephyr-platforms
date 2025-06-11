@@ -64,6 +64,17 @@ struct bh_chip_data {
 	volatile bool pgood_rise_triggered;
 	bool pgood_severe_fault;
 	int64_t pgood_last_trip_ms;
+
+	/* Max allowable time between pings from SMC in ms */
+	uint32_t auto_reset_timeout;
+
+	/* Keep track of telemetry heartbeat for autoreset */
+	uint32_t telemetry_heartbeat;
+
+	/* Tracks program counter during last ARC hang */
+	uint32_t arc_hang_pc;
+	/* Was ARC watchdog triggered? */
+	bool arc_wdog_triggered;
 };
 
 struct bh_chip {
@@ -71,6 +82,7 @@ struct bh_chip {
 	struct bh_chip_data data;
 	struct gpio_callback therm_trip_cb;
 	struct gpio_callback pgood_cb;
+	struct k_timer auto_reset_timer;
 };
 
 #define DT_PHANDLE_OR_CHILD(node_id, name)                                                         \
@@ -115,6 +127,8 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 			    INIT_STRAP)),                                                          \
 	  ())},                                            \
 			},                                                                         \
+				.auto_reset_timer = Z_TIMER_INITIALIZER(                           \
+					BH_CHIPS[idx].auto_reset_timer, bh_chip_auto_reset, NULL), \
 			},
 
 #define BH_CHIP_PRIMARY_INDEX DT_PROP(DT_PATH(chips), primary)
@@ -130,6 +144,8 @@ int bh_chip_set_input_power(struct bh_chip *chip, uint16_t power);
 int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power);
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm);
 int bh_chip_set_therm_trip_count(struct bh_chip *chip, uint16_t therm_trip_count);
+
+void bh_chip_auto_reset(struct k_timer *timer);
 
 void bh_chip_assert_asic_reset(const struct bh_chip *chip);
 void bh_chip_deassert_asic_reset(const struct bh_chip *chip);
