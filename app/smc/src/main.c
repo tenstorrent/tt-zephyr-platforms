@@ -23,8 +23,11 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/watchdog.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
+
+static const struct device *const wdt0 = DEVICE_DT_GET(DT_NODELABEL(wdt0));
 
 int main(void)
 {
@@ -71,7 +74,8 @@ int main(void)
 	Dm2CmReadyRequest();
 
 	while (1) {
-		k_msleep(1000);
+		k_msleep(CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL);
+		wdt_feed(wdt0, 0);
 	}
 
 	return 0;
