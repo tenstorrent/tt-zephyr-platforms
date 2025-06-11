@@ -38,7 +38,7 @@ west patch apply
 source zephyr/zephyr-env.sh
 
 # Enter the module
-cd $MODULE.git
+cd $MODULE
 ```
 
 ### Build & Flash

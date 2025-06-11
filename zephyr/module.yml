@@ -3,6 +3,7 @@
 
 # See https://docs.zephyrproject.org/latest/develop/modules.html
 
+name: tt-zephyr-platforms
 build:
   cmake: .
   kconfig: Kconfig
