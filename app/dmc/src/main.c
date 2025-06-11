@@ -16,6 +16,7 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/smbus.h>
+#include <zephyr/drivers/jtag.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
@@ -27,6 +28,8 @@
 #include <tenstorrent/event.h>
 #include <tenstorrent/jtag_bootrom.h>
 #include <tenstorrent/tt_smbus_regs.h>
+
+#define RESET_UNIT_ARC_PC_CORE_0                0x80030C00
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -123,6 +126,32 @@ void process_cm2dm_message(struct bh_chip *chip)
 			break;
 		case kCm2DmMsgIdReady:
 			chip->data.arc_needs_init_msg = true;
+			break;
+		case kCm2DmMsgIdAutoResetTimeoutUpdate:
+			/* Set auto reset timeout */
+			chip->data.auto_reset_timeout = message.data;
+			if (chip->data.auto_reset_timeout != 0) {
+				/* Start auto-reset timer */
+				k_timer_start(&chip->auto_reset_timer,
+					      K_MSEC(chip->data.auto_reset_timeout),
+					      K_NO_WAIT);
+			} else {
+				/* Stop auto-reset timer */
+				k_timer_stop(&chip->auto_reset_timer);
+			}
+			break;
+		case kCm2DmMsgTelemHeartbeatUpdate:
+			/* Update telemetry heartbeat */
+			if (chip->data.telemetry_heartbeat != message.data) {
+				/* Telemetry heartbeat is moving */
+				chip->data.telemetry_heartbeat = message.data;
+				if (chip->data.auto_reset_timeout != 0) {
+					/* Restart auto reset timer */
+					k_timer_start(&chip->auto_reset_timer,
+						      K_MSEC(chip->data.auto_reset_timeout),
+						      K_NO_WAIT);
+				}
+			}
 			break;
 		}
 	}
@@ -393,6 +422,33 @@ int main(void)
 			}
 		}
 
+		/* Handler for watchdog trigger */
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			if (chip->data.arc_wdog_triggered) {
+				chip->data.arc_wdog_triggered = false;
+				/* Read PC from ARC and record it */
+				jtag_setup(chip->config.jtag);
+				jtag_reset(chip->config.jtag);
+				jtag_axi_read32(chip->config.jtag,
+						RESET_UNIT_ARC_PC_CORE_0,
+						&chip->data.arc_hang_pc);
+				jtag_teardown(chip->config.jtag);
+				/* Clear watchdog state */
+				chip->data.auto_reset_timeout = 0;
+
+				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+					set_fan_speed(100);
+				}
+
+				chip->data.performing_reset = true;
+				bh_chip_reset_chip(chip, true);
+				/* Clear bus transfer cancel flag */
+				bh_chip_cancel_bus_transfer_clear(chip);
+
+				chip->data.performing_reset = false;
+			}
+		}
+
 		/* handler for PERST */
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (atomic_set(&chip->data.trigger_reset, false)) {
@@ -415,6 +471,7 @@ int main(void)
 					bh_chip_cancel_bus_transfer_set(chip);
 				}
 				chip->data.therm_trip_count = 0;
+				chip->data.arc_hang_pc = 0;
 				chip->data.performing_reset = false;
 			}
 		}
