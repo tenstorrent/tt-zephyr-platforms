@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/watchdog.h>
 #include <zephyr/sys/byteorder.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
@@ -215,6 +216,40 @@ static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 }
 
 REGISTER_MESSAGE(MSG_TYPE_PING_DM, ping_dm_handler);
+
+static uint8_t set_watchdog_timeout(uint32_t msg_code,
+				    const struct request *request,
+				    struct response *response)
+{
+	const struct device *wdt_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
+	struct wdt_timeout_cfg cfg = {0};
+	int ret;
+
+	if (!device_is_ready(wdt_dev)) {
+		return ENODEV;
+	}
+
+
+	if (request->data[1] != 0) {
+		/* Deny a timeout lower than our feed interval */
+		if (request->data[1] <= CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL) {
+			return ENOTSUP;
+		}
+		cfg.window.max = request->data[1];
+		/* Program watchdog timeout */
+		ret = wdt_install_timeout(wdt_dev, &cfg);
+		if (ret < 0) {
+			return 0 - ret;
+		}
+		ret = wdt_setup(wdt_dev, WDT_FLAG_RESET_CPU_CORE);
+	} else {
+		/* Turn off watchdog */
+		ret = wdt_disable(wdt_dev);
+	}
+	return 0 - ret;
+}
+
+REGISTER_MESSAGE(MSG_TYPE_SET_WDT_TIMEOUT, set_watchdog_timeout);
 
 int32_t Dm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 {
