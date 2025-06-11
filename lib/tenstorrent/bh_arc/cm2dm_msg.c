@@ -229,6 +229,10 @@ int32_t Dm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 		UpdateDmFwVersion(info->bl_version, info->app_version);
 		WriteReg(ARC_START_TIME_REG_ADDR, info->arc_start_time);
 		WriteReg(PERST_TO_DMFW_INIT_DONE_REG_ADDR, info->dm_init_duration);
+		if (info->arc_hang_pc != 0) {
+			/* Record last fault PC */
+			WriteReg(ARC_HANG_PC, info->arc_hang_pc);
+		}
 		return 0;
 	}
 #endif

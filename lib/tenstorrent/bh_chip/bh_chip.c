@@ -61,6 +61,7 @@ int bh_chip_set_static_info(struct bh_chip *chip, dmStaticInfo *info)
 
 	info->arc_start_time = get_arc_start_time();
 	info->dm_init_duration = get_dm_init_duration();
+	info->arc_hang_pc = chip->data.arc_hang_pc;
 	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DM_STATIC_INFO,
 				      sizeof(dmStaticInfo), (uint8_t *)info);
 
