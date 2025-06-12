@@ -22,7 +22,7 @@ all Python dependencies, and the Zephyr SDK are already installed and activated.
 ```shell
 # Create a west workspace
 MODULE=tt-zephyr-platforms
-west init -m https://github.com/tenstorrent/tt-zephyr-platforms.git ~/$MODULE-work
+west init -m https://github.com/tenstorrent/$MODULE ~/$MODULE-work
 cd ~/$MODULE-work
 
 # Fetch Zephyr modules
