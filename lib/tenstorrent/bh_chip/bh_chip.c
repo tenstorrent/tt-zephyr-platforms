@@ -222,8 +222,14 @@ void handle_pgood_event(struct bh_chip *chip, struct gpio_dt_spec board_fault_le
 	if (chip->data.pgood_rise_triggered && !chip->data.pgood_severe_fault) {
 		/* Follow out of reset procedure */
 		bh_chip_reset_chip(chip, true);
-		/* Clear board fault */
-		gpio_pin_set_dt(&board_fault_led, 0);
+		/*
+		 * Ensure the board fault led will not be deasserted post powercycle during
+		 * assembly test
+		 */
+		if (!IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST)) {
+			/* Clear board fault */
+			gpio_pin_set_dt(&board_fault_led, 0);
+		}
 		chip->data.pgood_rise_triggered = false;
 	}
 }
