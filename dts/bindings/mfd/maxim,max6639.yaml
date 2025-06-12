@@ -1,0 +1,11 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    Maxim MAX6639 PWM Fan-Speed Controller, MFD device
+
+compatible: "maxim,max6639"
+
+include: [base.yaml, i2c-device.yaml]
+
+bus: max6639
