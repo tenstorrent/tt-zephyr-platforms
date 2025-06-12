@@ -47,7 +47,7 @@ tests:
         - pytest/vuart.py
       pytest_args:
         - "--dut-scope=session"
-    extra_dtc_overlay_files:
-      - vuart.overlay
+    extra_args:
+      - "EXTRA_DTC_OVERLAY_FILE=vuart.overlay"
     extra_overlay_confs:
       - vuart.conf
