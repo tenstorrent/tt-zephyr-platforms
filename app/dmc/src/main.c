@@ -403,7 +403,12 @@ int main(void)
 				 */
 				bh_chip_cancel_bus_transfer_clear(chip);
 
-				jtag_bootrom_reset_asic(chip);
+				if (jtag_bootrom_reset_asic(chip) < 0) {
+					chip->data.performing_reset = false;
+					LOG_ERR("Failed to reset bh_chip %p", chip);
+					break;
+				}
+
 				jtag_bootrom_soft_reset_arc(chip);
 				jtag_bootrom_teardown(chip);
 
