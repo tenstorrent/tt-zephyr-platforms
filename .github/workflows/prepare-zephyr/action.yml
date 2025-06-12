@@ -38,7 +38,7 @@ runs:
       run: |
         if [ -d ".west" ]; then
           echo "Cleaning out old west manifest directories"
-          for dir in $(west list -f "{path"}); do
+          for dir in $(west list -f "{path}"); do
             if [ $dir != ${{ inputs.app-path }} ]; then
               echo "Removing $dir"
               rm -rf $dir
