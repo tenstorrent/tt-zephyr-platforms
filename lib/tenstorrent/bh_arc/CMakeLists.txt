@@ -11,9 +11,7 @@ zephyr_library_sources_ifndef(
   efuse.c
   eth.c
   fan_ctrl.c
-  flash_info_table.c
   functional_efuse.c
-  fw_table.c
   gddr.c
   harvesting.c
   i2c_messages.c
@@ -48,7 +46,6 @@ zephyr_library_sources(
   pcie.c
   pll.c
   post_code.c
-  read_only_table.c
   smbus_target.c
   spi_eeprom.c
   timer.c
@@ -58,23 +55,7 @@ if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
-include(nanopb)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/fw_table.proto)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/read_only.proto)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/flash_info.proto)
-
-set(PROTOC ${PROTOBUF_PROTOC_EXECUTABLE})
-set(SPIROM_PROTOBUFS ${ZEPHYR_CURRENT_MODULE_DIR}/lib/tenstorrent/bh_arc/spirom_protobufs)
-
-message(STATUS "Generating Python files from protobufs")
-set(OUTPUT_DIR ${ZEPHYR_BINARY_DIR}/python_proto_files)
-file(MAKE_DIRECTORY ${OUTPUT_DIR})
-set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/fw_table.proto -I ${SPIROM_PROTOBUFS}
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/read_only.proto -I ${SPIROM_PROTOBUFS}
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/flash_info.proto -I ${SPIROM_PROTOBUFS}
-)
+target_link_libraries(bh_arc PRIVATE bh_fwtable)
 
 if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 	if(BOARD STREQUAL "tt_blackhole")

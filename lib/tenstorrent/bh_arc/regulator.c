@@ -13,6 +13,7 @@
 #include <zephyr/logging/log.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 #include "avs.h"
 #include "dw_apb_i2c.h"
@@ -65,6 +66,8 @@ LOG_MODULE_REGISTER(regulator);
 #define CB_GDDR_VDDR_FB2      4.32
 #define SCRAPPY_GDDR_VDDR_FB1 1.07
 #define SCRAPPY_GDDR_VDDR_FB2 3.48
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 typedef struct {
 	uint8_t reserved : 1;
@@ -416,7 +419,7 @@ uint32_t RegulatorInit(PcbType board_type)
 		ARRAY_FOR_EACH_PTR(serdes_vr_addr, addr_ptr) {
 			/* Skip serdes_vdd for p300 left chip */
 			if (board_type == PcbTypeP300 &&
-			    get_read_only_table()->asic_location == 0 &&
+			    tt_bh_fwtable_get_read_only_table(fwtable_dev)->asic_location == 0 &&
 			    *addr_ptr == SERDES_VDD_ADDR) {
 				continue;
 			}
