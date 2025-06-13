@@ -7,7 +7,6 @@
 #include "fan_ctrl.h"
 
 #include "cm2dm_msg.h"
-#include "fw_table.h"
 #include "gddr.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
@@ -19,6 +18,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 #ifdef CONFIG_ZTEST
 #define STATIC
@@ -37,6 +37,8 @@ uint32_t fan_speed; /* In PWM for now */
 float max_gddr_temp;
 float max_asic_temp;
 float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
 {
@@ -130,7 +132,7 @@ void init_fan_ctrl(void)
 static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
-	if (get_fw_table()->feature_enable.fan_ctrl_en) {
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
 		if (request->data[1] == 0xFFFFFFFF) { /* unforce */
 			k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
 				      K_MSEC(fan_ctrl_update_interval));

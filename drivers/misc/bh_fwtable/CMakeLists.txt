@@ -10,6 +10,8 @@ if(CONFIG_BH_FWTABLE)
 
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
+zephyr_include_directories(${NANOPB_INCLUDE_DIRS})
+zephyr_library_link_libraries(nanopb)
 
 set(TT_BH_PB_DIR ${ZEPHYR_TT_ZEPHYR_PLATFORMS_MODULE_DIR}/lib/tenstorrent/bh_arc/spirom_protobufs)
 

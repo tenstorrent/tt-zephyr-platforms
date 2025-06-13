@@ -29,6 +29,8 @@
 #define BOARDTYPE_P300C 0x46
 #define BOARDTYPE_UBB   0x47
 
+#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
+
 LOG_MODULE_REGISTER(bh_fwtable, CONFIG_BH_FWTABLE_LOG_LEVEL);
 
 enum bh_fwtable_e {
@@ -53,6 +55,20 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	return &data->fw_table;
+}
+
+const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *dev)
+{
+	struct bh_fwtable_data *data = dev->data;
+
+	return &data->flash_info_table;
+}
+
+const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
+{
+	struct bh_fwtable_data *data = dev->data;
+
+	return &data->read_only_table;
 }
 
 /* Converts a board id extracted from board type and converts it to a PCB Type */
@@ -96,11 +112,22 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 	return pcb_type;
 }
 
+/* Reads GPIO6 to determine whether it is p300 left chip. GPIO6 is only set on p300 left chip. */
+bool tt_bh_fwtable_is_p300_left_chip(void)
+{
+	return FIELD_GET(BIT(6), sys_read32(RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR));
+}
+
 uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	return data->read_only_table.asic_location;
+	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
+		return data->read_only_table.asic_location;
+	}
+
+	/* Single chip and p300 right are location 0. */
+	return tt_bh_fwtable_is_p300_left_chip();
 }
 
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
@@ -152,9 +179,13 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 static int tt_bh_fwtable_init(const struct device *dev)
 {
 	/* load firmware tables from flash */
-	return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
-	       tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
-	       tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG);
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
+	} else {
+		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
+	}
 }
 
 #define BH_FWTABLE_INIT(inst)                                                                      \
@@ -164,6 +195,6 @@ static int tt_bh_fwtable_init(const struct device *dev)
 	static struct bh_fwtable_data bh_fwtable_data_##inst;                                      \
 	DEVICE_DT_INST_DEFINE(inst, tt_bh_fwtable_init, NULL, &bh_fwtable_data_##inst,             \
 			      &bh_fwtable_config_##inst, POST_KERNEL,                              \
-			      CONFIG_KERNEL_INIT_PRIORITY_DEVICE, NULL);
+			      CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(BH_FWTABLE_INIT)

@@ -9,8 +9,9 @@ include: base.yaml
 
 properties:
 
-  flash-dev:
+  flash_dev:
     type: phandle
+    required: true
     description: |
       Phandle to the flash device the firmware table resides in. If this property is
       not specified, the firmware table will not be read from SPI flash.

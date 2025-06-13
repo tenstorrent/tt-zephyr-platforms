@@ -5,12 +5,11 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include "serdes_eth.h"
 #include "noc2axi.h"
 #include "noc.h"
 #include "reg.h"
-#include "read_only_table.h"
-#include "fw_table.h"
 #include "efuse.h"
 
 #define ETH_SETUP_TLB  0
@@ -23,6 +22,8 @@
 #define ETH_RISC_DEBUG_SOFT_RESET_0 0xFFB121B0
 
 #define ETH_MAC_ADDR_ORG 0x208C47 /* 20:8C:47 */
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 typedef struct {
 	uint32_t sd_mode_sel_0: 1;
@@ -115,25 +116,29 @@ uint32_t GetEthSel(uint32_t eth_enabled)
 	}
 
 	/* Turn on the correct ETH instances based on pcie serdes properties */
-	if (get_fw_table()->pci0_property_table.pcie_mode ==
-	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable ETH 0-3 */
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.pcie_mode ==
+	    FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		/* Enable ETH 0-3 */
 		eth_sel |= BIT(0) | BIT(1) | BIT(2) | BIT(3);
-	} else if (get_fw_table()->pci0_property_table.num_serdes == 1) { /* Only enable ETH 2,3 */
+	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.num_serdes == 1) {
+		/* Only enable ETH 2,3 */
 		eth_sel |= BIT(2) | BIT(3);
 	}
-	if (get_fw_table()->pci1_property_table.pcie_mode ==
-	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable ETH 10-13 */
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.pcie_mode ==
+	    FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		/* Enable ETH 10-13 */
 		eth_sel |= BIT(10) | BIT(11) | BIT(12) | BIT(13);
-	} else if (get_fw_table()->pci1_property_table.num_serdes ==
-		   1) { /* Only enable ETH 10,11 */
+	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.num_serdes == 1) {
+		/* Only enable ETH 10,11 */
 		eth_sel |= BIT(10) | BIT(11);
 	}
 
 	eth_sel &= eth_enabled;
 
 	/* If eth_disable_mask_en is set then make sure the disabled eths are not enabled */
-	if (get_fw_table()->eth_property_table.eth_disable_mask_en) {
-		eth_sel &= ~get_fw_table()->eth_property_table.eth_disable_mask;
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->eth_property_table.eth_disable_mask_en) {
+		eth_sel &= ~tt_bh_fwtable_get_fw_table(fwtable_dev)
+				    ->eth_property_table.eth_disable_mask;
 	}
 
 	/* Make sure to send the mux_sel information as well so the ETH can configure itself
@@ -216,10 +221,10 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled,
 	/* InitHW -> InitEth -> LoadEthFwCfg comes before init_telemtry, so cannot simply call for
 	 * telemetry data here
 	 */
-	fw_cfg_32b[32] = get_pcb_type();
-	fw_cfg_32b[33] = get_asic_location();
-	fw_cfg_32b[34] = get_read_only_table()->board_id >> 32;
-	fw_cfg_32b[35] = get_read_only_table()->board_id & 0xFFFFFFFF;
+	fw_cfg_32b[32] = tt_bh_fwtable_get_pcb_type(fwtable_dev);
+	fw_cfg_32b[33] = tt_bh_fwtable_get_asic_location(fwtable_dev);
+	fw_cfg_32b[34] = tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id >> 32;
+	fw_cfg_32b[35] = tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id & 0xFFFFFFFF;
 	/* Split the 48-bit MAC address into 2 24-bit values, separated by organisation ID and
 	 * device ID
 	 */
