@@ -1,0 +1,37 @@
+name: 'Nightly Branch Cleanup'
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  cleanup-branches:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Iterate Through Branches and Delete Stale Ones
+        run: |
+          ALL_BRANCHES=$(gh branch list | awk '{print $1}')
+
+          for branch in $ALL_BRANCHES; do
+            echo "Found branch $branch"
+
+            if [[ "$branch" == "main" || "$branch" =~ ^v[0-9].*-branch$ ]]; then
+              continue
+            fi
+
+            echo "    Deleting"
+          done
+
+          echo "Done"
+
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
