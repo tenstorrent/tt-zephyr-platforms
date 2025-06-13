@@ -7,11 +7,9 @@
 #include "cm2dm_msg.h"
 #include "fan_ctrl.h"
 #include "functional_efuse.h"
-#include "fw_table.h"
 #include "harvesting.h"
 #include "pll.h"
 #include "pvt.h"
-#include "read_only_table.h"
 #include "reg.h"
 #include "regulator.h"
 #include "status_reg.h"
@@ -26,8 +24,13 @@
 
 #include <tenstorrent/post_code.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
+
+#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -234,8 +237,10 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[TAG_TELEM_ENUM_COUNT] = TAG_COUNT; /* Count of telemetry tags */
 
 	/* Get the static values */
-	telemetry[TAG_BOARD_ID_HIGH] = get_read_only_table()->board_id >> 32;
-	telemetry[TAG_BOARD_ID_LOW] = get_read_only_table()->board_id & 0xFFFFFFFF;
+	telemetry[TAG_BOARD_ID_HIGH] =
+		tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id >> 32;
+	telemetry[TAG_BOARD_ID_LOW] =
+		tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id & 0xFFFFFFFF;
 	telemetry[TAG_ASIC_ID_HIGH] = READ_FUNCTIONAL_EFUSE(ASIC_ID_HIGH);
 	telemetry[TAG_ASIC_ID_LOW] = READ_FUNCTIONAL_EFUSE(ASIC_ID_LOW);
 	telemetry[TAG_HARVESTING_STATE] = 0x00000000;
@@ -262,7 +267,8 @@ static void write_static_telemetry(uint32_t app_version)
 	/* DM_APP_FW_VERSION and DM_BL_FW_VERSION assumes zero-init, it might be
 	 * initialized by bh_chip_set_static_info in dmfw already, must not clear.
 	 */
-	telemetry[TAG_FLASH_BUNDLE_VERSION] = get_fw_table()->fw_bundle_version;
+	telemetry[TAG_FLASH_BUNDLE_VERSION] =
+		tt_bh_fwtable_get_fw_table(fwtable_dev)->fw_bundle_version;
 	telemetry[TAG_CM_FW_VERSION] = app_version;
 	telemetry[TAG_L2CPU_FW_VERSION] = 0x00000000;
 
@@ -278,7 +284,13 @@ static void write_static_telemetry(uint32_t app_version)
 	 * UpdateTelemetryNocTranslation.
 	 */
 
-	telemetry[TAG_ASIC_LOCATION] = get_asic_location();
+	if (tt_bh_fwtable_get_pcb_type(fwtable_dev) == PcbTypeP300) {
+		/* For the p300 a value of 1 is the left asic and 0 is the right */
+		telemetry[TAG_ASIC_LOCATION] = tt_bh_fwtable_get_asic_location(fwtable_dev);
+	} else {
+		/* For all other supported boards this value is 0 */
+		telemetry[TAG_ASIC_LOCATION] = 0;
+	}
 }
 
 static void update_telemetry(void)

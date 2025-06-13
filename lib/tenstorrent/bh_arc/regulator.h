@@ -7,8 +7,7 @@
 #define REGULATOR_H
 
 #include <stdint.h>
-
-#include "read_only_table.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 typedef enum {
 	VoutCommand = 0,

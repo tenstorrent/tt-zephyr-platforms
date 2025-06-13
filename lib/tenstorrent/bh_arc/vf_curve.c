@@ -6,7 +6,7 @@
 
 #include <zephyr/sys/util.h>
 #include "vf_curve.h"
-#include "fw_table.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* Bounds checks for frequency and voltage margin */
 #define FREQ_MARGIN_MAX    300.0F
@@ -17,12 +17,16 @@
 static float freq_margin_mhz;
 static float voltage_margin_mv;
 
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
 void InitVFCurve(void)
 {
-	freq_margin_mhz = CLAMP(get_fw_table()->chip_limits.frequency_margin, FREQ_MARGIN_MIN,
-				FREQ_MARGIN_MAX);
-	voltage_margin_mv = CLAMP(get_fw_table()->chip_limits.voltage_margin, VOLTAGE_MARGIN_MIN,
-				  VOLTAGE_MARGIN_MAX);
+	freq_margin_mhz =
+		CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.frequency_margin,
+		      FREQ_MARGIN_MIN, FREQ_MARGIN_MAX);
+	voltage_margin_mv =
+		CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.voltage_margin,
+		      VOLTAGE_MARGIN_MIN, VOLTAGE_MARGIN_MAX);
 }
 
 /**

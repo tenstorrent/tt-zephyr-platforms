@@ -22,3 +22,7 @@
 &wdt0 {
 	status = "okay";
 };
+
+&fwtable {
+	status = "okay";
+};

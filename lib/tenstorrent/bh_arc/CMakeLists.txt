@@ -11,9 +11,7 @@ zephyr_library_sources_ifndef(
   efuse.c
   eth.c
   fan_ctrl.c
-  flash_info_table.c
   functional_efuse.c
-  fw_table.c
   gddr.c
   harvesting.c
   i2c_messages.c
@@ -47,7 +45,6 @@ zephyr_library_sources(
   pcie.c
   pll.c
   post_code.c
-  read_only_table.c
   smbus_target.c
   spi_eeprom.c
   timer.c
@@ -57,16 +54,7 @@ if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 endif()
 
-if(NOT CONFIG_BH_FWTABLE)
-list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
-include(nanopb)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/fw_table.proto)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/read_only.proto)
-zephyr_nanopb_sources(bh_arc spirom_protobufs/flash_info.proto)
-# ensure generated headers are available to the rest of the build.
-# prefix must be common with bh_fwtable to be used interchangeably
-zephyr_include_directories(${CMAKE_CURRENT_BINARY_DIR}/spirom_protobufs)
-endif()
+zephyr_library_include_directories(${CMAKE_BINARY_DIR}/modules/tt-zephyr-platforms/drivers/misc/bh_fwtable)
 
 set(PROTOC ${PROTOBUF_PROTOC_EXECUTABLE})
 set(SPIROM_PROTOBUFS ${ZEPHYR_CURRENT_MODULE_DIR}/lib/tenstorrent/bh_arc/spirom_protobufs)

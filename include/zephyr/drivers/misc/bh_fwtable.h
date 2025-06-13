@@ -7,6 +7,11 @@
 #define BH_FWTABLE_H
 
 #include <stdint.h>
+#include <zephyr/device.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * FIXME: these proto files as well as all of the entities within them need to be namespaced
@@ -30,6 +35,11 @@ typedef enum {
 } PcbType;
 
 PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev);
+bool tt_bh_fwtable_is_p300_left_chip(void);
 uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BH_FWTABLE_H*/
