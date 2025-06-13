@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * @file
+ * @brief Tenstorrent firmware update API.
+ */
+
 #ifndef TENSTORRENT_FWUPDATE_H_
 #define TENSTORRENT_FWUPDATE_H_
 
@@ -17,7 +22,7 @@
 extern "C" {
 #endif
 
-#ifndef CONFIG_BOARD_QEMU_X86
+#if !defined(CONFIG_BOARD_QEMU_X86) || defined(__DOXYGEN__)
 /**
  * @brief Set the external flash device and set the passed spi mux (if not null) to allow
  * communication with the spi
