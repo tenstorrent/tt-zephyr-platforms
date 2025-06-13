@@ -3,7 +3,7 @@
 
 description: Tenstorrrent Blackhole Reset Controller
 
-compatible: "tenstorrent,blackhole-reset"
+compatible: "tenstorrent,bh-reset"
 
 include: [base.yaml, reset-controller.yaml]
 
@@ -16,7 +16,7 @@ description: |
   1. no mask is specified - 32 reset lines are available to the reset controller instance
 
     resetX: reset@abcd1234 {
-    	compatible = "tenstorrent,blackhole-reset";
+    	compatible = "tenstorrent,bh-reset";
      	reg = <0xabcd1234 0x4>;
     	#reset-cells = <1>;
     	status = "okay";
@@ -26,7 +26,7 @@ description: |
     example below, id 1 and id 2 are valid.
 
     resetX: reset@abcd1234 {
-    	compatible = "tenstorrent,blackhole-reset";
+    	compatible = "tenstorrent,bh-reset";
      	reg = <0xabcd1234 0x4>;
     	#reset-cells = <1>;
       reset-mask = <0x42>;
@@ -37,7 +37,7 @@ description: |
      available to the reset controller instance. So id 0 and id 1 are valid.
 
     resetX: reset@abcd1234 {
-    	compatible = "tenstorrent,blackhole-reset";
+    	compatible = "tenstorrent,bh-reset";
      	reg = <0xabcd1234 0x4>;
     	#reset-cells = <1>;
       nresets = <3>;
