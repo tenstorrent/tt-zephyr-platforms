@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&uart0 {
+	pinctrl-0 = <&uart0_tx_default &uart0_rx_default>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&pinctrl{
+	status = "okay";
+};
