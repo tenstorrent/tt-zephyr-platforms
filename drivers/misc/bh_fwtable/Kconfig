@@ -15,4 +15,12 @@ module = BH_FWTABLE
 module-str = bh_fwtable
 source "subsys/logging/Kconfig.template.log_config"
 
+config BH_FWTABLE_INIT_PRIORITY
+    int "Tenstorrent Blackhole firmware table init priority"
+    # The default priority must be later than the EEPROM driver (8).
+    default 81
+    help
+      Specify the initialization priority for the FW Table driver.
+      Set to a value higher than the SPI/EEPROM driver.
+
 endif

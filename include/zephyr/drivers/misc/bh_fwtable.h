@@ -7,6 +7,7 @@
 #define BH_FWTABLE_H
 
 #include <stdint.h>
+#include <zephyr/device.h>
 
 /*
  * FIXME: these proto files as well as all of the entities within them need to be namespaced

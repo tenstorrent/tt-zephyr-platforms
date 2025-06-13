@@ -55,6 +55,20 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 	return &data->fw_table;
 }
 
+const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *dev)
+{
+	struct bh_fwtable_data *data = dev->data;
+
+	return &data->flash_info_table;
+}
+
+const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
+{
+	struct bh_fwtable_data *data = dev->data;
+
+	return &data->read_only_table;
+}
+
 /* Converts a board id extracted from board type and converts it to a PCB Type */
 PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 {
@@ -152,7 +166,7 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 static int tt_bh_fwtable_init(const struct device *dev)
 {
 	/* load firmware tables from flash */
-	return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
+	return tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
 	       tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
 	       tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG);
 }
@@ -164,6 +178,6 @@ static int tt_bh_fwtable_init(const struct device *dev)
 	static struct bh_fwtable_data bh_fwtable_data_##inst;                                      \
 	DEVICE_DT_INST_DEFINE(inst, tt_bh_fwtable_init, NULL, &bh_fwtable_data_##inst,             \
 			      &bh_fwtable_config_##inst, POST_KERNEL,                              \
-			      CONFIG_KERNEL_INIT_PRIORITY_DEVICE, NULL);
+			      CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(BH_FWTABLE_INIT)
