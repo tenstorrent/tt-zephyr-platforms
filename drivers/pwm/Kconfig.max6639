@@ -1,0 +1,20 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config PWM_MAX6639
+	bool "MAX6639 PWM Fan-Speed Controller, PWM device"
+	default y
+	depends on DT_HAS_MAXIM_MAX6639_ENABLED
+	depends on I2C
+	help
+	  This option enables the Maxim max6639 PWM fan controller.
+
+if PWM_MAX6639
+
+config PWM_MAX6639_INIT_PRIORITY
+	int "Priority of max6639 PWM init"
+	default 70
+	help
+	  Priority of max6639 PWM initialization.
+
+endif # PWM_MAX6639

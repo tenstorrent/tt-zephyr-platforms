@@ -1,0 +1,1 @@
+add_subdirectory_ifdef(CONFIG_MAX6639_SENSOR max6639)
