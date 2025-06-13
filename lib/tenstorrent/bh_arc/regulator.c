@@ -13,10 +13,10 @@
 #include <zephyr/logging/log.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 #include "avs.h"
 #include "dw_apb_i2c.h"
-#include "read_only_table.h"
 #include "timer.h"
 
 LOG_MODULE_REGISTER(regulator);
@@ -416,7 +416,7 @@ uint32_t RegulatorInit(PcbType board_type)
 
 		ARRAY_FOR_EACH_PTR(serdes_vr_addr, addr_ptr) {
 			/* Skip serdes_vdd for p300 left chip */
-			if (is_p300_left_chip() && *addr_ptr == SERDES_VDD_ADDR) {
+			if (tt_bh_fwtable_is_p300_left_chip() && *addr_ptr == SERDES_VDD_ADDR) {
 				continue;
 			}
 

@@ -9,8 +9,6 @@
 #include "dvfs.h"
 #include "eth.h"
 #include "fan_ctrl.h"
-#include "flash_info_table.h"
-#include "fw_table.h"
 #include "gddr.h"
 #include "harvesting.h"
 #include "init_common.h"
@@ -19,7 +17,6 @@
 #include "pcie.h"
 #include "pll.h"
 #include "pvt.h"
-#include "read_only_table.h"
 #include "reg.h"
 #include "regulator.h"
 #include "serdes_eth.h"
@@ -39,6 +36,7 @@
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 #define ETH_FW_CFG_TAG   "ethfwcfg"
 #define ETH_FW_TAG       "ethfw"
@@ -48,6 +46,8 @@
 #define MRISC_FW_TAG     "memfw"
 
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
@@ -246,16 +246,18 @@ static void SerdesEthInit(void)
 
 	uint32_t load_serdes = BIT(2) | BIT(5); /* Serdes 2, 5 are always for ETH */
 	/* Select the other ETH Serdes instances based on pcie serdes properties */
-	if (get_fw_table()->pci0_property_table.pcie_mode ==
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.pcie_mode ==
 	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable Serdes 0, 1 */
 		load_serdes |= BIT(0) | BIT(1);
-	} else if (get_fw_table()->pci0_property_table.num_serdes == 1) { /* Just enable Serdes 1 */
+	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.num_serdes ==
+		   1) { /* Just enable Serdes 1 */
 		load_serdes |= BIT(1);
 	}
-	if (get_fw_table()->pci1_property_table.pcie_mode ==
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.pcie_mode ==
 	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable Serdes 3, 4 */
 		load_serdes |= BIT(3) | BIT(4);
-	} else if (get_fw_table()->pci1_property_table.num_serdes == 1) { /* Just enable Serdes 4 */
+	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.num_serdes ==
+		   1) { /* Just enable Serdes 4 */
 		load_serdes |= BIT(4);
 	}
 
@@ -364,10 +366,10 @@ static uint8_t ReinitTensix(uint32_t msg_code, const struct request *req, struct
 	 * but it's simpler to reuse the same functions to re-program all of it.
 	 */
 	NocInit();
-	if (get_fw_table()->feature_enable.cg_en) {
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
 		EnableTensixCG();
 	}
-	if (get_fw_table()->feature_enable.noc_translation_en) {
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
 		InitNocTranslationFromHarvesting();
 	}
 
@@ -389,17 +391,6 @@ static int InitHW(void)
 	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
-
-	/* Load FW config, Read Only and Flash Info tables from SPI filesystem */
-	/* TODO: Add some kind of error handling if the load fails */
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		load_fw_table(large_sram_buffer, SCRATCHPAD_SIZE);
-	}
-	load_read_only_table(large_sram_buffer, SCRATCHPAD_SIZE);
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		load_flash_info_table(large_sram_buffer, SCRATCHPAD_SIZE);
-	}
-
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
 	/* Enable CATMON for early thermal protection */
 	CATInit();
@@ -464,8 +455,8 @@ static int InitHW(void)
 			.num_serdes = 2,
 		};
 	} else {
-		pci0_property_table = get_fw_table()->pci0_property_table;
-		pci1_property_table = get_fw_table()->pci1_property_table;
+		pci0_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table;
+		pci1_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table;
 	}
 
 	if ((pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) &&
@@ -503,8 +494,8 @@ static int InitHW(void)
 	/* Initiate AVS interface and switch vout control to AVSBus */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (RegulatorInit(get_pcb_type())) {
-			LOG_ERR("Failed to initialize regulators");
+		if (RegulatorInit(tt_bh_fwtable_get_pcb_type(fwtable_dev))) {
+			LOG_ERR("Failed to initialize regulators.\n");
 			error_status0.f.regulator_init_error = 1;
 			init_errors = true;
 		}
@@ -514,11 +505,11 @@ static int InitHW(void)
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (get_fw_table()->feature_enable.cg_en) {
+		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
 			EnableTensixCG();
 		}
 
-		if (get_fw_table()->feature_enable.noc_translation_en) {
+		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
 			InitNocTranslationFromHarvesting();
 		}
 	}

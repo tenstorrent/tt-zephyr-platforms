@@ -11,10 +11,9 @@
 #include "reg.h"
 #include "noc2axi.h"
 #include "timer.h"
-#include "read_only_table.h"
-#include "fw_table.h"
 #include "pciesd.h"
 
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/gpio.h>
 
@@ -42,6 +41,8 @@
 #define PCIE_SII_A_NOC_TLB_DATA_0__REG_OFFSET        0x00000134
 #define PCIE_SII_A_APP_PCIE_CTL_REG_OFFSET           0x0000005C
 #define PCIE_SII_A_LTSSM_STATE_REG_OFFSET            0x00000128
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 typedef struct {
 	uint32_t tlp_type: 5;
@@ -264,8 +265,9 @@ static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instanc
 	}
 
 	SetupDbiAccess();
-	CntlInit(pcie_inst, num_serdes_instance, max_pcie_speed, get_read_only_table()->board_id,
-		 get_read_only_table()->vendor_id);
+	CntlInit(pcie_inst, num_serdes_instance, max_pcie_speed,
+		 tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id,
+		 tt_bh_fwtable_get_read_only_table(fwtable_dev)->vendor_id);
 
 	SetupSii();
 	SetupOutboundTlbs(); /* pcie_inst is implied by ConfigurePCIeTlbs */

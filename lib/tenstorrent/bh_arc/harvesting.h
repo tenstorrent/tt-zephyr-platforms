@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "fw_table.pb.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 #ifdef __cplusplus
 extern "C" {

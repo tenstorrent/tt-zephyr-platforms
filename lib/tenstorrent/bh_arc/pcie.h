@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 #include "noc2axi.h"
-#include "fw_table.pb.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 typedef enum {
 	EndPoint = 0,

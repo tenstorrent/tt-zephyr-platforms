@@ -10,7 +10,7 @@
 #include "throttler.h"
 #include "aiclk_ppm.h"
 #include "cm2dm_msg.h"
-#include "fw_table.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include "telemetry_internal.h"
 #include "telemetry.h"
 
@@ -18,6 +18,9 @@
 #define DEFAULT_BOARD_POWER_LIMIT  150
 
 LOG_MODULE_REGISTER(throttler);
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
 typedef enum {
 	kThrottlerTDP,
 	kThrottlerFastTDC,
@@ -150,12 +153,17 @@ static void SetThrottlerLimit(ThrottlerId id, float limit)
 
 void InitThrottlers(void)
 {
-	SetThrottlerLimit(kThrottlerTDP, get_fw_table()->chip_limits.tdp_limit);
-	SetThrottlerLimit(kThrottlerFastTDC, get_fw_table()->chip_limits.tdc_fast_limit);
-	SetThrottlerLimit(kThrottlerTDC, get_fw_table()->chip_limits.tdc_limit);
-	SetThrottlerLimit(kThrottlerThm, get_fw_table()->chip_limits.thm_limit);
+	SetThrottlerLimit(kThrottlerTDP,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.tdp_limit);
+	SetThrottlerLimit(kThrottlerFastTDC,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.tdc_fast_limit);
+	SetThrottlerLimit(kThrottlerTDC,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.tdc_limit);
+	SetThrottlerLimit(kThrottlerThm,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.thm_limit);
 	SetThrottlerLimit(kThrottlerBoardPower, DEFAULT_BOARD_POWER_LIMIT);
-	SetThrottlerLimit(kThrottlerGDDRThm, get_fw_table()->chip_limits.gddr_thm_limit);
+	SetThrottlerLimit(kThrottlerGDDRThm,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.gddr_thm_limit);
 }
 
 static void UpdateThrottler(ThrottlerId id, float value)
@@ -205,8 +213,9 @@ int32_t Dm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 
 	uint32_t power_limit = sys_get_le16(data);
 
-	LOG_INF("Cable Power Limit: %u", power_limit);
-	power_limit = MIN(power_limit, get_fw_table()->chip_limits.board_power_limit);
+	LOG_INF("Cable Power Limit: %u\n", power_limit);
+	power_limit = MIN(power_limit,
+			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.board_power_limit);
 
 	SetThrottlerLimit(kThrottlerBoardPower, power_limit);
 	UpdateTelemetryBoardPowerLimit(power_limit);

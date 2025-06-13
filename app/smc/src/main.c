@@ -6,7 +6,6 @@
 #include "cm2dm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
-#include "fw_table.h"
 #include "init_common.h"
 #include "smbus_target.h"
 #include "telemetry.h"
@@ -24,10 +23,12 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/watchdog.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const wdt0 = DEVICE_DT_GET(DT_NODELABEL(wdt0));
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 int main(void)
 {
@@ -35,7 +36,7 @@ int main(void)
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (get_fw_table()->feature_enable.aiclk_ppm_en) {
+		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.aiclk_ppm_en) {
 			STATUS_ERROR_STATUS0_reg_u error_status0 = {
 				.val = ReadReg(STATUS_ERROR_STATUS0_REG_ADDR)
 			};
@@ -56,7 +57,7 @@ int main(void)
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		init_telemetry(APPVERSION);
-		if (get_fw_table()->feature_enable.fan_ctrl_en) {
+		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
 			init_fan_ctrl();
 		}
 
