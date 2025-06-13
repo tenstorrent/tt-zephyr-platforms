@@ -18,8 +18,4 @@ extern "C" {
 }
 #endif
 
-/**
- * @}
- */
-
 #endif /* ZEPHYR_INCLUDE_DRIVERS_MSPI_DW_H_ */

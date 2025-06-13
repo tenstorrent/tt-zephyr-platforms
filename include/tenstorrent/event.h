@@ -34,9 +34,7 @@ enum tt_event {
  *
  * Post one or more @a events.
  *
- * @funcprops \isr_ok
- *
- * @param events The events to post as a bitmask of @ref tt_event values.
+ * @param events The events to post as a bitmask of `tt_event` values.
  * @return the previous value of posted events.
  *
  * @see k_event_post
@@ -53,15 +51,15 @@ uint32_t tt_event_post(uint32_t events);
  *
  * To block for a specific time, use @ref K_MSEC or @ref K_USEC to specify the timeout.
  *
- * On success, a bitmask of the received events (of type @ref tt_event) is returned and the
+ * On success, a bitmask of the received events (of type `tt_event`) is returned and the
  * corresponding events are automatically cleared. When a timeout occurs, the function returns 0.
  *
  * @note This function may be called from ISR context only if @a timeout equals @ref K_NO_WAIT.
  *
- * @param events The events to wait for as a bitmask of @ref tt_event values.
+ * @param events The events to wait for as a bitmask of `tt_event` values.
  * @param timeout The maximum time to wait for the event(s) to be posted.
  *
- * @return On success, a bitmask of the received events (of type @ref tt_event). Otherwise, zero.
+ * @return On success, a bitmask of the received events (of type `tt_event`). Otherwise, zero.
  *
  * @see k_event_wait
  */

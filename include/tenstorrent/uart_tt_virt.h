@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * @file
+ * @brief Tenstorrent firmware virtual UART interface.
+ */
+
 #ifndef TENSTORRENT_UART_TT_VIRT_H_
 #define TENSTORRENT_UART_TT_VIRT_H_
 
@@ -16,6 +21,28 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @defgroup tt_vuart_apis Tenstorrent virtual UART APIs
+ * @{
+ */
+
+/**
+ * @brief Role of the virtual UART in the context of the shared memory buffer.
+ *
+ * The virtual UART is a shared memory buffer that is used to communicate between a device and a
+ * host. The device and host have different perspectives on the buffer, so the role of the virtual
+ * UART is used to clarify the direction of communication.
+ *
+ * From the perspective of the device, the transmit buffer is used to send data to the host, and
+ * the receive buffer is used to receive data from the host. Conversely, from the perspective of
+ * the host, the transmit buffer is used to send data to the device, and the receive buffer is used
+ * to receive data from the device.
+ */
+enum tt_vuart_role {
+	TT_VUART_ROLE_DEVICE, /**< Device perspective of @ref tt_vuart  */
+	TT_VUART_ROLE_HOST,   /**< Host perspective of @ref tt_vuart  */
+};
 
 /**
  * @brief In-memory ring buffer descriptor for Tenstorrent virtual UART.
@@ -35,7 +62,7 @@ extern "C" {
  *
  * Since this descriptor is intended to be shared between both a device, it is important to
  * clarify that the transmit (tx) and receive (rx) directions are from the perspective of the
- * device and should be reversed when viewed from the host. See also @ref tt_vuart_role.
+ * device and should be reversed when viewed from the host. See also `tt_vuart_role`.
  *
  * TODO: add a nice ascii-art diagram.
  */
@@ -50,23 +77,6 @@ struct tt_vuart {
 	uint32_t tx_tail;  /** Transmit tail counter */
 	uint32_t version;  /**< Version info MS-Byte to LS-Byte [INST.MAJOR.MINOR.PATCH] */
 	uint8_t buf[];     /** Buffer area of `tx_cap` bytes followed by `rx_cap` bytes */
-};
-
-/**
- * @brief Role of the virtual UART in the context of the shared memory buffer.
- *
- * The virtual UART is a shared memory buffer that is used to communicate between a device and a
- * host. The device and host have different perspectives on the buffer, so the role of the virtual
- * UART is used to clarify the direction of communication.
- *
- * From the perspective of the device, the transmit buffer is used to send data to the host, and
- * the receive buffer is used to receive data from the host. Conversely, from the perspective of
- * the host, the transmit buffer is used to send data to the device, and the receive buffer is used
- * to receive data from the device.
- */
-enum tt_vuart_role {
-	TT_VUART_ROLE_DEVICE, /**< Device perspective of @ref tt_vuart  */
-	TT_VUART_ROLE_HOST,   /**< Host perspective of @ref tt_vuart  */
 };
 
 /**
@@ -247,6 +257,10 @@ static inline void tt_vuart_poll_out(volatile struct tt_vuart *vuart, unsigned c
 volatile struct tt_vuart *uart_tt_virt_get(const struct device *dev);
 
 #endif
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
