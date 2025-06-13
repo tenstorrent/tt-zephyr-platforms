@@ -110,7 +110,7 @@
 
 	pinctrl: pinctrl {
 		compatible = "tenstorrent,blackhole-pinctrl";
-		status = "okay";
+		status = "disabled";
 	};
 
 	timer0: timer0 {

@@ -52,7 +52,14 @@ tests:
     extra_overlay_confs:
       - vuart.conf
   # demonstrates pinctrl driver, macros, etc, compile
-  app.uart:
-    build_only: true
+  app.e2e_smoke.pinctrl:
+    tags: e2e
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/e2e_smoke.py
+      pytest_args:
+        - "--dut-scope=session"
+        - "-m not flash"
     extra_dtc_overlay_files:
-      - uart.overlay
+      - pinctrl.overlay
