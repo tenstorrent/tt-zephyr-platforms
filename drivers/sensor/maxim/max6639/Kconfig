@@ -1,0 +1,23 @@
+# INA228 Power/Energy/Charge Monitor
+
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+
+config MAX6639_SENSOR
+	bool "MAX6639 PWM Fan-Speed Controller, Sensor device"
+	default y
+	depends on DT_HAS_MAXIM_MAX6639_ENABLED
+	depends on I2C
+	help
+	  This option enables the Maxim max6639 PWM fan controller.
+
+if MAX6639_SENSOR
+
+config MAX6639_SENSOR_INIT_PRIORITY
+	int "Priority of max6639 sensor init"
+	default 80
+	help
+	  Priority of max6639 sensor initialization.
+
+endif # MAX6639_SENSOR
