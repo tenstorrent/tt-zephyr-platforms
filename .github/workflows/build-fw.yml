@@ -202,6 +202,20 @@ jobs:
               -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\" \
               -DCONFIG_TT_ASSEMBLY_TEST=y
 
+      - name: Sanitize Ref Name
+        id: sanitize
+        run: |
+          REF_NAME="${{ github.ref_name }}"
+          SANITIZED=$(echo "$REF_NAME" | sed 's/[ /]/_/g')
+          echo "sanitized_ref_name=$SANITIZED" >> $GITHUB_OUTPUT
+
+      - name: Rename default to test expectations
+        shell: bash
+        run: |
+            mkdir assembly-test-preflash
+            cp build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.elf assembly-test-preflash/${{ matrix.board }}-bootloader-${{ steps.sanitize.outputs.sanitized_ref_name }}.elf
+            cp build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.signed.hex assembly-test-preflash/${{ matrix.board }}-app-${{ steps.sanitize.outputs.sanitized_ref_name }}.signed.hex
+
       - name: Upload firmware assets
         uses: actions/upload-artifact@v4
         with:
@@ -233,6 +247,12 @@ jobs:
             build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.signed.bin
             build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.signed.hex
             build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.stat
+
+      - name: Upload test collateral
+        uses: actions/upload-artifact@v4
+        with:
+          name: assembly-test-${{ matrix.board }}-${{ steps.sanitize.outputs.sanitized_ref_name }}
+          path: assembly-test-preflash/**
 
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
