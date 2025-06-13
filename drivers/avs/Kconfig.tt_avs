@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_AVS
+	bool "Tenstorrent AVS driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_AVS_ENABLED
+	help
+	  Enable the Tenstorrent AVS driver.
+
+config AVS_INIT_PRIORITY
+	int "AVS initialization priority"
+	default 50
+	help
+	  Initialization priority of the AVS driver.

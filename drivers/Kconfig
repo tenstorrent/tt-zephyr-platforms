@@ -4,6 +4,7 @@
 menu "Device Drivers"
 
 # zephyr-keep-sorted-start
+rsource "avs/Kconfig"
 rsource "flash/Kconfig"
 rsource "i2c/Kconfig"
 rsource "jtag/Kconfig"
