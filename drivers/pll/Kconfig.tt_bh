@@ -1,0 +1,8 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config PLL_TT_BH
+	bool "Tenstorrent Blackhole PLL"
+	default y
+    help
+        Enable the Tenstorrent Blackhole PLL driver.
