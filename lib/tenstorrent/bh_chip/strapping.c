@@ -18,8 +18,17 @@ struct tt_smbus_stm32_config {
 void bh_chip_set_straps(struct bh_chip *chip)
 {
 	bharc_enable_i2cbus(&chip->config.arc);
-	if (chip->config.strapping.gpio6.port != NULL) {
-		gpio_pin_configure_dt(&chip->config.strapping.gpio6, GPIO_OUTPUT_ACTIVE);
+	const struct gpio_dt_spec straps[] = {
+		chip->config.strapping.gpio6,
+		chip->config.strapping.gpio38,
+		chip->config.strapping.gpio39,
+		chip->config.strapping.gpio40,
+	};
+
+	ARRAY_FOR_EACH_PTR(straps, strap_ptr) {
+		if (strap_ptr->port != NULL) {
+			gpio_pin_configure_dt(strap_ptr, GPIO_OUTPUT_ACTIVE);
+		}
 	}
 	bharc_disable_i2cbus(&chip->config.arc);
 }
@@ -27,8 +36,17 @@ void bh_chip_set_straps(struct bh_chip *chip)
 void bh_chip_unset_straps(struct bh_chip *chip)
 {
 	bharc_enable_i2cbus(&chip->config.arc);
-	if (chip->config.strapping.gpio6.port != NULL) {
-		gpio_pin_configure_dt(&chip->config.strapping.gpio6, GPIO_INPUT);
+	const struct gpio_dt_spec straps[] = {
+		chip->config.strapping.gpio6,
+		chip->config.strapping.gpio38,
+		chip->config.strapping.gpio39,
+		chip->config.strapping.gpio40,
+	};
+
+	ARRAY_FOR_EACH_PTR(straps, strap_ptr) {
+		if (strap_ptr->port != NULL) {
+			gpio_pin_configure_dt(strap_ptr, GPIO_INPUT);
+		}
 	}
 	bharc_disable_i2cbus(&chip->config.arc);
 }

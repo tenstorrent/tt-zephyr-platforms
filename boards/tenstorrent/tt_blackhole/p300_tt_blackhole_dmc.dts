@@ -75,8 +75,27 @@
 		strapping {
 			gpio6 {
 				compatible = "zephyr,gpio-line";
-				label = "GPIO pin representing strap gpio6";
+				label = "GPIO pin representing strap GPIO6_PCIE_BOOT_INSTANCE";
 				gpios = <&chip1_strapping 4 GPIO_ACTIVE_HIGH>;
+			};
+
+			/* Use QUAD DDR SPI mode, GPIO[39:38] = 2 is QUAD mode, GPIO40 is DDR_EN */
+			gpio38 {
+				compatible = "zephyr,gpio-line";
+				label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
+				gpios = <&chip1_strapping 13 GPIO_ACTIVE_LOW>;
+			};
+
+			gpio39 {
+				compatible = "zephyr,gpio-line";
+				label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
+				gpios = <&chip1_strapping 14 GPIO_ACTIVE_HIGH>;
+			};
+
+			gpio40 {
+				compatible = "zephyr,gpio-line";
+				label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
+				gpios = <&chip1_strapping 15 GPIO_ACTIVE_HIGH>;
 			};
 		};
 
@@ -177,18 +196,30 @@
 		port-write-cycles = <2>;
 		tck-delay = <1>;
 	};
+
+	strapping {
+		/* Use QUAD DDR SPI mode, GPIO[39:38] = 2 is QUAD mode, GPIO40 is DDR_EN */
+		gpio38 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
+			gpios = <&chip0_strapping 13 GPIO_ACTIVE_LOW>;
+		};
+
+		gpio39 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
+			gpios = <&chip0_strapping 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio40 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
+			gpios = <&chip0_strapping 15 GPIO_ACTIVE_HIGH>;
+		};
+	};
 };
 
 &i2c1 {
-	pinctrl-0 = <&i2c1_scl_pa9 &i2c1_sda_pa10>;
-	pinctrl-names = "default";
-	status = "okay";
-	clock-frequency = <I2C_BITRATE_FAST>;
-	compatible = "st,tt-stm32-i2c";
-
-	scl-gpios = <&gpioa 9 GPIO_OPEN_DRAIN>;
-	sda-gpios = <&gpioa 10 GPIO_OPEN_DRAIN>;
-
 	chip0_strapping: strapping_expander@20 {
 		compatible = "nxp,pca9555";
 		status = "okay";
