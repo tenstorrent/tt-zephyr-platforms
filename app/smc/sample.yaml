@@ -61,5 +61,7 @@ tests:
       pytest_args:
         - "--dut-scope=session"
         - "-m not flash"
-    extra_dtc_overlay_files:
-      - pinctrl.overlay
+    extra_args:
+      - "EXTRA_DTC_OVERLAY_FILE=pinctrl.overlay"
+    extra_overlay_confs:
+      - pinctrl.conf
