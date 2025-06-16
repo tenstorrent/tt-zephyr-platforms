@@ -20,6 +20,10 @@
 	status = "disabled";
 };
 
+&max6639 {
+	status = "disabled";
+};
+
 &gpiox1 {
 	status = "disabled";
 };

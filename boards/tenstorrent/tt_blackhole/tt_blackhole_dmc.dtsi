@@ -213,6 +213,25 @@
 		rshunt-micro-ohms = <1000>;
 	};
 
+	max6639: max6639@2c {
+		status = "okay";
+		compatible = "maxim,max6639";
+		reg = <0x2C>;
+
+		max6639_pwm: pwm {
+			label = "max6639_pwm";
+			status = "okay";
+			compatible = "maxim,max6639-pwm";
+			#pwm-cells = <1>;
+		};
+
+		max6639_sensor: sensor {
+			label = "max6639_sensor";
+			status = "okay";
+			compatible = "maxim,max6639-sensor";
+		};
+	};
+
 	gpiox0: gpio@38 {
 		compatible = "nxp,pca9554";
 		reg = <0x38>;
