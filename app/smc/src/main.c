@@ -27,7 +27,7 @@
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
-static const struct device *const wdt0 = DEVICE_DT_GET(DT_NODELABEL(wdt0));
+static const struct device *const wdt0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
 
 int main(void)
 {
