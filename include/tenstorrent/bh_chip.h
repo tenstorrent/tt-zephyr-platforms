@@ -19,6 +19,9 @@ extern "C" {
 
 struct bh_straps {
 	struct gpio_dt_spec gpio6;
+	struct gpio_dt_spec gpio38;
+	struct gpio_dt_spec gpio39;
+	struct gpio_dt_spec gpio40;
 };
 
 struct bh_chip_config {
