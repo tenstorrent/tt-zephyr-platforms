@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # zephyr-keep-sorted-start
+add_subdirectory_ifdef(CONFIG_CLOCK_CONTROL clock_control)
 add_subdirectory_ifdef(CONFIG_FLASH flash)
 add_subdirectory_ifdef(CONFIG_GPIO gpio)
 add_subdirectory_ifdef(CONFIG_I2C i2c)
