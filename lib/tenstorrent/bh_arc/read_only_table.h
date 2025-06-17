@@ -21,6 +21,7 @@ typedef enum {
 int load_read_only_table(uint8_t *buffer_space, uint32_t buffer_size);
 const ReadOnly *get_read_only_table(void);
 PcbType get_pcb_type(void);
+bool is_p300_left_chip(void);
 uint32_t get_asic_location(void);
 
 #endif /* READ_ONLY_TABLE_H */
