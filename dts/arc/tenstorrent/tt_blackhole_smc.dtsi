@@ -95,6 +95,93 @@
 		ngpios = <16>;
 	};
 
+	ref_clk: ref_clk {
+		compatible = "fixed-clock";
+
+		clock-frequency = <50>;
+		#clock-cells = <0>;
+	};
+
+	pll0: pll@80020100 {
+		compatible = "tenstorrent,bh-clock-control";
+
+		reg = <0x80020100 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		refdiv = <2>;
+		postdiv = <0>;
+		fbdiv = <128>;
+		ctrl_bus1 = <0x18>;
+		ctrl_bus5 = <1>;
+		post_divs = <3 0 0 0>;
+		use_post_divs = <1 1 1 1>;
+	};
+
+	pll1: pll@80020200 {
+		compatible = "tenstorrent,bh-clock-control";
+
+		reg = <0x80020200 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		refdiv = <2>;
+		postdiv = <0>;
+		fbdiv = <192>;
+		ctrl_bus1 = <0x18>;
+		ctrl_bus5 = <1>;
+		post_divs = <5 4 23 0>;
+		use_post_divs = <1 1 1 1>;
+	};
+
+	pll2: pll@80020300 {
+		compatible = "tenstorrent,bh-clock-control";
+
+		reg = <0x80020300 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		refdiv = <2>;
+		postdiv = <0>;
+		fbdiv = <68>;
+		ctrl_bus1 = <0x18>;
+		ctrl_bus5 = <1>;
+		post_divs = <1 0 0 0>;
+		use_post_divs = <1 1 1 1>;
+	};
+
+	pll3: pll@80020400 {
+		compatible = "tenstorrent,bh-clock-control";
+
+		reg = <0x80020400 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		refdiv = <2>;
+		postdiv = <0>;
+		fbdiv = <120>;
+		ctrl_bus1 = <0x18>;
+		ctrl_bus5 = <1>;
+		post_divs = <3 0 0 0>;
+		use_post_divs = <1 1 1 1>;
+	};
+
+	pll4: pll@80020500 {
+		compatible = "tenstorrent,bh-clock-control";
+
+		reg = <0x80020500 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		refdiv = <2>;
+		postdiv = <0>;
+		fbdiv = <64>;
+		ctrl_bus1 = <0x18>;
+		ctrl_bus5 = <1>;
+		post_divs = <1 1 1 1>;
+		use_post_divs = <1 1 1 1>;
+	};
+
 	sysclk: system-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <500000000>;
