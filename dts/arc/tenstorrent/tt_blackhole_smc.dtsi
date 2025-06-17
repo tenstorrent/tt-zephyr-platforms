@@ -177,6 +177,76 @@
 		status = "disabled";
 	};
 
+	eth0: bh_eth0 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth1: bh_eth1 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth2: bh_eth2 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth3: bh_eth3 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth4: bh_eth4 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth5: bh_eth5 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth6: bh_eth6 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth7: bh_eth7 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth8: bh_eth8 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth9: bh_eth9 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth10: bh_eth10 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth11: bh_eth11 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth12: bh_eth12 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
+	eth13: bh_eth13 {
+		compatible = "tenstorrent,bh-eth";
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
