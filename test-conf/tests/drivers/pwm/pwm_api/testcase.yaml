@@ -1,0 +1,17 @@
+common:
+  tags:
+    - drivers
+    - pwm
+  depends_on: pwm
+tests:
+  drivers.pwm.api:
+    tags: smoke
+    platform_allow:
+      - tt_blackhole@p150a/tt_blackhole/dmc
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/pwm/pwm_api/\
+         boards/tt_blackhole_tt_blackhole_dmc.overlay"
+      - "EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/pwm/pwm_api/\
+         boards/tt_blackhole_tt_blackhole_dmc.conf"
