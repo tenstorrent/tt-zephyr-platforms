@@ -247,6 +247,46 @@
 		status = "disabled";
 	};
 
+	memc0: bh_memc0 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc1: bh_memc1 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc2: bh_memc2 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc3: bh_memc3 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc4: bh_memc4 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc5: bh_memc5 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc6: bh_memc6 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
+	memc7: bh_memc7 {
+		compatible = "tenstorrent,bh-memc";
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
