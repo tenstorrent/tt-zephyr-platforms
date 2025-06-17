@@ -95,6 +95,25 @@
 		ngpios = <16>;
 	};
 
+	ref_clk: ref_clk {
+		compatible = "fixed-clock";
+
+		clock-frequency = <1000000000>; /* 1 GHz */
+		#clock-cells = <0>;
+
+		status = "okay";
+	};
+
+	pll: pll@80020100 {
+		compatible = "tenstorrent,bh-pll";
+
+		reg = <0x80020100 0x100>;
+		clocks = <&ref_clk>;
+		#clock-cells = <0>;
+
+		status = "okay";
+	};
+
 	sysclk: system-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <500000000>;
