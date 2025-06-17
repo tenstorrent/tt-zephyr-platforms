@@ -1,9 +1,6 @@
 # TT-Zephyr-Platforms v18.5.0
 
-> [!NOTE]
-> This is a working draft for the up-coming v18.5.0 release.
-
-[comment]: <> (We are pleased to announce the release of TT Zephyr Platforms firmware version 18.5.0 🥳🎉.)
+We are pleased to announce the release of TT Zephyr Platforms firmware version 18.5.0 🥳🎉.
 
 Major enhancements with this release include:
 
@@ -11,15 +8,19 @@ Major enhancements with this release include:
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 
-### Stability Improvements
+## Stability Improvements
 
 * Update Blackhole ERISC FW to v1.4.1
   * Fixed bug in FW where training would stall when enabling training on P300 ports that do not connect
     outside of the Chip at all
+* Prevent invalid overwrite of DMC init time
+* Automatically recover firmware after hardware CI jobs
+* fan_ctrl: disable initial fan spin-up to 100%
+* pcie: drive perst of cem1 slot when operating in RC mode
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
-## API Changes
+[comment]: <> (H2 API Changes)
 
 [comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
 
@@ -41,19 +42,26 @@ Major enhancements with this release include:
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
-[comment]: <> (H2 Other Notable Changes, if applicable)
+## Other Notable Changes
 
 [comment]: <> (UL PCIe)
 [comment]: <> (UL DDR)
 [comment]: <> (UL Ethernet)
 [comment]: <> (UL Telemetry)
 [comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
+
+### Drivers
+
+* renamed `tenstorrent,blackhole-reset` to `tenstorrent,bh-reset` to be consistent with other compatibles
+* add `tenstorrent,bh-watchdog` driver + tests
+* add `tenstorrent,bh-gpio` driver + tests
+
 [comment]: <> (UL Libraries)
 
-[comment]: <> (H2 New Boards, if applicable)
+### Documentation
 
-[comment]: <> (Converted GPIO library driver to Zephyr driver)
+* added beginning of Sphinx documentation generation
+* updated board doc for `tt_blackhole`
 
 ## Migration guide
 
