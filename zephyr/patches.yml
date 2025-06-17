@@ -146,3 +146,11 @@ patches:
       Send "count" byte. The SMBus block write protocol requires this byte.
 
       Use I2C_MSG_WRITE named flag instead of 0.
+  - path: zephyr/stm32-block-read.patch
+    sha256sum: 15a6de40f59b4fdf0fd5a8292cd852b0627f2c3c794229d902c37ab9b70d2612
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Implement smbus_block_read for smbus_stm32
