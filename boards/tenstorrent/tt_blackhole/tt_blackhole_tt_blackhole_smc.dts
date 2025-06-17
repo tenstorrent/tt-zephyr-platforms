@@ -43,6 +43,48 @@
 
 &i2c1 {
 	status = "disabled";
+
+	regulator0: max20816@64 {
+		compatible = "maxim,max20816";
+		reg = <0x64>;
+		status = "disabled";
+	};
+
+	regulator1: max20816@65 {
+		compatible = "maxim,max20816";
+		reg = <0x65>;
+		status = "disabled";
+	};
+
+	regulator2: mpm3695@33 {
+		compatible = "mps,mpm3695";
+		reg = <0x33>;
+		status = "disabled";
+	};
+
+	regulator3: max20730@54 {
+		compatible = "maxim,max20730";
+		reg = <0x54>;
+		status = "disabled";
+	};
+
+	regulator4: max20730@55 {
+		compatible = "maxim,max20730";
+		reg = <0x55>;
+		status = "disabled";
+	};
+
+	regulator5: max20730@56 {
+		compatible = "maxim,max20730";
+		reg = <0x56>;
+		status = "disabled";
+	};
+
+	regulator6: max20730@57 {
+		compatible = "maxim,max20730";
+		reg = <0x57>;
+		status = "disabled";
+	};
 };
 
 &i2c2 {
