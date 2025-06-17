@@ -1,0 +1,10 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Analog devices max20816 step-down switching regulator.
+  See https://www.analog.com/en/products/max20816.html.
+
+compatible: "maxim,max20816"
+
+include: i2c-device.yaml
