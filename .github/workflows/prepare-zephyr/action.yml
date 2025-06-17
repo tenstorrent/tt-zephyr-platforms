@@ -50,6 +50,8 @@ runs:
           echo "Cleaning out old zephyr-sdk directory"
           rm -rf zephyr-sdk
         fi
+        # Remove any stale hal_stm32 blobs directories to avoid west blobs fetch errors
+        rm -Rf $(find * -path '*/hal/stm32/zephyr/blobs')
 
     # TODO: potentially improve caching strategy
     # Note: this step performs "west init", "west update", and installs zephyr python dependencies
