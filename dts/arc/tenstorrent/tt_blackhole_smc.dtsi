@@ -287,6 +287,16 @@
 		status = "disabled";
 	};
 
+	noc0: bh_noc0 {
+		compatible = "tenstorrent,noc";
+		status = "disabled";
+	};
+
+	noc1: bh_noc1 {
+		compatible = "tenstorrent,noc";
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
