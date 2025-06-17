@@ -5,9 +5,11 @@
  */
 
 #include "read_only_table.h"
+#include "reg.h"
 
 #include <pb_decode.h>
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/kernel.h>
 
 #define BOARDTYPE_ORION 0x37
 #define BOARDTYPE_P100  0x36
@@ -19,6 +21,8 @@
 #define BOARDTYPE_P300A 0x45
 #define BOARDTYPE_P300C 0x46
 #define BOARDTYPE_UBB   0x47
+
+#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
 
 static ReadOnly read_only_table;
 
@@ -96,7 +100,18 @@ PcbType get_pcb_type(void)
 	return pcb_type;
 }
 
+/* Reads GPIO6 to determine whether it is p300 left chip. GPIO6 is only set on p300 left chip. */
+bool is_p300_left_chip(void)
+{
+	return FIELD_GET(BIT(6), ReadReg(RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR));
+}
+
 uint32_t get_asic_location(void)
 {
-	return get_read_only_table()->asic_location;
+	if (get_pcb_type() == PcbTypeUBB) {
+		return get_read_only_table()->asic_location;
+	}
+
+	/* Single chip and p300 right are location 0. */
+	return is_p300_left_chip();
 }

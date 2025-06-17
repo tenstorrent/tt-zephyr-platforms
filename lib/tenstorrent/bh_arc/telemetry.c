@@ -25,12 +25,9 @@
 #include <string.h>
 
 #include <tenstorrent/post_code.h>
-#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
-
-#define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -281,14 +278,7 @@ static void write_static_telemetry(uint32_t app_version)
 	 * UpdateTelemetryNocTranslation.
 	 */
 
-	if (get_pcb_type() == PcbTypeP300) {
-		/* For the p300 a value of 1 is the left asic and 0 is the right */
-		telemetry[TAG_ASIC_LOCATION] =
-			FIELD_GET(BIT(6), ReadReg(RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR));
-	} else {
-		/* For all other supported boards this value is 0 */
-		telemetry[TAG_ASIC_LOCATION] = 0;
-	}
+	telemetry[TAG_ASIC_LOCATION] = get_asic_location();
 }
 
 static void update_telemetry(void)
