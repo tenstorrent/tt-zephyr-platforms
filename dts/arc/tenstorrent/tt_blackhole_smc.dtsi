@@ -365,5 +365,11 @@
 			rx-fifo-depth = <255>;
 			clocks = <&sysclk>;
 		};
+
+		cdt0: cdt@80300000 {
+			compatible = "tenstorrent,bh-chip-debug-trace";
+			reg = <0x80300000 0x100>;
+			status = "disabled";
+		};
 	};
 };
