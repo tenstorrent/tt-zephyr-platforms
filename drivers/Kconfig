@@ -4,6 +4,7 @@
 menu "Device Drivers"
 
 # zephyr-keep-sorted-start
+rsource "clock_control/Kconfig"
 rsource "flash/Kconfig"
 rsource "gpio/Kconfig"
 rsource "i2c/Kconfig"
