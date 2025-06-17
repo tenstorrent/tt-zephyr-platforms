@@ -1,0 +1,13 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,bh-chip-debug-trace"
+
+description: |
+  Tenstorrent Blackhole Chip Debug Trace
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
