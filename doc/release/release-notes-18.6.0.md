@@ -7,14 +7,16 @@
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 Performance Improvements, if applicable)
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
-[comment]: <> (H3 Stability Improvements, if applicable)
 
 ### Performance Improvements
 
 * Enabled Quad DDR SPI mode to speed up loading cmfw
+
+### Stability Improvements
+
+* Aligned ASIC location definition in the SPI table with that of the telemetry table
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
