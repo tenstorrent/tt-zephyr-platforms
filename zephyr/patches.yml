@@ -127,3 +127,12 @@ patches:
     merge-status: true
     comments: |
       Automatically generate a boolean Kconfig option for the active board revision.
+  - path: zephyr/pwm-api-tests-skip-zero-duty-cycle-config.patch
+    sha256sum: 2eb345136280cf586f037ed97983945cf051b35d0f5581f810048a2fceafe933
+    module: zephyr
+    author: Alexander Lay
+    email: alexanderlay@tenstorrent.com
+    date: 2025-06-18
+    upstreamable: true
+    comments: |
+      Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
