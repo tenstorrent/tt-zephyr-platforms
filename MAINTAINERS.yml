@@ -16,8 +16,7 @@ Release Notes:
   maintainers:
     - cfriedt
   files:
-    - doc/release/release-notes-*
-    - doc/release/release-notes-*
+    - doc/release/
   labels:
     - "release ✅"
 
