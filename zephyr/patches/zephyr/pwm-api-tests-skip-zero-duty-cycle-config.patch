@@ -1,0 +1,62 @@
+diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
+index fe56b715162..e2fa0f0fffd 100755
+--- a/scripts/ci/check_compliance.py
++++ b/scripts/ci/check_compliance.py
+@@ -1100,6 +1100,7 @@ flagged.
+         "SEL",
+         "SHIFT",
+         "SINGLE_APPLICATION_SLOT", # Used in sysbuild for MCUboot configuration
++        "SKIP_ZERO_DUTY_CYCLE_TEST",
+         "SOC_SERIES_", # Used as regex in scripts/utils/board_v1_to_v2.py
+         "SOC_WATCH",  # Issue 13749
+         "SOME_BOOL",
+diff --git a/tests/drivers/pwm/pwm_api/Kconfig b/tests/drivers/pwm/pwm_api/Kconfig
+new file mode 100644
+index 00000000000..c538b26dfe0
+--- /dev/null
++++ b/tests/drivers/pwm/pwm_api/Kconfig
+@@ -0,0 +1,14 @@
++# Copyright (c) 2025 Tenstorrent AI ULC
++#
++# SPDX-License-Identifier: Apache-2.0
++#
++
++mainmenu "PWM API test"
++
++config SKIP_ZERO_DUTY_CYCLE_TEST
++	bool "Skip zero duty cycle_test"
++    default n
++	help
++	  Will skip test attempting to set zero duty cycle
++
++source "Kconfig.zephyr"
+diff --git a/tests/drivers/pwm/pwm_api/src/test_pwm.c b/tests/drivers/pwm/pwm_api/src/test_pwm.c
+index 18e77c72590..ed6b51a08f5 100644
+--- a/tests/drivers/pwm/pwm_api/src/test_pwm.c
++++ b/tests/drivers/pwm/pwm_api/src/test_pwm.c
+@@ -163,10 +163,12 @@ ZTEST_USER(pwm_basic, test_pwm_nsec)
+ 				DEFAULT_PERIOD_NSEC, UNIT_NSECS) == TC_PASS, NULL);
+ 	k_sleep(K_MSEC(1000));
+ 
++#ifndef CONFIG_SKIP_ZERO_DUTY_CYCLE_TEST
+ 	/* Period : Pulse (2000000 : 0), unit (nsec). Voltage : 0V */
+ 	zassert_true(test_task(DEFAULT_PWM_PORT, DEFAULT_PERIOD_NSEC,
+ 				0, UNIT_NSECS) == TC_PASS, NULL);
+ 	k_sleep(K_MSEC(1000));
++#endif
+ }
+ 
+ ZTEST_USER(pwm_basic, test_pwm_cycle)
+@@ -181,10 +183,12 @@ ZTEST_USER(pwm_basic, test_pwm_cycle)
+ 				DEFAULT_PERIOD_CYCLE, UNIT_CYCLES) == TC_PASS, NULL);
+ 	k_sleep(K_MSEC(1000));
+ 
++#ifndef CONFIG_SKIP_ZERO_DUTY_CYCLE_TEST
+ 	/* Period : Pulse (64000 : 0), unit (cycle). Voltage : 0V */
+ 	zassert_true(test_task(DEFAULT_PWM_PORT, DEFAULT_PERIOD_CYCLE,
+ 				0, UNIT_CYCLES) == TC_PASS, NULL);
+ 	k_sleep(K_MSEC(1000));
++#endif
+ }
+ 
+ #if defined INVALID_PWM_PORT
