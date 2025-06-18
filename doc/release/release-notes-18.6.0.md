@@ -17,6 +17,7 @@ Major enhancements with this release include:
 ### Stability Improvements
 
 * Aligned ASIC location definition in the SPI table with that of the telemetry table
+* Implemented SDIF timeout for PVT sensor read
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
