@@ -1,0 +1,9 @@
+tests:
+  boards.tenstorrent.tt_blackhole.max6639:
+    tags:
+      - i2c
+      - mfd
+      - pwm
+      - sensor
+      - smoke
+    filter: dt_compat_enabled("maxim,max6639")
