@@ -40,7 +40,11 @@ Major enhancements with this release include:
 [comment]: <> (UL Ethernet)
 [comment]: <> (UL Telemetry)
 [comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
+
+### Drivers
+
+* add `maxim,max6639` driver + tests
+
 [comment]: <> (UL Libraries)
 
 [comment]: <> (H2 Other Notable Changes, if applicable)
