@@ -51,3 +51,11 @@ tests:
       - "EXTRA_DTC_OVERLAY_FILE=vuart.overlay"
     extra_overlay_confs:
       - vuart.conf
+  # demonstrates pinctrl driver, macros, etc, compile
+  app.e2e_smoke.pinctrl:
+    tags: e2e
+    build_only: true
+    extra_args:
+      - "EXTRA_DTC_OVERLAY_FILE=pinctrl.overlay"
+    extra_overlay_confs:
+      - pinctrl.conf
