@@ -163,7 +163,7 @@ Signed-off-by: Your Name <your@email.com>
 git checkout main
 git pull
 git tag -s -m "tt-firmware 1.2.3" v1.2.3
-git push --tags
+git push git@github.com:tenstorrent/tt-firmware.git v1.2.3
 ```
 
 8. Create a new `tt-firmware`
