@@ -57,3 +57,9 @@ An overview of required and recommended changes to make when migrating from the 
 The full ChangeLog from the previous v18.5.0 release can be found at the link below.
 
 https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.5.0...v18.6.0
+
+## MRISC 2.8 
+
+- Added Tuning setting for P300B cards
+- - dram_ocd_pulldown_offset = 3 (MR2[2:0]) (increase pull down driver strength)
+- - dram_data_termination_offset = 1 (MR3[2:0]) (decrease DRAM termination)
