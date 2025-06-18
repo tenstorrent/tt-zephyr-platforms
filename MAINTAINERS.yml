@@ -11,6 +11,448 @@ Continuous Integration:
   labels:
     - "ci ♾️"
 
+Bootloaders:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - tests/boot/
+  labels:
+    - "area: Bootloader"
+  tests:
+    - bootloader
+
+Benchmarks:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - tests/benchmarks/
+  labels:
+    - "area: Benchmarks"
+
+Debug:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - include/zephyr/debug/
+    # - subsys/debug/
+    # - tests/subsys/debug/
+    # - scripts/coredump/
+    # - samples/subsys/debug/
+    # - doc/services/debugging/
+  labels:
+    - "area: Debugging"
+  tests:
+    - debug
+
+Documentation:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - doc/
+    - README.md
+    - boards/index.rst
+  files-exclude:
+    - doc/release/
+  labels:
+    - "area: Documentation"
+
+"Drivers: Clock control":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/clock_control/
+    # - dts/bindings/clock/
+    # - include/zephyr/dt-bindings/clock/
+    # - tests/drivers/clock_control/
+    # - include/zephyr/drivers/clock_control/
+  labels:
+    - "area: Clock control"
+  tests:
+    - drivers.clock
+
+"Drivers: Coredump":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/coredump/
+    # - dts/bindings/coredump/
+    # - tests/drivers/coredump/
+  labels:
+    - "area: Coredump"
+  tests:
+    - debug.codedump
+
+"Drivers: Counter":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/counter/
+    # - tests/drivers/counter/
+    # - samples/drivers/counter/
+    # - tests/drivers/build_all/counter/
+  labels:
+    - "area: Counter"
+  tests:
+    - drivers.counter
+
+"Drivers: DMA":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/dma/
+    # - tests/drivers/dma/
+    # - include/zephyr/drivers/dma/
+    # - dts/bindings/dma/
+    # - include/zephyr/dt-bindings/dma/
+  labels:
+    - "area: DMA"
+  tests:
+    - drivers.dma
+
+"Drivers: Ethernet":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/ethernet/
+    # - include/zephyr/dt-bindings/ethernet/
+    # - tests/drivers/build_all/ethernet/
+    # - dts/bindings/ethernet/
+    # - tests/drivers/ethernet/
+    # - include/zephyr/drivers/ethernet/
+  labels:
+    - "area: Ethernet"
+  tests:
+    - net.ethernet
+
+"Drivers: Flash":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/flash/
+    # - dts/bindings/flash_controller/
+    # - include/zephyr/dt-bindings/flash_controller/
+    - tests/drivers/flash/
+    - test-conf/tests/drivers/flash/
+    # - include/zephyr/drivers/flash/
+    # - tests/drivers/build_all/flash/
+  labels:
+    - "area: Flash"
+  tests:
+    - drivers.flash
+
+"Drivers: GPIO":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/gpio/
+    - dts/bindings/gpio/
+    # - include/zephyr/drivers/gpio/
+    # - include/zephyr/dt-bindings/gpio/
+    # - tests/drivers/gpio/
+    - test-conf/tests/drivers/gpio/
+    # - tests/drivers/build_all/gpio/
+  labels:
+    - "area: GPIO"
+  tests:
+    - drivers.gpio
+
+"Drivers: HW Info":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/hwinfo/
+    # - dts/bindings/hwinfo/
+    # - tests/drivers/hwinfo/
+  labels:
+    - "area: HWINFO"
+  tests:
+    - drivers.hwinfo
+
+"Drivers: I2C":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/i2c/
+    # - include/zephyr/drivers/i2c/
+    # - dts/bindings/i2c/
+    # - tests/drivers/i2c/
+    # - include/zephyr/dt-bindings/i2c/
+    # - tests/boards/*/i2c/
+    # - tests/drivers/*/i2c/
+    # - samples/drivers/i2c/
+  labels:
+    - "area: I2C"
+  tests:
+    - drivers.i2c
+
+"Drivers: I3C":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+  # - drivers/i3c/
+  # - dts/bindings/i3c/
+  # - include/zephyr/drivers/i3c/
+  # - tests/drivers/build_all/i3c/
+  labels:
+    - "area: I3C"
+  tests:
+    - drivers.i3c
+
+"Drivers: JTAG":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/jtag/
+    - include/tenstorrent/jtag_bootrom.h
+    - include/zephyr/drivers/jtag.h
+    # - dts/bindings/jtag/
+    # - tests/drivers/jtag/
+    # - include/zephyr/dt-bindings/jtag/
+    - tests/lib/tenstorrent/jtag_bootrom/
+  labels:
+    - "area: JTAG"
+  tests:
+    - drivers.jtag
+
+"Drivers: Mbox":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/mbox/
+    # - samples/drivers/mbox/
+    # - dts/bindings/mbox/
+  labels:
+    - "area: mbox"
+  tests:
+    - sample.drivers.mbox
+
+"Drivers: MEMC":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/memc/
+    # - samples/drivers/memc/
+    # - tests/drivers/memc/
+    # - include/zephyr/dt-bindings/memory-controller/
+    # - dts/bindings/memory-controllers/
+  labels:
+    - "area: MEMC"
+  tests:
+    - samples.drivers.memc
+    - drivers.memc
+
+"Drivers: MFD":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+  # - drivers/mfd/
+  # - include/zephyr/drivers/mfd/
+  # - dts/bindings/mfd/
+  # - tests/drivers/build_all/mfd/
+  labels:
+    - "area: MFD"
+  tests:
+    - drivers.mfd
+
+"Drivers: PCI":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/pcie/
+    # - include/zephyr/drivers/pcie/
+    # - dts/bindings/pcie/
+    # - include/zephyr/dt-bindings/pcie/
+  labels:
+    - "area: PCI"
+
+"Drivers: Pin Control":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - include/zephyr/drivers/pinctrl/
+    # - drivers/pinctrl/
+    # - tests/drivers/pinctrl/
+    # - dts/bindings/pinctrl/
+    # - include/zephyr/dt-bindings/pinctrl/
+  labels:
+    - "area: Pinctrl"
+  tests:
+    - drivers.pinctrl
+
+"Drivers: PTP Clock":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/ptp_clock/
+  labels:
+    - "area: Clocks"
+  tests:
+    - drivers.ptp_clock
+
+"Drivers: PWM":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/pwm/
+    # - dts/bindings/pwm/
+    # - include/zephyr/dt-bindings/pwm/
+    # - tests/drivers/pwm/
+    # - include/zephyr/*/pwms.h
+    # - tests/drivers/build_all/pwm/
+    # - include/zephyr/drivers/pwm/
+  labels:
+    - "area: PWM"
+  tests:
+    - drivers.pwm
+
+"Drivers: Regulators":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/regulator/
+    # - include/zephyr/drivers/regulator/
+    # - include/zephyr/dt-bindings/regulator/
+    # - tests/drivers/regulator/
+    # - tests/drivers/build_all/regulator/
+    # - dts/bindings/regulator/
+  labels:
+    - "area: Regulators"
+  tests:
+    - drivers.regulator
+
+"Drivers: Reset":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/reset/
+    - dts/bindings/reset/
+    # - include/zephyr/dt-bindings/reset/
+  tests:
+    - drivers.reset
+
+"Drivers: Sensors":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/sensor/
+    # - samples/sensor/
+    # - tests/drivers/sensor/
+    - dts/bindings/sensor/
+    # - include/zephyr/drivers/sensor/
+    # - include/zephyr/dt-bindings/sensor/
+    # - tests/drivers/build_all/sensor/
+  labels:
+    - "area: Sensors"
+  tests:
+    - drivers.sensors
+
+"Drivers: Serial/UART":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/serial/
+    # - include/zephyr/drivers/uart/
+    - dts/bindings/serial/
+    # - samples/drivers/uart/
+    # - tests/drivers/uart/
+    - test-conf/tests/drivers/uart/
+    # - tests/drivers/build_all/uart/
+    # - include/zephyr/drivers/serial/
+  labels:
+    - "area: UART"
+  tests:
+    - drivers.uart
+
+"Drivers: SMBus":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/smbus/
+    # - dts/bindings/smbus/
+    # - samples/drivers/smbus/
+    # - tests/drivers/smbus/
+  labels:
+    - "area: SMBus"
+  tests:
+    - drivers.smbus
+
+"Drivers: SPI":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - drivers/spi/
+    # - tests/drivers/spi/
+    # - dts/bindings/spi/
+    # - include/zephyr/dt-bindings/spi/
+  labels:
+    - "area: SPI"
+  tests:
+    - drivers.spi
+
+"Drivers: Watchdog":
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - drivers/watchdog/
+    - dts/bindings/watchdog/
+    # - samples/drivers/watchdog/
+    # - tests/drivers/watchdog/
+    # - tests/drivers/build_all/watchdog/
+  labels:
+    - "area: Watchdog"
+  tests:
+    - drivers.watchdog
+
+IPC:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - include/zephyr/ipc/
+    # - samples/subsys/ipc/
+    # - subsys/ipc/
+    # - tests/subsys/ipc/
+    # - dts/bindings/ipc/
+    # - include/zephyr/dt-bindings/ipc_service/
+  description: |
+    Inter-Processor Communication
+  labels:
+    - "area: IPC"
+  tests:
+    - ipc
+
+MAINTAINERS file:
+  status: maintained
+  maintainers:
+    - cfriedt
+    - danieldegrasse
+    - afongTT
+  files:
+    - MAINTAINERS.yml
+  labels:
+    - "area: Process"
+  description: |
+    TT Zephyr Platforms Maintainers File
+
 Release Notes:
   status: maintained
   maintainers:
@@ -19,6 +461,38 @@ Release Notes:
     - doc/release/
   labels:
     - "release ✅"
+
+Samples:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - samples/
+    - test-conf/samples/
+  labels:
+    - "area: Samples"
+
+Telemetry:
+  # Maintainer needed!
+  status: odd fixes
+  files:
+    - .gitignore
+    # - samples/telemetry/
+  labels:
+    - "area: Telemetry"
+
+Tenstorrent Platforms:
+  # Maintainer needed!
+  status: odd fixes
+  # TODO: refine scripts, cmake directories
+  files:
+    - soc/tenstorrent/
+    - boards/tenstorrent/
+    - lib/tenstorrent/
+    # - samples/boards/tenstorrent/
+    - tests/boards/tenstorrent/
+    - tests/lib/tenstorrent/
+  labels:
+    - "platform: Tenstorrent"
 
 "West project: cmsis":
   status: odd fixes
