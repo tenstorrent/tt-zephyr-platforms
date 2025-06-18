@@ -12,6 +12,10 @@ Major enhancements with this release include:
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
 
+### Performance Improvements
+
+* Enabled Quad DDR SPI mode to speed up loading cmfw
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes
