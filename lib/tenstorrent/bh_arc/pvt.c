@@ -19,6 +19,8 @@
 #include "gpio.h"
 #include "telemetry.h"
 
+#define SDIF_DONE_TIMEOUT_MS 10
+
 #define PVT_CNTL_IRQ_EN_REG_ADDR             0x80080040
 #define PVT_CNTL_TS_00_IRQ_ENABLE_REG_ADDR   0x800800C0
 #define PVT_CNTL_PD_00_IRQ_ENABLE_REG_ADDR   0x80080340
@@ -67,6 +69,13 @@
 #define TS_HYSTERESIS_DELTA 5
 
 #define ALL_AGING_OSC 0x7 /* enable delay chain 19, 20, 21 for aging measurement */
+
+typedef enum {
+	TS = 0,
+	PD = 1,
+	VM = 2,
+} PvtType;
+
 typedef struct {
 	uint32_t ip_dat: 16;
 	uint32_t ip_type: 1;
@@ -424,17 +433,37 @@ void PVTInit(void)
 	Wait(100 * WAIT_1US);
 }
 
-ReadStatus ReadTS(uint32_t id, uint16_t *data)
+static uint32_t get_pvt_addr(PvtType type, uint32_t id, uint32_t base_addr)
+{
+	uint32_t offset;
+
+	if (type == VM) {
+		offset = VM_OFFSET;
+	} else {
+		offset = TS_PD_OFFSET;
+	}
+	return id * offset + base_addr;
+}
+
+static ReadStatus ReadPvtAutoMode(PvtType type, uint32_t id, uint16_t *data,
+				  uint32_t sdif_done_base_addr, uint32_t sdif_data_base_addr)
 {
 	uint32_t sdif_done;
+	uint64_t deadline = k_uptime_get() + SDIF_DONE_TIMEOUT_MS;
+	bool timeout = false;
 
 	do {
-		sdif_done = ReadReg(GET_TS_REG_ADDR(id, SDIF_DONE));
-	} while (!sdif_done);
+		sdif_done = ReadReg(get_pvt_addr(type, id, sdif_done_base_addr));
+		timeout = k_uptime_get() > deadline;
+	} while (!sdif_done && !timeout);
+
+	if (timeout) {
+		return SdifTimeout;
+	}
 
 	PVT_CNTL_TS_PD_SDIF_DATA_reg_u ts_sdif_data;
 
-	ts_sdif_data.val = ReadReg(GET_TS_REG_ADDR(id, SDIF_DATA));
+	ts_sdif_data.val = ReadReg(get_pvt_addr(type, id, sdif_data_base_addr));
 
 	if (ts_sdif_data.f.sample_fault) {
 		return SampleFault;
@@ -446,8 +475,14 @@ ReadStatus ReadTS(uint32_t id, uint16_t *data)
 	return ReadOk;
 }
 
+static ReadStatus ReadTS(uint32_t id, uint16_t *data)
+{
+	return ReadPvtAutoMode(TS, id, data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
+			       PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
+}
+
 /* can not readback supply check in auto mode, use manual read instead */
-ReadStatus ReadVM(uint32_t id, uint16_t *data)
+static ReadStatus ReadVM(uint32_t id, uint16_t *data)
 {
 	/* ignore ip_done in auto_mode */
 	IpDataRegU ip_data;
@@ -464,25 +499,10 @@ ReadStatus ReadVM(uint32_t id, uint16_t *data)
 	return ReadOk;
 }
 
-ReadStatus ReadPD(uint32_t id, uint16_t *data)
+static ReadStatus ReadPD(uint32_t id, uint16_t *data)
 {
-	uint32_t sdif_done;
-
-	do {
-		sdif_done = ReadReg(GET_PD_REG_ADDR(id, SDIF_DONE));
-	} while (!sdif_done);
-
-	PVT_CNTL_TS_PD_SDIF_DATA_reg_u pd_sdif_data;
-
-	pd_sdif_data.val = ReadReg(GET_PD_REG_ADDR(id, SDIF_DATA));
-	if (pd_sdif_data.f.sample_fault) {
-		return SampleFault;
-	}
-	if (pd_sdif_data.f.sample_type != ValidData) {
-		return IncorrectSampleType;
-	}
-	*data = pd_sdif_data.f.sample_data;
-	return ReadOk;
+	return ReadPvtAutoMode(PD, id, data, PVT_CNTL_PD_00_SDIF_DONE_REG_ADDR,
+			       PVT_CNTL_PD_00_SDIF_DATA_REG_ADDR);
 }
 
 float GetAvgChipTemp(void)
@@ -529,12 +549,12 @@ static uint8_t read_ts_handler(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
 	uint32_t id = request->data[1];
-	uint16_t dout;
+	uint16_t dout = 0;
 
-	ReadTS(id, &dout);
+	uint8_t ret = ReadTS(id, &dout);
 	response->data[1] = dout;
 	response->data[2] = ConvertFloatToTelemetry(DoutToTemp(dout));
-	return 0;
+	return ret;
 }
 
 /* return selected PD raw reading and frequency in telemetry format */
@@ -546,13 +566,13 @@ static uint8_t read_pd_handler(uint32_t msg_code, const struct request *request,
 	SelectDelayChainAndStartPDConv(delay_chain);
 
 	uint32_t id = request->data[2];
-	uint16_t dout;
+	uint16_t dout = 0;
 
-	ReadPD(id, &dout);
+	uint8_t ret = ReadPD(id, &dout);
 
 	response->data[1] = dout;
 	response->data[2] = ConvertFloatToTelemetry(DoutToFreq(dout));
-	return 0;
+	return ret;
 }
 
 /* return selected VM raw reading and voltage in mV */
@@ -560,12 +580,12 @@ static uint8_t read_vm_handler(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
 	uint32_t id = request->data[1];
-	uint16_t dout;
+	uint16_t dout = 0;
 
-	ReadVM(id, &dout);
+	uint8_t ret = ReadVM(id, &dout);
 	response->data[1] = dout;
 	response->data[2] = DoutToVolt(dout) * 1000;
-	return 0;
+	return ret;
 }
 
 REGISTER_MESSAGE(MSG_TYPE_READ_TS, read_ts_handler);

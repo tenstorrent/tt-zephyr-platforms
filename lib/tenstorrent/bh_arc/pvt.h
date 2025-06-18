@@ -16,12 +16,10 @@ typedef enum {
 	ReadOk = 0,
 	SampleFault = 1,
 	IncorrectSampleType = 2,
+	SdifTimeout = 3,
 } ReadStatus;
 
 void CATInit(void);
 void PVTInit(void);
-ReadStatus ReadTS(uint32_t id, uint16_t *data);
-ReadStatus ReadVM(uint32_t id, uint16_t *data);
-ReadStatus ReadPD(uint32_t id, uint16_t *data);
 float GetAvgChipTemp(void);
 #endif
