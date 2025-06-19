@@ -73,6 +73,9 @@ config 2ND_LVL_INTR_03_OFFSET
 config GPIO
 	default y
 
+config PLL
+	default y
+
 # Needed for octal SPI. WH doesn't actually have this but BH will.
 # config CONFIG_SPI_EXTENDED_MODES
 #	default y

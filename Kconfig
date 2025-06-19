@@ -1,6 +1,10 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+config PLL
+	bool "Enable Tenstorrent Blackhole PLL"
+	default y
+
 rsource "drivers/Kconfig"
 rsource "lib/Kconfig"
 
