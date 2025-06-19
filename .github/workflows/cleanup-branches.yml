@@ -4,11 +4,6 @@ on:
   schedule:
     - cron: '0 5 * * *'
   workflow_dispatch:
-    inputs:
-      dry_run:
-        required: true
-        type: boolean
-        default: true
 
 jobs:
   cleanup-branches:
@@ -33,10 +28,7 @@ jobs:
             fi
 
             echo -e "  \033[31mDeleting\033[0m"
-
-            if [[ "${{ github.event.inputs.dry_run }}" == "false" ]]; then
-              git push origin --delete "$branch"
-            fi
+            git push origin --delete "$branch"
           done
 
           echo "Done"
