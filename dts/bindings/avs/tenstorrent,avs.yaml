@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,avs"
+
+description: |
+  Tenstorrent AVS driver
+
+  The AVS (Adaptive Voltage Scaling) driver is used for dynamically scaling supply voltage.
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
