@@ -8,6 +8,8 @@ on:
 jobs:
   cleanup-branches:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,5 +34,3 @@ jobs:
           done
 
           echo "Done"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
