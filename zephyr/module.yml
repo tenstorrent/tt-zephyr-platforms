@@ -78,9 +78,9 @@ blobs:
     description: "Ethernet SerDes firmware"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_init.bin
-    sha256: 97372fed110dd3fe8d3feba4260e6f48db8e30b0bf08ced31a0628b0ba4ed7e8
+    sha256: 16167dd3e5eeae992f1183c894b2f8c1d9c6fe23d8cb0bea5b58d3158aac87eb
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
@@ -89,7 +89,7 @@ blobs:
   - path: tt_blackhole_gddr_params_ORION.bin
     sha256: 92741eb2d8a2f96ce282cd183917473eebcfd6df1c98354da30cff404883e8b5
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_ORION.bin"
@@ -98,7 +98,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P100A.bin
     sha256: 15ea0c60b8aaa942076b733f93f5e1c727ffe85cbcb77bc7cc175a0a79e450cc
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100A.bin"
@@ -107,7 +107,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P100B.bin
     sha256: 70cfed7706edae5a8ef84649da8af48efb3e1ad4cf9cd9e6bd0e1286248b7ae7
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100B.bin"
@@ -116,7 +116,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P100.bin
     sha256: a638142ae024adc9cd188f1f7fc3be3e35f65345e35fe5c57dbca0fc8133d259
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100.bin"
@@ -125,7 +125,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P150A.bin
     sha256: 5b30dc6636021e8b2e43d9bedab98e09dfaedf309c932485dbc355bddaf46817
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150A.bin"
@@ -134,7 +134,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P150B.bin
     sha256: feaebc46eddba8b1871441c9818ce549304fdaef9e5a602790ffd0357932f562
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150B.bin"
@@ -143,7 +143,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P150C.bin
     sha256: 737b66cfb5b55f083473af38d2bc2c7986a76b292b03a6a057ffd509c0101597
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150C.bin"
@@ -152,7 +152,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P300A.bin
     sha256: bb4ceb56071e5678f76cbafba1557404bef8d846efb94ecf27bdd93d258238c6
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300A.bin"
@@ -161,7 +161,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P300B.bin
     sha256: f3f0ca5b373aba73432f5a7eb0594bda5b3e18537f5029bc84ba7544c8d55512
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300B.bin"
@@ -170,7 +170,7 @@ blobs:
   - path: tt_blackhole_gddr_params_P300C.bin
     sha256: 510db7eed53a806eb31a58437de6e493966d1b2420816d365a87ee3d96c9c1bd
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300C.bin"
@@ -179,7 +179,7 @@ blobs:
   - path: tt_blackhole_gddr_params_GALAXY.bin
     sha256: 95b97f12bd66bf9d7681c5bc47711779dc30c5f6f2e52d67ec76488743294c21
     type: img
-    version: '2.7'
+    version: '2.8'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_GALAXY.bin"
