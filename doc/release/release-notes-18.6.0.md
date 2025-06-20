@@ -21,6 +21,10 @@ Major enhancements with this release include:
 
 * Aligned ASIC location definition in the SPI table with that of the telemetry table
 * Implemented SDIF timeout for PVT sensor read
+* Update Blackhole MRISC FW to v2.8
+  * Added Tuning setting for P300B cards
+  * * dram_ocd_pulldown_offset = 3 (MR2[2:0]) (increase pull down driver strength)
+  * * dram_data_termination_offset = 1 (MR3[2:0]) (decrease DRAM termination)
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
