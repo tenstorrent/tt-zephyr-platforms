@@ -94,11 +94,10 @@
 
 #define TENSTORRENT_IOCTL_MAGIC           0xFA
 #define TENSTORRENT_IOCTL_GET_DEVICE_INFO _IO(TENSTORRENT_IOCTL_MAGIC, 0)
-#define TENSTORRENT_IOCTL_QUERY_MAPPINGS  _IO(TENSTORRENT_IOCTL_MAGIC, 2)
-
-#define NUM_TENSTORRENT_QUERY_MAPPINGS   8
-#define TENSTORRENT_MAPPING_RESOURCE0_UC 1
-#define TENSTORRENT_MAPPING_RESOURCE0_WC 2
+#define TENSTORRENT_IOCTL_GET_DRIVER_INFO _IO(TENSTORRENT_IOCTL_MAGIC, 5)
+#define TENSTORRENT_IOCTL_ALLOCATE_TLB    _IO(TENSTORRENT_IOCTL_MAGIC, 11)
+#define TENSTORRENT_IOCTL_FREE_TLB        _IO(TENSTORRENT_IOCTL_MAGIC, 12)
+#define TENSTORRENT_IOCTL_CONFIGURE_TLB   _IO(TENSTORRENT_IOCTL_MAGIC, 13)
 
 enum tlb_order {
 	TLB_ORDER_RELAXED,        /* Unposted AXI Writes. Relaxed NOC ordering */
@@ -130,43 +129,83 @@ struct tenstorrent_get_device_info {
 	struct tenstorrent_get_device_info_out out;
 };
 
-struct tenstorrent_mapping {
-	uint32_t mapping_id;
-	uint32_t: 32;
-	uint64_t mapping_base;
-	uint64_t mapping_size;
+struct tenstorrent_get_driver_info_inp {
+	uint32_t output_size_bytes;
 };
 
-struct tenstorrent_query_mappings_inp {
-	uint32_t output_mapping_count;
-	uint32_t: 32;
+struct tenstorrent_get_driver_info_out {
+	uint32_t output_size_bytes;
+	/* IOCTL API version */
+	uint32_t driver_version;
+	uint8_t driver_version_major;
+	uint8_t driver_version_minor;
+	uint8_t driver_version_patch;
+	uint8_t reserved0;
 };
 
-struct tenstorrent_query_mappings_out {
-	struct tenstorrent_mapping mappings[0];
+struct tenstorrent_get_driver_info {
+	struct tenstorrent_get_driver_info_inp in;
+	struct tenstorrent_get_driver_info_out out;
 };
 
-struct tenstorrent_query_mappings {
-	struct tenstorrent_query_mappings_inp in;
-	struct tenstorrent_query_mappings_out out;
+struct tenstorrent_allocate_tlb_inp {
+	uint64_t size;
+	uint64_t reserved;
 };
 
-struct tlb_2m {
-	uint64_t address: 43;
-	uint64_t x_end: 6;
-	uint64_t y_end: 6;
-	uint64_t x_start: 6;
-	uint64_t y_start: 6;
-	uint64_t noc: 2;
-	uint64_t multicast: 1;
-	uint64_t ordering: 2;
-	uint64_t linked: 1;
-	uint64_t use_static_vc: 1;
-	uint64_t stream_header: 1;
-	uint64_t static_vc: 3;
-	uint64_t: 18; /* Reserved - RAZ / WAZ */
-} __packed __aligned(4);
-_Static_assert(sizeof(struct tlb_2m) == TLB_2M_REG_SIZE, "incongruent struct tlb_2m size");
+struct tenstorrent_allocate_tlb_out {
+	uint32_t id;
+	uint32_t reserved0;
+	uint64_t mmap_offset_uc;
+	uint64_t mmap_offset_wc;
+	uint64_t reserved1;
+};
+
+struct tenstorrent_allocate_tlb {
+	struct tenstorrent_allocate_tlb_inp in;
+	struct tenstorrent_allocate_tlb_out out;
+};
+
+struct tenstorrent_free_tlb_inp {
+	uint32_t id;
+};
+
+struct tenstorrent_free_tlb_out {
+};
+
+struct tenstorrent_free_tlb {
+	struct tenstorrent_free_tlb_inp in;
+	struct tenstorrent_free_tlb_out out;
+};
+
+struct tenstorrent_noc_tlb_config {
+	uint64_t addr;
+	uint16_t x_end;
+	uint16_t y_end;
+	uint16_t x_start;
+	uint16_t y_start;
+	uint8_t noc;
+	uint8_t mcast;
+	uint8_t ordering;
+	uint8_t linked;
+	uint8_t static_vc;
+	uint8_t reserved0[3];
+	uint32_t reserved1[2];
+};
+
+struct tenstorrent_configure_tlb_inp {
+	uint32_t id;
+	struct tenstorrent_noc_tlb_config config;
+};
+
+struct tenstorrent_configure_tlb_out {
+	uint64_t reserved;
+};
+
+struct tenstorrent_configure_tlb {
+	struct tenstorrent_configure_tlb_inp in;
+	struct tenstorrent_configure_tlb_out out;
+};
 
 struct console {
 	bool stop;
@@ -175,9 +214,9 @@ struct console {
 	uint32_t addr;  /* vuart discovery address */
 	uint32_t magic; /* vuart magic */
 	uint16_t pci_device_id;
-	uint8_t tlb_id;
-	volatile uint8_t *tlb;            /* 2MiB tlb window */
-	volatile struct tlb_2m *tlb_regs; /* 4kiB tlb register space */
+	uint32_t tlb_id;
+	volatile uint8_t *tlb; /* 2MiB tlb window */
+
 	/*
 	 * TODO: consider associating stream numbers with rings. In firmware, a mapped ring can
 	 * easily have multiple streams and they don't need to be contiguous. Just use an array of
@@ -214,16 +253,6 @@ static int verbose;
 		printf(fmt "\n", ##__VA_ARGS__);                                                   \
 	}
 
-static const char *tlb2m2str(volatile struct tlb_2m *reg)
-{
-	static char buf[128] = {0};
-	volatile uint32_t *data = (volatile uint32_t *)reg;
-
-	snprintf(buf, sizeof(buf), "(0x%x, 0x%x, 0x%x)", data[0], data[1], data[2]);
-
-	return buf;
-}
-
 static void console_init(struct console *cons)
 {
 	*cons = (struct console){
@@ -232,37 +261,48 @@ static void console_init(struct console *cons)
 		.addr = UART_TT_VIRT_DISCOVERY_ADDR,
 		.magic = UART_TT_VIRT_MAGIC,
 		.pci_device_id = BH_SCRAPPY_PCI_DEVICE_ID,
-		.tlb_id = BH_2M_TLB_UC_DYNAMIC_START + 1,
 		.tlb = MAP_FAILED,
-		.tlb_regs = MAP_FAILED,
 	};
 }
 
-static uint64_t program_noc(const struct console *cons, uint32_t x, uint32_t y,
-			    enum tlb_order order, uint64_t phys)
+static int program_noc(const struct console *cons, uint32_t x, uint32_t y, enum tlb_order order,
+		       uint64_t phys, uint64_t *adjust)
 {
-	volatile struct tlb_2m *const reg = &cons->tlb_regs[cons->tlb_id];
+	struct tenstorrent_configure_tlb tlb = {.in.id = cons->tlb_id,
+						.in.config = (struct tenstorrent_noc_tlb_config){
+							.addr = phys & ~TLB_2M_WINDOW_MASK,
+							.x_end = x,
+							.y_end = y,
+							.ordering = order,
+						}};
 
-	*reg = (struct tlb_2m){
-		.address = phys >> TLB_2M_SHIFT,
-		.x_end = x,
-		.y_end = y,
-		.ordering = order,
-	};
+	if (ioctl(cons->fd, TENSTORRENT_IOCTL_CONFIGURE_TLB, &tlb) < 0) {
+		E("ioctl(TENSTORRENT_IOCTL_GET_DRIVER_INFO): %s", strerror(errno));
+		return -errno;
+	}
 
-	uint64_t adjust = phys & TLB_2M_WINDOW_MASK;
+	*adjust = phys & (uint64_t)TLB_2M_WINDOW_MASK;
 
-	D(2, "tlb[%u]: %s", cons->tlb_id, tlb2m2str(reg));
+	/* There isn't a new API for getting the current TLB programming */
+	/* D(2, "tlb[%u]: %s", cons->tlb_id, tlb2m2str(reg)); */
+	D(2, "tlb[%u]: %lx", cons->tlb_id, phys & ~TLB_2M_WINDOW_MASK);
 
-	return adjust;
+	return 0;
 }
 
-static uint32_t arc_read32(const struct console *cons, uint32_t phys)
+static int64_t arc_read32(const struct console *cons, uint32_t phys)
 {
-	uint64_t adjust = program_noc(cons, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys);
+	uint64_t adjust;
+	int ret = program_noc(cons, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys, &adjust);
+
+	if (ret) {
+		E("failed to configure tlb to point to ARC addr %x", phys);
+		return ret;
+	}
 	uint32_t *virt = (uint32_t *)(cons->tlb + adjust);
 
-	D(2, "32-bit read from (%p,%p) (phys,virt)", (void *)(uintptr_t)phys, virt);
+	D(2, "32-bit read from (%p,%p) %p (phys,virt)", (void *)(uintptr_t)phys, virt,
+	  (void *)(uintptr_t)adjust);
 
 	return *virt;
 }
@@ -332,40 +372,20 @@ static int open_tt_dev(struct console *cons)
 		return -ENODEV;
 	}
 
-	uint64_t buf[(sizeof(struct tenstorrent_query_mappings) +
-		      NUM_TENSTORRENT_QUERY_MAPPINGS * sizeof(struct tenstorrent_mapping)) /
-		     sizeof(uint64_t)] = {0};
+	struct tenstorrent_get_driver_info driver_info = {
+		.in.output_size_bytes = sizeof(struct tenstorrent_get_driver_info_out),
+	};
 
-	struct tenstorrent_query_mappings *const mapping = (struct tenstorrent_query_mappings *)buf;
-
-	mapping->in.output_mapping_count = NUM_TENSTORRENT_QUERY_MAPPINGS;
-
-	struct tenstorrent_mapping *const omap = mapping->out.mappings;
-
-	if (ioctl(cons->fd, TENSTORRENT_IOCTL_QUERY_MAPPINGS, mapping) < 0) {
-		E("ioctl(TENSTORRENT_IOCTL_QUERY_MAPPINGS): %s", strerror(errno));
+	if (ioctl(cons->fd, TENSTORRENT_IOCTL_GET_DRIVER_INFO, &driver_info) < 0) {
+		E("ioctl(TENSTORRENT_IOCTL_GET_DRIVER_INFO): %s", strerror(errno));
 		return -errno;
 	}
 
-	for (int i = 0; i < NUM_TENSTORRENT_QUERY_MAPPINGS; ++i) {
-		const char *mapping_name = NULL;
-
-		if (omap[i].mapping_id == TENSTORRENT_MAPPING_RESOURCE0_WC) {
-			cons->wc_mapping_base = omap[i].mapping_base;
-			mapping_name = "wc_mapping_base";
-		} else if (omap[i].mapping_id == TENSTORRENT_MAPPING_RESOURCE0_UC) {
-			cons->uc_mapping_base = omap[i].mapping_base;
-			mapping_name = "uc_mapping_base";
-		}
-
-		if (mapping_name != NULL) {
-			D(2, "%s: id: %u base: 0x%010" PRIx64 " size: 0x%" PRIx64, mapping_name,
-			  omap[i].mapping_id, omap[i].mapping_base, omap[i].mapping_size);
-		}
-
-		if (omap[i].mapping_size == 0) {
-			continue;
-		}
+	if (driver_info.out.driver_version < 2) {
+		E("Need tlb allocation API requires at least driver version 2; have driver "
+		  "version %d",
+		  driver_info.out.driver_version);
+		return -EFAULT;
 	}
 
 	return 0;
@@ -400,96 +420,52 @@ static int map_tlb(struct console *cons)
 		return 0;
 	}
 
-	uint64_t offset = cons->tlb_id * TLB_2M_WINDOW_SIZE;
+	struct tenstorrent_allocate_tlb tlb = {.in.size = TLB_2M_WINDOW_SIZE};
+
+	if (ioctl(cons->fd, TENSTORRENT_IOCTL_ALLOCATE_TLB, &tlb) < 0) {
+		E("ioctl(TENSTORRENT_IOCTL_ALLOCATE_TLB): %s", strerror(errno));
+		return -errno;
+	}
 
 	cons->tlb = mmap(NULL, TLB_2M_WINDOW_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, cons->fd,
-			 cons->uc_mapping_base + offset);
+			 tlb.out.mmap_offset_uc);
 	if (cons->tlb == MAP_FAILED) {
 		E("%s", strerror(errno));
 		return -errno;
 	}
 
+	cons->tlb_id = tlb.out.id;
+
 	D(1, "mapped %zu@%08x to %zu@%p for 2MiB TLB window %d", (size_t)TLB_2M_WINDOW_SIZE,
-	  (uint32_t)offset, (size_t)TLB_2M_WINDOW_SIZE, cons->tlb, cons->tlb_id);
+	  (uint32_t)tlb.out.mmap_offset_uc, (size_t)TLB_2M_WINDOW_SIZE, cons->tlb, cons->tlb_id);
 
 	return 0;
 }
 
-static void unmap_tlb(struct console *cons)
+static int unmap_tlb(struct console *cons)
 {
 	if (cons->tlb == MAP_FAILED) {
 		/* not currently mapped */
-		return;
+		return 0;
 	}
 
 	if (munmap((void *)cons->tlb, TLB_2M_WINDOW_SIZE) < 0) {
 		E("%s", strerror(errno));
-		return;
+		return -EFAULT;
 	}
 
 	D(1, "unmapped %zu@%p", (size_t)TLB_2M_WINDOW_SIZE, cons->tlb);
 
+	struct tenstorrent_free_tlb tlb = {.in.id = cons->tlb_id};
+
+	if (ioctl(cons->fd, TENSTORRENT_IOCTL_FREE_TLB, &tlb) < 0) {
+		E("ioctl(TENSTORRENT_IOCTL_ALLOCATE_TLB): %s", strerror(errno));
+		return -errno;
+	}
+
 	cons->tlb = MAP_FAILED;
-}
-
-static int map_tlb_regs(struct console *cons)
-{
-	/*
-	 * assert that TLB_CONFIG_ADDR is already aligned
-	 * means we don't need an 'adjust' or 'offset' variables
-	 */
-	_Static_assert((TLB_CONFIG_ADDR & PAGE_SIZE) == 0, "Invalid tlb config addr");
-
-	if (cons->tlb_regs != MAP_FAILED) {
-		/* already mapped? cons improperly initialized? */
-		return 0;
-	}
-
-	cons->tlb_regs = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, cons->fd,
-			      TLB_CONFIG_ADDR);
-	if (cons->tlb_regs == MAP_FAILED) {
-		E("%s", strerror(errno));
-		return -EIO;
-	}
-
-	D(1, "mapped %zu@%08x to %zu@%p", (size_t)PAGE_SIZE, TLB_CONFIG_ADDR, (size_t)PAGE_SIZE,
-	  cons->tlb_regs);
-
-	if (verbose > 0) {
-		for (int i = 0; i < BH_NUM_TLBS; ++i) {
-			volatile uint32_t *data = (volatile uint32_t *)&cons->tlb_regs[i];
-
-			if ((data[0] == 0) && (data[1] == 0) && (data[2] == 0)) {
-				continue;
-			}
-
-			if ((data[0] == (uint32_t)-1) && (data[1] == (uint32_t)-1) &&
-			    (data[2] == (uint32_t)-1)) {
-				continue;
-			}
-
-			D(2, "tlb[%u]: %s", i, tlb2m2str(&cons->tlb_regs[i]));
-		}
-	}
 
 	return 0;
-}
-
-static void unmap_tlb_regs(struct console *cons)
-{
-	if (cons->tlb_regs == MAP_FAILED) {
-		/* not currently mapped */
-		return;
-	}
-
-	if (munmap((void *)cons->tlb_regs, PAGE_SIZE) < 0) {
-		E("%s", strerror(errno));
-		return;
-	}
-
-	D(1, "unmapped %zu@%p", (size_t)PAGE_SIZE, cons->tlb_regs);
-
-	cons->tlb_regs = MAP_FAILED;
 }
 
 static int check_post_code(const struct console *cons)
@@ -507,7 +483,13 @@ static int check_post_code(const struct console *cons)
 
 	_Static_assert(sizeof(val) == sizeof(uint32_t), "invalid size of val");
 
-	val.data = arc_read32(cons, STATUS_POST_CODE_REG_ADDR);
+	int64_t ret = arc_read32(cons, STATUS_POST_CODE_REG_ADDR);
+
+	if (ret < 0) {
+		E("failed to configure tlb to point to ARC addr %d", STATUS_POST_CODE_REG_ADDR);
+		return ret;
+	}
+	val.data = ret;
 	if (val.prefix != POST_CODE_PREFIX) {
 		E("prefix 0x%04x does not match expected prefix 0x%04x", val.prefix,
 		  POST_CODE_PREFIX);
@@ -525,13 +507,23 @@ static int find_vuart(struct console *cons)
 	uint32_t vuart_magic = (vuart == NULL) ? 0 : vuart->magic;
 
 	if (vuart_magic != cons->magic) {
-		cons->vuart_addr = arc_read32(cons, cons->addr);
+		int64_t ret = arc_read32(cons, cons->addr);
+
+		if (ret < 0) {
+			return ret;
+		}
+		cons->vuart_addr = ret;
 		D(2, "discovery address: 0x%08x", cons->vuart_addr);
 
-		cons->vuart =
-			(volatile struct tt_vuart *)(cons->tlb + program_noc(cons, ARC_X, ARC_Y,
-									     TLB_ORDER_STRICT,
-									     cons->vuart_addr));
+		uint64_t adjust;
+
+		ret = program_noc(cons, ARC_X, ARC_Y, TLB_ORDER_STRICT, cons->vuart_addr, &adjust);
+		if (ret) {
+			E("failed to program NOC to point to the virtual uart (%x)",
+			  cons->vuart_addr);
+			return ret;
+		}
+		cons->vuart = (volatile struct tt_vuart *)(cons->tlb + adjust);
 
 		if (cons->vuart->magic != cons->magic) {
 			E("0x%08x does not match expected magic 0x%08x", cons->vuart->magic,
@@ -662,11 +654,6 @@ static int loop(struct console *const cons)
 		goto out;
 	}
 
-	ret = map_tlb_regs(cons);
-	if (ret < 0) {
-		goto out;
-	}
-
 	ret = map_tlb(cons);
 	if (ret < 0) {
 		goto out;
@@ -756,7 +743,6 @@ out:
 	termio_cooked(cons);
 	lose_vuart(cons);
 	unmap_tlb(cons);
-	unmap_tlb_regs(cons);
 	close_tt_dev(cons);
 
 	return ret;
@@ -777,11 +763,10 @@ static void usage(const char *progname)
 	  "-i <pci_device_id> : pci device id (default: %04x)\n"
 	  "-m <magic>         : vuart magic (default: %08x)\n"
 	  "-q                 : decrease debug verbosity\n"
-	  "-t <tlb_id>        : 2MiB TLB index (default: %u)\n"
 	  "-v                 : increase debug verbosity\n"
 	  "-w <timeout>       : wait timeout ms and exit\n",
 	  __func__, progname, UART_TT_VIRT_DISCOVERY_ADDR, TT_DEVICE, BH_SCRAPPY_PCI_DEVICE_ID,
-	  UART_TT_VIRT_MAGIC, BH_2M_TLB_UC_DYNAMIC_START + 1);
+	  UART_TT_VIRT_MAGIC);
 }
 
 static int parse_args(struct console *cons, int argc, char **argv)
@@ -839,22 +824,6 @@ static int parse_args(struct console *cons, int argc, char **argv)
 		case 'q':
 			--verbose;
 			break;
-		case 't': {
-			long tlb_id;
-
-			errno = 0;
-			tlb_id = strtol(optarg, NULL, 0);
-			if ((tlb_id < BH_2M_TLB_UC_DYNAMIC_START) ||
-			    (tlb_id > BH_2M_TLB_UC_DYNAMIC_END)) {
-				errno = ERANGE;
-			}
-			if (errno != 0) {
-				E("invalid operand to -i %s: %s", optarg, strerror(errno));
-				usage(basename(argv[0]));
-				return -errno;
-			}
-			cons->tlb_id = (uint8_t)tlb_id;
-		} break;
 		case 'v':
 			++verbose;
 			break;
