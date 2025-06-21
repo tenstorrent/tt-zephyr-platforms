@@ -5,8 +5,8 @@
  */
 
 #include <zephyr/sys/util.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include "harvesting.h"
-#include "fw_table.h"
 #include "functional_efuse.h"
 #include "noc.h"
 
@@ -20,6 +20,8 @@ TileEnable tile_enable = {
 	.l2cpu_enabled = BIT_MASK(4),
 	.pcie_enabled = BIT_MASK(2),
 };
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 static bool FusesValid(void)
 {
@@ -175,7 +177,7 @@ void CalculateHarvesting(void)
 	tile_enable.l2cpu_enabled = BIT_MASK(4);
 	tile_enable.pcie_enabled = BIT_MASK(2);
 
-	if (get_fw_table()->feature_enable.harvesting_en) {
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.harvesting_en) {
 		if (FusesValid()) {
 			HarvestingATEFuses();
 			HarvestingSLTFuses();
@@ -195,9 +197,11 @@ void CalculateHarvesting(void)
 		uint8_t disabled_tensix_cols = 14 - POPCOUNT(tile_enable.tensix_col_enabled);
 
 		if (disabled_tensix_cols <
-			get_fw_table()->product_spec_harvesting.tensix_col_disable_count) {
+		    tt_bh_fwtable_get_fw_table(fwtable_dev)
+			    ->product_spec_harvesting.tensix_col_disable_count) {
 			uint8_t tensix_soft_disable =
-				get_fw_table()->product_spec_harvesting.tensix_col_disable_count -
+				tt_bh_fwtable_get_fw_table(fwtable_dev)
+					->product_spec_harvesting.tensix_col_disable_count -
 				disabled_tensix_cols;
 
 			for (int i = 13; i >= 0 && tensix_soft_disable > 0; i--) {
@@ -208,12 +212,13 @@ void CalculateHarvesting(void)
 			}
 		}
 
-		if (get_fw_table()->product_spec_harvesting.eth_disabled) {
+		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->product_spec_harvesting.eth_disabled) {
 			tile_enable.eth_enabled = 0;
 		}
 
 		uint8_t desired_gddr_count =
-			8 - get_fw_table()->product_spec_harvesting.dram_disable_count;
+			8 - tt_bh_fwtable_get_fw_table(fwtable_dev)
+				    ->product_spec_harvesting.dram_disable_count;
 
 		if (POPCOUNT(tile_enable.gddr_enabled) > desired_gddr_count) {
 			/* Only handle soft harvesting of one GDDR. Always choose GDDR3. */
@@ -222,24 +227,26 @@ void CalculateHarvesting(void)
 	}
 
 	/* PCIe and SERDES handling */
-	tile_enable.pcie_usage[0] = get_fw_table()->pci0_property_table.pcie_mode;
+	tile_enable.pcie_usage[0] =
+		tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.pcie_mode;
 	if (tile_enable.pcie_usage[0] == FwTable_PciPropertyTable_PcieMode_DISABLED) {
 		tile_enable.pcie_num_serdes[0] = 0;
 	} else {
-		tile_enable.pcie_num_serdes[0] =
-			MIN(get_fw_table()->pci0_property_table.num_serdes, 2);
+		tile_enable.pcie_num_serdes[0] = MIN(
+			tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.num_serdes, 2);
 		if (tile_enable.pcie_num_serdes[0] == 1) {
 			tile_enable.eth_serdes_connected &= ~(BIT(0) | BIT(1));
 		} else if (tile_enable.pcie_num_serdes[0] == 2) {
 			tile_enable.eth_serdes_connected &= ~(BIT(0) | BIT(1) | BIT(2) | BIT(3));
 		}
 	}
-	tile_enable.pcie_usage[1] = get_fw_table()->pci1_property_table.pcie_mode;
+	tile_enable.pcie_usage[1] =
+		tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.pcie_mode;
 	if (tile_enable.pcie_usage[1] == FwTable_PciPropertyTable_PcieMode_DISABLED) {
 		tile_enable.pcie_num_serdes[1] = 0;
 	} else {
-		tile_enable.pcie_num_serdes[1] =
-			MIN(get_fw_table()->pci1_property_table.num_serdes, 2);
+		tile_enable.pcie_num_serdes[1] = MIN(
+			tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.num_serdes, 2);
 		if (tile_enable.pcie_num_serdes[1] == 1) {
 			tile_enable.eth_serdes_connected &= ~(BIT(11) | BIT(10));
 		} else if (tile_enable.pcie_num_serdes[1] == 2) {

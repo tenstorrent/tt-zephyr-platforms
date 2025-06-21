@@ -11,13 +11,13 @@
 #include <stdint.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/sys/util.h>
 
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
 #include "noc.h"
 #include "noc2axi.h"
-#include "fw_table.h"
 #include "reg.h"
 #include "harvesting.h"
 #include "telemetry.h"
@@ -48,6 +48,8 @@
 static const uint8_t kTlbIndex;
 
 static const uint32_t kFirstCfgRegIndex = 0x100 / sizeof(uint32_t);
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 static volatile void *SetupNiuTlbPhys(uint8_t tlb_index, uint8_t px, uint8_t py, uint8_t noc_id)
 {
@@ -177,7 +179,7 @@ void NocInit(void)
 
 	uint32_t router_cfg_0_updates = 0xF << 8; /* max backoff exp */
 
-	bool cg_en = get_fw_table()->feature_enable.cg_en;
+	bool cg_en = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en;
 
 	if (cg_en) {
 		niu_cfg_0_updates |= BIT(0);    /* NIU clock gating enable */
@@ -631,7 +633,8 @@ static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct reques
 
 	if (enable_translation) {
 		if (!pcie_instance_override) {
-			if (get_fw_table()->pci1_property_table.pcie_mode ==
+			if (tt_bh_fwtable_get_fw_table(fwtable_dev)
+				    ->pci1_property_table.pcie_mode ==
 			    FwTable_PciPropertyTable_PcieMode_EP) {
 				pcie_instance = 1;
 			} else {

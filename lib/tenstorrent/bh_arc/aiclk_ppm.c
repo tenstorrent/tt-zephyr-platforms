@@ -14,7 +14,7 @@
 #include "voltage.h"
 #include "vf_curve.h"
 #include "dvfs.h"
-#include "fw_table.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* Bounds checks for FMAX and FMIN (in MHz) */
 #define AICLK_FMAX_MAX 1400.0F
@@ -30,6 +30,8 @@ typedef enum {
 } ClockControlMode;
 
 AiclkPPM aiclk_ppm;
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq)
 {
@@ -123,10 +125,10 @@ void InitAiclkPPM(void)
 	aiclk_ppm.curr_freq = aiclk_ppm.boot_freq;
 	aiclk_ppm.targ_freq = aiclk_ppm.curr_freq;
 
-	aiclk_ppm.fmax =
-		CLAMP(get_fw_table()->chip_limits.asic_fmax, AICLK_FMAX_MIN, AICLK_FMAX_MAX);
-	aiclk_ppm.fmin =
-		CLAMP(get_fw_table()->chip_limits.asic_fmin, AICLK_FMIN_MIN, AICLK_FMIN_MAX);
+	aiclk_ppm.fmax = CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmax,
+			       AICLK_FMAX_MIN, AICLK_FMAX_MAX);
+	aiclk_ppm.fmin = CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmin,
+			       AICLK_FMIN_MIN, AICLK_FMIN_MAX);
 
 	/* disable forcing of AICLK */
 	aiclk_ppm.forced_freq = 0;

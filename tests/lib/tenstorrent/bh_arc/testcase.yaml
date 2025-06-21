@@ -1,2 +1,6 @@
 tests:
-  lib.tenstorrent.bh_arc: {}
+  # lib.tenstorrent.bh_arc: {}
+  bh_arc.test:
+    platform_allow: native_sim
+    extra_args: DTC_OVERLAY_FILE=app.overlay
+    tags: bh_arc

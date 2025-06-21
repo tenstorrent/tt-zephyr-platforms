@@ -9,12 +9,12 @@
 #include <noc2axi.h>
 #include <arc_dma.h>
 
-#include "fw_table.h"
 #include "gddr.h"
 #include "harvesting.h"
 
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -24,6 +24,8 @@
 #define MRISC_FW_CFG_OFFSET   0x3C00
 
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
 {
@@ -150,8 +152,9 @@ uint32_t GetDramMask(void)
 {
 	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
 
-	if (get_fw_table()->has_dram_table && get_fw_table()->dram_table.dram_mask_en) {
-		dram_mask &= get_fw_table()->dram_table.dram_mask;
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->has_dram_table &&
+	    tt_bh_fwtable_get_fw_table(fwtable_dev)->dram_table.dram_mask_en) {
+		dram_mask &= tt_bh_fwtable_get_fw_table(fwtable_dev)->dram_table.dram_mask;
 	}
 	return dram_mask;
 }
