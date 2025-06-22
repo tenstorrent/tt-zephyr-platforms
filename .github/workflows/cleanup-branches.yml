@@ -3,10 +3,10 @@ name: 'Nightly Branch Cleanup'
 on:
   schedule:
     - cron: '0 5 * * *'
-  workflow_dispatch:
 
 jobs:
   cleanup-branches:
+    if: github.repository == 'tenstorrent/tt-zephyr-platforms'
     runs-on: ubuntu-22.04
     permissions:
       contents: write
