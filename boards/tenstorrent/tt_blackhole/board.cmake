@@ -37,3 +37,6 @@ endif()
 
 board_set_flasher_ifnset(tt_flash)
 board_finalize_runner_args(tt_flash)
+
+board_set_flasher_ifnset(tt_runner)
+board_finalize_runner_args(tt_runner)
