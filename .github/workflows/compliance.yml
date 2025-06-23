@@ -72,11 +72,9 @@ jobs:
         # instead of tt-zephyr-platforms
         run: |
           west init -l tt-zephyr-platforms
-
-      - name: Setup modules
-        run: |
           west config manifest.group-filter -- +optional
           west update
+          west -v patch apply
 
       - name: Install python dependencies
         run: |
@@ -98,7 +96,6 @@ jobs:
         run: |
           export ZEPHYR_BASE=$PWD/zephyr
           cd tt-zephyr-platforms
-          west -v patch apply
           # Increase rename limit to allow for large PRs
           git config diff.renameLimit 10000
           $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate \

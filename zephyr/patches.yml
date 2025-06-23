@@ -136,3 +136,14 @@ patches:
     upstreamable: true
     comments: |
       Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
+  - path: zephyr/requirements-compliance.patch
+    sha256sum: 8610736ceaf65488a105b6cf828449b890bbd769604c325b076619b0ba7be83a
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-06-23
+    upstreamable: false
+    comments: |
+      A workaround for junitparser write_xml() specifying encoding='utf-8' and mode='wb'.
+      Upstream already has this fixed-ish, so this can simply be removed once we upgrade
+      to v4.2.0.
