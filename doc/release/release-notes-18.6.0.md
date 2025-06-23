@@ -7,8 +7,11 @@
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+
+### New and Experimental Features
+
+* Enabled PCIe event counters
 
 ### Performance Improvements
 
