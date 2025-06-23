@@ -26,6 +26,14 @@ Major enhancements with this release include:
   * * dram_ocd_pulldown_offset = 3 (MR2[2:0]) (increase pull down driver strength)
   * * dram_data_termination_offset = 1 (MR3[2:0]) (decrease DRAM termination)
 
+* Wormhole FW blob updated
+  * CMFW 2.34.0.0
+    * Update voltage regulator settings for n300
+    * Additional verification of voltage regulator programming
+  * ERISC FW 6.7.0.0
+    * Add multi-mesh support for T3K
+    * Fix intermittent static training synchronization failures
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes
