@@ -98,7 +98,7 @@
 	ref_clk: ref_clk {
 		compatible = "fixed-clock";
 
-		clock-frequency = <1000000000>; /* 1 GHz */
+		clock-frequency = <50>;
 		#clock-cells = <0>;
 	};
 
