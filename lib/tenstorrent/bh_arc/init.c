@@ -597,3 +597,13 @@ static int InitHW(void)
 }
 SYS_INIT(InitHW, APPLICATION, CONFIG_TT_BH_ARC_SYSINIT_PRIORITY);
 #endif /* CONFIG_TT_BH_ARC_SYSINIT */
+
+#ifdef CONFIG_UART_TT_VIRT
+#include "status_reg.h"
+#include "tenstorrent/uart_tt_virt.h"
+
+void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
+{
+	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
+}
+#endif

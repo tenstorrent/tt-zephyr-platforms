@@ -18,7 +18,6 @@
 
 #include <app_version.h>
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/uart_tt_virt.h>
 #include <tenstorrent/post_code.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
@@ -89,12 +88,10 @@ int main(void)
 uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) = {
 	FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};
 
-static int _InitFW(void)
+int _InitFW(void)
 {
 	return InitFW(APPVERSION);
 }
-
-SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
 
 static int record_cmfw_start_time(void)
 {
@@ -103,12 +100,3 @@ static int record_cmfw_start_time(void)
 }
 
 SYS_INIT(record_cmfw_start_time, EARLY, 0);
-
-#ifdef CONFIG_UART_TT_VIRT
-#include "status_reg.h"
-
-void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
-{
-	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
-}
-#endif
