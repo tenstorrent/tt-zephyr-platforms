@@ -75,9 +75,11 @@ patches:
     module: zephyr
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
+    date: 2025-05-05
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89499
-    date: 2025-05-05
+    merge-status: true
+    merge-date: 2025-05-08
     comments: |
       Fix python implementation of west telnet client to not print newlines
       after decoding server data
