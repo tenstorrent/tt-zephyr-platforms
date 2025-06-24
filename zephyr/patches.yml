@@ -67,6 +67,7 @@ patches:
     email: ddegrasse@tenstorrent.com
     date: 2025-02-08
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92057
     comments: |
       Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
   - path: zephyr/scripts-runners-fix-telnet-decode.patch
@@ -74,6 +75,8 @@ patches:
     module: zephyr
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89499
     date: 2025-05-05
     comments: |
       Fix python implementation of west telnet client to not print newlines
