@@ -287,12 +287,7 @@ int main(void)
 	}
 
 	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-		ret = init_fan();
 		set_fan_speed(35); /* Start fan speed at 35% */
-		if (ret != 0) {
-			LOG_ERR("%s() failed: %d", "init_fan", ret);
-			return ret;
-		}
 	}
 
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {

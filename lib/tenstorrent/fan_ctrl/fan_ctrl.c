@@ -5,76 +5,45 @@
  */
 
 #include <tenstorrent/fan_ctrl.h>
-#include <tenstorrent/tt_smbus.h>
 #include <zephyr/device.h>
-#include <zephyr/drivers/smbus.h>
+#include <zephyr/drivers/mfd/max6639.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(tt_fan_ctrl, CONFIG_TT_FAN_CTRL_LOG_LEVEL);
 
-static const struct device *const smbus1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(smbus1));
-
-int init_fan(void)
-{
-	uint8_t read_data;
-
-	/* disable fan spin-up, disable pulse stretching, deassert THERM, set PWM frequency to high
-	 */
-	int ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, 0xA3);
-
-	if (ret != 0) {
-		return ret;
-	}
-	/* enable PWM manual mode, RPM to max */
-	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_1, 0x83);
-	if (ret != 0) {
-		return ret;
-	}
-	/* select high PWM frequency output range */
-	ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, GLOBAL_CONFIG, 0x38);
-	if (ret != 0) {
-		return ret;
-	}
-
-	smbus_byte_data_read(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_1, &read_data);
-	LOG_DBG("FAN1_CONFIG_1: %x (Should be 0x83)", read_data);
-	smbus_byte_data_read(smbus1, FAN_CTRL_ADDR, GLOBAL_CONFIG, &read_data);
-	LOG_DBG("GLOBAL_CONFIG: %x (Should be 0x38)", read_data);
-	smbus_byte_data_read(smbus1, FAN_CTRL_ADDR, FAN1_CONFIG_3, &read_data);
-	LOG_DBG("FAN1_CONFIG_3: %x (Should be 0x23)", read_data);
-
-	return ret;
-}
+static const struct device *const max6639_pwm_dev =
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_pwm));
+static const struct device *const max6639_sensor_dev =
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
 
 int set_fan_speed(uint8_t fan_speed)
 {
-	uint8_t pwm_setting = fan_speed * 1.2; /* fan controller pwm has 120 time slots */
-	int ret = smbus_byte_data_write(smbus1, FAN_CTRL_ADDR, FAN1_DUTY_CYCLE, pwm_setting);
+	int ret = pwm_set_cycles(max6639_pwm_dev, 0, 100, fan_speed, 0);
 	return ret;
 }
 
 uint8_t get_fan_duty_cycle(void)
 {
-	uint8_t pwm_setting;
+	struct sensor_value data;
 
-	smbus_byte_data_read(smbus1, FAN_CTRL_ADDR, FAN1_DUTY_CYCLE, &pwm_setting);
-	uint8_t fan_speed = pwm_setting / 1.2;
+	sensor_sample_fetch_chan(max6639_sensor_dev, MAX6639_CHAN_1_DUTY_CYCLE);
+	sensor_channel_get(max6639_sensor_dev, MAX6639_CHAN_1_DUTY_CYCLE, &data);
 
-	LOG_DBG("FAN1_DUTY_CYCLE (converted to percentage): %d", fan_speed);
+	LOG_DBG("FAN1_DUTY_CYCLE (converted to percentage): %d", data.val1);
 
-	return fan_speed;
+	return data.val1;
 }
 
 uint16_t get_fan_rpm(void)
 {
-	uint8_t tach_count;
-	uint16_t rpm_range = 16000; /* RPM range is maximum */
+	struct sensor_value data;
 
-	smbus_byte_data_read(smbus1, FAN_CTRL_ADDR, TACH1, &tach_count);
-	uint16_t rpm = rpm_range * 30 / tach_count;
+	sensor_sample_fetch_chan(max6639_sensor_dev, MAX6639_CHAN_1_RPM);
+	sensor_channel_get(max6639_sensor_dev, MAX6639_CHAN_1_RPM, &data);
 
-	LOG_DBG("TACH1 count: %d", tach_count);
-	LOG_DBG("Fan RPM: %d", rpm);
+	LOG_DBG("Fan RPM: %d", data.val1);
 
-	return rpm;
+	return data.val1;
 }
