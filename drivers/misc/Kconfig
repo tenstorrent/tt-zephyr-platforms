@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# to match zephyr/drivers/misc/Kconfig
+menu "Miscellaneous Drivers"
+
+# zephyr-keep-sorted-start
+rsource "bh_fwtable/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu
