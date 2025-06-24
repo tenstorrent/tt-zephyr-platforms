@@ -1,7 +1,6 @@
 tests:
   drivers.memc.tt_bh_ddr:
     tags: smoke
-    build_only: true
     platform_allow:
       - tt_blackhole@p100/tt_blackhole/smc
       - tt_blackhole@p100a/tt_blackhole/smc

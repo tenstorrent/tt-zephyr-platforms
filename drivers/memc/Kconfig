@@ -6,7 +6,7 @@ if MEMC
 menu "Memory controller drivers [EXPERIMENTAL]"
 
 # zephyr-keep-sorted-start
-rsource "Kconfig.tt_bh_ddr"
+rsource "Kconfig.tt_bh"
 # zephyr-keep-sorted-stop
 
 endmenu
