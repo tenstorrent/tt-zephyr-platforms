@@ -162,3 +162,17 @@ patches:
     comments: |
       This patch is pulled directly from upstream- it will be in the 4.2 release,
       but for now we need it to support building on SDK releases after 0.17.0
+  - path: zephyr/i2c-dw-bus-recovery.patch
+    sha256sum: d03e823435666ead4ddc996276b48c152e98c7d16b3e74a45fabd9c8fbc39a97
+    module: zephyr
+    author: Titan Chen
+    email: titan.chen@realtek.com
+    date: 2025-05-02
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89386
+    merge-date: 2025-05-28
+    merge-status: true
+    comments: |
+      Already upstream change (merged after v4.1.0) to add bus recovery support for the DesignWare
+      I2C controller. This can simply be removed once we upgrade to v4.2.0. Also contains
+      follow-up changes that are already upstream for error checking, etc.
