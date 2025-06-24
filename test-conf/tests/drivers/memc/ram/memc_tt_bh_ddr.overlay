@@ -4,14 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/ {
-	ddr0: memory_controller0@12345678 {
-		compatible = "tenstorrent,bh-ddr-memc";
-		status = "disabled";
-	};
-};
-
-&ddr0 {
-	reg = <0x12345678 0x4>;
+&sdram1 {
 	status = "okay";
 };
