@@ -152,3 +152,13 @@ patches:
       A workaround for junitparser write_xml() specifying encoding='utf-8' and mode='wb'.
       Upstream already has this fixed-ish, so this can simply be removed once we upgrade
       to v4.2.0.
+  - path: zephyr/libc-picolibc-Make-lock-typing-match-between-Zephyr-.patch
+    sha256sum: 542b6bea86ca966c5c3a4e0537ef74b68ba1728a7ac203fbec9bb8225742d726
+    module: zephyr
+    author: Keith Packard
+    email: keithp@keithp.com
+    date: 2025-01-01
+    upstreamable: true
+    comments: |
+      This patch is pulled directly from upstream- it will be in the 4.2 release,
+      but for now we need it to support building on SDK releases after 0.17.0
