@@ -376,7 +376,7 @@
 		status = "disabled";
 	};
 
-	memc1: bh_memc1 {
+	sdram1: bh_memc1 {
 		compatible = "tenstorrent,bh-memc";
 		status = "disabled";
 	};
