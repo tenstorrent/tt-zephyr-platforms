@@ -32,3 +32,8 @@ CONFIG_SPI_NOR_FLASH_LAYOUT_PAGE_SIZE=4096
 
 # interrupts are not needed for nxp,pca9554a and compatible gpio expanders on Blackhole
 CONFIG_GPIO_PCA_SERIES_INTERRUPT=n
+
+# enable MFD, PWM, sensor
+CONFIG_MFD=y
+CONFIG_PWM=y
+CONFIG_SENSOR=y
