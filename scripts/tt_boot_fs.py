@@ -22,6 +22,7 @@ import json
 import shutil
 import tarfile
 import tempfile
+from intelhex import IntelHex
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -776,11 +777,21 @@ def ls(
     fds = []
 
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = bytes(0)
+            # Pad with 0x0 between offsets
+            with open(bootfs, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("@"):
+                        # This is an address line, pad data to this point
+                        offset = int(line[1:], 10)
+                        data += bytes([0xFF] * (offset - len(data)))  # Pad with 0x0
+                    else:
+                        # This is a data line, decode and append
+                        data += base64.b16decode(line.strip())
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         if verbose >= 0 and not output_json:
@@ -834,11 +845,21 @@ def ls(
 
 def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = bytes(0)
+            # Pad with 0x0 between offsets
+            with open(bootfs, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("@"):
+                        # This is an address line, pad data to this point
+                        offset = int(line[1:], 10)
+                        data += bytes([0xFF] * (offset - len(data)))  # Pad with 0x0
+                    else:
+                        # This is a data line, decode and append
+                        data += base64.b16decode(line.strip())
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         entry_data = None
@@ -879,11 +900,22 @@ def mkbundle(
             mapping = []
             with open(board_dir / "mapping.json", "w") as file:
                 file.write(json.dumps(mapping))
-            with open(image, "rb") as img:
-                binary = img.read()
-                # Convert image to base16 encoded ascii to conform to
-                # tt-flash format
-                b16out = b16encode(binary).decode("ascii")
+            if image.suffix == ".hex":
+                # Encode offsets using @addr format tt-flash supports
+                ih = IntelHex(str(image))
+                b16out = ""
+                for off, end in ih.segments():
+                    b16out += f"@{off}\n"
+                    b16out += b16encode(
+                        ih.tobinarray(start=off, size=end - off)
+                    ).decode("ascii")
+                    b16out += "\n"
+            else:
+                with open(image, "rb") as img:
+                    binary = img.read()
+                    # Convert image to base16 encoded ascii to conform to
+                    # tt-flash format
+                    b16out = b16encode(binary).decode("ascii")
             with open(board_dir / "image.bin", "w") as img:
                 img.write(b16out)
 
