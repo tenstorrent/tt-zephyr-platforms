@@ -21,6 +21,7 @@ zephyr_library_sources_ifndef(
   pcie_msi.c
   pvt.c
   regulator.c
+  regulator_config.c
   serdes_eth.c
   telemetry.c
   telemetry_internal.c

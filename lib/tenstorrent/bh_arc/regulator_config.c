@@ -1,16 +1,12 @@
 /*
- * Copyright (c) 2024 Tenstorrent AI ULC
+ * Copyright (c) 2025 Tenstorrent AI ULC
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <stdint.h>
-
-typedef struct {
-	uint8_t cmd;
-	const uint8_t *data;
-	const uint8_t *mask;
-	uint32_t size;
-} RegulatorData;
+#include <zephyr/sys/util.h>
+#include "regulator.h"
+#include "regulator_config.h"
 
 #define REGULATOR_DATA(regulator, cmd) \
 	{0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask, \
@@ -64,7 +60,7 @@ static const uint8_t vcore_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(vcore_e7_data) == sizeof(vcore_e7_mask));
 
-const RegulatorData vcore_data[] = {
+static const RegulatorData vcore_data[] = {
 	REGULATOR_DATA(vcore, b0),
 	REGULATOR_DATA(vcore, cb),
 	REGULATOR_DATA(vcore, d3),
@@ -103,9 +99,27 @@ static const uint8_t vcorem_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(vcorem_e7_data) == sizeof(vcorem_e7_mask));
 
-const RegulatorData vcorem_data[] = {
+static const RegulatorData vcorem_data[] = {
 	REGULATOR_DATA(vcorem, b0),
 	REGULATOR_DATA(vcorem, 38),
 	REGULATOR_DATA(vcorem, 39),
 	REGULATOR_DATA(vcorem, e7),
+};
+
+static const RegulatorConfig p100_p150_config[] = {
+	{
+		.address = P0V8_VCORE_ADDR,
+		.regulator_data = vcore_data,
+		.count = ARRAY_SIZE(vcore_data),
+	},
+	{
+		.address = P0V8_VCOREM_ADDR,
+		.regulator_data = vcorem_data,
+		.count = ARRAY_SIZE(vcorem_data),
+	},
+};
+
+const BoardRegulatorsConfig p100_p150_regulators_config = {
+	.regulator_config = p100_p150_config,
+	.count = ARRAY_SIZE(p100_p150_config),
 };
