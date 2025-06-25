@@ -144,7 +144,7 @@ add_custom_target(
 if (PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
-    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs_${side}.bin)
+    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.hex)
     set(OUTPUT_FWBUNDLE_${side_upper} ${CMAKE_BINARY_DIR}/update-${side}.fwbundle)
 
     add_bootfs_and_fwbundle(
@@ -168,7 +168,7 @@ if (PROD_NAME MATCHES "^P300")
     -c ${OUTPUT_FWBUNDLE_RIGHT}
     DEPENDS ${OUTPUT_FWBUNDLE_LEFT} ${OUTPUT_FWBUNDLE_RIGHT})
 else()
-  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
+  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.hex)
   add_bootfs_and_fwbundle(
     ${BUNDLE_VERSION_STRING}
     ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml
