@@ -7,7 +7,7 @@
 #include "avs.h"
 #include "dw_apb_i2c.h"
 #include "regulator.h"
-#include "regulator_config.c"
+#include "regulator_config.h"
 #include "status_reg.h"
 #include "timer.h"
 
@@ -46,20 +46,6 @@
 #define OPERATION_DATA_BYTE_SIZE       1
 #define PMBUS_CMD_BYTE_SIZE            1
 #define PMBUS_FLIP_BYTES               0
-
-/* I2C slave addresses */
-#define SERDES_VDDL_ADDR            0x30
-#define SERDES_VDD_ADDR             0x31
-#define SERDES_VDDH_ADDR            0x32
-#define GDDR_VDDR_ADDR              0x33
-#define GDDRIO_WEST_ADDR            0x36
-#define GDDRIO_EAST_ADDR            0x37
-#define CB_GDDR_VDDR_WEST_ADDR      0x54
-#define CB_GDDR_VDDR_EAST_ADDR      0x55
-#define SCRAPPY_GDDR_VDDR_WEST_ADDR 0x56
-#define SCRAPPY_GDDR_VDDR_EAST_ADDR 0x57
-#define P0V8_VCORE_ADDR             0x64
-#define P0V8_VCOREM_ADDR            0x65
 
 /* VR feedback resistors */
 #define GDDR_VDDR_FB1         0.422
@@ -236,58 +222,44 @@ uint32_t RegulatorInit(PcbType board_type)
 	uint32_t i2c_error = 0;
 
 	if (board_type == PcbTypeP150 || board_type == PcbTypeP100) {
-		I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
+		for (uint32_t i = 0; i < p100_p150_regulators_config.count; i++) {
+			const RegulatorConfig *regulator_config =
+				&p100_p150_regulators_config.regulator_config[i];
 
-		ARRAY_FOR_EACH_PTR(vcore_data, regulator_data) {
-			LOG_DBG("Vcore regulator init on cmd %#x", regulator_data->cmd);
-			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-				regulator_data->mask, regulator_data->size);
+			I2CInit(I2CMst, regulator_config->address, I2CFastMode, PMBUS_MST_ID);
 
-			if (i2c_error) {
-				LOG_WRN("Vcore regulator init retried on cmd %#x with error %#x",
-					regulator_data->cmd, i2c_error);
-				/* First, try a bus recovery */
-				I2CRecoverBus(PMBUS_MST_ID);
-				/* Retry once */
+			for (uint32_t j = 0; j < regulator_config->count; j++) {
+				const RegulatorData *regulator_data =
+					&regulator_config->regulator_data[j];
+
+				LOG_DBG("Regulator %#x init on cmd %#x",
+					regulator_config->address, regulator_data->cmd);
+
 				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
 					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
 					regulator_data->mask, regulator_data->size);
+
 				if (i2c_error) {
-					LOG_ERR("Vcore regulator init failed on cmd %#x "
+					LOG_WRN("Regulator %#x init retried on cmd %#x "
 						"with error %#x",
-						regulator_data->cmd, i2c_error);
-					aggregate_i2c_errors |= i2c_error;
-				} else {
-					LOG_INF("Vcore regulator init succeeded on cmd %#x",
-						regulator_data->cmd);
-				}
-			}
-		}
+						regulator_config->address, regulator_data->cmd,
+						i2c_error);
 
-		I2CInit(I2CMst, P0V8_VCOREM_ADDR, I2CFastMode, PMBUS_MST_ID);
-
-		ARRAY_FOR_EACH_PTR(vcorem_data, regulator_data) {
-			LOG_DBG("Vcorem regulator init on cmd %#x", regulator_data->cmd);
-			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-				regulator_data->mask, regulator_data->size);
-
-			if (i2c_error) {
-				LOG_WRN("Vcorem regulator init retried on cmd %#x with error %#x",
-					regulator_data->cmd, i2c_error);
-				/* Retry once */
-				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-					regulator_data->mask, regulator_data->size);
-				if (i2c_error) {
-					LOG_ERR("Vcorem regulator init failed on cmd %#x "
-						"with error %#x",
-						regulator_data->cmd, i2c_error);
-					aggregate_i2c_errors |= i2c_error;
-				} else {
-					LOG_INF("Vcorem regulator init succeeded on cmd %#x",
-						regulator_data->cmd);
+					/* First, try a bus recovery */
+					I2CRecoverBus(PMBUS_MST_ID);
+					/* Retry once */
+					i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+						PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+						regulator_data->mask, regulator_data->size);
+					if (i2c_error) {
+						LOG_ERR("Regulator init failed on cmd %#x "
+							"with error %#x",
+							regulator_data->cmd, i2c_error);
+						aggregate_i2c_errors |= i2c_error;
+					} else {
+						LOG_INF("Regulator init succeeded on cmd %#x",
+							regulator_data->cmd);
+					}
 				}
 			}
 		}

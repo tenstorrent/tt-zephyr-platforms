@@ -9,6 +9,20 @@
 #include <stdint.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 
+/* I2C slave addresses */
+#define SERDES_VDDL_ADDR            0x30
+#define SERDES_VDD_ADDR             0x31
+#define SERDES_VDDH_ADDR            0x32
+#define GDDR_VDDR_ADDR              0x33
+#define GDDRIO_WEST_ADDR            0x36
+#define GDDRIO_EAST_ADDR            0x37
+#define CB_GDDR_VDDR_WEST_ADDR      0x54
+#define CB_GDDR_VDDR_EAST_ADDR      0x55
+#define SCRAPPY_GDDR_VDDR_WEST_ADDR 0x56
+#define SCRAPPY_GDDR_VDDR_EAST_ADDR 0x57
+#define P0V8_VCORE_ADDR             0x64
+#define P0V8_VCOREM_ADDR            0x65
+
 typedef enum {
 	VoutCommand = 0,
 	VoutMarginLow = 1,
