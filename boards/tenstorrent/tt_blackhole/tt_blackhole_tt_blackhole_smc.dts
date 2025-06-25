@@ -42,7 +42,7 @@
 };
 
 &i2c1 {
-	status = "disabled";
+	status = "okay";
 
 	regulator0: max20816@64 {
 		compatible = "maxim,max20816";
@@ -107,4 +107,12 @@
 		reg = <0x73>;
 		status = "disabled";
 	};
+};
+
+&bh_i2c0 {
+	status = "okay";
+};
+
+&bh_i2c1 {
+	status = "okay";
 };
