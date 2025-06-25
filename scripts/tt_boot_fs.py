@@ -22,6 +22,7 @@ import json
 import shutil
 import tarfile
 import tempfile
+from intelhex import IntelHex
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -839,11 +840,22 @@ def mkbundle(
             mapping = []
             with open(board_dir / "mapping.json", "w") as file:
                 file.write(json.dumps(mapping))
-            with open(image, "rb") as img:
-                binary = img.read()
-                # Convert image to base16 encoded ascii to conform to
-                # tt-flash format
-                b16out = b16encode(binary).decode("ascii")
+            if image.suffix == ".hex":
+                # Encode offsets using @addr format tt-flash supports
+                ih = IntelHex(str(image))
+                b16out = ""
+                for off, end in ih.segments():
+                    b16out += f"@{off}\n"
+                    b16out += b16encode(
+                        ih.tobinarray(start=off, size=end - off)
+                    ).decode("ascii")
+                    b16out += "\n"
+            else:
+                with open(image, "rb") as img:
+                    binary = img.read()
+                    # Convert image to base16 encoded ascii to conform to
+                    # tt-flash format
+                    b16out = b16encode(binary).decode("ascii")
             with open(board_dir / "image.bin", "w") as img:
                 img.write(b16out)
 
