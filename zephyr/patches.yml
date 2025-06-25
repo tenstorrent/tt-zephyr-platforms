@@ -138,9 +138,12 @@ patches:
     author: Alexander Lay
     email: alexanderlay@tenstorrent.com
     date: 2025-06-18
-    upstreamable: true
+    upstreamable: false
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92188
     comments: |
-      Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
+      Add a boolean Kconfig option to skip setting zero duty cycle in pwm_api tests.
+      The PR was rejected because the pwm_api test suite was originally designed as
+      a driver test and not a board or actual hardware test.
   - path: zephyr/requirements-compliance.patch
     sha256sum: 8610736ceaf65488a105b6cf828449b890bbd769604c325b076619b0ba7be83a
     module: zephyr
