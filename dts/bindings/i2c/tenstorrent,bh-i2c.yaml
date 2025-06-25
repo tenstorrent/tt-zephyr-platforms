@@ -1,0 +1,30 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,bh-i2c"
+
+description: |
+  Tenstorrent Blackhole I2C controller.
+
+include: base.yaml
+
+properties:
+  dw-i2c-dev:
+    type: phandle
+    required: true
+    description: |
+      DesignWare i2c device
+
+  padcntl-reg:
+    # Note: this may be expanded to array later to accommodate 64-bit access
+    type: int
+    required: true
+    description: |
+      Pad control register for SDA and SCL pins
+
+  paddata-reg:
+    # Note: this may be expanded to array later to accommodate 64-bit access
+    type: int
+    required: true
+    description: |
+      Pad data register for SDA and SCL pins
