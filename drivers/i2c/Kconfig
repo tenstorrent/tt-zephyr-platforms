@@ -6,6 +6,7 @@ if I2C
 menu "I2C Drivers"
 
 # zephyr-keep-sorted-start
+rsource "Kconfig.tt_bh"
 rsource "Kconfig.tt_stm32"
 # zephyr-keep-sorted-stop
 

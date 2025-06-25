@@ -1,0 +1,19 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config I2C_TT_BH
+	bool "Tenstorrent Blackhole I2C driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_I2C_ENABLED
+	help
+	  Enable the Tenstorrent Blackhole I2C driver.
+
+if I2C_TT_BH
+
+config I2C_TT_BH_INIT_PRIORITY
+	int "Tenstorrent Blackhole I2C init priority"
+	default 51
+	help
+	  Initialization priority for the Tenstorrent Blackhole I2C driver.
+
+endif
