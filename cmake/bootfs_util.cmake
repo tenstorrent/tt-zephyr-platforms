@@ -11,6 +11,7 @@ function(add_bootfs_and_fwbundle bundle_version bootfs_yaml output_bootfs output
     ${APP_DIR}/../../scripts/tt_boot_fs.py mkfs
     ${bootfs_yaml}
     ${output_bootfs}
+    --hex
     --build-dir ${CMAKE_BINARY_DIR}
     DEPENDS ${bootfs_deps})
 
