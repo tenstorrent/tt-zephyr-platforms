@@ -418,22 +418,24 @@ class BootFs:
         for write in self.writes:
             tracker.add(write[1], write[1] + len(write[2]), None)
 
-    def to_binary(self) -> bytes:
+    def to_binary(self, all_sections) -> bytes:
         write = bytearray()
         last_addr = 0
         for always_write, addr, data in self.writes:
-            if not always_write:
+            if not (always_write or all_sections):
                 continue
             write.extend([0xFF] * (addr - last_addr))
             write.extend(data)
             last_addr = addr + len(data)
         return bytes(write)
 
-    def to_intel_hex(self) -> bytes:
+    def to_intel_hex(self, all_sections) -> bytes:
         output = ""
         current_segment = -1  # Track the current 16-bit segment
 
-        for _, address, data in self.writes:
+        for always_write, address, data in self.writes:
+            if not (always_write or all_sections):
+                continue
             end_address = address + len(data)
 
             # Process data in chunks that stay within segment boundaries
@@ -717,14 +719,14 @@ def cksum(data: bytes):
     return calculated_checksum
 
 
-def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False) -> bytes:
+def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False, all_sections=False) -> bytes:
     fi = None
     try:
         fi = FileImage.load(path, env)
         if hex:
-            return fi.to_boot_fs().to_intel_hex()
+            return fi.to_boot_fs().to_intel_hex(all_sections)
         else:
-            return fi.to_boot_fs().to_binary()
+            return fi.to_boot_fs().to_binary(all_sections)
     except Exception as e:
         _logger.error(f"Exception: {e}")
     return None
@@ -1076,9 +1078,9 @@ def invoke_mkfs(args):
         return os.EX_DATAERR
     if args.build_dir and args.build_dir.exists():
         env = {"$ROOT": str(ROOT), "$BUILD_DIR": str(args.build_dir)}
-        data = mkfs(args.specification, env, args.hex)
+        data = mkfs(args.specification, env, args.hex, args.all)
     else:
-        data = mkfs(args.specification, hex=args.hex)
+        data = mkfs(args.specification, hex=args.hex, all_sections=args.all)
     if data is None:
         return os.EX_DATAERR
     with open(args.output_file, "wb") as file:
@@ -1189,6 +1191,11 @@ def parse_args():
     )
     mkfs_parser.add_argument(
         "--hex", action="store_true", help="Generate intel hex file"
+    )
+    mkfs_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Include all bootfs sections, including provisioning only",
     )
     mkfs_parser.set_defaults(func=invoke_mkfs)
 
