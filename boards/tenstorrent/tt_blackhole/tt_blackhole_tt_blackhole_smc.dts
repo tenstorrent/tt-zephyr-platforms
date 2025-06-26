@@ -20,6 +20,9 @@
 		zephyr,sram = &csm;
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
+		/* Not used for setting flash base address, but required by mcuboot */
+		zephyr,flash = &spi_flash;
+		zephyr,flash-controller = &spi_flash;
 	};
 
 };
@@ -37,6 +40,55 @@
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";
+		write-block-size = <1>;
+		erase-block-size = <4096>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/*
+			 * MCUBoot partition- will be loaded by bootrom.
+			 * tagged as CMFW in tt-boot-fs
+			 */
+			boot_partition: partition@0 {
+				label = "mcuboot";
+				reg = <0x0 DT_SIZE_K(128)>;
+			};
+
+			/*
+			 * This partition is used for the primary firmware image.
+			 * it is loaded by MCUBoot, and does not have a tag in tt-boot-fs.
+			 */
+			slot0_partition: partition@20000 {
+				label = "image-0";
+				reg = <0x20000 DT_SIZE_K(512)>;
+			};
+
+			/*
+			 * The data partition is used for storing additional
+			 * tt-boot-fs entries, such as the DMFW image
+			 * and coprocessor firmware images.
+			 * The partition is not accessed directly, but
+			 * rather is read via the tt-boot-fs APIs
+			 */
+			data_partition: partition@a0000 {
+				label = "data";
+				reg = <0xa0000 DT_SIZE_M(1)>;
+			};
+
+			/*
+			 * This partition contains the recovery image. It will be
+			 * loaded by MCUBoot if the primary image fails to validate,
+			 * and is also tagged as the recovery image in tt-boot-fs.
+			 * Therefore, either the bootrom or MCUBoot can load this image.
+			 */
+			slot1_partition: partition@1a0000 {
+				label = "image-1";
+				reg = <0x1a0000 DT_SIZE_K(512)>;
+			};
+		};
 	};
 };
 
