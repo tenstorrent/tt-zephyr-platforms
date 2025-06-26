@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "tt_blackhole_smc_partitions.dtsi"
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+/*
+ * ARC clock will be raised to 800MHz in the application
+ */
+&sysclk {
+	status = "okay";
+	clock-frequency = <800000000>;
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&fwtable {
+	status = "okay";
+};
+
+/ {
+	/* Partitions defined at the root are invalid, and will break flash map build */
+	/delete-node/ partitions;
+	chosen {
+		zephyr,sram = &csm_app;
+	};
+};
