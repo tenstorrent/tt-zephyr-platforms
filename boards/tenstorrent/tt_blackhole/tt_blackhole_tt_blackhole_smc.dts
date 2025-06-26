@@ -48,33 +48,13 @@
 			#size-cells = <1>;
 
 			/*
-			 * MCUBoot partition- will be loaded by bootrom.
-			 * tagged as CMFW in tt-boot-fs
-			 */
-			boot_partition: partition@0 {
-				label = "mcuboot";
-				reg = <0x0 DT_SIZE_K(128)>;
-			};
-
-			/*
 			 * This partition is used for the primary firmware image.
-			 * it is loaded by MCUBoot, and does not have a tag in tt-boot-fs.
+			 * it is loaded by MCUBoot. It is tagged as
+			 * mainimg in tt-boot-fs, but isn't used by the bootrom.
 			 */
-			slot0_partition: partition@20000 {
+			slot0_partition: partition@15000 {
 				label = "image-0";
-				reg = <0x20000 DT_SIZE_K(512)>;
-			};
-
-			/*
-			 * The data partition is used for storing additional
-			 * tt-boot-fs entries, such as the DMFW image
-			 * and coprocessor firmware images.
-			 * The partition is not accessed directly, but
-			 * rather is read via the tt-boot-fs APIs
-			 */
-			data_partition: partition@a0000 {
-				label = "data";
-				reg = <0xa0000 DT_SIZE_M(1)>;
+				reg = <0x15000 DT_SIZE_K(512)>;
 			};
 
 			/*
@@ -83,9 +63,19 @@
 			 * and is also tagged as the recovery image in tt-boot-fs.
 			 * Therefore, either the bootrom or MCUBoot can load this image.
 			 */
-			slot1_partition: partition@1a0000 {
+			slot1_partition: partition@95000 {
 				label = "image-1";
-				reg = <0x1a0000 DT_SIZE_K(512)>;
+				reg = <0x95000 DT_SIZE_K(512)>;
+			};
+
+			/*
+			 * MCUBoot partition- will be loaded by bootrom.
+			 * tagged as fail_over_image in tt-boot-fs,
+			 * but we actually use it as the primary image.
+			 */
+			boot_partition: partition@115000 {
+				label = "mcuboot";
+				reg = <0x115000 DT_SIZE_K(128)>;
 			};
 		};
 	};
