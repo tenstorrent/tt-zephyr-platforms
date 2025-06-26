@@ -1,0 +1,47 @@
+From 7a8e6998f41cb495423682bde48f7c7d9dfdf900 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Thu, 26 Jun 2025 11:07:22 -0400
+Subject: [PATCH 2/2] arch: arc: support CONFIG_ROM_START_OFFSET
+
+Add support for CONFIG_ROM_START_OFFSET on ARC processors. Note that the
+arc ISA requires vector table offset to be at a 1024 KiB boundary, so
+the default ROM_START_OFFSET when using MCUBoot must be increased.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ arch/arc/Kconfig    | 5 +++++
+ arch/common/Kconfig | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index d44ca272b11..7165ab8009c 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -389,6 +389,11 @@ config ARC_EARLY_SOC_INIT
+ 	  (before C runtime initialization). Setup code is called in form of
+ 	  soc_early_asm_init_percpu assembler macro.
+
++# ARC vector table must be aligned to 1KiB boundary, and will be at the
++# start of the ROM region.
++config ROM_START_OFFSET
++	default 0x400 if BOOTLOADER_MCUBOOT
++
+ config MAIN_STACK_SIZE
+ 	default 4096 if 64BIT
+
+diff --git a/arch/common/Kconfig b/arch/common/Kconfig
+index fc8659fd394..d9bd17233fa 100644
+--- a/arch/common/Kconfig
++++ b/arch/common/Kconfig
+@@ -25,7 +25,7 @@ config ISR_TABLE_SHELL
+
+ config ARCH_SUPPORTS_ROM_OFFSET
+ 	bool
+ 	default y
+-	depends on  (ARM || X86 || ARM64 || RISCV)
++	depends on  (ARM || X86 || ARM64 || RISCV || ARC)
+ 	help
+ 	  Hidden option to enable support for ROM offset within the linker
+ 	  script, which will place a block of 0x0 of size
+--
+2.34.1
