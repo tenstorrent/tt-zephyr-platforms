@@ -680,7 +680,12 @@ class FileImage:
             if image.tag not in tag_order:
                 tag_order.append(image.tag)
 
-        failover_spi_addr = tracker.find_gap_of_size(len(self.failover.binary))[0]
+        if self.failover.spi_addr is not None:
+            # Respect the "source" value set for the failover image
+            failover_spi_addr = self.failover.spi_addr
+        else:
+            # Find a gap for the failover image
+            failover_spi_addr = tracker.find_gap_of_size(len(self.failover.binary))[0]
 
         return BootFs(
             tag_order,
