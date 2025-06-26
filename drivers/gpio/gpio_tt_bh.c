@@ -39,7 +39,8 @@ static int gpio_tt_bh_pin_configure(const struct device *port, gpio_pin_t pin, g
 	struct gpio_tt_bh_data *data = (struct gpio_tt_bh_data *)port->data;
 
 	/* Only support input and output flags */
-	if ((flags & ~(GPIO_INPUT | GPIO_OUTPUT_LOW | GPIO_OUTPUT_HIGH | GPIO_DISCONNECTED)) != 0) {
+	if ((flags & ~(GPIO_INPUT | GPIO_OUTPUT | GPIO_OUTPUT_INIT_LOW |
+		GPIO_OUTPUT_INIT_HIGH | GPIO_DISCONNECTED)) != 0) {
 		return -ENOTSUP;
 	}
 
@@ -55,7 +56,7 @@ static int gpio_tt_bh_pin_configure(const struct device *port, gpio_pin_t pin, g
 	K_SPINLOCK(&data->lock) {
 		/* Configure input */
 
-		uintptr_t rxen_val = sys_read32(config->rxen_addr);
+		uint32_t rxen_val = sys_read32(config->rxen_addr);
 
 		if (flags & GPIO_INPUT) {
 			rxen_val |= BIT(pin);
@@ -67,24 +68,23 @@ static int gpio_tt_bh_pin_configure(const struct device *port, gpio_pin_t pin, g
 
 		/* Configure output */
 
-		uintptr_t trien_val = sys_read32(config->trien_addr);
-		uintptr_t data_val = sys_read32(config->data_addr);
+		uint32_t trien_val = sys_read32(config->trien_addr);
+		uint32_t data_val = sys_read32(config->data_addr);
 
 		if (flags & GPIO_OUTPUT) {
-			trien_val |= BIT(pin);
+			trien_val &= ~BIT(pin);
 
 			/* Initialize pin to low or high state for output configuration */
 
 			if (flags & GPIO_OUTPUT_INIT_HIGH) {
-				data_val &= ~BIT(pin);
-				sys_write32(BIT(pin), config->data_addr + 4);
-			} else if (flags & GPIO_OUTPUT_INIT_LOW) {
 				data_val |= BIT(pin);
+			} else if (flags & GPIO_OUTPUT_INIT_LOW) {
+				data_val &= ~BIT(pin);
 			}
 
 			sys_write32(data_val, config->data_addr);
 		} else {
-			trien_val &= ~BIT(pin);
+			trien_val |= BIT(pin);
 		}
 
 		sys_write32(trien_val, config->trien_addr);
