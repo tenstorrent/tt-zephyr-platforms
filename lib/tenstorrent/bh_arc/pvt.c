@@ -16,7 +16,6 @@
 #include "reg.h"
 #include "pll.h"
 #include "timer.h"
-#include "gpio.h"
 #include "telemetry.h"
 
 #define SDIF_DONE_TIMEOUT_MS 10
