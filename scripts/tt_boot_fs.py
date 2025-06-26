@@ -295,7 +295,7 @@ class BootImage:
                 )
             binary += bytes(padto - len(binary))
         # We always need to pad binaries to 4 byte offsets for checksum verification
-        binary += bytes((len(binary) % 8))
+        binary += bytes((len(binary) % 4))
 
         if len(tag) > MAX_TAG_LEN:
             raise ValueError(f"{tag} is longer than the maximum allowed tag size (8).")
