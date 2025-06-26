@@ -3,6 +3,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
+#include "tt_blackhole_smc_csm.dtsi"
+
 &i2c1 {
 	status = "disabled";
 };
@@ -21,4 +24,10 @@
 
 &wdt0 {
 	status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,sram = &csm_app;
+	};
 };
