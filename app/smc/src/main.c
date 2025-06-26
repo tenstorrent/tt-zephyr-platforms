@@ -24,6 +24,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/watchdog.h>
+#include <zephyr/dfu/mcuboot.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -33,6 +34,7 @@ int main(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
+	int rc;
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (get_fw_table()->feature_enable.aiclk_ppm_en) {
@@ -72,6 +74,15 @@ int main(void)
 	}
 
 	Dm2CmReadyRequest();
+
+	/* For now, if we make it here than we passed the BIST and will confirm the image */
+	if (!boot_is_img_confirmed()) {
+		rc = boot_write_img_confirmed();
+		if (rc < 0) {
+			return rc;
+		}
+		printk("Firmware update is confirmed.\n");
+	}
 
 	while (1) {
 		k_msleep(CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL);

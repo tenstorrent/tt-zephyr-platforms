@@ -65,17 +65,21 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   )
 endif()
 
+# Make sure MCUBoot is build only
+set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
+
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
-set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
+set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
 set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
+set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
 
 if (PROD_NAME MATCHES "^GALAXY")
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 else()
-  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN})
 endif()
 
 # ======== Generate filesystem ========

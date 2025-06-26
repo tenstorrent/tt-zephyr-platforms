@@ -1,0 +1,13 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "../boards/tt_blackhole_smc_csm.dtsi"
+
+/ {
+	chosen {
+		zephyr,sram = &csm_bootloader;
+	};
+};
