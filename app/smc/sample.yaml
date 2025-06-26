@@ -18,6 +18,7 @@ tests:
         - "--dut-scope=session"
         - "-m not flash"
   app.e2e-smoke-flash:
+    timeout: 120 # tt-flash may take longer to execute
     tags: e2e-flash
     harness: pytest
     sysbuild: true
