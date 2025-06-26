@@ -1,0 +1,37 @@
+From cfaa521cd6bdadb686ddb5ebb80251dc0d5c1bf8 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Thu, 26 Jun 2025 15:49:49 -0400
+Subject: [PATCH] scripts: ci: check_compliance: add more MCUBoot Kconfigs to
+ whitelist
+
+Add additional Kconfigs to the whitelist in check compliance for
+MCUBoot.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ scripts/ci/check_compliance.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
+index fe56b715162..5cbe8dfedd8 100755
+--- a/scripts/ci/check_compliance.py
++++ b/scripts/ci/check_compliance.py
+@@ -1016,6 +1016,8 @@ flagged.
+         "BOOT_FIRMWARE_LOADER", # Used in sysbuild for MCUboot configuration
+         "BOOT_MAX_IMG_SECTORS_AUTO", # Used in sysbuild
+         "BOOT_RAM_LOAD", # Used in sysbuild for MCUboot configuration
++        "BOOT_IMAGE_EXECUTABLE_RAM_SIZE", # Used in sysbuild for MCUboot configuration
++        "BOOT_IMAGE_EXECUTABLE_RAM_START", # Used in sysbuild for MCUboot configuration
+         "BOOT_SERIAL_BOOT_MODE",     # Used in (sysbuild-based) test/
+                                      # documentation
+         "BOOT_SERIAL_CDC_ACM",       # Used in (sysbuild-based) test
+@@ -1032,6 +1034,7 @@ flagged.
+         "BOOT_SWAP_USING_MOVE", # Used in sysbuild for MCUboot configuration
+         "BOOT_SWAP_USING_OFFSET", # Used in sysbuild for MCUboot configuration
+         "BOOT_SWAP_USING_SCRATCH", # Used in sysbuild for MCUboot configuration
++        "BOOT_RAM_LOAD_REVERT", # Used in sysbuild for MCUboot configuration
+         "BOOT_UPGRADE_ONLY", # Used in example adjusting MCUboot config, but
+                              # symbol is defined in MCUboot itself.
+         "BOOT_VALIDATE_SLOT0",       # Used in (sysbuild-based) test
+--
+2.34.1
