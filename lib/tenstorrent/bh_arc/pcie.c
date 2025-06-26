@@ -13,9 +13,10 @@
 #include "timer.h"
 #include "read_only_table.h"
 #include "fw_table.h"
-#include "gpio.h"
-#include <zephyr/sys/util.h>
 #include "pciesd.h"
+
+#include <zephyr/sys/util.h>
+#include <zephyr/drivers/gpio.h>
 
 #define PCIE_SERDES0_ALPHACORE_TLB 0
 #define PCIE_SERDES1_ALPHACORE_TLB 1
@@ -95,6 +96,8 @@ typedef union {
 } PCIE_SII_LTSSM_STATE_reg_u;
 
 #define PCIE_SII_LTSSM_STATE_REG_DEFAULT (0x00000000)
+
+static const struct device *gpio3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio3));
 
 static inline void WritePcieTlbConfigReg(const uint32_t addr, const uint32_t data)
 {
@@ -272,19 +275,19 @@ static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instanc
 static void TogglePerst(void)
 {
 	/* GPIO34 is TRISTATE of level shifter, GPIO37 is PERST input to the level shifter */
-	GpioEnableOutput(GPIO_PCIE_TRISTATE_CTRL);
-	GpioEnableOutput(GPIO_CEM0_PERST);
-	GpioEnableOutput(GPIO_CEM1_PERST);
+	gpio_pin_configure(gpio3, 2, GPIO_OUTPUT);
+	gpio_pin_configure(gpio3, 5, GPIO_OUTPUT);
+	gpio_pin_configure(gpio3, 7, GPIO_OUTPUT);
 
 	/* put device into reset for 1 ms */
-	GpioSet(GPIO_PCIE_TRISTATE_CTRL, 1);
-	GpioSet(GPIO_CEM0_PERST, 0);
-	GpioSet(GPIO_CEM1_PERST, 0);
+	gpio_pin_set(gpio3, 2, 1);
+	gpio_pin_set(gpio3, 5, 0);
+	gpio_pin_set(gpio3, 7, 0);
 	WaitMs(1);
 
 	/* take device out of reset */
-	GpioSet(GPIO_CEM0_PERST, 1);
-	GpioSet(GPIO_CEM1_PERST, 1);
+	gpio_pin_set(gpio3, 5, 1);
+	gpio_pin_set(gpio3, 7, 1);
 }
 
 static PCIeInitStatus PollForLinkUp(uint8_t pcie_inst)
