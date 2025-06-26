@@ -34,6 +34,8 @@ Major enhancements with this release include:
     * Add multi-mesh support for T3K
     * Fix intermittent static training synchronization failures
 
+* Integrated Zephyr GPIO driver in place of GPIO library
+
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes
