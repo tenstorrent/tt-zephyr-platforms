@@ -68,6 +68,12 @@ endif()
 # Make sure MCUBoot is build only
 set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
 
+# This is quite a hack- in order to get the mcuboot hook file we need to override
+# image verification (which allows us to skip signature checks) into the mcuboot
+# build, we need to create a tiny Zephyr module in the source directory, and
+# tell sysbuild to include that module with mcuboot
+set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
+
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
