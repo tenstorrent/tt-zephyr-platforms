@@ -1,0 +1,49 @@
+From 1a397e7db61505c27c893aa035bf0883d01d3070 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Thu, 26 Jun 2025 10:59:19 -0400
+Subject: [PATCH 1/2] arch: common: add CONFIG_ARCH_SUPPORTS_ROM_OFFSET
+
+Add CONFIG_ARCH_SUPPORTS_ROM_OFFSET, a convenience Kconfig to indicate
+that CONFIG_ROM_START_OFFSET is supported on this architecture
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ arch/common/CMakeLists.txt | 3 +--
+ arch/common/Kconfig        | 7 +++++++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/common/CMakeLists.txt b/arch/common/CMakeLists.txt
+index 6f84bb96351..6f1042b0050 100644
+--- a/arch/common/CMakeLists.txt
++++ b/arch/common/CMakeLists.txt
+@@ -83,8 +83,7 @@ zephyr_linker_sources_ifdef(CONFIG_NOCACHE_MEMORY
+   nocache.ld
+ )
+
+-# Only ARM, X86 and RISCV use ROM_START_OFFSET.
+-if (DEFINED CONFIG_ARM OR DEFINED CONFIG_X86 OR DEFINED CONFIG_ARM64 OR DEFINED CONFIG_RISCV)
++if (DEFINED CONFIG_ARCH_SUPPORTS_ROM_OFFSET)
+   # Exclamation mark is printable character with lowest number in ASCII table.
+   # We are sure that this file will be included as a first.
+   zephyr_linker_sources(ROM_START SORT_KEY ! rom_start_address.ld)
+diff --git a/arch/common/Kconfig b/arch/common/Kconfig
+index 1cc91d7c25b..fc8659fd394 100644
+--- a/arch/common/Kconfig
++++ b/arch/common/Kconfig
+@@ -23,6 +23,14 @@ config ISR_TABLE_SHELL
+ 	help
+ 	  This option enables a shell command to dump the ISR tables.
+
++config ARCH_SUPPORTS_ROM_OFFSET
++	bool
++	default y
++	depends on  (ARM || X86 || ARM64 || RISCV)
++	help
++	  Hidden option to enable support for ROM offset within the linker
++	  script, which will place a block of 0x0 of size
++	  CONFIG_ROM_START_OFFSET at the start of the ROM region.
+
+ config ARM_MPU
+ 	bool "ARM MPU Support"
+--
+2.34.1
