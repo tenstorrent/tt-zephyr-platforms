@@ -199,7 +199,7 @@ def test_arc_watchdog(arc_chip):
     with pytest.raises(Exception):
         # This should fail, since the ARC should have been reset
         arc_chip = pyluwen.detect_chips()[0]
-    time.sleep(1.0)
+    time.sleep(5.0)
     rescan_pcie()
     # ARC should now be back online
     arc_chip = pyluwen.detect_chips()[0]
