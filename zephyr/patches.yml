@@ -114,3 +114,26 @@ patches:
       This is a filthy hack to enable TT HWInit and boot error reporting. Our checks should really
       be done from a BIST (aka a POST) launched from the application. Let's burn this with fire
       once we have a proper solution.
+  - path: zephyr/mcuboot-ram-load-support.patch
+    sha256sum: b504730e56addae49c4352f23e7fdc3e417bbd8ded2dab508c9e7379ca493be2
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-01-01
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/85254/files
+    comments: |
+      This patch adds support for loading mcuboot images from RAM, which is useful for
+      testing and development purposes.
+  - path: mcuboot/boot-zephyr-add-support-for-revert-mode-with-ramload.patch
+    sha256sum: c17c7abb1f5dbc121605a31ca7ba9564beae8ea0071121b914d842ab97441f2d
+    module: mcuboot
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-25
+    upstreamable: true
+    merge-pr: https://github.com/mcu-tools/mcuboot/pull/2197
+    comments: |
+      Adds support for revert mode with RAM load in MCUBoot. This allows us to
+      load an image in test mode, and then revert to the previous image
+      if the image fails.
