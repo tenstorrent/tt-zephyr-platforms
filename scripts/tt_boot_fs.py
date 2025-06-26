@@ -730,7 +730,13 @@ def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False, all_sections=False) ->
 def fsck(path: Path, alignment: int = 0x1000) -> bool:
     fs = None
     try:
-        fs = BootFs.from_binary(open(path, "rb").read(), alignment=alignment)
+        if path.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(path))
+            data = ih.tobinarray()
+        else:
+            data = open(path, "rb").read()
+        fs = BootFs.from_binary(data, alignment=alignment)
     except Exception as e:
         _logger.error(f"Exception: {e}")
     return fs is not None
@@ -742,11 +748,14 @@ def ls(
     fds = []
 
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = base64.b16decode(open(bootfs, "r").read())
+        elif bootfs.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(bootfs))
+            data = ih.tobinarray()
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         if verbose >= 0 and not output_json:
@@ -797,11 +806,14 @@ def ls(
 
 def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = base64.b16decode(open(bootfs, "r").read())
+        elif bootfs.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(bootfs))
+            data = ih.tobinarray()
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         entry_data = None
