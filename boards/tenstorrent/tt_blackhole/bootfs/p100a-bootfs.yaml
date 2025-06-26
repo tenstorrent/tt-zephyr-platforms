@@ -17,9 +17,27 @@ images:
     binary: $BUILD_DIR/smc/generated_board_cfg/P100A/fw_table.bin
 
   - name: cmfw
-    binary: $BUILD_DIR/smc/zephyr/zephyr.bin
+    binary: $BUILD_DIR/mcuboot/zephyr/zephyr.bin
     executable: true
     offset: 0x10000000
+
+  - name: smcimg
+    binary: $BUILD_DIR/smc/zephyr/zephyr.signed.bin
+    source: "0x20000"
+
+  # This is the image magic for the slot 0 image
+  # It marks the image as valid, but not tested.
+  # During the first boot the image must mark itself as tested.
+  - name: smctail
+    binary: $ROOT/zephyr/blobs/mcuboot_magic_test.bin
+    source: "0x9f000"
+
+  # This is the image magic for the slot 1 image (recovery image)
+  # It marks the image as valid and tested. This is the fallback image
+  # in case the slot 0 image fails to boot.
+  - name: failtail
+    binary: $ROOT/zephyr/blobs/mcuboot_magic_confirmed.bin
+    source: "0x21f000"
 
   - name: ethfwcfg
     binary: $ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin
@@ -56,5 +74,6 @@ images:
 
 fail_over_image:
   name: failover
-  binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+  binary: $BUILD_DIR/recovery/zephyr/zephyr.signed.bin
+  source: "0x1a0000"
   offset: 0x10000000
