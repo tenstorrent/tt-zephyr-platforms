@@ -190,6 +190,17 @@ patches:
     comments: |
       This patch adds support for loading mcuboot images from RAM, which is useful for
       testing and development purposes.
+  - path: mcuboot/boot-zephyr-add-support-for-booting-ARC-processors.patch
+    sha256sum: fa464b8882e888d5ad52d78290c49fdf96fb440fc38af2294673a8378641b5b6
+    module: mcuboot
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-25
+    upstreamable: true
+    merge-pr: https://github.com/mcu-tools/mcuboot/pull/2356
+    comments: |
+      Adds support for booting ARC processors in MCUBoot. Needed to boot SMC
+      with MCUBoot.
   - path: mcuboot/boot-zephyr-add-support-for-revert-mode-with-ramload.patch
     sha256sum: 64af571387e4b26ac084f827ae44818ffc314821281e3ca3a4bb8dc2ce20cc0c
     module: mcuboot
