@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "arc_dma.h"
+#include "pcie.h"
+
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "arc_dma.h"
-#include "pcie.h"
+#include <zephyr/toolchain.h>
 
 /* Verify prototype of ArcDmaTransfer, because it's used by libpciesd.a. */
 __unused static bool (*verify_ArcDmaTransfer)(const void *, void *, uint32_t) = ArcDmaTransfer;
