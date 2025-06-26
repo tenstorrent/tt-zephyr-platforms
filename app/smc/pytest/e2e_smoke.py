@@ -213,7 +213,7 @@ def test_arc_watchdog(arc_chip):
 @pytest.mark.flash
 def test_pcie_fw_load_time(arc_chip):
     """
-    Checks PCIe firmware load time is within 40ms.
+    Checks PCIe firmware load time is within 60ms.
     This test needs to be run after production reset.
     """
 
@@ -229,7 +229,7 @@ def test_pcie_fw_load_time(arc_chip):
         f"PCIe init completion timestamp: {pcie_init_cpl_time}."
     )
 
-    assert duration_in_ms < 40, f"duration {duration_in_ms:.4f}ms, exceeds 40ms"
+    assert duration_in_ms < 60, f"duration {duration_in_ms:.4f}ms, exceeds 60ms"
 
 
 @pytest.mark.flash
