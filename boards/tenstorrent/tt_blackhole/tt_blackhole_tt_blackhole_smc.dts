@@ -20,6 +20,9 @@
 		zephyr,sram = &csm;
 		zephyr,console = &vuart0;
 		zephyr,shell-uart = &vuart0;
+		/* Not used for setting flash base address, but required by mcuboot */
+		zephyr,flash = &spi_flash;
+		zephyr,flash-controller = &spi_flash;
 	};
 };
 
@@ -36,6 +39,45 @@
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";
+		write-block-size = <1>;
+		erase-block-size = <4096>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/*
+			 * This partition is used for the primary firmware image.
+			 * it is loaded by MCUBoot. It is tagged as
+			 * mainimg in tt-boot-fs, but isn't used by the bootrom.
+			 */
+			slot0_partition: partition@15000 {
+				label = "image-0";
+				reg = <0x15000 DT_SIZE_K(512)>;
+			};
+
+			/*
+			 * This partition contains the recovery image. It will be
+			 * loaded by MCUBoot if the primary image fails to validate,
+			 * and is also tagged as the recovery image in tt-boot-fs.
+			 * Therefore, either the bootrom or MCUBoot can load this image.
+			 */
+			slot1_partition: partition@95000 {
+				label = "image-1";
+				reg = <0x95000 DT_SIZE_K(512)>;
+			};
+
+			/*
+			 * MCUBoot partition- will be loaded by bootrom.
+			 * tagged as fail_over_image in tt-boot-fs,
+			 * but we actually use it as the primary image.
+			 */
+			boot_partition: partition@115000 {
+				label = "mcuboot";
+				reg = <0x115000 DT_SIZE_K(128)>;
+			};
+		};
 	};
 };
 

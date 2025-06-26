@@ -1,0 +1,86 @@
+name: P150C-1
+
+product_name: P150C
+gen_name: P150C
+
+alignment:
+  flash_device_size: 0x1000000
+  flash_block_size: 4096
+
+images:
+
+  - name: cmfwcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150C/fw_table.bin
+
+  # Copy of cmfwcfg for tt-mod restore
+  - name: origcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150C/fw_table.bin
+
+  # Slot 0 image, this is the main image that will be booted
+  - name: mainimg
+    binary: $BUILD_DIR/smc/zephyr/zephyr.signed.bin
+    source: "0x15000"
+
+  # This is the image magic for the slot 0 image
+  # It marks the image as valid, but not tested.
+  # During the first boot the image must mark itself as tested.
+  - name: maintail
+    binary: $ROOT/zephyr/blobs/mcuboot_magic_test.bin
+    source: "0x94000"
+
+  # Slot 1 image, this is the recovery image that will be booted
+  # in case the slot 0 image fails to boot.
+  - name: failimg
+    binary: $BUILD_DIR/recovery/zephyr/zephyr.signed.bin
+    source: "0x95000"
+
+  # This is the image magic for the slot 1 image (recovery image)
+  # It marks the image as valid and tested. This is the fallback image
+  # in case the slot 0 image fails to boot.
+  - name: failtail
+    binary: $ROOT/zephyr/blobs/mcuboot_magic_confirmed.bin
+    source: "0x114000"
+
+  - name: ethfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin
+
+  - name: ethfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_erisc.bin
+
+  - name: memfwcfg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_params_P150C.bin
+
+  - name: memfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin
+
+  - name: ethsdreg
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin
+
+  - name: ethsdfw
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
+
+  # Device Mgmt FW (called bmfw here for historical reasons)
+  - name: bmfw
+    padto: 0xd000
+    binary: $BUILD_DIR/dmc/zephyr/zephyr.signed.bin
+
+  # Meta data about the flashing process
+  - name: flshinfo
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150C/flash_info.bin
+
+  # Read only board config data
+  - name: boardcfg
+    binary: $BUILD_DIR/smc/generated_board_cfg/P150C/read_only.bin
+    source: $END - 0x1000
+    provisioning_only: true
+
+# Fail over image describes mcuboot, and is actually the image that will be
+# booted in all cases. We use this design so that the descriptor for
+# MCUboot is always the same, and is more resilient against a bad
+# flash
+fail_over_image:
+  name: failover
+  binary: $BUILD_DIR/mcuboot/zephyr/zephyr.bin
+  source: "0x115000"
+  executable: true
+  offset: 0x10000000
