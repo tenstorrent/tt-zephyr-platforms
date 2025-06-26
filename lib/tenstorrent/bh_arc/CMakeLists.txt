@@ -41,7 +41,6 @@ zephyr_library_sources(
   cat.c
   cm2dm_msg.c
   dw_apb_i2c.c
-  gpio.c
   init_common.c
   msgqueue.c
   noc2axi.c
