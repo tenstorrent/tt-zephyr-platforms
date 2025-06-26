@@ -22,7 +22,7 @@ patches:
       This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
       It also enhances the driver to support multiple instances on the same platform.
   - path: zephyr/check-compliance.patch
-    sha256sum: bfed70b44249abe722f50a06f38d87ae7f53c86fdb3b6ff951b1b51426837613
+    sha256sum: 1ab9b7d0d03036b697e6a608d9bd8d421ffe094d9b069a70d5a12ace03e403ef
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
