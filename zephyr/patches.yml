@@ -148,3 +148,11 @@ patches:
       Adds support for CONFIG_ROM_START_OFFSET on ARC processors. Note that the
       arc ISA requires vector table offset to be at a 1024 KiB boundary, so
       the default ROM_START_OFFSET when using MCUBoot must be increased.
+  - path: zephyr/scripts-ci-check_compliance-add-more-MCUBoot-Kconfig.patch
+    sha256sum: df8a6f8804aa154e6b5fbbc8cd40961e9b1a9d9243cd1ca8744175ff45a29056
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-26
+    comments: |
+      Adds more MCUBoot Kconfig options to the check_compliance.py whitelist.
