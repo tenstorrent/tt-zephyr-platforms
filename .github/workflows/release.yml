@@ -12,6 +12,7 @@ env:
     VERSION=${GITHUB_REF#refs/tags/}
     echo "VERSION=$VERSION" | tee -a $GITHUB_OUTPUT
     TRIMMED_VERSION=${VERSION/v}
+    TRIMMED_VERSION="$(echo "$TRIMMED_VERSION" | sed -e 's/\([0-9]\+\)\.\([0-9]\+\).*/\1.\2/')"
     echo "TRIMMED_VERSION=$TRIMMED_VERSION" | tee -a $GITHUB_OUTPUT
     if [ "$VERSION" = "${VERSION/rc}" ]; then
       # not an rc, so we should generate release notes
