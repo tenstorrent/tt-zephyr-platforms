@@ -179,3 +179,67 @@ patches:
       Already upstream change (merged after v4.1.0) to add bus recovery support for the DesignWare
       I2C controller. This can simply be removed once we upgrade to v4.2.0. Also contains
       follow-up changes that are already upstream for error checking, etc.
+  - path: zephyr/mcuboot-ram-load-support.patch
+    sha256sum: 8c7c09be40f3e3258306376e5e37b213f2b6910d12ca5fa2ba68a5e61002179d
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-01-01
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/85254/files
+    comments: |
+      This patch adds support for loading mcuboot images from RAM, which is useful for
+      testing and development purposes.
+  - path: mcuboot/boot-zephyr-add-support-for-booting-ARC-processors.patch
+    sha256sum: fa464b8882e888d5ad52d78290c49fdf96fb440fc38af2294673a8378641b5b6
+    module: mcuboot
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-25
+    upstreamable: true
+    merge-pr: https://github.com/mcu-tools/mcuboot/pull/2356
+    comments: |
+      Adds support for booting ARC processors in MCUBoot. Needed to boot SMC
+      with MCUBoot.
+  - path: mcuboot/boot-zephyr-add-support-for-revert-mode-with-ramload.patch
+    sha256sum: 64af571387e4b26ac084f827ae44818ffc314821281e3ca3a4bb8dc2ce20cc0c
+    module: mcuboot
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-25
+    upstreamable: true
+    merge-pr: https://github.com/mcu-tools/mcuboot/pull/2197
+    comments: |
+      Adds support for revert mode with RAM load in MCUBoot. This allows us to
+      load an image in test mode, and then revert to the previous image
+      if the image fails.
+  - path: zephyr/arch-common-add-CONFIG_ARCH_SUPPORTS_ROM_OFFSET.patch
+    sha256sum: 41f82c7c1b9876d3a36d485c8c1ba80369396bd6553360149873b0d011ddf112
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-26
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92254
+    comments: |
+      Adds support for enabling CONFIG_ARCH_SUPPORTS_ROM_OFFSET via Kconfig.
+  - path: zephyr/arch-arc-support-CONFIG_ROM_START_OFFSET.patch
+    sha256sum: a320295d837b5a4f926565dcd3565a42b4504ea377da913d0cd272ef3eaf2e3f
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-26
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92254
+    comments: |
+      Adds support for CONFIG_ROM_START_OFFSET on ARC processors. Note that the
+      arc ISA requires vector table offset to be at a 1024 KiB boundary, so
+      the default ROM_START_OFFSET when using MCUBoot must be increased.
+  - path: zephyr/scripts-ci-check_compliance-add-more-MCUBoot-Kconfig.patch
+    sha256sum: 7cc91b71d26b81d21c15ae19d3dc11376d1fe615818e8003e2be1925d25b2ce6
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-06-26
+    comments: |
+      Adds more MCUBoot Kconfig options to the check_compliance.py whitelist.

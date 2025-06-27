@@ -65,24 +65,34 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   )
 endif()
 
+# Make sure MCUBoot is build only
+set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
+
+# This is quite a hack- in order to get the mcuboot hook file we need to override
+# image verification (which allows us to skip signature checks) into the mcuboot
+# build, we need to create a tiny Zephyr module in the source directory, and
+# tell sysbuild to include that module with mcuboot
+set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
+
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
-set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
+set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
 set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
+set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
 
 if (PROD_NAME MATCHES "^GALAXY")
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 else()
-  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN})
 endif()
 
 # ======== Generate filesystem ========
 if (PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
-    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.bin)
+    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.hex)
     set(OUTPUT_FWBUNDLE_${side_upper} ${CMAKE_BINARY_DIR}/update-${side}.fwbundle)
 
     add_bootfs_and_fwbundle(
@@ -106,7 +116,7 @@ if (PROD_NAME MATCHES "^P300")
     -c ${OUTPUT_FWBUNDLE_RIGHT}
     DEPENDS ${OUTPUT_FWBUNDLE_LEFT} ${OUTPUT_FWBUNDLE_RIGHT})
 else()
-  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
+  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.hex)
   add_bootfs_and_fwbundle(
     ${BUNDLE_VERSION_STRING}
     ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml

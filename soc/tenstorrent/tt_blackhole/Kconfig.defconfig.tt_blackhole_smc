@@ -73,6 +73,10 @@ config 2ND_LVL_INTR_03_OFFSET
 config GPIO
 	default y
 
+# Needed for MCUBoot- ARC arc doesn't enable this by default
+config HAS_FLASH_LOAD_OFFSET
+	default y
+
 # Needed for octal SPI. WH doesn't actually have this but BH will.
 # config CONFIG_SPI_EXTENDED_MODES
 #	default y

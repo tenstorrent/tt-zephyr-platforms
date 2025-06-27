@@ -1,0 +1,106 @@
+From 11dde2f7b4ddb3867c14a79e3cfabc2a3b21eb35 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Tue, 4 Feb 2025 18:10:29 +0000
+Subject: [PATCH] boot: zephyr: add support for revert mode with ramload
+
+Add support for revert mode when using ramloading. This includes the
+same restrictions as revert mode with direct-xip, namely that an image
+must have a valid BOOT_MAGIC value in order for mcuboot to attempt to
+load it.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ boot/bootutil/src/bootutil_priv.h                   |  3 ++-
+ boot/bootutil/src/loader.c                          |  9 +++++----
+ boot/zephyr/Kconfig                                 | 11 +++++++++++
+ boot/zephyr/include/mcuboot_config/mcuboot_config.h |  4 ++++
+ 4 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/boot/bootutil/src/bootutil_priv.h b/boot/bootutil/src/bootutil_priv.h
+index 72e94aee..b3b513ac 100644
+--- a/boot/bootutil/src/bootutil_priv.h
++++ b/boot/bootutil/src/bootutil_priv.h
+@@ -275,7 +275,8 @@ struct boot_loader_state {
+         /* Image destination and size for the active slot */
+         uint32_t img_dst;
+         uint32_t img_sz;
+-#elif defined(MCUBOOT_DIRECT_XIP_REVERT)
++#endif
++#if defined(MCUBOOT_DIRECT_XIP_REVERT) || defined(MCUBOOT_RAM_LOAD_REVERT)
+         /* Swap status for the active slot */
+         struct boot_swap_state swap_state;
+ #endif
+diff --git a/boot/bootutil/src/loader.c b/boot/bootutil/src/loader.c
+index 62f980b6..100b5126 100644
+--- a/boot/bootutil/src/loader.c
++++ b/boot/bootutil/src/loader.c
+@@ -2836,7 +2836,8 @@ print_loaded_images(struct boot_loader_state *state)
+ }
+ #endif
+
+-#if defined(MCUBOOT_DIRECT_XIP) && defined(MCUBOOT_DIRECT_XIP_REVERT)
++#if (defined(MCUBOOT_DIRECT_XIP) && defined(MCUBOOT_DIRECT_XIP_REVERT)) || \
++    (defined(MCUBOOT_RAM_LOAD) && defined(MCUBOOT_RAM_LOAD_REVERT))
+ /**
+  * Checks whether the active slot of the current image was previously selected
+  * to run. Erases the image if it was selected but its execution failed,
+@@ -2955,8 +2956,9 @@ boot_load_and_validate_images(struct boot_loader_state *state)
+                 state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
+                 continue;
+             }
++#endif /* MCUBOOT_DIRECT_XIP */
+
+-#ifdef MCUBOOT_DIRECT_XIP_REVERT
++#if defined(MCUBOOT_DIRECT_XIP_REVERT) || defined(MCUBOOT_RAM_LOAD_REVERT)
+             rc = boot_select_or_erase(state);
+             if (rc != 0) {
+                 /* The selected image slot has been erased. */
+@@ -2964,8 +2966,7 @@ boot_load_and_validate_images(struct boot_loader_state *state)
+                 state->slot_usage[BOOT_CURR_IMG(state)].active_slot = NO_ACTIVE_SLOT;
+                 continue;
+             }
+-#endif /* MCUBOOT_DIRECT_XIP_REVERT */
+-#endif /* MCUBOOT_DIRECT_XIP */
++#endif /* MCUBOOT_DIRECT_XIP_REVERT || MCUBOOT_RAM_LOAD_REVERT */
+
+ #ifdef MCUBOOT_RAM_LOAD
+             /* Image is first loaded to RAM and authenticated there in order to
+diff --git a/boot/zephyr/Kconfig b/boot/zephyr/Kconfig
+index acc0314a..fa5d1a81 100644
+--- a/boot/zephyr/Kconfig
++++ b/boot/zephyr/Kconfig
+@@ -418,6 +418,17 @@ config BOOT_DIRECT_XIP_REVERT
+ 	  attempt to boot the previous image. The images can also be made permanent
+ 	  (marked as confirmed in advance) just like in swap mode.
+
++config BOOT_RAM_LOAD_REVERT
++	bool "Enable the revert mechanism in ram-load mode"
++	depends on BOOT_RAM_LOAD
++	help
++	  If y, enables the revert mechanism in ram-load similar to the one in
++	  swap mode. It requires the trailer magic to be added to the signed image.
++	  When a reboot happens without the image being confirmed at runtime, the
++	  bootloader considers the image faulty and erases it. After this it will
++	  attempt to boot the previous image. The images can also be made permanent
++	  (marked as confirmed in advance) just like in swap mode.
++
+ config BOOT_BOOTSTRAP
+ 	bool "Bootstrap erased the primary slot from the secondary slot"
+ 	default n
+diff --git a/boot/zephyr/include/mcuboot_config/mcuboot_config.h b/boot/zephyr/include/mcuboot_config/mcuboot_config.h
+index fd003565..093f5d17 100644
+--- a/boot/zephyr/include/mcuboot_config/mcuboot_config.h
++++ b/boot/zephyr/include/mcuboot_config/mcuboot_config.h
+@@ -100,6 +100,10 @@
+ #define MCUBOOT_DIRECT_XIP_REVERT
+ #endif
+
++#ifdef CONFIG_BOOT_RAM_LOAD_REVERT
++#define MCUBOOT_RAM_LOAD_REVERT
++#endif
++
+ #ifdef CONFIG_BOOT_RAM_LOAD
+ #define MCUBOOT_RAM_LOAD 1
+ #define IMAGE_EXECUTABLE_RAM_START CONFIG_BOOT_IMAGE_EXECUTABLE_RAM_START
+--
+2.34.1
