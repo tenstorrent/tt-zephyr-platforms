@@ -302,6 +302,31 @@
 		status = "disabled";
 	};
 
+	bh_i2c0: bh_i2c0 {
+		compatible = "tenstorrent,bh-i2c";
+		dw-i2c-dev = <&i2c0>;
+		/* TODO: dedicated gpio driver for i2c pins to use with pinctrl */
+		padcntl-reg = <0x800301c0>;
+		paddata-reg = <0x800301c4>;
+		status = "disabled";
+	};
+
+	bh_i2c1: bh_i2c1 {
+		compatible = "tenstorrent,bh-i2c";
+		dw-i2c-dev = <&i2c1>;
+		padcntl-reg = <0x800305cc>;
+		paddata-reg = <0x800305d0>;
+		status = "disabled";
+	};
+
+	bh_i2c2: bh_i2c2 {
+		compatible = "tenstorrent,bh-i2c";
+		dw-i2c-dev = <&i2c2>;
+		padcntl-reg = <0x800305d8>;
+		paddata-reg = <0x800305dc>;
+		status = "disabled";
+	};
+
 	soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
