@@ -64,6 +64,12 @@ void CalculateTargAiclk(void)
 	/* (it will not be above Fmax, since we calculated the max limits last) */
 	aiclk_ppm.targ_freq = MAX(targ_freq, aiclk_ppm.fmin);
 
+	/* Apply random frequency if sweep is enabled */
+	if (aiclk_ppm.sweep_en == 1) {
+		aiclk_ppm.targ_freq = rand() % (aiclk_ppm.sweep_high - aiclk_ppm.sweep_low + 1)
+							  + aiclk_ppm.sweep_low;
+	}
+
 	/* Apply forced frequency at the end, regardless of any limits */
 	if (aiclk_ppm.forced_freq != 0) {
 		aiclk_ppm.targ_freq = aiclk_ppm.forced_freq;
@@ -131,6 +137,9 @@ void InitAiclkPPM(void)
 	/* disable forcing of AICLK */
 	aiclk_ppm.forced_freq = 0;
 
+	/* disable AICLK sweep */
+	aiclk_ppm.sweep_en = 0;
+
 	for (int i = 0; i < kAiclkArbMaxCount; i++) {
 		aiclk_ppm.arbiter_max[i] = aiclk_ppm.fmax;
 	}
@@ -196,7 +205,25 @@ static uint8_t get_aiclk_handler(uint32_t msg_code, const struct request *reques
 	return 0;
 }
 
+static uint8_t SweepAiclkHandler(uint32_t msg_code, const struct request *request,
+				 struct response *response)
+{
+	if (msg_code == MSG_TYPE_AISWEEP_START) {
+		if (request->data[1] == 0 || request->data[2] == 0) {
+			return 1;
+		}
+		aiclk_ppm.sweep_low = MAX(request->data[1], aiclk_ppm.fmin);
+		aiclk_ppm.sweep_high = MIN(request->data[2], aiclk_ppm.fmax);
+		aiclk_ppm.sweep_en = 1;
+	} else {
+		aiclk_ppm.sweep_en = 0;
+	}
+	return 0;
+}
+
 REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_BUSY, AiclkBusyHandler);
 REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_LONG_IDLE, AiclkBusyHandler);
 REGISTER_MESSAGE(MSG_TYPE_FORCE_AICLK, ForceAiclkHandler);
 REGISTER_MESSAGE(MSG_TYPE_GET_AICLK, get_aiclk_handler);
+REGISTER_MESSAGE(MSG_TYPE_AISWEEP_START, SweepAiclkHandler);
+REGISTER_MESSAGE(MSG_TYPE_AISWEEP_STOP, SweepAiclkHandler);
