@@ -15,14 +15,26 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12.1'
 
-    - name: Install curl
+    - name: Install APT packages
       shell: bash
       run: |
-        if ! command -v curl &> /dev/null ; then
-          apt-get update
-          apt-get install -y curl
+        TOINSTALL=""
+        cmds=(curl)
+        pkgs=(curl)
+
+        for ((i=0; i < ${#cmds[@]}; i++)); do
+          cmd=${cmds[$i]}
+          pkg=${pkgs[$i]}
+          if ! command -v $cmd &> /dev/null ; then
+            TOINSTALL+=" $pkg"
+          fi
+        done
+
+        if [ -n "$TOINSTALL" ]; then
+          sudo apt-get update
+          sudo apt-get install -y $TOINSTALL
         fi
 
     - name: Install Rust

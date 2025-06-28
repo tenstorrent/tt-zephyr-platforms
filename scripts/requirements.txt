@@ -1,7 +1,9 @@
-# for spi flash tables
-protobuf
+# zephyr-keep-sorted-start
 grpcio-tools
+protobuf
+west
+# zephyr-keep-sorted-stop
 
 # tenstorrent utilities (note: pyluwen is a dependency)
-tt-flash @ git+https://github.com/tenstorrent/tt-flash@v3.3.1
-tt-smi @ git+https://github.com/tenstorrent/tt-smi@v3.0.14
+tt-flash @ git+https://github.com/tenstorrent/tt-flash@6d84d80bbde9a12edfa32934557d69581771c4a3
+tt-smi @ git+https://github.com/tenstorrent/tt-smi@7aeeb96ba52bf669cf599c1f67e65535072f67c5
