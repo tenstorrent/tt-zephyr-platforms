@@ -494,7 +494,7 @@ Tenstorrent Platforms:
   labels:
     - "platform: Tenstorrent"
 
-"West project: cmsis":
+"West project: cmsis_6":
   status: odd fixes
   files: []
   labels: []

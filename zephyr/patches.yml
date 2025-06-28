@@ -1,6 +1,6 @@
 patches:
   - path: zephyr/twister-rtt-support.patch
-    sha256sum: c676cd376a4d19dc95ac4e44e179c253853d422b758688a583bb55c3c9137035
+    sha256sum: ff7bc0d7efdd2696f4900c60756f370e78bae2a7ed455c2f256b805c2f3f4650
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -21,17 +21,8 @@ patches:
     comments: |
       This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
       It also enhances the driver to support multiple instances on the same platform.
-  - path: zephyr/move-bss-to-end.patch
-    sha256sum: bc781234c7bb8acf1346a860db00252311b5c7aab9cca81b015a53cf9ef78358
-    module: zephyr
-    author: Andrew Lewycky
-    email: alewycky@tenstorrent.com
-    date: 2024-10-10
-    upstreamable: true
-    comments: |
-      This patch moves BSS and noinit sections to the end.
   - path: zephyr/check-compliance.patch
-    sha256sum: 01982421bc0cf4fdfac3f39f6aab58531ab9d0e92075548488400f74084be6e7
+    sha256sum: bfed70b44249abe722f50a06f38d87ae7f53c86fdb3b6ff951b1b51426837613
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -70,19 +61,6 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92057
     comments: |
       Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
-  - path: zephyr/scripts-runners-fix-telnet-decode.patch
-    sha256sum: 3271f85bb538e9146d4bff2fd44e14793799320ad8f9364d9df8a551c0c17961
-    module: zephyr
-    author: Daniel DeGrasse
-    email: ddegrasse@tenstorrent.com
-    date: 2025-05-05
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89499
-    merge-status: true
-    merge-date: 2025-05-08
-    comments: |
-      Fix python implementation of west telnet client to not print newlines
-      after decoding server data
   - path: zephyr/k-event-wait-safe.patch
     sha256sum: 33a271699fe20d1870fb3549db03ae50c24137a5b8916c0bb5df56b9665d4a88
     module: zephyr
@@ -94,20 +72,6 @@ patches:
     comments: |
       Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantome
       events.
-  - path: zephyr/gpio-pca-series-dereference-pointer-in-assignment.patch
-    sha256sum: 1bd7c141bfc019c97dc8a183000d80bcdf7b5fd951e3f573f8d7d604dcae764e
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-05-11
-    upstreamable: true
-    issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
-    merge-date: 2025-05-13
-    merge-status: true
-    comments: |
-      We cannot use interrupts for this driver, since they are tied to the same pin on the
-      stm32. By disabling interrupts, I was able to discover and fix a regression in the driver.
   - path: zephyr/gpio-pca-series-pin-get-config.patch
     sha256sum: 7c640a600a922e157cc3f3c0acd244b16eec5fdcaa63370b5b5e1918fcef9a54
     module: zephyr
@@ -119,21 +83,8 @@ patches:
     comments: |
       The gpio_pca_series driver did not have pin_get_config() implemented. This change adds
       that functionality, with the exception of reading drive strength.
-  - path: zephyr/generate-boolean-board-revision-kconfig.patch
-    sha256sum: e519edac40d4b1d4a244d1815ee922cd8ebb138a4d8b6f54e3858f5954409f23
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-05-12
-    upstreamable: true
-    issue: https://github.com/zephyrproject-rtos/zephyr/issues/89787
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89859
-    merge-date: 2025-05-16
-    merge-status: true
-    comments: |
-      Automatically generate a boolean Kconfig option for the active board revision.
   - path: zephyr/pwm-api-tests-skip-zero-duty-cycle-config.patch
-    sha256sum: 2eb345136280cf586f037ed97983945cf051b35d0f5581f810048a2fceafe933
+    sha256sum: aaee09fd61d034b6c9ee6eb522402c87843be6f0936558cdc7684c903df9c2be
     module: zephyr
     author: Alexander Lay
     email: alexanderlay@tenstorrent.com
@@ -141,41 +92,13 @@ patches:
     upstreamable: false
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92188
     comments: |
-      Add a boolean Kconfig option to skip setting zero duty cycle in pwm_api tests.
-      The PR was rejected because the pwm_api test suite was originally designed as
-      a driver test and not a board or actual hardware test.
-  - path: zephyr/requirements-compliance.patch
-    sha256sum: 8610736ceaf65488a105b6cf828449b890bbd769604c325b076619b0ba7be83a
+      Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
+  - path: zephyr/mspi-dw.patch
+    sha256sum: 5e75f668d6b74773c766292020d86e7e4829cb4641044c571a6221404d06e9e8
     module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-06-23
-    upstreamable: false
-    comments: |
-      A workaround for junitparser write_xml() specifying encoding='utf-8' and mode='wb'.
-      Upstream already has this fixed-ish, so this can simply be removed once we upgrade
-      to v4.2.0.
-  - path: zephyr/libc-picolibc-Make-lock-typing-match-between-Zephyr-.patch
-    sha256sum: 542b6bea86ca966c5c3a4e0537ef74b68ba1728a7ac203fbec9bb8225742d726
-    module: zephyr
-    author: Keith Packard
-    email: keithp@keithp.com
-    date: 2025-01-01
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-04-16
     upstreamable: true
     comments: |
-      This patch is pulled directly from upstream- it will be in the 4.2 release,
-      but for now we need it to support building on SDK releases after 0.17.0
-  - path: zephyr/i2c-dw-bus-recovery.patch
-    sha256sum: d03e823435666ead4ddc996276b48c152e98c7d16b3e74a45fabd9c8fbc39a97
-    module: zephyr
-    author: Titan Chen
-    email: titan.chen@realtek.com
-    date: 2025-05-02
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89386
-    merge-date: 2025-05-28
-    merge-status: true
-    comments: |
-      Already upstream change (merged after v4.1.0) to add bus recovery support for the DesignWare
-      I2C controller. This can simply be removed once we upgrade to v4.2.0. Also contains
-      follow-up changes that are already upstream for error checking, etc.
+      Skip building the upstream mspi-dw and flash-mspi-nor drivers.

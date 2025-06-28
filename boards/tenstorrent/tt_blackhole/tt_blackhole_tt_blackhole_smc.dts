@@ -9,6 +9,7 @@
 #include "tt_blackhole_smc-pinctrl.dtsi"
 
 #include <freq.h>
+#include <mem.h>
 
 / {
 	model = "Tenstorrent Blackhole board";
@@ -30,6 +31,7 @@
 		reg = <0>;
 		status = "okay";
 		/* Programming has experimentally been reliable up to 17 MHz, use 15 to be safe */
+		size = <DT_SIZE_M(512)>;
 		mspi-max-frequency = <DT_FREQ_M(15)>;
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";

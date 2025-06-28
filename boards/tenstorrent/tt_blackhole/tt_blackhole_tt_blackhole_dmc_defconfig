@@ -15,9 +15,6 @@ CONFIG_GPIO=y
 # Enable Clocks
 CONFIG_CLOCK_CONTROL=y
 
-# enable pin controller
-CONFIG_PINCTRL=y
-
 # enable i2c
 CONFIG_I2C=y
 
