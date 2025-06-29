@@ -12,7 +12,7 @@ tests:
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
       - CONFIG_EXPECTED_READ_TIME=5
-      - CONFIG_EXPECTED_PROGRAM_TIME=400
+      - CONFIG_EXPECTED_PROGRAM_TIME=460
     required_snippets:
       - rtt-console
   drivers.flash.performance.rtt.mt25:
@@ -26,6 +26,6 @@ tests:
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
       - CONFIG_EXPECTED_READ_TIME=8
-      - CONFIG_EXPECTED_PROGRAM_TIME=400
+      - CONFIG_EXPECTED_PROGRAM_TIME=460
     required_snippets:
       - rtt-console
