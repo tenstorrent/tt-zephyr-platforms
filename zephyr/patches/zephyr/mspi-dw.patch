@@ -1,0 +1,42 @@
+diff --git a/drivers/flash/CMakeLists.txt b/drivers/flash/CMakeLists.txt
+index 5de788d80a8..71a897c1357 100644
+--- a/drivers/flash/CMakeLists.txt
++++ b/drivers/flash/CMakeLists.txt
+@@ -35,7 +35,6 @@ zephyr_library_sources_ifdef(CONFIG_FLASH_MCUX_FLEXSPI_NOR flash_mcux_flexspi_no
+ zephyr_library_sources_ifdef(CONFIG_FLASH_MSPI_ATXP032 flash_mspi_atxp032.c)
+ zephyr_library_sources_ifdef(CONFIG_FLASH_MSPI_EMUL_DEVICE flash_mspi_emul_device.c)
+ zephyr_library_sources_ifdef(CONFIG_FLASH_MSPI_IS25XX0XX flash_mspi_is25xX0xx.c)
+-zephyr_library_sources_ifdef(CONFIG_FLASH_MSPI_NOR flash_mspi_nor.c)
+ zephyr_library_sources_ifdef(CONFIG_FLASH_NPCX_FIU_NOR flash_npcx_fiu_nor.c)
+ zephyr_library_sources_ifdef(CONFIG_FLASH_NPCX_FIU_QSPI flash_npcx_fiu_qspi.c)
+ zephyr_library_sources_ifdef(CONFIG_FLASH_RENESAS_RA_OSPI_B flash_renesas_ra_ospi_b.c)
+diff --git a/drivers/mspi/CMakeLists.txt b/drivers/mspi/CMakeLists.txt
+index cb2a985ec07..e06c8c072db 100644
+--- a/drivers/mspi/CMakeLists.txt
++++ b/drivers/mspi/CMakeLists.txt
+@@ -6,5 +6,4 @@ zephyr_library()
+ zephyr_library_sources_ifdef(CONFIG_MSPI_AMBIQ_AP3   mspi_ambiq_ap3.c)
+ zephyr_library_sources_ifdef(CONFIG_MSPI_AMBIQ_AP5   mspi_ambiq_ap5.c)
+ zephyr_library_sources_ifdef(CONFIG_MSPI_AMBIQ_TIMING_SCAN mspi_ambiq_timing_scan.c)
+-zephyr_library_sources_ifdef(CONFIG_MSPI_DW          mspi_dw.c)
+ zephyr_library_sources_ifdef(CONFIG_MSPI_EMUL        mspi_emul.c)
+diff --git a/drivers/mspi/Kconfig b/drivers/mspi/Kconfig
+index 269d8d16f04..0adb2a34393 100644
+--- a/drivers/mspi/Kconfig
++++ b/drivers/mspi/Kconfig
+@@ -60,7 +60,6 @@ module-str = mspi
+ source "subsys/logging/Kconfig.template.log_config"
+ 
+ source "drivers/mspi/Kconfig.ambiq"
+-source "drivers/mspi/Kconfig.dw"
+ source "drivers/mspi/Kconfig.mspi_emul"
+ 
+ endif # MSPI
+diff --git a/dts/bindings/mspi/snps,designware-ssi.yaml b/dts/bindings/mspi/snps,designware-ssi.yaml_ignore
+similarity index 100%
+rename from dts/bindings/mspi/snps,designware-ssi.yaml
+rename to dts/bindings/mspi/snps,designware-ssi.yaml_ignore
+diff --git a/dts/bindings/mtd/jedec,mspi-nor.yaml b/dts/bindings/mtd/jedec,mspi-nor.yaml_ignore
+similarity index 100%
+rename from dts/bindings/mtd/jedec,mspi-nor.yaml
+rename to dts/bindings/mtd/jedec,mspi-nor.yaml_ignore

@@ -1,7 +1,13 @@
-# for spi flash tables
-protobuf
+# zephyr-keep-sorted-start
 grpcio-tools
+protobuf
+pyluwen @ git+https://github.com/tenstorrent/luwen.git@v0.6.5#subdirectory=crates/pyluwen
+west
+# zephyr-keep-sorted-stop
 
-# tenstorrent utilities (note: pyluwen is a dependency)
-tt-flash @ git+https://github.com/tenstorrent/tt-flash@v3.3.1
-tt-smi @ git+https://github.com/tenstorrent/tt-smi@v3.0.14
+# FIXME: these need dependencies sorted out with uv. For some reason, also, any git+https repos
+# cause a failure along the lines of
+# ERROR: Can't verify hashes for these requirements because we don't have a way to hash version \
+#   control repositories:
+# tt-flash @ git+https://github.com/tenstorrent/tt-flash.git
+# tt-smi @ git+https://github.com/tenstorrent/tt-smi.git
