@@ -170,7 +170,7 @@ int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, u
 	if (gddr_telemetry.mrisc_fw_version_major < 2 ||
 	    (gddr_telemetry.mrisc_fw_version_major == 2 &&
 	     gddr_telemetry.mrisc_fw_version_minor < 7)) {
-		LOG_WRN("GDDR %d MRISC FW version %d.%d does not support memtest.\n", gddr_inst,
+		LOG_WRN("GDDR %d MRISC FW version %d.%d does not support memtest", gddr_inst,
 			gddr_telemetry.mrisc_fw_version_major,
 			gddr_telemetry.mrisc_fw_version_minor);
 		return -ENOTSUP;
@@ -183,12 +183,12 @@ int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, u
 	uint32_t status = MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER);
 
 	if (status != MRISC_MSG_TYPE_NONE) {
-		LOG_WRN("GDDR %d message buffer is not free. Current value: 0x%x\n", gddr_inst,
+		LOG_WRN("GDDR %d message buffer is not free. Current value: 0x%x", gddr_inst,
 			status);
 		return -EBUSY;
 	}
 	if (addr_bits > 26) {
-		LOG_WRN("Invalid number of address bits for memory test. Expected <= 26, got %d\n",
+		LOG_WRN("Invalid number of address bits for memory test. Expected <= 26, got %d",
 			addr_bits);
 		return -EINVAL;
 	}
@@ -206,7 +206,7 @@ int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 		/* Wait for the message to be processed */
 		if (sys_timepoint_expired(timeout)) {
 			LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to run "
-				"memtest.\n",
+				"memtest",
 				MRISC_MEMTEST_TIMEOUT, gddr_inst);
 			return -ETIMEDOUT;
 		}
@@ -214,9 +214,9 @@ int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	uint32_t pass = MriscL1Read32(gddr_inst, GDDR_MSG_STRUCT_ADDR + 8 * 4);
 
 	if (pass != 0) {
-		LOG_ERR("GDDR %d memory test failed.\n", gddr_inst);
+		LOG_ERR("GDDR %d memory test failed", gddr_inst);
 		return -EIO;
 	}
-	LOG_DBG("GDDR %d memory test passed.\n", gddr_inst);
+	LOG_DBG("GDDR %d memory test passed", gddr_inst);
 	return 0;
 }
