@@ -24,7 +24,7 @@ feature_enable {
   aiclk_ppm_en: false
   watchdog_en: false
   smbus_en: false
-  fan_ctrl_en: false
+  fan_ctrl_en: true
   harvesting_en: true
 }
 

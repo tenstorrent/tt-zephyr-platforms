@@ -16,6 +16,7 @@ int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size);
 
 void ChipResetRequest(void *arg);
 void UpdateFanSpeedRequest(uint32_t fan_speed);
+void UpdateForcedFanSpeedRequest(uint32_t fan_speed);
 void Dm2CmReadyRequest(void);
 void UpdateAutoResetTimeoutRequest(uint32_t timeout);
 void UpdateTelemHeartbeatRequest(uint32_t heartbeat);

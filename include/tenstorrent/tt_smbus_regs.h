@@ -22,8 +22,13 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_DM_STATIC_INFO = 0x20,
 	/* WO, 16 bits. Write with 0xA5A5 to respond to CMFW request `kCm2DmMsgIdPing` */
 	CMFW_SMBUS_PING = 0x21,
+	/* WO, 16 bits. Write with target fan speed percentage (0-100). Used by DMFW to broadcast
+	 * forced fan speed to every CMFW so that each chip's telemetry reflects the board-level
+	 * setting.
+	 */
+	CMFW_SMBUS_FAN_SPEED = 0x22,
 	/* WO, 16 bits. Write with fan speed to responsd to CMFW request
-	 * `kCm2DmMsgIdFanSpeedUpdate`
+	 * `kCm2DmMsgIdFanSpeedUpdate` or `kCm2DmMsgIdForcedFanSpeedUpdate`
 	 */
 	CMFW_SMBUS_FAN_RPM = 0x23,
 	/* WO, 16 bits. Write with input power limit for board */

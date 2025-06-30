@@ -30,8 +30,9 @@
 #include <tenstorrent/event.h>
 #include <tenstorrent/jtag_bootrom.h>
 #include <tenstorrent/tt_smbus_regs.h>
+#include <tenstorrent/read_only_table.h>
 
-#define RESET_UNIT_ARC_PC_CORE_0                0x80030C00
+#define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -48,6 +49,9 @@ static const struct device *const max6639_pwm_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_pwm));
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
+
+static uint8_t auto_fan_speed[BH_CHIP_COUNT] = { 35 }; /* per–chip */
+static uint8_t forced_fan_speed;                     /* 0-100 % */
 
 int update_fw(void)
 {
@@ -130,8 +134,27 @@ void process_cm2dm_message(struct bh_chip *chip)
 				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
 				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
 					fan_speed_percentage * UINT8_MAX, 100);
+				int chip_index = is_p300_left_chip() ? 1 : 0;
 
 				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
+				auto_fan_speed[chip_index] = fan_speed;
+			}
+			break;
+		case kCm2DmMsgIdForcedFanSpeedUpdate:
+			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
+				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
+					fan_speed_percentage * UINT8_MAX, 100);
+				forced_fan_speed = fan_speed;
+
+				/* Broadcast forced speed to all CMFWs so their telemetry reflects
+				 * it
+				 */
+				for (int i = 0; i < BH_CHIP_COUNT; i++) {
+					bharc_smbus_word_data_write(&BH_CHIPS[i].config.arc,
+						CMFW_SMBUS_FAN_SPEED,
+						fan_speed_percentage);
+				}
 			}
 			break;
 		case kCm2DmMsgIdReady:
@@ -143,8 +166,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 			if (chip->data.auto_reset_timeout != 0) {
 				/* Start auto-reset timer */
 				k_timer_start(&chip->auto_reset_timer,
-					      K_MSEC(chip->data.auto_reset_timeout),
-					      K_NO_WAIT);
+					K_MSEC(chip->data.auto_reset_timeout), K_NO_WAIT);
 			} else {
 				/* Stop auto-reset timer */
 				k_timer_stop(&chip->auto_reset_timer);
@@ -438,8 +460,7 @@ int main(void)
 				/* Read PC from ARC and record it */
 				jtag_setup(chip->config.jtag);
 				jtag_reset(chip->config.jtag);
-				jtag_axi_read32(chip->config.jtag,
-						RESET_UNIT_ARC_PC_CORE_0,
+				jtag_axi_read32(chip->config.jtag, RESET_UNIT_ARC_PC_CORE_0,
 						&chip->data.arc_hang_pc);
 				jtag_teardown(chip->config.jtag);
 				/* Clear watchdog state */
@@ -521,12 +542,22 @@ int main(void)
 			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 				bh_chip_set_fan_rpm(chip, rpm);
 			}
+
+			if (forced_fan_speed != 0) {
+				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, forced_fan_speed, 0);
+			} else {
+				uint8_t max_fan_speed = auto_fan_speed[0];
+
+				if (BH_CHIP_COUNT == 2) {
+					max_fan_speed = MAX(auto_fan_speed[0], auto_fan_speed[1]);
+				}
+				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, max_fan_speed, 0);
+			}
 		}
 
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			process_cm2dm_message(chip);
 		}
-
 		/*
 		 * Really only matters if running without security... but
 		 * cm should register that it is on the pcie bus and therefore can be an update

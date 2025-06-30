@@ -136,6 +136,11 @@ void UpdateFanSpeedRequest(uint32_t fan_speed)
 	PostCm2DmMsg(kCm2DmMsgIdFanSpeedUpdate, fan_speed);
 }
 
+void UpdateForcedFanSpeedRequest(uint32_t fan_speed)
+{
+	PostCm2DmMsg(kCm2DmMsgIdForcedFanSpeedUpdate, fan_speed);
+}
+
 void Dm2CmReadyRequest(void)
 {
 	/* Send a message to dmfw to indicate ready to receive messages */

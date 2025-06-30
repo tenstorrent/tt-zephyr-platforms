@@ -32,7 +32,7 @@ static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
 static int fan_ctrl_update_interval = 1000;
 
-uint16_t fan_rpm; /* Fan RPM from tach */
+uint16_t fan_rpm;   /* Fan RPM from tach */
 uint32_t fan_speed; /* In PWM for now */
 float max_gddr_temp;
 float max_asic_temp;
@@ -132,18 +132,46 @@ void init_fan_ctrl(void)
 static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
-	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
-		if (request->data[1] == 0xFFFFFFFF) { /* unforce */
-			k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
-				      K_MSEC(fan_ctrl_update_interval));
-		} else { /* force */
-			k_timer_stop(&fan_ctrl_update_timer);
-			fan_speed = request->data[1];
-			UpdateFanSpeedRequest(fan_speed);
-		}
-		return 0;
+	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
+		return 1;
 	}
 
-	return 1;
+	uint32_t raw_speed = request->data[1];
+	uint32_t speed_percentage = (raw_speed == 0xFFFFFFFF) ? 0 : raw_speed;
+
+	/* Re-use common helper so behaviour stays identical. We ask it to notify the DMFW because
+	 * this path originated from a host command.
+	 */
+	FanCtrlApplyBoardForcedSpeed(speed_percentage);
+
+	/* The helper does NOT send the update back, so we do it here for the host path. */
+	if (speed_percentage == 0) {
+		UpdateForcedFanSpeedRequest(0);
+	} else {
+		UpdateForcedFanSpeedRequest(speed_percentage);
+	}
+
+	return 0;
 }
 REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
+
+/*
+ * Board-level broadcast from the DMFW arrives via SMBus. We must update local state and telemetry
+ * but MUST NOT send another ForcedFanSpeedUpdate back to the DMFW (would cause an echo).
+ */
+void FanCtrlApplyBoardForcedSpeed(uint32_t speed_percentage)
+{
+	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
+		return;
+	}
+
+	if (speed_percentage == 0) {
+		/* Unforce – return to automatic control */
+		k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
+			      K_MSEC(fan_ctrl_update_interval));
+	} else {
+		/* Force – stop automatic updates and lock the speed */
+		k_timer_stop(&fan_ctrl_update_timer);
+		fan_speed = speed_percentage;
+	}
+}

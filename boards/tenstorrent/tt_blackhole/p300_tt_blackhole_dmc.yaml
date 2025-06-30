@@ -17,4 +17,6 @@ supported:
   - adc
   - i2c
   - dma
+  - mfd
+  - sensor
 vendor: tenstorrent
