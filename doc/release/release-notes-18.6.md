@@ -62,6 +62,8 @@ Major enhancements with this release include:
 
 * add `maxim,max6639` driver + tests
 
+* add Zephyr PLL driver + tests
+
 [comment]: <> (UL Libraries)
 
 [comment]: <> (H2 Other Notable Changes, if applicable)
