@@ -20,6 +20,8 @@ Major enhancements with this release include:
 ### Stability Improvements
 
 * Aligned ASIC location definition in the SPI table with that of the telemetry table
+* Update Blackhole ERISC FW to v1.4.2
+  * Updated ASIC location definition to align with SPI table changes
 * Implemented SDIF timeout for PVT sensor read
 * Update Blackhole MRISC FW to v2.8
   * Added Tuning setting for P300B cards
