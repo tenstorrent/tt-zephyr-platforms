@@ -337,7 +337,7 @@ static int api_erase(const struct device *dev, off_t addr, size_t size)
 	while (size > 0) {
 		rc = write_enable(dev);
 		if (rc < 0) {
-			LOG_ERR("Write enable failed.");
+			LOG_ERR("Write enable failed");
 			break;
 		}
 
@@ -427,7 +427,7 @@ static int read_jedec_id(const struct device *dev, uint8_t *id)
 	rc = mspi_transceive(dev_config->bus, &dev_config->mspi_id,
 			     &dev_data->xfer);
 	if (rc < 0) {
-		LOG_ERR("Read JEDEC ID failed: %d\n", rc);
+		LOG_ERR("Read JEDEC ID failed: %d", rc);
 	}
 
 	return rc;
@@ -592,7 +592,7 @@ static int default_io_mode(const struct device *dev)
 	}
 
 	if (rc < 0) {
-		LOG_ERR("Failed to change IO mode: %d\n", rc);
+		LOG_ERR("Failed to change IO mode: %d", rc);
 		return rc;
 	}
 

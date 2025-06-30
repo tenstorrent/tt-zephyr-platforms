@@ -131,12 +131,11 @@ static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 
 	if (timedout) {
 		LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to "
-			"initialize. Post code: 0x%x\n",
+			"initialize. Post code: 0x%x",
 			MRISC_INIT_TIMEOUT, gddr_inst, post_code);
 		return -ETIMEDOUT;
 	}
-	LOG_ERR("GDDR instance %d failed to initialize. Post code: 0x%x\n",
-		gddr_inst, post_code);
+	LOG_ERR("GDDR instance %d failed to initialize. Post code: 0x%x", gddr_inst, post_code);
 	return -EIO;
 }
 
@@ -155,10 +154,10 @@ static int CheckGddrHwTest(void)
 			if (error == -ENOTSUP) {
 				/* Shouldn't be considered a test failure if MRISC FW is too old. */
 				LOG_WRN("GDDR %d MRISC FW version does not support memtest. "
-					"Skipping the test on this instance.\n",
+					"Skipping the test on this instance",
 					gddr_inst);
 			} else if (error < 0) {
-				LOG_WRN("Failed to start GDDR %d memory test. Got error code %d.\n",
+				LOG_WRN("Failed to start GDDR %d memory test. Got error code %d",
 					gddr_inst, error);
 				any_error = -EIO;
 			} else {
@@ -175,16 +174,15 @@ static int CheckGddrHwTest(void)
 			if (error < 0) {
 				any_error = -EIO;
 				if (error == -ETIMEDOUT) {
-					LOG_ERR("GDDR %d memory test timed out.\n", gddr_inst);
+					LOG_ERR("GDDR %d memory test timed out", gddr_inst);
 				} else if (error == -EIO) {
-					LOG_ERR("GDDR %d memory test failed comparison.\n",
-						gddr_inst);
+					LOG_ERR("GDDR %d memory test failed comparison", gddr_inst);
 				} else {
-					LOG_ERR("GDDR %d memory test failed with error code %d.\n",
+					LOG_ERR("GDDR %d memory test failed with error code %d",
 						gddr_inst, error);
 				}
 			} else {
-				LOG_DBG("GDDR %d memory test passed.\n", gddr_inst);
+				LOG_DBG("GDDR %d memory test passed", gddr_inst);
 			}
 		}
 	}
@@ -205,7 +203,7 @@ static int InitMrisc(void)
 
 	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("Failed to load MRISC FW from file system to ARC.\n");
+		LOG_ERR("Failed to load MRISC FW from file system to ARC");
 		return -EIO;
 	}
 	uint32_t dram_mask = GetDramMask();
@@ -213,8 +211,8 @@ static int InitMrisc(void)
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
 			if (LoadMriscFw(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("Failed to load MRISC FW to MRISC from ARC."
-					"Failed on GDDR instance %d.\n",
+				LOG_ERR("Failed to load MRISC FW to MRISC from ARC\n"
+					"Failed on GDDR instance %d",
 					gddr_inst);
 				return -EIO;
 			}
@@ -223,7 +221,7 @@ static int InitMrisc(void)
 
 	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("Failed to load MRISC FW config from file system to ARC.\n");
+		LOG_ERR("Failed to load MRISC FW config from file system to ARC");
 		return -EIO;
 	}
 
@@ -232,21 +230,21 @@ static int InitMrisc(void)
 	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
 		LOG_WRN("Invalid GDDR speed in FW config: %d Mbps\n"
 			"Must be between %d Mbps and %d Mbps\n"
-			"Setting to minimum speed %d Mbps\n",
+			"Setting to minimum speed %d Mbps",
 			gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED, MIN_GDDR_SPEED);
 		gddr_speed = MIN_GDDR_SPEED;
 	}
 
 	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
-		LOG_ERR("Failed to set GDDR memory clock to requested: %d Mbps\n", gddr_speed);
+		LOG_ERR("Failed to set GDDR memory clock to requested: %d Mbps", gddr_speed);
 		return -EIO;
 	}
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
 			if (LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("Failed to load MRISC FW config to MRISC from ARC."
-					"Failed on GDDR instance %d.\n",
+				LOG_ERR("Failed to load MRISC FW config to MRISC from ARC"
+					"Failed on GDDR instance %d",
 					gddr_inst);
 				return -EIO;
 			}
@@ -514,7 +512,7 @@ static int InitHW(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (InitMrisc()) {
-			LOG_ERR("Failed to initialize GDDR.\n");
+			LOG_ERR("Failed to initialize GDDR");
 			init_errors = true;
 		}
 	}
@@ -533,7 +531,7 @@ static int InitHW(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (RegulatorInit(get_pcb_type())) {
-			LOG_ERR("Failed to initialize regulators.\n");
+			LOG_ERR("Failed to initialize regulators");
 			error_status0.f.regulator_init_error = 1;
 			init_errors = true;
 		}
@@ -562,11 +560,11 @@ static int InitHW(void)
 				int error = CheckGddrTraining(gddr_inst, timeout);
 
 				if (error == -ETIMEDOUT) {
-					LOG_ERR("GDDR instance %d timed out during training.\n",
+					LOG_ERR("GDDR instance %d timed out during training",
 						gddr_inst);
 					init_errors = true;
 				} else if (error) {
-					LOG_ERR("GDDR instance %d failed training.\n", gddr_inst);
+					LOG_ERR("GDDR instance %d failed training", gddr_inst);
 					init_errors = true;
 				}
 			}
@@ -575,7 +573,7 @@ static int InitHW(void)
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (!init_errors) {
 			if (CheckGddrHwTest() < 0) {
-				LOG_ERR("GDDR HW test failed.\n");
+				LOG_ERR("GDDR HW test failed");
 				init_errors = true;
 			}
 		}

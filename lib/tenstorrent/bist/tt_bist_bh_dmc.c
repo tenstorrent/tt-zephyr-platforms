@@ -16,7 +16,7 @@ int tt_bist(void)
 	const struct device *flash = BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.flash;
 
 	if (!device_is_ready(flash)) {
-		LOG_ERR("Flash device %s is not ready; continuing will mean app can't update\n",
+		LOG_ERR("Flash device %s is not ready; continuing will mean app can't update",
 			flash->name);
 		return -1;
 	}

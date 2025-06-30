@@ -41,7 +41,7 @@ int main(void)
 			};
 
 			if (error_status0.f.regulator_init_error) {
-				LOG_ERR("Not enabling AICLK PPM due to regulator init error.\n");
+				LOG_ERR("Not enabling AICLK PPM due to regulator init error");
 			} else {
 				/* DVFS should get enabled if AICLK PPM or L2CPUCLK PPM is enabled
 				 * We currently don't have plans to implement L2CPUCLK PPM,
