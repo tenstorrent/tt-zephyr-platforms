@@ -40,6 +40,13 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 
+#define ETH_FW_CFG_TAG   "ethfwcfg"
+#define ETH_FW_TAG       "ethfw"
+#define ETH_SD_REG_TAG   "ethsdreg"
+#define ETH_SD_FW_TAG    "ethsdfw"
+#define MRISC_FW_CFG_TAG "memfwcfg"
+#define MRISC_FW_TAG     "memfw"
+
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
@@ -110,33 +117,23 @@ static void DeassertRiscvResets(void)
 
 static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 {
-	uint32_t poll_val;
-	bool timedout = false;
+	do {
+		uint32_t poll_val = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
 
-	while (true) {
-		poll_val = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
-		if (poll_val == MRISC_INIT_FINISHED || poll_val == MRISC_INIT_FAILED) {
-			break;
+		if (poll_val == MRISC_INIT_FINISHED) {
+			return 0;
 		}
-		if (sys_timepoint_expired(timeout)) {
-			timedout = true;
-			break;
+		if (poll_val == MRISC_INIT_FAILED) {
+			LOG_ERR("%s[%d]: 0x%x", "MRISC_INIT_STATUS", gddr_inst, poll_val);
+			return -EIO;
 		}
 		k_msleep(1);
-	}
-	if (poll_val == MRISC_INIT_FINISHED) {
-		return EXIT_SUCCESS;
-	}
-	uint32_t post_code = MriscRegRead32(gddr_inst, MRISC_POST_CODE);
+	} while (!sys_timepoint_expired(timeout));
 
-	if (timedout) {
-		LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to "
-			"initialize. Post code: 0x%x",
-			MRISC_INIT_TIMEOUT, gddr_inst, post_code);
-		return -ETIMEDOUT;
-	}
-	LOG_ERR("GDDR instance %d failed to initialize. Post code: 0x%x", gddr_inst, post_code);
-	return -EIO;
+	LOG_ERR("%s[%d]: 0x%x", "MRISC_POST_CODE", gddr_inst,
+		MriscRegRead32(gddr_inst, MRISC_POST_CODE));
+
+	return -ETIMEDOUT;
 }
 
 static int CheckGddrHwTest(void)
@@ -153,12 +150,11 @@ static int CheckGddrHwTest(void)
 
 			if (error == -ENOTSUP) {
 				/* Shouldn't be considered a test failure if MRISC FW is too old. */
-				LOG_WRN("GDDR %d MRISC FW version does not support memtest. "
-					"Skipping the test on this instance",
-					gddr_inst);
+				LOG_DBG("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "skipped",
+					error);
 			} else if (error < 0) {
-				LOG_WRN("Failed to start GDDR %d memory test. Got error code %d",
-					gddr_inst, error);
+				LOG_ERR("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "failed",
+					error);
 				any_error = -EIO;
 			} else {
 				test_started |= BIT(gddr_inst);
@@ -173,16 +169,11 @@ static int CheckGddrHwTest(void)
 
 			if (error < 0) {
 				any_error = -EIO;
-				if (error == -ETIMEDOUT) {
-					LOG_ERR("GDDR %d memory test timed out", gddr_inst);
-				} else if (error == -EIO) {
-					LOG_ERR("GDDR %d memory test failed comparison", gddr_inst);
-				} else {
-					LOG_ERR("GDDR %d memory test failed with error code %d",
-						gddr_inst, error);
-				}
+				LOG_ERR("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"failed", error);
 			} else {
-				LOG_DBG("GDDR %d memory test passed", gddr_inst);
+				LOG_DBG("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"succeeded", error);
 			}
 		}
 	}
@@ -191,8 +182,6 @@ static int CheckGddrHwTest(void)
 
 static int InitMrisc(void)
 {
-	static const char kMriscFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfwcfg";
-	static const char kMriscFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "memfw";
 	size_t fw_size = 0;
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
@@ -201,9 +190,9 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("Failed to load MRISC FW from file system to ARC");
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
 		return -EIO;
 	}
 	uint32_t dram_mask = GetDramMask();
@@ -211,41 +200,34 @@ static int InitMrisc(void)
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
 			if (LoadMriscFw(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("Failed to load MRISC FW to MRISC from ARC\n"
-					"Failed on GDDR instance %d",
-					gddr_inst);
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
 				return -EIO;
 			}
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, kMriscFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("Failed to load MRISC FW config from file system to ARC");
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
 		return -EIO;
 	}
 
 	uint32_t gddr_speed = GetGddrSpeedFromCfg(large_sram_buffer);
 
 	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
-		LOG_WRN("Invalid GDDR speed in FW config: %d Mbps\n"
-			"Must be between %d Mbps and %d Mbps\n"
-			"Setting to minimum speed %d Mbps",
-			gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED, MIN_GDDR_SPEED);
+		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
 		gddr_speed = MIN_GDDR_SPEED;
 	}
 
 	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
-		LOG_ERR("Failed to set GDDR memory clock to requested: %d Mbps", gddr_speed);
+		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
 		return -EIO;
 	}
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
 			if (LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("Failed to load MRISC FW config to MRISC from ARC"
-					"Failed on GDDR instance %d",
-					gddr_inst);
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
 				return -EIO;
 			}
 			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
@@ -278,13 +260,11 @@ static void SerdesEthInit(void)
 	}
 
 	/* Load fw regs */
-	static const char kSerdesEthFwRegsTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdreg";
 	uint32_t reg_table_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, kSerdesEthFwRegsTag, large_sram_buffer,
-				SCRATCHPAD_SIZE, &reg_table_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle more gracefully */
+	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				&reg_table_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
 		return;
 	}
 
@@ -296,13 +276,11 @@ static void SerdesEthInit(void)
 	}
 
 	/* Load fw */
-	static const char kSerdesEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethsdfw";
 	size_t fw_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, kSerdesEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle more gracefully */
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
 		return;
 	}
 
@@ -323,13 +301,11 @@ static void EthInit(void)
 	}
 
 	/* Load fw */
-	static const char kEthFwTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfw";
 	size_t fw_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, kEthFwTag, large_sram_buffer, SCRATCHPAD_SIZE,
+	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle more gracefully */
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
 		return;
 	}
 
@@ -340,12 +316,9 @@ static void EthInit(void)
 	}
 
 	/* Load param table */
-	static const char kEthFwCfgTag[TT_BOOT_FS_IMAGE_TAG_SIZE] = "ethfwcfg";
-
-	if (tt_boot_fs_get_file(&boot_fs_data, kEthFwCfgTag, large_sram_buffer, SCRATCHPAD_SIZE,
+	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
 				&fw_size) != TT_BOOT_FS_OK) {
-		/* Error */
-		/* TODO: Handle more gracefully */
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
 		return;
 	}
 
