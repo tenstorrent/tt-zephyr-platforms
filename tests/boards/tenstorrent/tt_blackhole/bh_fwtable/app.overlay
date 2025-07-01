@@ -4,5 +4,5 @@
  */
 
 &fwtable {
-status = "okay";
+	status = "okay";
 };
