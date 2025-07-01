@@ -36,8 +36,6 @@ Major enhancements with this release include:
     * Add multi-mesh support for T3K
     * Fix intermittent static training synchronization failures
 
-* Integrated Zephyr GPIO driver in place of GPIO library
-
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 ## API Changes
@@ -62,7 +60,9 @@ Major enhancements with this release include:
 
 ### Drivers
 
+* add `tenstorrent,bh-gpio` driver in place of `bh_arc` GPIO library
 * add `maxim,max6639` driver + tests
+* add `tenstorrent,bh-fwtable` driver + tests
 
 * add Zephyr PLL driver + tests
 
