@@ -7,6 +7,8 @@
 #include "../boards/tt_blackhole_smc_csm.dtsi"
 
 / {
+	/* Partitions defined at the root are invalid, and will break flash map build */
+	/delete-node/ partitions;
 	chosen {
 		zephyr,sram = &csm_bootloader;
 	};

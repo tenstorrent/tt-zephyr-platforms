@@ -35,7 +35,6 @@ int main(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
-	int rc;
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.aiclk_ppm_en) {
@@ -76,6 +75,9 @@ int main(void)
 
 	Dm2CmReadyRequest();
 
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
+	int rc;
+
 	/* For now, if we make it here than we passed the BIST and will confirm the image */
 	if (!boot_is_img_confirmed()) {
 		rc = boot_write_img_confirmed();
@@ -84,6 +86,7 @@ int main(void)
 		}
 		printk("Firmware update is confirmed.\n");
 	}
+#endif
 
 	while (1) {
 		k_msleep(CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL);
