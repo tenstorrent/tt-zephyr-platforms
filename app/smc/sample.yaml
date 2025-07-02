@@ -16,8 +16,18 @@ tests:
         - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
-        - "-m not flash"
+        - "-m not (flash or mcuboot)"
   app.e2e-smoke-flash:
+    tags: e2e-flash
+    harness: pytest
+    sysbuild: true
+    harness_config:
+      pytest_root:
+        - pytest/e2e_smoke.py
+      pytest_args:
+        - "--dut-scope=session"
+        - "-m not mcuboot"
+  app.e2e-smoke-flash-mcuboot:
     timeout: 120 # tt-flash may take longer to execute
     tags: e2e-flash
     harness: pytest
