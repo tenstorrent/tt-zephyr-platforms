@@ -79,6 +79,33 @@ else()
 endif()
 
 # ======== Generate filesystem ========
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+set(PYTHON_DEVICETREE_SRC "$ENV{ZEPHYR_BASE}/scripts/dts/python-devicetree/src") # edtlib package
+set(DTS_FILE ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
+set(GEN_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
+set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml)
+
+# Runs the generate_yaml.py script
+add_custom_command(
+    OUTPUT ${OUTPUT_FILE}
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_DEVICETREE_SRC}:$ENV{PYTHONPATH}
+      python3 ${GEN_SCRIPT}
+      generate_bootfs
+      --dts-file ${DTS_FILE}
+      --output-file ${OUTPUT_FILE}
+      --bindings-dirs ${APP_DIR}/../../../zephyr/dts/bindings/ ${APP_DIR}/../../dts/bindings/
+    DEPENDS
+      ${DTS_FILE}
+      ${GEN_SCRIPT}
+    VERBATIM
+)
+
+# Always run script during every build
+add_custom_target(
+    generate_boot_yaml ALL
+    DEPENDS ${OUTPUT_FILE}
+)
+
 if (PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
