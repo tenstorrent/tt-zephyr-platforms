@@ -52,16 +52,19 @@ tests:
         - "--asic-id=1"
   app.bl2:
     tags: bl2
-    timeout: 240 # 4 minutes
+    timeout: 600 # 10 minutes
     harness: pytest
     harness_config:
+      # Order is important here, bl2.py must run before e2e_smoke.py
       pytest_root:
         - pytest/bl2.py
+        - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
     sysbuild: true
     extra_args:
       - FILE_SUFFIX=bl2
+      - dmc_CONFIG_DMC_RUN_SMBUS_TESTS=y
   # demonstrates pinctrl driver, macros, etc, compile
   app.e2e_smoke.pinctrl:
     tags: e2e

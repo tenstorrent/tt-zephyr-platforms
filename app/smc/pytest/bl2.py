@@ -10,6 +10,7 @@ import time
 
 import requests
 import pyluwen
+import pytest
 
 from twister_harness import DeviceAdapter
 from e2e_smoke import get_int_version_from_file, wait_arc_boot
@@ -20,6 +21,7 @@ SCRIPT_DIR = Path(__file__).parent
 ARC_MSG_TYPE_PING_DM = 0xC0
 
 
+# This test must be first, as it updates the firmware
 def test_arc_update(unlaunched_dut: DeviceAdapter):
     """
     Validates that the ARC firmware can be updated to BL2 scheme.
@@ -102,3 +104,61 @@ def test_arc_update(unlaunched_dut: DeviceAdapter):
         f"Expected updated DMC version {DMC_BL2_VERSION:x}, got {version:x}"
     )
     logger.info("DMC firmware upgraded to 0x%x", DMC_BL2_VERSION)
+
+
+def test_mcuboot(unlaunched_dut, asic_id):
+    """
+    Validates that the SMC falls back to the recovery image
+    when the main image is not valid. Only testable when mcuboot is enabled.
+    """
+    if "p300" in unlaunched_dut.device_config.platform:
+        # P300 isn't supported in this test, because tt-flash can't flash in
+        # recovery mode on P300 yet. See
+        pytest.skip("Skipping test on p300 platform")
+    arc_chip = wait_arc_boot(asic_id, timeout=15)
+    MCUBOOT_HEADER_ADDR = 0x29E000
+    MCUBOOT_MAGIC = 0x96F3B83D
+    # First, validate we are running the base image. A good way to check this is
+    # to see that telemetry data is available
+    try:
+        arc_chip.get_telemetry()
+    except Exception as e:
+        assert False, f"Failed to get telemetry data: {e}"
+    # Check that the MCUBOOT header magic is present
+    buf = bytes(4)
+    arc_chip.as_bh().spi_read(MCUBOOT_HEADER_ADDR, buf)
+    magic = int.from_bytes(buf, "little")
+    assert magic == MCUBOOT_MAGIC, (
+        f"MCUBOOT magic not found at {MCUBOOT_HEADER_ADDR:#010x}"
+    )
+    logger.info(f"MCUBOOT magic found in main image header: 0x{magic:#010x}")
+    # Now, erase the header of the main image, so that the SMC will fall
+    # back to the recovery image
+    logger.info("Erasing main image header to trigger recovery fallback")
+    buf = bytes([0xFF] * 0x1000)
+    arc_chip.as_bh().spi_write(MCUBOOT_HEADER_ADDR, buf)
+    # Reset the SMC to trigger the fallback
+    del arc_chip  # Force re-detection of the chip
+    smi_reset_cmd = "tt-smi -r"
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    ).returncode
+    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    arc_chip = wait_arc_boot(asic_id, timeout=15)
+    # Validate that the SMC has booted into the recovery image
+    with pytest.raises(Exception):
+        arc_chip.get_telemetry()
+    logger.info("SMC telemetry data not available, as expected in recovery mode")
+    # Now, make sure we can flash a good image from recovery mode
+    unlaunched_dut.launch()
+    del arc_chip  # Force re-detection of the chip
+    arc_chip = wait_arc_boot(asic_id, timeout=60)
+    # Make sure we can get telemetry data again
+    try:
+        arc_chip.get_telemetry()
+    except Exception as e:
+        assert False, f"Failed to get telemetry data after recovery: {e}"
+    # Check that the MCUBOOT header magic is present again
+    buf = bytes(4)
+    arc_chip.as_bh().spi_read(MCUBOOT_HEADER_ADDR, buf)
+    magic = int.from_bytes(buf, "little")
