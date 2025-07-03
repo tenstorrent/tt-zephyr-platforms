@@ -543,6 +543,11 @@ static int InitHW(void)
 		}
 	}
 
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPF);
+#ifndef CONFIG_TT_SMC_RECOVERY
+	CATInit();
+#endif
+
 	/* Indicate successful HW Init */
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
 	/* Record FW ID */

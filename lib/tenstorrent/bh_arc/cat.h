@@ -4,3 +4,4 @@
  */
 
 void CATEarlyInit(void);
+void CATInit(void);
