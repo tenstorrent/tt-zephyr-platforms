@@ -51,6 +51,7 @@ struct bh_fwtable_data {
 	FlashInfoTable flash_info_table;
 	ReadOnly read_only_table;
 	bool initialized; /* Track if tables have been loaded */
+	struct k_sem lock;
 };
 
 /* Getter function that returns a const pointer to the fw table */
@@ -59,10 +60,8 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return NULL;
 	}
 
 	return &data->fw_table;
@@ -73,10 +72,8 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return NULL;
 	}
 
 	return &data->flash_info_table;
@@ -87,10 +84,8 @@ const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return NULL;
 	}
 
 	return &data->read_only_table;
@@ -103,10 +98,8 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return PcbTypeUnknown;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return PcbTypeUnknown;
 	}
 
 	/* Extract board type from board_id */
@@ -155,10 +148,8 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return 0;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return 0;
 	}
 
 	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
@@ -219,14 +210,17 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 static int tt_bh_fwtable_load_tables(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
+	int result = 0;
 
+	k_sem_take(&data->lock, K_FOREVER);
+
+	/* Check if already initialized (double-checked locking pattern) */
 	if (data->initialized) {
+		k_sem_give(&data->lock);
 		return 0; /* Already loaded */
 	}
 
 	/* load firmware tables from flash */
-	int result;
-
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		result = tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
 	} else {
@@ -241,12 +235,14 @@ static int tt_bh_fwtable_load_tables(const struct device *dev)
 		LOG_ERR("bh_fwtable failed to load tables: %d", result);
 	}
 
+	k_sem_give(&data->lock);
 	return result;
 }
 
 static int tt_bh_fwtable_init(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
+	k_sem_init(&data->lock, 1, 1);
 
 	/* Initialize the data structure but don't load tables yet */
 	data->initialized = false;
