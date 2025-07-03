@@ -51,25 +51,8 @@ PRELEASE="$MAJOR.$MINOR.$PATCH.$EXTRAVERSION_NUMBER"
 
 echo "Building release $RELEASE / pack $PRELEASE"
 
-rev2board() {
-  case "$1" in
-    p100) BOARD=tt_blackhole@p100/tt_blackhole/smc;;
-    p100a) BOARD=tt_blackhole@p100a/tt_blackhole/smc;;
-    p150a) BOARD=tt_blackhole@p150a/tt_blackhole/smc;;
-    p150b) BOARD=tt_blackhole@p150b/tt_blackhole/smc;;
-    p150c) BOARD=tt_blackhole@p150c/tt_blackhole/smc;;
-    p300a) BOARD=tt_blackhole@p300a/tt_blackhole/smc;;
-    p300b) BOARD=tt_blackhole@p300b/tt_blackhole/smc;;
-    p300c) BOARD=tt_blackhole@p300c/tt_blackhole/smc;;
-    galaxy) BOARD=tt_blackhole@galaxy/tt_blackhole/smc;;
-    *) echo "Unknown board: $1"; exit 1;;
-  esac
-
-  echo "$BOARD"
-}
-
 for REV in $BOARD_REVS; do
-  BOARD="$(rev2board "$REV")"
+  BOARD="$($TTZP_BASE/scripts/rev2board.sh "$REV")"
 
   if [ -n "$BUNDLE_TEMP_PREFIX" ]; then
     if [ -f "${TEMP_DIR}${REV}/update.fwbundle" ]; then
