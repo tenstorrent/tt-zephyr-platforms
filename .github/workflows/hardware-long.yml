@@ -62,7 +62,7 @@ jobs:
           sudo chmod -R a+rwX $HOME/.cargo $HOME/.cache
           python -m venv .env
           source .env/bin/activate
-          pip install git+https://github.com/tenstorrent/tt-flash.git
+          pip install git+https://github.com/tenstorrent/tt-flash.git@v3.3.3
           tt-flash --fw-tar /home/user/tt-metal/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
