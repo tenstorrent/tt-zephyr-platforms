@@ -240,9 +240,9 @@ def test_fw_bundle_version(arc_chip):
     telemetry = arc_chip.get_telemetry()
 
     exp_bundle_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "VERSION")
-    assert (
-        telemetry.fw_bundle_version == exp_bundle_version
-    ), f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    assert telemetry.fw_bundle_version == exp_bundle_version, (
+        f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    )
     logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
 
 
@@ -363,8 +363,8 @@ def test_tensix_reset(arc_chip):
         scratch_get = arc_chip.noc_read32(
             noc_id=0, x=1, y=2, addr=ETH_RISC_PREFECTH_CTRL_ADDR
         )
-        assert (
-            scratch_get & 1 == 0
-        ), "Tensix scratch bit not cleared. Tensix reset failed"
+        assert scratch_get & 1 == 0, (
+            "Tensix scratch bit not cleared. Tensix reset failed"
+        )
 
         logger.info(f"Tensix reset test iteration {i} passed")
