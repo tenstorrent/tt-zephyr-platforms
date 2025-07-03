@@ -11,7 +11,7 @@
 
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR    0x80030168
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_DEFAULT 0x00000318
-#define CAT_THERM_TRIP_TEMP                           100
+#define CAT_EARLY_TRIP_TEMP                           100
 
 typedef struct {
 	uint32_t trim_code: 6;
@@ -33,7 +33,7 @@ static uint8_t TempToTrimCode(float temp)
 
 static const struct device *gpio1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio1));
 
-void CATInit(void)
+void CATEarlyInit(void)
 {
 	/* CAT output is not stable during initialization,
 	 * disable therm trip GPIO and PLL bypass to avoid false therm trip indication
@@ -44,7 +44,7 @@ void CATInit(void)
 	RESET_UNIT_CATMON_THERM_TRIP_CNTL_reg_u cat_cntl;
 
 	cat_cntl.val = RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_DEFAULT;
-	cat_cntl.f.trim_code = TempToTrimCode(CAT_THERM_TRIP_TEMP);
+	cat_cntl.f.trim_code = TempToTrimCode(CAT_EARLY_TRIP_TEMP);
 	cat_cntl.f.enable = 1;
 	cat_cntl.f.pll_therm_trip_bypass_catmon_en = 0;
 	cat_cntl.f.pll_therm_trip_bypass_thermb_en = 0;
