@@ -24,10 +24,15 @@ env:
 jobs:
   prepare-release:
     runs-on: ubuntu-24.04
+    outputs:
+      boards: ${{ steps.genboards.outputs.boards }}
     steps:
       - id: set_vars
         run: ${{ env.SET_VARS_CMDS }}
       - uses: actions/checkout@v4
+      - id: genboards
+        run: |
+          echo "boards=$(jq -r -c ".[]" .github/boards.json)" | tee -a $GITHUB_OUTPUT
       - id: check_relnotes_file
         run: |
           relnotes_file="${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}"
@@ -92,7 +97,7 @@ jobs:
 
       - name: Package firmware artifacts
         run: |
-          BOARD_REVS=($(jq -r -c ".[]" .github/boards.json))
+          BOARD_REVS=(${{ needs.prepare-release.outputs.boards }})
 
           for REV in ${BOARD_REVS[@]}; do
             mv firmware-$REV $REV
