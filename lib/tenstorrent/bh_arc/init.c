@@ -393,7 +393,7 @@ static int InitHW(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
 	/* Enable CATMON for early thermal protection */
-	CATInit();
+	CATEarlyInit();
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		CalculateHarvesting();
