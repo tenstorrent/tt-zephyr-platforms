@@ -15,7 +15,7 @@ jobs:
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
-  reset-hammer-test:
+  e2e-stress-test:
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +36,7 @@ jobs:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent/:/opt/tenstorrent/
+        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - uses: actions/checkout@v4
@@ -57,18 +57,56 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
-      - name: Run reset test
-        working-directory: tt-zephyr-platforms
-        timeout-minutes: 90
-        shell: bash
+      - name: run-e2e-stress-test
+        working-directory: zephyr
         run: |
-          ./scripts/run-reset-hammer.sh $SMC_BOARD 1000
+          # TODO: ideally we would use one twister command to build and
+          # flash DMC and SMC firmware, but since each chip uses a separate
+          # debug adapter this doesn't work. For now, just flash DMC
+          # then run twister with SMC firmware
+          ./scripts/twister -i --retry-failed 3 \
+            --retry-interval 5 \
+            --tag e2e \
+            -p $DMC_BOARD --device-testing \
+            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            -T ../tt-zephyr-platforms/app \
+            --outdir twister-dmc-e2e
+          # Rescan PCIe before we run tt-flash
+          sudo ../tt-zephyr-platforms/scripts/rescan-pcie.sh
+          # Run a full stress test, using tt-flash as the runner
+          ./scripts/twister -i -p $SMC_BOARD \
+            --tag e2e-stress -T ../tt-zephyr-platforms/app \
+            --west-flash="--force" \
+            --west-runner tt_flash \
+            --device-testing -c \
+            --device-serial-pty rtt \
+            --outdir twister-e2e-stress
+
+      - name: Upload Stress Test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stress test results (${{ matrix.config.board }})
+          include-hidden-files: true
+          path: |
+            zephyr/twister-*e2e*/**/device.log
+            zephyr/twister-*e2e*/**/handler.log
+            zephyr/twister-*e2e*/**/twister_harness.log
+            zephyr/twister-*e2e*/**/zephyr.dts
+            zephyr/twister-*e2e*/**/.config
+            zephyr/twister-*e2e*/**/*.map
+            zephyr/twister-*e2e*/**/zephyr.elf
+            zephyr/twister-*e2e*/**/*.lst
+            zephyr/twister-*e2e*/twister.log
+            zephyr/twister-*e2e*/twister.json
+            zephyr/twister-*e2e*/**/update.fwbundle
+            zephyr/twister-*e2e*/**/recording.csv
 
       - name: Print RTT logs
         if: ${{ failure() }}
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
           python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
