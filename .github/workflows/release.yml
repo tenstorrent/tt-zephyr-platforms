@@ -93,7 +93,7 @@ jobs:
       - name: Package firmware artifacts
         run: |
           # TODO: read boards / board revs from a YAML file
-          BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c"
+          BOARD_REVS="p100 p100a p150a p150b p150c p300a p300b p300c galaxy"
 
           for REV in $BOARD_REVS; do
             mv firmware-$REV $REV
