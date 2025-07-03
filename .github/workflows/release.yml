@@ -32,7 +32,8 @@ jobs:
       - uses: actions/checkout@v4
       - id: genboards
         run: |
-          echo "boards=$(jq -r -c ".[]" .github/boards.json)" | tee -a $GITHUB_OUTPUT
+          BOARDS="$(jq -r -c ".[]" .github/boards.json)"
+          echo boards="$BOARDS" | tee -a $GITHUB_OUTPUT
       - id: check_relnotes_file
         run: |
           relnotes_file="${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}"
