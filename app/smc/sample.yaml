@@ -59,3 +59,18 @@ tests:
       - "EXTRA_DTC_OVERLAY_FILE=pinctrl.overlay"
     extra_overlay_confs:
       - pinctrl.conf
+  app.stress-test:
+    timeout: 5400 # 90 minutes
+    tags: e2e-stress
+    harness: pytest
+    sysbuild: true
+    harness_config:
+      pytest_root:
+        - pytest/e2e_stress.py
+      pytest_args:
+        - "--dut-scope=session"
+      record:
+        regex:
+          - >-
+            INFO: (?P<test_name>.*) completed.
+            Failed (?P<fail_count>\d+)/(?P<total_tries>\d+) times.
