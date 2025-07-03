@@ -7,7 +7,21 @@
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+### Zephyr-4.2.0-rc1
+
+This release of `tt-zephyr-platforms` migrates our application to run on v4.2.0-rc1 of the Zephyr
+Real-time Operating System. While the final v4.2.0 release of Zephyr is not yet available, we are
+committed to ensuring that our platform will run on it when it is available.
+
+Tenstorrent's usage of Zephyr API usage has remained fairly consistent over the last release
+cycle. Of course, Zephyr's APIs have been very stable for some time and the upstream continuous
+test environment is quite thorough.
+
+Upstream (draft) release notes for the up-coming v4.2.0 release of Zephyr are available
+[here](https://github.com/zephyrproject-rtos/zephyr/blob/main/doc/releases/release-notes-4.2.rst).
+
+More information about the Zephyr Release Process is available
+[here](https://docs.zephyrproject.org/latest/project/release_process.html).
 
 ### New and Experimental Features
 
