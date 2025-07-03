@@ -29,21 +29,23 @@ concurrency:
 # TODO: read boards / board revs from a YAML file (generate a matrix)
 # possibly using https://github.com/marketplace/actions/files-to-matrix
 jobs:
+  genboards:
+    runs-on: ubuntu-24.04
+    outputs:
+      boards: ${{ steps.genboards.outputs.boards }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: genboards
+        run: |
+          echo "boards=$(jq -c '.' .github/boards.json)" | tee -a $GITHUB_OUTPUT
+
   build:
     runs-on: ubuntu-24.04
+    needs: genboards
     strategy:
       fail-fast: false
       matrix:
-        board:
-          - p100
-          - p100a
-          - p150a
-          - p150b
-          - p150c
-          - p300a
-          - p300b
-          - p300c
-          - galaxy
+        board: ${{ fromJson(needs.genboards.outputs.boards) }}
     steps:
       - uses: actions/checkout@v4
         with:
