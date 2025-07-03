@@ -182,7 +182,7 @@ static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 	dmfw_ping_valid = false;
 	PostCm2DmMsg(kCm2DmMsgIdPing, 0);
 	/* Delay to allow DMFW to respond */
-	k_msleep(50);
+	k_msleep(100);
 
 	/* Encode response from DMFW */
 	response->data[1] = dmfw_ping_valid;
