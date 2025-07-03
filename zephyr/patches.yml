@@ -51,16 +51,6 @@ patches:
     comments: |
       Hack to support the version of the DesignWare I2C hardware that splits the interrupts
       to multiple lines.
-  - path: zephyr/include-zephyr-devicetree-add-DT_INST_IRQN_BY_NAME.patch
-    sha256sum: 1859e965ac042bf49ffb2d219ac1d9731562cfe334697180c3633ae402ac637f
-    module: zephyr
-    author: Daniel DeGrasse
-    email: ddegrasse@tenstorrent.com
-    date: 2025-02-08
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92057
-    comments: |
-      Add missing DT_INST_IRQN_BY_NAME macro to devicetree.h
   - path: zephyr/k-event-wait-safe.patch
     sha256sum: 33a271699fe20d1870fb3549db03ae50c24137a5b8916c0bb5df56b9665d4a88
     module: zephyr
