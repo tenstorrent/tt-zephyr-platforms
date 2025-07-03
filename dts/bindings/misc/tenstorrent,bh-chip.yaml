@@ -8,9 +8,9 @@ compatible: "tenstorrent,bh-chip"
 properties:
   flash:
     type: phandle
-  bh_smbus:
+  bh-smbus:
     type: phandle
   arc:
     type: phandle
-  gpio_straps:
+  gpio-straps:
     type: phandle-array
