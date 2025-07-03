@@ -16,6 +16,7 @@ config BH_FWTABLE_INIT_PRIORITY
 	default 90
 	help
 		Set the initialization priority for the Tenstorrent Blackhole firmware table.
+
 		This priority should be selected so that bh_fwtable is initialized after the SPI EEPROM.
 
 module = BH_FWTABLE
