@@ -45,7 +45,11 @@ if (TARGET recovery)
 endif()
 
 # Add recovery config file
-sysbuild_cache_set(VAR recovery_EXTRA_CONF_FILE recovery.conf)
+if (SB_CONFIG_USE_MCUBOOT)
+  sysbuild_cache_set(VAR recovery_EXTRA_CONF_FILE recovery_mcuboot.conf)
+else ()
+  sysbuild_cache_set(VAR recovery_EXTRA_CONF_FILE recovery.conf)
+endif()
 
 # This command will trigger recursive processing of the file. See above
 # for how we skip this
@@ -65,29 +69,56 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   )
 endif()
 
+if (SB_CONFIG_USE_MCUBOOT)
+  # Make sure MCUBoot is build only
+  set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
+
+  # This is quite a hack- in order to get the mcuboot hook file we need to override
+  # image verification (which allows us to skip signature checks) into the mcuboot
+  # build, we need to create a tiny Zephyr module in the source directory, and
+  # tell sysbuild to include that module with mcuboot
+  set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
+endif()
+
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
-set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
-set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
+if (SB_CONFIG_USE_MCUBOOT)
+  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
+  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
+  set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
+else()
+  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
+  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
+endif()
 
 if (PROD_NAME MATCHES "^GALAXY")
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 else()
-  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  if (SB_CONFIG_USE_MCUBOOT)
+    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN})
+  else()
+    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
+  endif()
+endif()
+
+if (SB_CONFIG_USE_MCUBOOT)
+  set(BOOTFS_SUFFIX "bootfs-mcuboot")
+else ()
+  set(BOOTFS_SUFFIX "bootfs")
 endif()
 
 # ======== Generate filesystem ========
 if (PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
-    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.bin)
+    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.hex)
     set(OUTPUT_FWBUNDLE_${side_upper} ${CMAKE_BINARY_DIR}/update-${side}.fwbundle)
 
     add_bootfs_and_fwbundle(
       ${BUNDLE_VERSION_STRING}
-      ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-${side}-bootfs.yaml
+      ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-${side}-${BOOTFS_SUFFIX}.yaml
       ${OUTPUT_BOOTFS_${side_upper}}
       ${OUTPUT_FWBUNDLE_${side_upper}}
       ${PROD_NAME}_${side}
@@ -106,10 +137,10 @@ if (PROD_NAME MATCHES "^P300")
     -c ${OUTPUT_FWBUNDLE_RIGHT}
     DEPENDS ${OUTPUT_FWBUNDLE_LEFT} ${OUTPUT_FWBUNDLE_RIGHT})
 else()
-  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
+  set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.hex)
   add_bootfs_and_fwbundle(
     ${BUNDLE_VERSION_STRING}
-    ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml
+    ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-${BOOTFS_SUFFIX}.yaml
     ${OUTPUT_BOOTFS}
     ${OUTPUT_FWBUNDLE}
     ${PROD_NAME}

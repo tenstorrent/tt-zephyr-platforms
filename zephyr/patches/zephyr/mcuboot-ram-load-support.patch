@@ -1,0 +1,211 @@
+From a41eb8c9832241d9d0d5a44bfca8f8b34ef67a2d Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Wed, 25 Jun 2025 18:51:52 -0400
+Subject: [PATCH] mcuboot: add RAM load with revert mode
+
+Add in the ram load with revert mode to MCUboot. This mode allows
+MCUboot to load an image into RAM and execute it, while also allowing
+the image to be marked for test or permanent boot. If the image is
+marked for test, it must confirm itself on the first boot, or it will
+be reverted to the previously approved application.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ cmake/mcuboot.cmake                           |  4 +-
+ modules/Kconfig.mcuboot                       | 20 +++++++
+ share/sysbuild/images/bootloader/Kconfig      | 14 +++++
+ subsys/dfu/boot/mcuboot.c                     | 60 +++++++++++++++++--
+ .../mcumgr/grp/img_mgmt/src/img_mgmt_state.c  |  3 +-
+ 5 files changed, 93 insertions(+), 8 deletions(-)
+
+diff --git a/cmake/mcuboot.cmake b/cmake/mcuboot.cmake
+index 2767af807c1..c8d5a2f63e8 100644
+--- a/cmake/mcuboot.cmake
++++ b/cmake/mcuboot.cmake
+@@ -127,7 +127,7 @@ function(zephyr_mcuboot_tasks)
+   if(CONFIG_MCUBOOT_IMGTOOL_OVERWRITE_ONLY)
+     # Use overwrite-only instead of swap upgrades.
+     set(imgtool_args --overwrite-only --align 1 ${imgtool_args})
+-  elseif(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD)
++  elseif(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD OR CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT)
+     # RAM load requires setting the location of where to load the image to
+     dt_chosen(chosen_ram PROPERTY "zephyr,sram")
+     dt_reg_addr(chosen_ram_address PATH ${chosen_ram})
+@@ -136,7 +136,7 @@ function(zephyr_mcuboot_tasks)
+     dt_nodelabel(slot1_partition NODELABEL "slot1_partition" REQUIRED)
+     dt_reg_addr(slot1_partition_address PATH ${slot1_partition})
+
+-    set(imgtool_args --align 1 --load-addr ${chosen_ram_address} ${imgtool_args})
++    set(imgtool_args --align ${write_block_size} --load-addr ${chosen_ram_address} ${imgtool_args})
+     set(imgtool_args_alt_slot ${imgtool_args} --hex-addr ${slot1_partition_address})
+     set(imgtool_args ${imgtool_args} --hex-addr ${slot0_partition_address})
+   elseif(CONFIG_MCUBOOT_BOOTLOADER_MODE_SINGLE_APP_RAM_LOAD)
+diff --git a/modules/Kconfig.mcuboot b/modules/Kconfig.mcuboot
+index 73a6346f89b..bb3e9511384 100644
+--- a/modules/Kconfig.mcuboot
++++ b/modules/Kconfig.mcuboot
+@@ -211,6 +211,26 @@ config MCUBOOT_BOOTLOADER_MODE_RAM_LOAD
+ 	  This option automatically selectes MCUBOOT_BOOTLOADER_NO_DOWNGRADE as it is not possible
+ 	  to swap back to older version of the application.
+
++config MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT
++	bool "MCUboot has been configured for RAM LOAD with revert"
++	select MCUBOOT_BOOTLOADER_MODE_HAS_NO_DOWNGRADE
++	select MCUBOOT_BOOTLOADER_NO_DOWNGRADE
++	help
++	  MCUboot expects slot0_partition and slot1_partition to exist in DT. In this mode, MCUboot
++	  will select the image with the higher version number, copy it to RAM and begin execution
++	  from there. The image must be linked to execute from RAM, the address that it is copied
++	  to is specified using the load-addr argument when running imgtool.
++	  This option automatically selectes MCUBOOT_BOOTLOADER_NO_DOWNGRADE as it is not possible
++	  to swap back to older version of the application.
++	  In this mode MCUboot will boot the application with the higher
++	  version from either slot, as long as it has been marked to be boot
++	  next time for test or permanently. In case when application is marked
++	  for test it needs to confirm itself, on the first boot, or it will be
++	  removed and MCUboot will revert to booting previously approved
++	  application. Note that in this mode MCUboot will not boot an
++	  application if it does not have an image header, so if an application
++	  is flashed manually it should be marked as confirmed
++
+ config MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP
+ 	bool "MCUboot has been configured for DirectXIP operation"
+ 	select MCUBOOT_BOOTLOADER_MODE_HAS_NO_DOWNGRADE
+diff --git a/share/sysbuild/images/bootloader/Kconfig b/share/sysbuild/images/bootloader/Kconfig
+index 1b5cdec41ea..c1a9c0a021d 100644
+--- a/share/sysbuild/images/bootloader/Kconfig
++++ b/share/sysbuild/images/bootloader/Kconfig
+@@ -119,6 +119,20 @@ config MCUBOOT_MODE_RAM_LOAD
+ 	  Note: RAM must be assigned to the bootloader that is not used by the application in this
+ 	  mode so that the bootloader is able to function until the application has booted.
+
++config MCUBOOT_MODE_RAM_LOAD_WITH_REVERT
++       bool "RAM load with revert"
++       help
++          MCUboot expects slot0_partition and slot1_partition to exist in DT. In this mode, MCUboot
++          will select the image with the higher version number, copy it to RAM and begin execution
++          from there. MCUBoot will only boot an image if it has been marked to be boot next time
++          for test or permanently. In case when application is marked for test it needs to confirm
++          itself, on the first boot, or it will be removed and MCUboot will revert to booting
++          previously approved application. The image must be linked to execute from RAM, the address
++          that it is copied to is specified using the load-addr argument when running imgtool.
++
++          Note: RAM must be assigned to the bootloader that is not used by the application in this
++          mode so that the bootloader is able to function until the application has booted.
++
+ config MCUBOOT_MODE_FIRMWARE_UPDATER
+ 	bool "Firmware updater"
+ 	help
+diff --git a/subsys/dfu/boot/mcuboot.c b/subsys/dfu/boot/mcuboot.c
+index 5683d23a87a..cc014c0e3be 100644
+--- a/subsys/dfu/boot/mcuboot.c
++++ b/subsys/dfu/boot/mcuboot.c
+@@ -20,9 +20,18 @@
+ #include "bootutil/bootutil_public.h"
+ #include <zephyr/dfu/mcuboot.h>
+
+-#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD)
++#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD) || \
++	defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT)
++/* For RAM LOAD mode, the active image must be fetched from the bootloader */
+ #include <bootutil/boot_status.h>
+ #include <zephyr/retention/blinfo.h>
++
++#define SLOT0_PARTITION		slot0_partition
++#define SLOT1_PARTITION		slot1_partition
++#define SLOT2_PARTITION		slot2_partition
++#define SLOT3_PARTITION		slot3_partition
++#define SLOT4_PARTITION		slot4_partition
++#define SLOT5_PARTITION		slot5_partition
+ #endif
+
+ #include "mcuboot_priv.h"
+@@ -49,7 +58,8 @@ enum IMAGE_INDEXES {
+ 	IMAGE_INDEX_2
+ };
+
+-#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD)
++#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD) || \
++	defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT)
+ /* For RAM LOAD mode, the active image must be fetched from the bootloader */
+ #define ACTIVE_SLOT_FLASH_AREA_ID boot_fetch_active_slot()
+ #define INVALID_SLOT_ID 255
+@@ -81,11 +91,12 @@ struct mcuboot_v1_raw_header {
+  * End of strict defines
+  */
+
+-#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD)
++#if defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD) || \
++	defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT)
+ uint8_t boot_fetch_active_slot(void)
+ {
+ 	int rc;
+-	uint8_t slot;
++	uint8_t slot, fa_id;
+
+ 	rc = blinfo_lookup(BLINFO_RUNNING_SLOT, &slot, sizeof(slot));
+
+@@ -97,7 +108,46 @@ uint8_t boot_fetch_active_slot(void)
+
+ 	LOG_DBG("Active slot: %d", slot);
+
+-	return slot;
++	/* Map slot number back to flash area ID */
++	switch (slot) {
++	case 0:
++		fa_id = FIXED_PARTITION_ID(SLOT0_PARTITION);
++		break;
++
++	case 1:
++		fa_id = FIXED_PARTITION_ID(SLOT1_PARTITION);
++		break;
++
++#if FIXED_PARTITION_EXISTS(SLOT2_PARTITION)
++	case 2:
++		fa_id = FIXED_PARTITION_ID(SLOT2_PARTITION);
++		break;
++#endif
++
++#if FIXED_PARTITION_EXISTS(SLOT3_PARTITION)
++	case 3:
++		fa_id = FIXED_PARTITION_ID(SLOT3_PARTITION);
++		break;
++#endif
++
++#if FIXED_PARTITION_EXISTS(SLOT4_PARTITION)
++	case 4:
++		fa_id = FIXED_PARTITION_ID(SLOT4_PARTITION);
++		break;
++#endif
++
++#if FIXED_PARTITION_EXISTS(SLOT5_PARTITION)
++	case 5:
++		fa_id = FIXED_PARTITION_ID(SLOT5_PARTITION);
++		break;
++#endif
++
++	default:
++		fa_id = INVALID_SLOT_ID;
++		break;
++	}
++
++	return fa_id;
+ }
+ #else  /* CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD */
+ uint8_t boot_fetch_active_slot(void)
+diff --git a/subsys/mgmt/mcumgr/grp/img_mgmt/src/img_mgmt_state.c b/subsys/mgmt/mcumgr/grp/img_mgmt/src/img_mgmt_state.c
+index 98b6aee42aa..780a92d7c02 100644
+--- a/subsys/mgmt/mcumgr/grp/img_mgmt/src/img_mgmt_state.c
++++ b/subsys/mgmt/mcumgr/grp/img_mgmt/src/img_mgmt_state.c
+@@ -326,7 +326,8 @@ img_mgmt_slot_in_use(int slot)
+ 	int active_slot = img_mgmt_active_slot(image);
+
+ #if !defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP) && \
+-	!defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD)
++	!defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD) && \
++	!defined(CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT)
+ 	enum img_mgmt_next_boot_type type = NEXT_BOOT_TYPE_NORMAL;
+ 	int nbs = img_mgmt_get_next_boot_slot(image, &type);
+
+--
+2.34.1
