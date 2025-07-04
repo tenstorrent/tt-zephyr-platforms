@@ -8,7 +8,6 @@
 
 #include <tenstorrent/jtag_bootrom.h>
 #include <tenstorrent/bh_chip.h>
-#include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/event.h>
 #include <tenstorrent/tt_smbus_regs.h>
 #include <zephyr/kernel.h>

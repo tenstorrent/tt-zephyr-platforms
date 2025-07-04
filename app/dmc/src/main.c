@@ -9,7 +9,6 @@
 
 #include <app_version.h>
 #include <tenstorrent/bist.h>
-#include <tenstorrent/fan_ctrl.h>
 #include <tenstorrent/fwupdate.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
@@ -17,10 +16,13 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/smbus.h>
 #include <zephyr/drivers/jtag.h>
+#include <zephyr/drivers/mfd/max6639.h>
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/sys/util.h>
 
 #include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
@@ -42,6 +44,10 @@ struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), c
 static const struct gpio_dt_spec board_fault_led =
 	GPIO_DT_SPEC_GET_OR(DT_PATH(board_fault_led), gpios, {0});
 static const struct device *const ina228 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(ina228));
+static const struct device *const max6639_pwm_dev =
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_pwm));
+static const struct device *const max6639_sensor_dev =
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
 
 int update_fw(void)
 {
@@ -121,7 +127,11 @@ void process_cm2dm_message(struct bh_chip *chip)
 			break;
 		case kCm2DmMsgIdFanSpeedUpdate:
 			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-				set_fan_speed((uint8_t)message.data & 0xFF);
+				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
+				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
+					fan_speed_percentage * UINT8_MAX, 100);
+
+				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
 			}
 			break;
 		case kCm2DmMsgIdReady:
@@ -287,7 +297,10 @@ int main(void)
 	}
 
 	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-		set_fan_speed(35); /* Start fan speed at 35% */
+		uint8_t fan_speed =
+			(uint8_t)DIV_ROUND_UP(35 * UINT8_MAX, 100); /* Start fan speed at 35% */
+
+		pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
 	}
 
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
@@ -389,7 +402,8 @@ int main(void)
 				}
 
 				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-					set_fan_speed(100);
+					pwm_set_cycles(max6639_pwm_dev, 0, UINT32_MAX, UINT32_MAX,
+						       0);
 				}
 
 				/* Prioritize the system rebooting over the therm trip handler */
@@ -432,7 +446,8 @@ int main(void)
 				chip->data.auto_reset_timeout = 0;
 
 				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-					set_fan_speed(100);
+					pwm_set_cycles(max6639_pwm_dev, 0, UINT32_MAX, UINT32_MAX,
+						       0);
 				}
 
 				chip->data.performing_reset = true;
@@ -495,7 +510,13 @@ int main(void)
 		}
 
 		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
-			uint16_t rpm = get_fan_rpm();
+			uint16_t rpm;
+			struct sensor_value data;
+
+			sensor_sample_fetch_chan(max6639_sensor_dev, MAX6639_CHAN_1_RPM);
+			sensor_channel_get(max6639_sensor_dev, MAX6639_CHAN_1_RPM, &data);
+
+			rpm = (uint16_t)data.val1;
 
 			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 				bh_chip_set_fan_rpm(chip, rpm);
