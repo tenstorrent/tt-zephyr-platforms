@@ -31,9 +31,11 @@ jobs:
         run: ${{ env.SET_VARS_CMDS }}
       - uses: actions/checkout@v4
       - id: genboards
+        shell: bash
         run: |
           BOARDS="$(jq -r -c ".[]" .github/boards.json)"
-          echo boards="$BOARDS" | tee -a $GITHUB_OUTPUT
+          BOARDS="${BOARDS//$'\n'/ }" # Remove embedded newlines
+          echo "boards=$BOARDS" | tee -a $GITHUB_OUTPUT
       - id: check_relnotes_file
         run: |
           relnotes_file="${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}"
