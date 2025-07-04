@@ -106,6 +106,15 @@ static const RegulatorData vcorem_data[] = {
 	REGULATOR_DATA(vcorem, e7),
 };
 
+static const uint8_t serdes_vr_d2_data[] = {0x07};
+static const uint8_t serdes_vr_d2_mask[] = {0xff};
+
+BUILD_ASSERT(sizeof(serdes_vr_d2_data) == sizeof(serdes_vr_d2_mask));
+
+static const RegulatorData serdes_vr_data[] = {
+	REGULATOR_DATA(serdes_vr, d2),
+};
+
 static const RegulatorConfig p100_p150_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
@@ -116,6 +125,21 @@ static const RegulatorConfig p100_p150_config[] = {
 		.address = P0V8_VCOREM_ADDR,
 		.regulator_data = vcorem_data,
 		.count = ARRAY_SIZE(vcorem_data),
+	},
+	{
+		.address = SERDES_VDDL_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDD_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDDH_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
 	},
 };
 
