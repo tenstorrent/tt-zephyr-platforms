@@ -125,7 +125,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
 			break;
 		case kCm2DmMsgIdFanSpeedUpdate:
-			if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 				uint8_t fan_speed = (uint8_t)message.data & 0xFF;
 
 				pwm_set_cycles(max6639_pwm_dev, 0, 100, fan_speed, 0);
@@ -293,7 +293,7 @@ int main(void)
 		}
 	}
 
-	if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 		pwm_set_cycles(max6639_pwm_dev, 0, 100, 35, 0); /* Start fan speed at 35% */
 	}
 
@@ -395,7 +395,7 @@ int main(void)
 					gpio_pin_set_dt(&board_fault_led, 1);
 				}
 
-				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 					pwm_set_cycles(max6639_pwm_dev, 0, 100, 100, 0);
 				}
 
@@ -438,7 +438,7 @@ int main(void)
 				/* Clear watchdog state */
 				chip->data.auto_reset_timeout = 0;
 
-				if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 					pwm_set_cycles(max6639_pwm_dev, 0, 100, 100, 0);
 				}
 
@@ -501,7 +501,7 @@ int main(void)
 			ina228_power_update();
 		}
 
-		if (IS_ENABLED(CONFIG_TT_FAN_CTRL)) {
+		if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 			uint16_t rpm;
 			struct sensor_value data;
 
