@@ -280,7 +280,7 @@ uint32_t RegulatorInit(PcbType board_type)
 		}
 	}
 
-	if (board_type == PcbTypeP150 || board_type == PcbTypeP300 || board_type == PcbTypeUBB) {
+	if (board_type == PcbTypeP300 || board_type == PcbTypeUBB) {
 		static const uint8_t serdes_vr_addr[] = {SERDES_VDDL_ADDR, SERDES_VDD_ADDR,
 							 SERDES_VDDH_ADDR};
 		uint8_t mfr_ctrl_ops = 7;
