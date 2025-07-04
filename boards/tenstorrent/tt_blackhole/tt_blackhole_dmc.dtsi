@@ -5,6 +5,10 @@
  */
 
 / {
+	aliases {
+		fan0 = &max6639;
+	};
+
 	chip0: chip0 {
 		compatible = "tenstorrent,bh-chip";
 
