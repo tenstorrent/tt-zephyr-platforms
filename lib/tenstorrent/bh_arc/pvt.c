@@ -63,7 +63,8 @@
 
 /* therm_trip temperature in degrees C */
 #define ALARM_A_THERM_TRIP_TEMP 83
-#define ALARM_B_THERM_TRIP_TEMP 95
+/* BH prod spec 7.3 gives Tj,shutdown=110C, tmons are +-1C calibrated */
+#define ALARM_B_THERM_TRIP_TEMP 109
 
 #define TS_HYSTERESIS_DELTA 5
 
