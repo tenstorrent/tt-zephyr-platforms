@@ -281,7 +281,7 @@ static uint16_t TempToDout(float temp)
 
 /* setup 4 sources of interrupts for each type of sensor: */
 /* 1. sample done */
-/* 2. alarm a: failling alarm (see section 14 of PVT controller spec) */
+/* 2. alarm a: rising alarm, ignored (see section 14 of PVT controller spec) */
 /* 3. alarm b: rising alarm (see section 14 of PVT controller spec) */
 /* 4. IP has a fault */
 /* For VM, only enable sample done and fault interrupts, as alarma and alarmb is per channel */
