@@ -108,7 +108,7 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             --retry-interval 5 \
             -p $SMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -138,9 +138,9 @@ jobs:
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
+          python3 ./scripts/dmc_rtt.py -n || true
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt || true
 
   smoke-e2e-test:
     strategy:
@@ -203,9 +203,14 @@ jobs:
           ./scripts/twister -i --retry-failed 3 \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app \
+            --hardware-map /opt/tenstorrent/twister/hw-map-vuart.yml --west-flash \
+            -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-smc-e2e
+
+      - name: build-tt-console
+        working-directory: tt-zephyr-platforms
+        run: |
+          gcc -std=gnu11 -Iinclude -o /tmp/tt-console scripts/tt-console/console.c
 
       - name: run-e2e-flash-test
         working-directory: zephyr
@@ -215,8 +220,8 @@ jobs:
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
-            --device-testing -c \
-            --device-serial-pty rtt \
+            --device-testing -c -ll DEBUG \
+            --device-serial-pty /tmp/tt-console \
             --outdir twister-e2e-flash
 
       - name: Upload E2E Test results
