@@ -95,6 +95,9 @@ static void *message_handlers[CONFIG_TT_BH_ARC_NUM_MSG_CODES];
 __attribute__((used)) static const uintptr_t message_queue_info[] = {
 	(uintptr_t)&message_queues, MSG_QUEUE_SIZE | (NUM_MSG_QUEUES << 8), 0, 0};
 
+static K_THREAD_STACK_DEFINE(msgqueue_workqueue_stack, 2048);
+static struct k_work_q msgqueue_workqueue;
+
 static inline void *mask_voidp(void *x, uintptr_t mask)
 {
 	uintptr_t y = (uintptr_t)x | mask;
@@ -356,6 +359,11 @@ void msgqueue_register_handler(uint32_t msg_code, msgqueue_request_handler_t han
 
 static void prepare_msg_queue(void)
 {
+	k_work_queue_init(&msgqueue_workqueue);
+	k_work_queue_start(&msgqueue_workqueue, msgqueue_workqueue_stack,
+			   K_THREAD_STACK_SIZEOF(msgqueue_workqueue_stack), K_HIGHEST_THREAD_PRIO,
+			   NULL);
+
 	/* clear message queue headers */
 	for (unsigned int i = 0; i < NUM_MSG_QUEUES; i++) {
 		memset(&message_queues[i].header, 0, sizeof(message_queues[i].header));
@@ -389,7 +397,7 @@ static void msgqueue_interrupt_handler(void *arg)
 {
 	(void)(arg);
 	clear_msg_irq();
-	k_work_submit(&msgqueue_work);
+	k_work_submit_to_queue(&msgqueue_workqueue, &msgqueue_work);
 }
 
 static bool msi_catcher_nonempty(void)
@@ -426,7 +434,7 @@ static void msgqueue_msi_interrupt_handler(void *arg)
 	}
 
 	if (msi_for_msgqueue) {
-		k_work_submit(&msgqueue_work);
+		k_work_submit_to_queue(&msgqueue_workqueue, &msgqueue_work);
 	}
 }
 
@@ -435,7 +443,7 @@ static void msgqueue_msi_overflow_handler(void *arg)
 	(void)(arg);
 
 	msi_catcher_flush();
-	k_work_submit(&msgqueue_work);
+	k_work_submit_to_queue(&msgqueue_workqueue, &msgqueue_work);
 }
 #endif
 
