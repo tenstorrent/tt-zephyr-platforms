@@ -872,6 +872,60 @@ def mkbundle(
         shutil.rmtree(bundle_dir)
 
 
+def invoke_generate_bootfs_yaml(args):
+    """
+    Generates a flash partition YAML file from the partitions node in the
+    Zephyr devicetree at build time.
+
+    If a child of the partition has its nodelabel suffixed with '_executable',
+    then its executable bit will be set.
+
+    See parse_args() for a descriptive list of arguments.
+    """
+
+    from devicetree import edtlib
+
+    if args.verbose:
+        logging.basicConfig(format="%(message)s", level=logging.DEBUG)
+
+    edt = edtlib.EDT(args.dts_file, args.bindings_dirs)
+
+    partitions_nodes = edt.compat2nodes.get("fixed-partitions")
+    partitions_node = partitions_nodes[0]
+    partitions_yml = {"flash_partitions": {}}
+
+    for partition in partitions_node.children.values():
+        # Required properties
+        label = partition.props["label"].val
+        reg_val = partition.props["reg"].val
+        offset, size = reg_val
+        partitions_data = {"offset": offset, "size": size}
+
+        # Executable node label convention
+        exec_suffix = "executable"
+        if label.endswith(exec_suffix):
+            partitions_data[exec_suffix] = 1
+            label.removesuffix(exec_suffix)
+
+        partitions_yml["flash_partitions"][label] = partitions_data
+
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    with open(args.output_file, "w", encoding="utf-8") as f:
+        yaml.dump(
+            partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
+        )
+
+    _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
+    _logger.debug(
+        yaml.dump(partitions_yml, default_flow_style=False, sort_keys=False, indent=2)
+    )
+
+    return os.EX_OK
+
+
 def invoke_mkfs(args):
     if not args.specification.exists():
         print(f"Specification file {args.specification} doesn't exist")
@@ -934,6 +988,31 @@ def parse_args():
         description="Utility to manage tt_boot_fs binaries", allow_abbrev=False
     )
     subparsers = parser.add_subparsers()
+
+    generate_bootfs_parser = subparsers.add_parser(
+        name="generate_bootfs",
+        description="Generate a flash partition YAML from the Zephyr devicetree.",
+        allow_abbrev=False,
+    )
+    generate_bootfs_parser.add_argument(
+        "--dts-file",
+        required=True,
+        help="Zephyr devicetree file containing the partition node.",
+    )
+    generate_bootfs_parser.add_argument(
+        "--bindings-dirs",
+        nargs="+",
+        required=True,
+        help="Binding directories for the Zephyr devicetree. Should include Zephyr's "
+        "bindings and any custom bindings.",
+    )
+    generate_bootfs_parser.add_argument(
+        "--output-file", required=True, help="Output YAML file."
+    )
+    generate_bootfs_parser.add_argument(
+        "--verbose", default=0, action="count", help="Log the YAML file."
+    )
+    generate_bootfs_parser.set_defaults(func=invoke_generate_bootfs_yaml)
 
     # MKFS command- build a tt_boot_fs given a specification
     mkfs_parser = subparsers.add_parser("mkfs", help="Make tt_boot_fs filesystem")
