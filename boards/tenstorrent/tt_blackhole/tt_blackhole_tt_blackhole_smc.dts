@@ -112,6 +112,6 @@
 };
 
 &fwtable {
-	flash_dev = <&spi_flash>;
+	flash-dev = <&spi_flash>;
 	status = "disabled";
 };
