@@ -5,5 +5,5 @@ west
 # zephyr-keep-sorted-stop
 
 # tenstorrent utilities (note: pyluwen is a dependency)
-tt-flash @ git+https://github.com/tenstorrent/tt-flash@6d84d80bbde9a12edfa32934557d69581771c4a3
-tt-smi @ git+https://github.com/tenstorrent/tt-smi@7aeeb96ba52bf669cf599c1f67e65535072f67c5
+tt-flash @ git+https://github.com/tenstorrent/tt-flash@v3.3.5
+tt-smi @ git+https://github.com/tenstorrent/tt-smi@v3.0.23
