@@ -26,7 +26,6 @@ TTZP_BASE="$(dirname "$mPATH")"
 # put tt_boot_fs.py in the path (use it to combine .fwbundle files)
 PATH="$mPATH:$PATH"
 
-# TODO: read boards / board revs from a YAML file
 BOARD_REVS="$(jq -r -c ".[]" "$TTZP_BASE/.github/boards.json")"
 
 MAJOR="$(grep "^VERSION_MAJOR" "$TTZP_BASE/VERSION" | awk '{print $3}')"
