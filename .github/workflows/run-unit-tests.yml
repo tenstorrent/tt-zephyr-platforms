@@ -43,7 +43,7 @@ jobs:
       - id: run
         shell: bash
         run: |
-          west twister -i --run-only --retry-failed=3 $platforms $roots
+          west twister -i --run-only --retry-failed=3 $platforms $roots -v
 
       - name: Upload test results
         if: ${{ always() }}
