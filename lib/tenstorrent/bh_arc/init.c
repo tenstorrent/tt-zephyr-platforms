@@ -459,15 +459,16 @@ static int InitHW(void)
 		pci1_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table;
 	}
 
-	if ((pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) &&
-	    (PCIeInitOk == PCIeInit(0, &pci0_property_table))) {
-		InitResetInterrupt(0);
+	if (pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		PCIeInit(0, &pci0_property_table);
 	}
 
-	if ((pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) &&
-	    (PCIeInitOk == PCIeInit(1, &pci1_property_table))) {
-		InitResetInterrupt(1);
+	if (pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		PCIeInit(1, &pci1_property_table);
 	}
+
+	InitResetInterrupt(0);
+	InitResetInterrupt(1);
 
 	WriteReg(PCIE_INIT_CPL_TIME_REG_ADDR, TimerTimestamp());
 
