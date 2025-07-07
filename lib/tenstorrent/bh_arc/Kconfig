@@ -80,3 +80,10 @@ config TT_BH_ARC_WDT_FEED_INTERVAL
 	default 250
 	help
 	  Interval to feed watchdog within firmware
+
+config TT_BH_ARC_DMFW_PING_TIMEOUT
+	int "Timeout for DMFW ping in milliseconds"
+	default 200
+	help
+	  Timeout for DMFW ping in milliseconds. If the DMFW does not respond within this time,
+	  the ping will be considered failed.

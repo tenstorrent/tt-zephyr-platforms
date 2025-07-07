@@ -31,6 +31,7 @@ ARC_MISC_CTRL = 0x80030100
 PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
 CMFW_START_TIME_REG_ADDR = 0x8003043C
 ARC_START_TIME_REG_ADDR = 0x80030440
+PING_DMFW_DURATION_REG_ADDR = 0x80030448
 
 # ARC messages
 ARC_MSG_TYPE_TEST = 0x90
@@ -177,6 +178,8 @@ def test_smi_reset():
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
     smi_reset_cmd = "tt-smi -r"
     fail_count = 0
+    dmfw_ping_avg = 0
+    dmfw_ping_max = 0
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
         smi_reset_result = subprocess.run(
@@ -186,6 +189,20 @@ def test_smi_reset():
 
         if smi_reset_result != 0:
             fail_count += 1
+
+        arc_chip = pyluwen.detect_chips()[0]
+        response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+        if response[0] != 1 or response[1] != 0:
+            logger.warning(f"Ping failed on iteration {i}")
+            fail_count += 1
+        duration = arc_chip.axi_read32(PING_DMFW_DURATION_REG_ADDR)
+        dmfw_ping_avg += duration / total_tries
+        dmfw_ping_max = max(dmfw_ping_max, duration)
+
+    logger.info(
+        f"Average DMFW ping time (after reset): {dmfw_ping_avg:.2f} ms, "
+        f"Max DMFW ping time (after reset): {dmfw_ping_max:.2f} ms."
+    )
 
     logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
@@ -226,3 +243,33 @@ def test_dirty_reset():
         logger.info(f"Iteration {i} of dirty reset test passed")
     logger.info(f"dirty reset failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "dirty reset failed a non-zero number of times."
+
+def test_dmc_ping(arc_chip):
+    """
+    Repeatedly pings the DMC from the SMC to see what the average response time
+    is. Ping statistics are printed to the log. These statistics are gathered
+    without resetting the SMC. The `smi_reset` test will gather statistics
+    for the SMC reset case.
+    """
+    total_tries = 1000
+    fail_count = 0
+    dmfw_ping_avg = 0
+    dmfw_ping_max = 0
+    for i in range(total_tries):
+        response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+        if response[0] != 1 or response[1] != 0:
+            logger.warning(f"Ping failed on iteration {i}")
+            fail_count += 1
+        duration = arc_chip.axi_read32(PING_DMFW_DURATION_REG_ADDR)
+        dmfw_ping_avg += duration / total_tries
+        dmfw_ping_max = max(dmfw_ping_max, duration)
+    logger.info(
+        f"Ping statistics: {total_tries - fail_count} successful pings, "
+        f"{fail_count} failed pings."
+    )
+    # Recalculate the average ping time
+    logger.info(
+        f"Average DMFW ping time: {dmfw_ping_avg:.2f} ms, "
+        f"Max DMFW ping time: {dmfw_ping_max:.2f} ms."
+    )
+    assert fail_count == 0, f"Ping failed {fail_count}/{total_tries} times."
