@@ -32,9 +32,6 @@
 
 LOG_MODULE_REGISTER(bh_fwtable, CONFIG_BH_FWTABLE_LOG_LEVEL);
 
-/* Forward declaration */
-static int tt_bh_fwtable_load_tables(const struct device *dev);
-
 enum bh_fwtable_e {
 	BH_FWTABLE_FLSHINFO,
 	BH_FWTABLE_BOARDCFG,
@@ -145,8 +142,7 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (tt_bh_fwtable_load_tables(dev) != 0) {
+	if (device_is_ready(dev) == false) {
 		return 0;
 	}
 
@@ -205,7 +201,7 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 	return 0;
 }
 
-static int tt_bh_fwtable_load_tables(const struct device *dev)
+static int tt_bh_fwtable_init(const struct device *dev)
 {
 	/* load firmware tables from flash */
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
@@ -215,11 +211,6 @@ static int tt_bh_fwtable_load_tables(const struct device *dev)
 			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
 			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
 	}
-}
-
-static int tt_bh_fwtable_init(const struct device *dev)
-{
-	return tt_bh_fwtable_load_tables(dev);
 }
 
 #define DEFINE_BH_FWTABLE(_inst)                                                                   \
