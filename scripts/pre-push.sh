@@ -28,7 +28,9 @@ manifest_base=$(west list -f "{abspath}" manifest)
 # ClangFormat and Ruff are excluded as they will return failures, but CI
 # treats these as formatting hints only
 $zep_base/scripts/ci/check_compliance.py \
-	-e Kconfig \
+	-e KconfigBasicNoModules \
+	-e SysbuildKconfigBasic \
+	-e BinaryFiles \
 	-e ClangFormat \
 	-n -o /dev/null \
 	-c main..$HEAD
