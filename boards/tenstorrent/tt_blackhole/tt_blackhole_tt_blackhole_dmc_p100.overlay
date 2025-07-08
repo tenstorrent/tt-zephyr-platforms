@@ -53,3 +53,26 @@
 		#gpio-cells = <2>;
 	};
 };
+
+&chip0 {
+	/* Use OCTAL DDR SPI mode, GPIO[39:38] = 3 is OCTAL mode, GPIO40 is DDR_EN */
+	strapping {
+		gpio38 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
+			gpios = <&gpiox4 3 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio39 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
+			gpios = <&gpiox4 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio40 {
+			compatible = "zephyr,gpio-line";
+			label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
+			gpios = <&gpiox4 5 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
