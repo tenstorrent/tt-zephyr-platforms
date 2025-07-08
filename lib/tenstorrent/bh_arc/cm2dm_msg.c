@@ -31,7 +31,7 @@ typedef struct {
 } Cm2DmMsgState;
 
 static Cm2DmMsgState cm2dm_msg_state;
-static bool dmfw_ping_valid;
+K_SEM_DEFINE(dmfw_ping_sem, 0, 1);
 static uint16_t power;
 static uint16_t telemetry_reg;
 K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
@@ -200,18 +200,24 @@ REGISTER_MESSAGE(MSG_TYPE_TRIGGER_RESET, reset_dm_handler);
 static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
+	int ret;
+	uint64_t timestamp;
+
 	/* Send a ping to the dmfw */
 	Cm2DmMsg msg = {
 		.msg_id = kCm2DmMsgIdPing,
 	};
 
-	dmfw_ping_valid = false;
+	k_sem_reset(&dmfw_ping_sem);
 	EnqueueCm2DmMsg(&msg);
 	/* Delay to allow DMFW to respond */
-	k_msleep(50);
+	timestamp = k_uptime_get();
+	ret = k_sem_take(&dmfw_ping_sem, K_MSEC(CONFIG_TT_BH_ARC_DMFW_PING_TIMEOUT));
+	/* Record the time it took for DMFW to respond in us */
+	WriteReg(PING_DMFW_DURATION_REG_ADDR, k_uptime_delta(&timestamp));
 
-	/* Encode response from DMFW */
-	response->data[1] = dmfw_ping_valid;
+	/* Send 1 if DMFW is alive, 0 otherwise */
+	response->data[1] = (ret == 0);
 	return 0;
 }
 
@@ -284,10 +290,9 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size)
 	uint16_t response = *(uint16_t *)data;
 
 	if (response != 0xA5A5) {
-		dmfw_ping_valid = false;
 		return -1;
 	}
-	dmfw_ping_valid = true;
+	k_sem_give(&dmfw_ping_sem);
 	return 0;
 }
 
