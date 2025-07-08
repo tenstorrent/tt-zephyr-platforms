@@ -1,0 +1,65 @@
+name: Zephyr Container Setup (Composite)
+description: |
+  This workflow prepares the Zephyr container environment for building, testing, or other tasks. It is
+  intended to be used as a reusable (composite) step in other workflows, and should
+  be run within the base tt-zephyr-platforms container.
+
+inputs:
+  app-path:
+    description: 'Path to the Zephyr application to build'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Apply container owner mismatch workaround
+      shell: bash
+      run: |
+        # FIXME: The owner UID of the GITHUB_WORKSPACE directory may not
+        #        match the container user UID because of the way GitHub
+        #        Actions runner is implemented. Remove this workaround when
+        #        GitHub comes up with a fundamental fix for this problem.
+        git config --global --add safe.directory ${GITHUB_WORKSPACE}
+
+    - name: Set Environment Variables
+      shell: bash
+      run: |
+        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat zephyr/SDK_VERSION )" >> $GITHUB_ENV
+        echo "ZEPHYR_BASE=${{github.workspace}}/zephyr" >> $GITHUB_ENV
+
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Environment Setup
+      shell: bash
+      run: |
+
+        if [ -d ".west" ]; then
+          echo "Removing old west configuration"
+          rm -rf ".west"
+        fi
+        west init -l tt-zephyr-platforms || true
+        west config --global update.narrow true
+        west update --path-cache /tt-zephyr || ( rm -rf modules bootloader tools && west update --path-cache /tt-zephyr)
+        west forall -c 'git reset --hard HEAD'
+        west patch clean
+
+        # Remove old CMake pakages
+        rm -rf $HOME/.cmake/packages/Zephyr-sdk
+        # Install Zephyr SDK CMake package
+        ${ZEPHYR_SDK_INSTALL_DIR}/setup.sh -c
+
+    - name: Update python packages
+      shell: bash
+      run: |
+        west packages pip --install
+
+    - name: Verify binary blobs
+      shell: bash
+      run: |
+        west blobs fetch
+
+    - name: Apply patches
+      shell: bash
+      run: |
+        west -v patch apply
