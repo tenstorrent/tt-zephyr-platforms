@@ -26,6 +26,6 @@ typedef struct {
 	uint32_t count;
 } BoardRegulatorsConfig;
 
-extern const BoardRegulatorsConfig p100_p150_regulators_config;
+extern const BoardRegulatorsConfig p1x0_regulators_config;
 
 #endif
