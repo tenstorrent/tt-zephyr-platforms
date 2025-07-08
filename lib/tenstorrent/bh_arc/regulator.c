@@ -222,9 +222,9 @@ uint32_t RegulatorInit(PcbType board_type)
 	uint32_t i2c_error = 0;
 
 	if (board_type == PcbTypeP150 || board_type == PcbTypeP100) {
-		for (uint32_t i = 0; i < p100_p150_regulators_config.count; i++) {
+		for (uint32_t i = 0; i < p1x0_regulators_config.count; i++) {
 			const RegulatorConfig *regulator_config =
-				&p100_p150_regulators_config.regulator_config[i];
+				&p1x0_regulators_config.regulator_config[i];
 
 			I2CInit(I2CMst, regulator_config->address, I2CFastMode, PMBUS_MST_ID);
 
