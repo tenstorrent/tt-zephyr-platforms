@@ -264,18 +264,22 @@ class RTTHelper:
         sel = selectors.DefaultSelector()
         sel.register(sys.stdin, selectors.EVENT_READ)
         sel.register(sock, selectors.EVENT_READ)
-        while True:
-            events = sel.select()
-            for key, _ in events:
-                if key.fileobj == sys.stdin:
-                    text = sys.stdin.readline()
-                    if text:
-                        sock.send(text.encode())
+        try:
+            while True:
+                events = sel.select()
+                for key, _ in events:
+                    if key.fileobj == sys.stdin:
+                        text = sys.stdin.readline()
+                        if text:
+                            sock.send(text.encode())
 
-                elif key.fileobj == sock:
-                    resp = sock.recv(2048)
-                    if resp:
-                        print(resp.decode(), end="")
+                    elif key.fileobj == sock:
+                        resp = sock.recv(2048)
+                        if resp:
+                            print(resp.decode(), end="")
+        except KeyboardInterrupt:
+            # If the user interrupts the command, we need to stop the openocd server
+            print("Caught SIGINT, exiting...")
 
         # Finally, shutdown the RTT server
         openocd.stop_openocd_server()
