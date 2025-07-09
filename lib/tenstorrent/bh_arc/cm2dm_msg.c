@@ -143,35 +143,6 @@ void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
 	EnqueueCm2DmMsg(&msg);
 }
 
-/* Report the current message and automatically acknowledge it. */
-int32_t ResetBoardByte(uint8_t *data, uint8_t size)
-{
-	memset(data, 0, size);
-
-	if (!cm2dm_msg_state.curr_msg_valid) {
-		/* See if there is a message in the queue */
-		Cm2DmMsg msg;
-
-		if (k_msgq_get(&cm2dm_msg_q, &msg, K_NO_WAIT) != 0) {
-			/* Send the all zero message if the message queue is empty */
-			*data = 0;
-			return 0;
-		}
-
-		/* If there is a valid message, copy it over to the current message */
-		cm2dm_msg_state.curr_msg_valid = 1;
-		cm2dm_msg_state.curr_msg.msg_id = msg.msg_id;
-		cm2dm_msg_state.curr_msg.seq_num = cm2dm_msg_state.next_seq_num++;
-		cm2dm_msg_state.curr_msg.data = msg.data;
-	}
-	*data = cm2dm_msg_state.curr_msg.msg_id;
-
-	/* Because there's no acknowledgment coming, remove the message. */
-	cm2dm_msg_state.curr_msg_valid = 0;
-
-	return 0;
-}
-
 static uint8_t reset_dm_handler(uint32_t msg_code, const struct request *request,
 				struct response *response)
 {
