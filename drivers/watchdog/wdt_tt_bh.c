@@ -21,10 +21,7 @@ struct wdt_tt_bh_data {
 
 static int wdt_tt_bh_disable(const struct device *dev)
 {
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdAutoResetTimeoutUpdate, .data = 0 /* in ms */
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdAutoResetTimeoutUpdate, 0);
 
 	return 0;
 }
@@ -33,10 +30,7 @@ static int wdt_tt_bh_setup(const struct device *dev, uint8_t options)
 {
 	struct wdt_tt_bh_data *data = dev->data;
 
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdAutoResetTimeoutUpdate, .data = data->timeout /* in ms */
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdAutoResetTimeoutUpdate, data->timeout); /* in ms */
 
 	return 0;
 }
@@ -54,13 +48,9 @@ static int wdt_tt_bh_feed(const struct device *dev, int channel_id)
 
 	struct wdt_tt_bh_data *data = dev->data;
 
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgTelemHeartbeatUpdate, .data = data->heartbeat++, /* in ms */
-	};
-
 	__ASSERT(channel_id == 0, "Invalid channel ID: %d", channel_id);
 
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgTelemHeartbeatUpdate, data->heartbeat++);
 
 	return 0;
 }
