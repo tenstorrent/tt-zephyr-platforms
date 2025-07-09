@@ -10,6 +10,9 @@
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/devicetree.h>
 
 tt_boot_fs boot_fs_data;
 static tt_boot_fs_fd boot_fs_cache[16];
@@ -17,6 +20,53 @@ static tt_boot_fs_fd boot_fs_cache[16];
 uint32_t tt_boot_fs_next(uint32_t last_fd_addr)
 {
 	return (last_fd_addr + sizeof(tt_boot_fs_fd));
+}
+
+int tt_boot_fs_ng_read(const tt_boot_fs_ng *fs, uint32_t addr, uint8_t *buffer, size_t size)
+{
+	if (!fs || fs->magic != TT_BOOT_FS_NG_MAGIC) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!device_is_ready(fs->dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	return flash_read(fs->dev, addr, buffer, size);
+}
+
+int tt_boot_fs_ng_write(const tt_boot_fs_ng *fs, uint32_t addr, const uint8_t *buffer, size_t size)
+{
+	if (!fs || fs->magic != TT_BOOT_FS_NG_MAGIC) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!device_is_ready(fs->dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!buffer) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	return flash_write(fs->dev, addr, buffer, size);
+}
+
+int tt_boot_fs_ng_erase(const tt_boot_fs_ng *fs, uint32_t addr, size_t size)
+{
+	if (!fs || fs->magic != TT_BOOT_FS_NG_MAGIC) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!device_is_ready(fs->dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (size == 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	return flash_erase(fs->dev, addr, size);
 }
 
 static int tt_boot_fs_load_cache(tt_boot_fs *tt_boot_fs)
