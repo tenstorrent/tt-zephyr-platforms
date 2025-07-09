@@ -18,7 +18,6 @@ typedef struct {
 int32_t EnqueueCm2DmMsg(const Cm2DmMsg *msg);
 int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size);
 int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size);
-int32_t ResetBoardByte(uint8_t *data, uint8_t size);
 
 void ChipResetRequest(void *arg);
 void UpdateFanSpeedRequest(uint32_t fan_speed);
