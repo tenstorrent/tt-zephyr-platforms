@@ -20,6 +20,9 @@ extern "C" {
 #define TT_BOOT_FS_SECURITY_BINARY_FD_ADDR (0x3FE0)
 #define TT_BOOT_FS_FAILOVER_HEAD_ADDR      (0x4000)
 #define TT_BOOT_FS_IMAGE_TAG_SIZE          8
+#define TT_BOOT_FS_NG_MAGIC                (0x77b007f5)
+
+struct device;
 
 typedef struct {
 	uint32_t image_size: 24;
@@ -64,6 +67,13 @@ typedef struct {
 	tt_boot_fs_erase hal_spi_erase_f;
 } tt_boot_fs;
 
+typedef struct {
+	uintptr_t magic; /* TT_BOOT_FS_NG_MAGIC */
+	const struct device *dev;
+	uintptr_t cache; /* a pointer to an array of tt_boot_fs_fd */
+	size_t cache_size;
+} tt_boot_fs_ng;
+
 enum {
 	TT_BOOT_FS_OK = 0,
 	TT_BOOT_FS_ERR = -1
@@ -75,6 +85,7 @@ typedef enum {
 } tt_checksum_res_t;
 
 extern tt_boot_fs boot_fs_data;
+extern tt_boot_fs_ng boot_fs_ng_data;
 
 uint32_t tt_boot_fs_next(uint32_t prev);
 

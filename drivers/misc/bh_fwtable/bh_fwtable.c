@@ -48,6 +48,14 @@ struct bh_fwtable_data {
 	ReadOnly read_only_table;
 };
 
+static tt_boot_fs_fd bh_fwtable_cache[16];
+
+static const tt_boot_fs_ng bh_fwtable_fs = {
+	.magic = TT_BOOT_FS_NG_MAGIC,
+	.dev = DEVICE_DT_GET(DT_INST_PHANDLE(0, flash_dev)),
+	.cache = (uintptr_t)bh_fwtable_cache,
+	.cache_size = ARRAY_SIZE(bh_fwtable_cache)};
+
 /* Getter function that returns a const pointer to the fw table */
 const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 {
@@ -203,6 +211,10 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 static int tt_bh_fwtable_init(const struct device *dev)
 {
+	if (!device_is_ready(bh_fwtable_fs.dev)) {
+		LOG_ERR("Boot filesystem flash device is not ready");
+		return -ENODEV;
+	}
 	/* load firmware tables from flash */
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
