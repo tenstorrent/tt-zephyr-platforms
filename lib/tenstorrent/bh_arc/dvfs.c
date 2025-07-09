@@ -17,7 +17,8 @@ void DVFSChange(void)
 	CalculateThrottlers();
 	CalculateTargAiclk();
 
-	uint32_t aiclk_voltage = VFCurve(aiclk_ppm.targ_freq);
+	uint32_t targ_freq = GetAiclkTarg();
+	uint32_t aiclk_voltage = VFCurve(targ_freq);
 
 	VoltageArbRequest(VoltageReqAiclk, aiclk_voltage);
 

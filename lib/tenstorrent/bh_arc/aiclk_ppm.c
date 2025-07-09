@@ -31,7 +31,21 @@ typedef enum {
 	CLOCK_MODE_PPM_UNFORCED = 3
 } ClockControlMode;
 
-AiclkPPM aiclk_ppm;
+typedef struct {
+	uint32_t curr_freq;   /* in MHz */
+	uint32_t targ_freq;   /* in MHz */
+	uint32_t boot_freq;   /* in MHz */
+	uint32_t fmax;        /* in MHz */
+	uint32_t fmin;        /* in MHz */
+	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
+	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
+	uint32_t sweep_low;   /* in MHz */
+	uint32_t sweep_high;  /* in MHz */
+	float arbiter_max[kAiclkArbMaxCount];
+	float arbiter_min[kAiclkArbMinCount];
+} AiclkPPM;
+
+static AiclkPPM aiclk_ppm;
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -94,6 +108,11 @@ void IncreaseAiclk(void)
 		SetAICLK(aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
 	}
+}
+
+float GetThrottlerArbMax(AiclkArbMax arb_max)
+{
+	return aiclk_ppm.arbiter_max[arb_max];
 }
 
 /* TODO: Write a Zephyr unit test for this function */
@@ -171,6 +190,11 @@ uint8_t ForceAiclk(uint32_t freq)
 		SetAICLK(freq);
 	}
 	return 0;
+}
+
+uint32_t GetAiclkTarg(void)
+{
+	return aiclk_ppm.targ_freq;
 }
 
 static uint8_t AiclkBusyHandler(uint32_t msg_code, const struct request *request,

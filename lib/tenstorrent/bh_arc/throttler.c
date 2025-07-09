@@ -180,7 +180,7 @@ static void UpdateThrottlerArb(ThrottlerId id)
 {
 	Throttler *t = &throttler[id];
 
-	float arb_val = aiclk_ppm.arbiter_max[t->arb_max];
+	float arb_val = GetThrottlerArbMax(t->arb_max);
 
 	arb_val += t->output * kThrottlerAiclkScaleFactor;
 
