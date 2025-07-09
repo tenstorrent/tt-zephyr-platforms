@@ -5,6 +5,9 @@
  */
 
 #include <zephyr/ztest.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <string.h>
 #include <tenstorrent/tt_boot_fs.h>
 
 /* all input must be aligned to a 4-byte boundary and be a multiple of 4 bytes */
