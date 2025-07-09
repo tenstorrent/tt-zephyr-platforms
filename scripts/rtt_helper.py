@@ -275,7 +275,7 @@ class RTTHelper:
                 elif key.fileobj == sock:
                     resp = sock.recv(2048)
                     if resp:
-                        print(resp.decode())
+                        print(resp.decode(), end="")
 
         # Finally, shutdown the RTT server
         openocd.stop_openocd_server()
