@@ -102,11 +102,9 @@ void IssueChipReset(uint32_t reset_level)
 
 void ChipResetRequest(void *arg)
 {
-	if (arg != NULL) {
-		uint32_t irq_num = POINTER_TO_UINT(arg);
+	uint32_t irq_num = POINTER_TO_UINT(arg);
 
-		irq_disable(irq_num); /* So we don't get repeatedly interrupted */
-	}
+	irq_disable(irq_num); /* So we don't get repeatedly interrupted */
 
 	IssueChipReset(0);
 }
