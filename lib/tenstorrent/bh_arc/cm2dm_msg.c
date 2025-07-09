@@ -86,8 +86,6 @@ int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
 			cm2dm_msg_state.curr_msg.seq_num = cm2dm_msg_state.next_seq_num++;
 			cm2dm_msg_state.curr_msg.data = cm2dm_msg_state.next_msgs[next_message_id];
 			cm2dm_msg_state.curr_msg_valid = true;
-		} else {
-			memset(&cm2dm_msg_state.curr_msg, 0, sizeof(cm2dm_msg_state.curr_msg));
 		}
 	}
 
@@ -108,6 +106,8 @@ int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size)
 	    ack->seq_num == cm2dm_msg_state.curr_msg.seq_num) {
 		/* Message handled when msg_id and seq_num match the current valid message */
 		cm2dm_msg_state.curr_msg_valid = false;
+		memset(&cm2dm_msg_state.curr_msg, 0, sizeof(cm2dm_msg_state.curr_msg));
+
 		return 0;
 	} else {
 		return -1;
