@@ -25,27 +25,40 @@
 #include "telemetry.h"
 
 typedef struct {
-	uint8_t msg_id;
-	uint32_t data;
-} Cm2DmMsg;
-
-typedef struct {
-	uint8_t curr_msg_valid;
+	atomic_t pending_messages;
+	uint8_t next_id_rr;
 	uint8_t next_seq_num;
+
+	bool curr_msg_valid;
 	cm2dmMessage curr_msg;
+
+	volatile uint32_t next_msgs[kCm2DmMsgCount];
 } Cm2DmMsgState;
 
 static Cm2DmMsgState cm2dm_msg_state;
 static bool dmfw_ping_valid;
 static uint16_t power;
 static uint16_t telemetry_reg;
-K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
 
 void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data)
 {
-	/* May be called from ISR context, so keep this function ISR-safe */
-	Cm2DmMsg msg = { msg_id, data };
-	k_msgq_put(&cm2dm_msg_q, &msg, K_NO_WAIT);
+	cm2dm_msg_state.next_msgs[msg_id] = data;
+	atomic_set_bit(&cm2dm_msg_state.pending_messages, msg_id);
+}
+
+static Cm2DmMsgId next_id_rr(uint32_t pending_messages)
+{
+	uint32_t hi_pending = pending_messages & GENMASK(31, cm2dm_msg_state.next_id_rr);
+	uint32_t search_messages = hi_pending ? hi_pending : pending_messages;
+
+	uint32_t next_message_id = LOG2(LSB_GET(search_messages));
+
+	/* next_message_id + 1 ensures that the message type we chose this time becomes lowest
+	 * priority next time.
+	 */
+	cm2dm_msg_state.next_id_rr = (next_message_id + 1) % kCm2DmMsgCount;
+
+	return (Cm2DmMsgId)next_message_id;
 }
 
 int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
@@ -57,20 +70,27 @@ int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
 	}
 
 	if (!cm2dm_msg_state.curr_msg_valid) {
-		/* See if there is a message in the queue */
-		Cm2DmMsg msg;
+		atomic_val_t pending_messages = atomic_get(&cm2dm_msg_state.pending_messages);
 
-		if (k_msgq_get(&cm2dm_msg_q, &msg, K_NO_WAIT) != 0) {
-			/* Send the all zero message if the message queue is empty */
-			memset(data, 0, sizeof(cm2dm_msg_state.curr_msg));
-			return 0;
+		if (pending_messages != 0) {
+			Cm2DmMsgId next_message_id = next_id_rr(pending_messages);
+
+			atomic_clear_bit(&cm2dm_msg_state.pending_messages, next_message_id);
+			/* atomic_clear_bit must be before reading curr_msg_data.
+			 * A data update may be done by writing data first then setting the bit.
+			 * We might send the same data twice, but we'll always send the final
+			 * value.
+			 */
+
+			cm2dm_msg_state.curr_msg.msg_id = next_message_id;
+			cm2dm_msg_state.curr_msg.seq_num = cm2dm_msg_state.next_seq_num++;
+			cm2dm_msg_state.curr_msg.data = cm2dm_msg_state.next_msgs[next_message_id];
+			cm2dm_msg_state.curr_msg_valid = true;
+		} else {
+			memset(&cm2dm_msg_state.curr_msg, 0, sizeof(cm2dm_msg_state.curr_msg));
 		}
-
-		cm2dm_msg_state.curr_msg_valid = 1;
-		cm2dm_msg_state.curr_msg.msg_id = msg.msg_id;
-		cm2dm_msg_state.curr_msg.seq_num = cm2dm_msg_state.next_seq_num++;
-		cm2dm_msg_state.curr_msg.data = msg.data;
 	}
+
 	memcpy(data, &cm2dm_msg_state.curr_msg, sizeof(cm2dm_msg_state.curr_msg));
 	return 0;
 }
@@ -87,7 +107,7 @@ int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size)
 	if (cm2dm_msg_state.curr_msg_valid && ack->msg_id == cm2dm_msg_state.curr_msg.msg_id &&
 	    ack->seq_num == cm2dm_msg_state.curr_msg.seq_num) {
 		/* Message handled when msg_id and seq_num match the current valid message */
-		cm2dm_msg_state.curr_msg_valid = 0;
+		cm2dm_msg_state.curr_msg_valid = false;
 		return 0;
 	} else {
 		return -1;
