@@ -138,6 +138,8 @@ def test_smbus_status(arc_chip):
     logger.info('SMC SMBUS status: "0x%x"', status)
 
 
+# WIP: remove this!
+@pytest.mark.flash
 def test_flash_write(arc_chip):
     """
     Validates that flash read/write works via pyluwen,
