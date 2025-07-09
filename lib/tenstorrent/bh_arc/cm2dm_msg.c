@@ -25,6 +25,11 @@
 #include "telemetry.h"
 
 typedef struct {
+	uint8_t msg_id;
+	uint32_t data;
+} Cm2DmMsg;
+
+typedef struct {
 	uint8_t curr_msg_valid;
 	uint8_t next_seq_num;
 	cm2dmMessage curr_msg;
@@ -36,10 +41,11 @@ static uint16_t power;
 static uint16_t telemetry_reg;
 K_MSGQ_DEFINE(cm2dm_msg_q, sizeof(Cm2DmMsg), 4, _Alignof(Cm2DmMsg));
 
-int32_t EnqueueCm2DmMsg(const Cm2DmMsg *msg)
+void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data)
 {
 	/* May be called from ISR context, so keep this function ISR-safe */
-	return k_msgq_put(&cm2dm_msg_q, msg, K_NO_WAIT);
+	Cm2DmMsg msg = { msg_id, data };
+	k_msgq_put(&cm2dm_msg_q, &msg, K_NO_WAIT);
 }
 
 int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
@@ -93,11 +99,7 @@ void IssueChipReset(uint32_t reset_level)
 	lock_down_for_reset();
 
 	/* Send a reset request to the DMFW */
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdResetReq,
-		.data = reset_level,
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdResetReq, reset_level);
 }
 
 void ChipResetRequest(void *arg)
@@ -111,36 +113,23 @@ void ChipResetRequest(void *arg)
 
 void UpdateFanSpeedRequest(uint32_t fan_speed)
 {
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdFanSpeedUpdate,
-		.data = fan_speed,
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdFanSpeedUpdate, fan_speed);
 }
 
 void Dm2CmReadyRequest(void)
 {
 	/* Send a message to dmfw to indicate ready to receive messages */
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdReady,
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdReady, 0);
 }
 
 void UpdateAutoResetTimeoutRequest(uint32_t timeout)
 {
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdAutoResetTimeoutUpdate, .data = timeout /* in ms */
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdAutoResetTimeoutUpdate, timeout); /* in ms */
 }
 
 void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
 {
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgTelemHeartbeatUpdate, .data = heartbeat /* in ms */
-	};
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgTelemHeartbeatUpdate, heartbeat); /* in ms */
 }
 
 static uint8_t reset_dm_handler(uint32_t msg_code, const struct request *request,
@@ -170,12 +159,8 @@ static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 			       struct response *response)
 {
 	/* Send a ping to the dmfw */
-	Cm2DmMsg msg = {
-		.msg_id = kCm2DmMsgIdPing,
-	};
-
 	dmfw_ping_valid = false;
-	EnqueueCm2DmMsg(&msg);
+	PostCm2DmMsg(kCm2DmMsgIdPing, 0);
 	/* Delay to allow DMFW to respond */
 	k_msleep(50);
 

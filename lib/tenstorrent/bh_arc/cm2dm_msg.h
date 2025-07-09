@@ -10,12 +10,7 @@
 #include <zephyr/toolchain.h>
 #include <tenstorrent/bh_arc.h>
 
-typedef struct {
-	uint8_t msg_id;
-	uint32_t data;
-} Cm2DmMsg;
-
-int32_t EnqueueCm2DmMsg(const Cm2DmMsg *msg);
+void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data);
 int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size);
 int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size);
 
