@@ -10,6 +10,9 @@
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/devicetree.h>
 
 tt_boot_fs boot_fs_data;
 static tt_boot_fs_fd boot_fs_cache[16];
@@ -174,4 +177,86 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 	}
 
 	return TT_BOOT_FS_OK;
+}
+
+int tt_bootfs_ng_read(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size)
+{
+	if (!device_is_ready(dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+	return flash_read(dev, addr, buffer, size);
+}
+
+int tt_bootfs_ng_write(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size)
+{
+	if (!device_is_ready(dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+	if (!buffer) {
+		return TT_BOOT_FS_ERR;
+	}
+	return flash_write(dev, addr, buffer, size);
+}
+
+int tt_bootfs_ng_erase(const struct device *dev, uint32_t addr, size_t size)
+{
+	if (!device_is_ready(dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+	if (size == 0) {
+		return TT_BOOT_FS_ERR;
+	}
+	return flash_erase(dev, addr, size);
+}
+
+int tt_bootfs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds)
+{
+	if (!device_is_ready(dev)) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!fds || nfds == 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	tt_boot_fs_fd temp_fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+
+	if (tt_bootfs_ng_read(dev, TT_BOOT_FS_FD_HEAD_ADDR, (uint8_t *)temp_fds,
+			      sizeof(temp_fds)) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	size_t count = 0;
+	/* Iterate through the fds now in RAM */
+	for (size_t i = 0; i < CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX; i++) {
+		if (count >= nfds) {
+			break;
+		}
+
+		tt_boot_fs_fd *current_fd = &temp_fds[i];
+
+		if (current_fd->flags.f.invalid) {
+			break;
+		}
+
+		tt_checksum_res_t chk_res = calculate_and_compare_checksum(
+			(uint8_t *)current_fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
+			current_fd->fd_crc, false);
+
+		if (chk_res == TT_BOOT_FS_CHK_OK) {
+			fds[count] = *current_fd;
+			count++;
+		}
+	}
+	return count;
+}
+
+const tt_boot_fs_fd *tt_bootfs_ng_find_fd_by_tag(const uint8_t *tag, tt_boot_fs_fd *fds, int count)
+{
+	for (int i = 0; i < count; i++) {
+		if (strncmp(fds[i].image_tag, tag, sizeof(fds[i].image_tag)) == 0) {
+			return &fds[i];
+		}
+	}
+	return NULL;
 }
