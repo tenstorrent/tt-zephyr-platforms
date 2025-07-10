@@ -12,11 +12,7 @@ config TT_BH_ARC
 	help
 	  This option enables the Blackhole ARC firmware library.
 
-# This is a hack - the msgqueue test depends on this value but
-# This library depends on nanopb and specifically values from nanopb stored in spi falsh
-# We really cannot depend on nanopb outside of the application.
-# And that definition of application does not include drivers.
-#if TT_BH_ARC
+if TT_BH_ARC
 
 config TT_BH_ARC_NUM_MSG_CODES
 	int "Number of message codes"
@@ -54,8 +50,6 @@ config TT_BH_ARC_I2C_TIMEOUT_DURATION
 	  remains full for this timeout, the I2C controller will attempt to recover the bus by
 	  sending 16 SCL pulses while holding SDA low.
 
-#endif
-
 config TT_SMC_RECOVERY
 	bool "build smc recovery image"
 	help
@@ -80,3 +74,5 @@ config TT_BH_ARC_WDT_FEED_INTERVAL
 	default 250
 	help
 	  Interval to feed watchdog within firmware
+
+endif
