@@ -556,8 +556,8 @@ static void lose_vuart(struct console *cons)
 
 static int termio_raw(struct console *cons)
 {
-	if (!isatty(STDIN_FILENO)) {
-		D(2, "Not an interactive console")
+	if (!isatty(STDOUT_FILENO)) {
+		D(2, "Not an interactive console");
 		return 0;
 	}
 
@@ -635,25 +635,26 @@ static inline int vuart_getc(struct console *cons)
 	volatile struct tt_vuart *const vuart = cons->vuart;
 
 	if (vuart->magic != cons->magic) {
-		return EOF;
+		return -EAGAIN;
 	}
 
 	if (tt_vuart_buf_empty(vuart->tx_head, vuart->tx_tail)) {
-		return EOF;
+		return -EAGAIN;
 	}
 
 	volatile char *const tx_buf = (volatile char *)&vuart->buf[0];
-	int ch = tx_buf[vuart->tx_head % vuart->tx_cap];
+	char ch = tx_buf[vuart->tx_head % vuart->tx_cap];
 
 	++vuart->tx_head;
 
-	return ch;
+	return (int)ch;
 }
 
 static int loop(struct console *const cons)
 {
 	int ret;
 	bool ctrl_a_pressed = false;
+	bool using_tty = false;
 
 	ret = open_tt_dev(cons);
 	if (ret < 0) {
@@ -670,7 +671,17 @@ static int loop(struct console *const cons)
 		goto out;
 	}
 
-	I("Press Ctrl-a,x to quit");
+	/*
+	 * Check if STDOUT is a tty. If not, we should simply stream binary
+	 * data the file without any processing.
+	 */
+	if (isatty(STDOUT_FILENO)) {
+		using_tty = true;
+		I("Press Ctrl-a,x to quit");
+	} else {
+		fprintf(stderr, "Not a tty, streaming binary data to STDOUT. "
+				"Press Ctrl-C to quit.\n");
+	}
 
 	while (!cons->stop) {
 		if (cons->timeout_abs_ms != 0) {
@@ -698,8 +709,8 @@ static int loop(struct console *const cons)
 		int ch;
 
 		/* dump anything available from the console before sending anything */
-		while ((ch = vuart_getc(cons)) != EOF) {
-			if (ch == '\n') {
+		while ((ch = vuart_getc(cons)) != -EAGAIN) {
+			if (ch == '\n' && using_tty) {
 				putchar('\r');
 			}
 			(void)putchar(ch);
@@ -709,6 +720,11 @@ static int loop(struct console *const cons)
 		struct timeval tv = {
 			.tv_usec = 1,
 		};
+
+		if (!using_tty) {
+			/* Skip reading input */
+			continue;
+		}
 
 		FD_ZERO(&fds);
 		FD_SET(STDIN_FILENO, &fds);
@@ -894,7 +910,7 @@ static int parse_args(struct console *cons, int argc, char **argv)
 
 static void handler(int sig)
 {
-	I("\nCaught signal %d (%s)", sig, strsignal(sig));
+	D(1, "\nCaught signal %d (%s)", sig, strsignal(sig));
 	_cons.stop = true;
 }
 
