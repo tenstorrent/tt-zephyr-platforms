@@ -49,6 +49,9 @@ LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
+static const tt_boot_fs_ng init_fs = {.magic = TT_BOOT_FS_NG_MAGIC,
+				      .dev = DEVICE_DT_GET(DT_ALIAS(boot_flash))};
+
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 /* Assert soft reset for all RISC-V cores */
@@ -190,9 +193,9 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", MRISC_FW_TAG, -EIO);
 		return -EIO;
 	}
 	uint32_t dram_mask = GetDramMask();
@@ -206,9 +209,9 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", MRISC_FW_CFG_TAG, -EIO);
 		return -EIO;
 	}
 
@@ -264,9 +267,9 @@ static void SerdesEthInit(void)
 	/* Load fw regs */
 	uint32_t reg_table_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &reg_table_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", ETH_SD_REG_TAG, -EIO);
 		return;
 	}
 
@@ -280,9 +283,9 @@ static void SerdesEthInit(void)
 	/* Load fw */
 	size_t fw_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", ETH_SD_FW_TAG, -EIO);
 		return;
 	}
 
@@ -305,9 +308,9 @@ static void EthInit(void)
 	/* Load fw */
 	size_t fw_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", ETH_FW_TAG, -EIO);
 		return;
 	}
 
@@ -318,9 +321,9 @@ static void EthInit(void)
 	}
 
 	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
+	if (tt_bootfs_ng_get_file(&init_fs, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
+				  &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_bootfs_ng_get_file", ETH_FW_CFG_TAG, -EIO);
 		return;
 	}
 

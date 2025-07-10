@@ -48,14 +48,6 @@ struct bh_fwtable_data {
 	ReadOnly read_only_table;
 };
 
-static tt_boot_fs_fd bh_fwtable_cache[16];
-
-static const tt_boot_fs_ng bh_fwtable_fs = {
-	.magic = TT_BOOT_FS_NG_MAGIC,
-	.dev = DEVICE_DT_GET(DT_INST_PHANDLE(0, flash_dev)),
-	.cache = (uintptr_t)bh_fwtable_cache,
-	.cache_size = ARRAY_SIZE(bh_fwtable_cache)};
-
 /* Getter function that returns a const pointer to the fw table */
 const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 {
@@ -163,7 +155,8 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 }
 
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
-static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
+static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table,
+			      const tt_boot_fs_fd *fd, const tt_boot_fs_ng *fs)
 {
 #define BH_FWTABLE_LOADCFG(_enum, _tag, _field, _msgtype)                                          \
 	[BH_FWTABLE_##_enum] = {                                                                   \
@@ -189,11 +182,24 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 	__ASSERT_NO_MSG(table < ARRAY_SIZE(loadcfg));
 
-	int result = tt_boot_fs_get_file(&boot_fs_data, loadcfg[table].tag, buffer, sizeof(buffer),
-					 &bytes_read);
-	if (result != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed with error code %d", loadcfg[table].tag, result);
-		return -EIO;
+	if (fd != NULL) {
+		/* Use the provided file descriptor with known address */
+		size_t read_size = MIN(fd->flags.f.image_size, sizeof(buffer));
+
+		if (tt_bootfs_ng_read(fs, fd->spi_addr, buffer, read_size) != 0) {
+			LOG_ERR("Failed to read %s from address 0x%x", loadcfg[table].tag,
+				fd->spi_addr);
+			return -EIO;
+		}
+		bytes_read = read_size;
+		LOG_DBG("Read %s from address 0x%x (%zu bytes)", loadcfg[table].tag, fd->spi_addr,
+			bytes_read);
+	} else {
+		if (tt_bootfs_ng_get_file(fs, loadcfg[table].tag, buffer, sizeof(buffer),
+					  &bytes_read) != TT_BOOT_FS_OK) {
+			LOG_ERR("%s() failed with error code %d", loadcfg[table].tag, -EIO);
+			return -EIO;
+		}
 	}
 
 	/* Convert the binary data to a pb_istream_t that is expected by decode */
@@ -211,17 +217,42 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 static int tt_bh_fwtable_init(const struct device *dev)
 {
-	if (!device_is_ready(bh_fwtable_fs.dev)) {
+	const struct bh_fwtable_config *config = dev->config;
+
+	if (!device_is_ready(config->flash)) {
 		LOG_ERR("Boot filesystem flash device is not ready");
 		return -ENODEV;
 	}
+
+	tt_boot_fs_ng fs = {
+		.magic = TT_BOOT_FS_NG_MAGIC,
+		.dev = config->flash,
+	};
+
+	/* Find file descriptors for each table we need */
+	tt_boot_fs_fd flshinfo_fd, boardcfg_fd, cmfwcfg_fd;
+	const tt_boot_fs_fd *flshinfo_ptr = NULL, *boardcfg_ptr = NULL, *cmfwcfg_ptr = NULL;
+
+	if (tt_bootfs_ng_find_fd_by_tag(&fs, (const uint8_t *)"flshinfo", &flshinfo_fd) ==
+	    TT_BOOT_FS_OK) {
+		flshinfo_ptr = &flshinfo_fd;
+	}
+	if (tt_bootfs_ng_find_fd_by_tag(&fs, (const uint8_t *)"boardcfg", &boardcfg_fd) ==
+	    TT_BOOT_FS_OK) {
+		boardcfg_ptr = &boardcfg_fd;
+	}
+	if (tt_bootfs_ng_find_fd_by_tag(&fs, (const uint8_t *)"cmfwcfg", &cmfwcfg_fd) ==
+	    TT_BOOT_FS_OK) {
+		cmfwcfg_ptr = &cmfwcfg_fd;
+	}
+
 	/* load firmware tables from flash */
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
+		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG, boardcfg_ptr, &fs);
 	} else {
-		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
-			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
-			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
+		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO, flshinfo_ptr, &fs) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG, boardcfg_ptr, &fs) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG, cmfwcfg_ptr, &fs));
 	}
 }
 

@@ -22,6 +22,10 @@
 		zephyr,shell-uart = &uart0;
 	};
 
+	aliases {
+		boot-flash = &spi_flash;
+	};
+
 };
 
 &spi0 {
