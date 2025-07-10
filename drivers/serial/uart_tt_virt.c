@@ -406,7 +406,7 @@ static int uart_tt_virt_init(const struct device *dev)
 		.vuart =                                                                           \
 			{                                                                          \
 				.magic = DT_INST_PROP(_inst, magic),                               \
-				.version = ((_inst) << 24) |                                       \
+				.version = ((DT_INST_REG_ADDR(_inst)) << 24) |                     \
 					   (DT_INST_PROP(_inst, version) & GENMASK(0, 24)),        \
 				.rx_cap = DT_INST_PROP(_inst, rx_cap),                             \
 				.tx_cap = DT_INST_PROP(_inst, tx_cap),                             \
