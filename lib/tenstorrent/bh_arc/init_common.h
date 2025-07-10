@@ -23,7 +23,7 @@
 #define RESET_UNIT_TENSIX_RESET_7_REG_ADDR 0x8003003C
 
 #define RESET_UNIT_TENSIX_RISC_RESET_0_REG_ADDR 0x80030040
-#define SCRATCHPAD_SIZE                         0x10000
+#define SCRATCHPAD_SIZE                         CONFIG_TT_BH_ARC_SCRATCHPAD_SIZE
 
 typedef struct {
 	uint32_t system_reset_n: 1;

@@ -75,4 +75,11 @@ config TT_BH_ARC_WDT_FEED_INTERVAL
 	help
 	  Interval to feed watchdog within firmware
 
+config TT_BH_ARC_SCRATCHPAD_SIZE
+	hex "Size of scratchpad memory in bytes"
+	default 0x10000
+	help
+	  Size of scratchpad memory in bytes. This is used for various purposes, including
+	  storing firmware state and data.
+
 endif
