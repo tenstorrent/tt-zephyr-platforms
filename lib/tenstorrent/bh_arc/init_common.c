@@ -12,22 +12,11 @@
 #include "status_reg.h"
 
 #include <stdint.h>
-
-#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/kernel.h>
-
-int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	if (SpiBlockRead(addr, size, dst) != 0) {
-		return TT_BOOT_FS_ERR;
-	}
-	return TT_BOOT_FS_OK;
-}
 
 void InitSpiFS(void)
 {
 	EepromSetup();
-	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
 }
 
 void InitResetInterrupt(uint8_t pcie_inst)

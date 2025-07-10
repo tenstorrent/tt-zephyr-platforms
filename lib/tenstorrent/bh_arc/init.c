@@ -48,6 +48,7 @@
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
 static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
@@ -183,6 +184,19 @@ static int CheckGddrHwTest(void)
 static int InitMrisc(void)
 {
 	size_t fw_size = 0;
+	const tt_boot_fs_fd *mrisc_fw_fd = NULL;
+	const tt_boot_fs_fd *mrisc_cfg_fd = NULL;
+
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+	int fd_count = tt_boot_fs_ls(flash, fds, ARRAY_SIZE(fds));
+
+	if (fd_count < 0) {
+		LOG_ERR("Failed to list files from bootfs. Error: %d", fd_count);
+		return fd_count;
+	}
+
+	mrisc_fw_fd = find_fd_by_tag(MRISC_FW_TAG, fds, fd_count);
+	mrisc_cfg_fd = find_fd_by_tag(MRISC_FW_CFG_TAG, fds, fd_count);
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
@@ -190,11 +204,18 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+	if (mrisc_fw_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", MRISC_FW_TAG);
+		return -ENOENT;
+	}
+
+	fw_size = mrisc_fw_fd->flags.f.image_size;
+	if (tt_bootfs_ng_read(flash, mrisc_fw_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", MRISC_FW_TAG);
 		return -EIO;
 	}
+
 	uint32_t dram_mask = GetDramMask();
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
@@ -206,9 +227,15 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+	if (mrisc_cfg_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", MRISC_FW_CFG_TAG);
+		return -ENOENT;
+	}
+
+	fw_size = mrisc_cfg_fd->flags.f.image_size;
+	if (tt_bootfs_ng_read(flash, mrisc_cfg_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", MRISC_FW_CFG_TAG);
 		return -EIO;
 	}
 
@@ -263,10 +290,28 @@ static void SerdesEthInit(void)
 
 	/* Load fw regs */
 	uint32_t reg_table_size = 0;
+	const tt_boot_fs_fd *eth_sd_reg_fd = NULL;
+	const tt_boot_fs_fd *eth_sd_fw_fd = NULL;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+	int fd_count = tt_boot_fs_ls(flash, fds, ARRAY_SIZE(fds));
+
+	if (fd_count < 0) {
+		LOG_ERR("Failed to list files from bootfs. Error: %d", fd_count);
+		return;
+	}
+
+	eth_sd_reg_fd = find_fd_by_tag(ETH_SD_REG_TAG, fds, fd_count);
+
+	if (eth_sd_reg_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", ETH_SD_REG_TAG);
+		return;
+	}
+
+	reg_table_size = eth_sd_reg_fd->flags.f.image_size;
+	if (tt_bootfs_ng_read(flash, eth_sd_reg_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", ETH_SD_REG_TAG);
 		return;
 	}
 
@@ -279,10 +324,17 @@ static void SerdesEthInit(void)
 
 	/* Load fw */
 	size_t fw_size = 0;
+	eth_sd_fw_fd = find_fd_by_tag(ETH_SD_FW_TAG, fds, fd_count);
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
+	if (eth_sd_fw_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", ETH_SD_FW_TAG);
+		return;
+	}
+
+	fw_size = eth_sd_fw_fd->flags.f.image_size;
+	if (tt_bootfs_ng_read(flash, eth_sd_fw_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", ETH_SD_FW_TAG);
 		return;
 	}
 
@@ -304,13 +356,31 @@ static void EthInit(void)
 
 	/* Load fw */
 	size_t fw_size = 0;
+	const tt_boot_fs_fd *eth_fw_fd = NULL;
+	const tt_boot_fs_fd *eth_cfg_fd = NULL;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+	int fd_count = tt_boot_fs_ls(flash, fds, ARRAY_SIZE(fds));
+
+	if (fd_count < 0) {
+		LOG_ERR("Failed to list files from bootfs. Error: %d", fd_count);
 		return;
 	}
 
+	eth_fw_fd = find_fd_by_tag(ETH_FW_TAG, fds, fd_count);
+
+	if (eth_fw_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", ETH_FW_TAG);
+		return;
+	}
+
+	if (tt_bootfs_ng_read(flash, eth_fw_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", ETH_FW_TAG);
+		return;
+	}
+
+	fw_size = eth_fw_fd->flags.f.image_size;
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
 			LoadEthFw(eth_inst, ring, large_sram_buffer, fw_size);
@@ -318,9 +388,17 @@ static void EthInit(void)
 	}
 
 	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
+	eth_cfg_fd = find_fd_by_tag(ETH_FW_CFG_TAG, fds, fd_count);
+
+	if (eth_cfg_fd == NULL) {
+		LOG_ERR("Failed to find file: %s", ETH_FW_CFG_TAG);
+		return;
+	}
+
+	fw_size = eth_cfg_fd->flags.f.image_size;
+	if (tt_bootfs_ng_read(flash, eth_cfg_fd->spi_addr, large_sram_buffer, SCRATCHPAD_SIZE) !=
+	    0) {
+		LOG_ERR("Failed to read file: %s", ETH_FW_CFG_TAG);
 		return;
 	}
 

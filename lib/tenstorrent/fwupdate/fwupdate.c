@@ -35,8 +35,6 @@
 
 LOG_MODULE_REGISTER(tt_fwupdate, CONFIG_TT_FWUPDATE_LOG_LEVEL);
 
-static tt_boot_fs boot_fs;
-
 #ifdef CONFIG_BOARD_QEMU_X86
 #define FLASH0_NODE DT_INST(0, zephyr_sim_flash)
 #define FLASH1_NODE FLASH0_NODE
@@ -92,21 +90,6 @@ int tt_fwupdate_complete(void)
 static const struct device *const flash0_dev = DEVICE_DT_GET(FLASH0_NODE);
 /* Should just be an enable on the flash/spi */
 
-static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	return flash_read(flash1_dev, addr, dst, size);
-}
-
-static int z_tt_boot_fs_write(uint32_t addr, uint32_t size, const uint8_t *src)
-{
-	return flash_write(flash1_dev, addr, src, size);
-}
-
-static int z_tt_boot_fs_erase(uint32_t addr, uint32_t size)
-{
-	return flash_erase(flash1_dev, addr, size);
-}
-
 static void tt_fwupdate_dump_fd(const char *msg, const tt_boot_fs_fd *fd, bool verified)
 {
 	LOG_DBG("%s%s{spi_addr: %x, copy_dest: %x, flags: { image_size: %zu, executable: %d, "
@@ -148,28 +131,21 @@ int tt_fwupdate_create_test_fs(const char *tag)
 	strncpy(fd.image_tag, tag, sizeof(fd.image_tag));
 	fd.fd_crc = tt_boot_fs_cksum(0, (uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t));
 
-	/* Create a tiny, fake image */
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
-	}
-
 	/* FIXME: tt_boot_fs_add_file() image_data_src should be const */
-	rc = tt_boot_fs_add_file(&boot_fs, fd, (uint8_t *)fake_image, false, false);
+	rc = tt_bootfs_ng_write(flash1_dev, fd.spi_addr, (uint8_t *)fake_image, sizeof(fake_image));
 	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_add_file", rc);
+		LOG_ERR("Failed to write fake image: %d", rc);
 		return rc;
 	}
 
-	rc = flash_write(flash1_dev, TT_BOOT_FS_OFFSET, &fd, sizeof(fd));
+	rc = tt_bootfs_ng_write(flash1_dev, TT_BOOT_FS_OFFSET, (const uint8_t *)&fd, sizeof(fd));
 	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "flash_write", rc);
+		LOG_ERR("Failed to write file descriptor: %d", rc);
 		return rc;
 	}
 
-	rc = flash_read(flash1_dev, TT_BOOT_FS_OFFSET, &tmp, sizeof(tmp));
-	__ASSERT(rc == 0, "%s() failed: %d", "flash_read", rc);
+	rc = tt_bootfs_ng_read(flash1_dev, TT_BOOT_FS_OFFSET, (const uint8_t *)&tmp, sizeof(tmp));
+	__ASSERT(rc == 0, "%s() failed: %d", "tt_bootfs_ng_read", rc);
 	__ASSERT(memcmp(&fd, &tmp, sizeof(fd)) == 0,
 		 "Written and read back file descriptors do not match");
 
@@ -184,13 +160,6 @@ int tt_fwupdate(const char *tag, bool dry_run, bool reboot)
 	int rc;
 	uint32_t cksum;
 	tt_boot_fs_fd fd;
-	bool found = false;
-
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_DBG("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
-	}
 
 	if (!device_is_ready(flash1_dev)) {
 		LOG_DBG("Device %s is not ready", flash1_dev->name);
@@ -199,33 +168,17 @@ int tt_fwupdate(const char *tag, bool dry_run, bool reboot)
 
 	LOG_DBG("Parsing SPI flash %s", flash1_dev->name);
 
-	for (uint32_t addr = TT_BOOT_FS_OFFSET + TT_BOOT_FS_FD_HEAD_ADDR, i = 0;
-	     i < CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX; addr = tt_boot_fs_next(addr), ++i) {
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+	int fd_count = tt_boot_fs_ls(flash1_dev, fds, ARRAY_SIZE(fds));
 
-		rc = flash_read(flash1_dev, addr, (uint8_t *)&fd, sizeof(tt_boot_fs_fd));
-		if (rc < 0) {
-			LOG_DBG("%s() failed: %d", "flash_read", rc);
-			break;
-		}
-
-		rc = tt_fwupdate_validate_fd(&fd);
-		if (rc < 0) {
-			break;
-		}
-		if (strncmp(fd.image_tag, tag, sizeof(fd.image_tag)) != 0) {
-			continue;
-		}
-
-		rc = tt_fwupdate_validate_image(&fd);
-		if (rc < 0) {
-			continue;
-		}
-
-		found = true;
-		break;
+	if (fd_count < 0) {
+		LOG_ERR("Failed to list files from bootfs. Error: %d", fd_count);
+		return fd_count;
 	}
 
-	if (!found) {
+	const tt_boot_fs_fd *fd_ptr = find_fd_by_tag((const uint8_t *)tag, fds, fd_count);
+
+	if (fd_ptr == NULL) {
 		LOG_DBG("Did not find image tag %s", tag);
 		return -ENOENT;
 	}
