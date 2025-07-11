@@ -508,6 +508,15 @@ Tenstorrent Platforms:
   description: |
     Maintained upstream.
 
+"West project: librpmi":
+  status: maintained
+  maintainers:
+    - cfriedt
+  files: []
+  labels: []
+  description: |
+    Chris' fork of librpmi.
+
 "West project: mbedtls":
   status: odd fixes
   files: []
