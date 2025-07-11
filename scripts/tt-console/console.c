@@ -43,6 +43,10 @@
 #define UART_TT_VIRT_DISCOVERY_ADDR 0x800304a0
 #endif
 
+#ifndef UART_CHANNEL
+#define UART_CHANNEL 0
+#endif
+
 #define TENSTORRENT_PCI_VENDOR_ID 0x1e52
 #define BH_SCRAPPY_PCI_DEVICE_ID  0xb140
 
@@ -227,6 +231,7 @@ struct console {
 	 * [STDERR_FILENO] = ring1, ring1 uses the buffer exclusively for (card) output
 	 */
 	uint32_t vuart_addr;
+	uint32_t channel;
 	volatile struct tt_vuart *vuart;
 	/* we might not actually need these */
 	uint64_t wc_mapping_base;
@@ -262,6 +267,7 @@ static void console_init(struct console *cons)
 		.magic = UART_TT_VIRT_MAGIC,
 		.pci_device_id = BH_SCRAPPY_PCI_DEVICE_ID,
 		.tlb = MAP_FAILED,
+		.channel = UART_CHANNEL,
 	};
 }
 
@@ -550,8 +556,8 @@ static void lose_vuart(struct console *cons)
 
 static int termio_raw(struct console *cons)
 {
-	if (!isatty(STDIN_FILENO)) {
-		D(2, "Not an interactive console")
+	if (!isatty(STDOUT_FILENO)) {
+		D(2, "Not an interactive console");
 		return 0;
 	}
 
@@ -629,25 +635,26 @@ static inline int vuart_getc(struct console *cons)
 	volatile struct tt_vuart *const vuart = cons->vuart;
 
 	if (vuart->magic != cons->magic) {
-		return EOF;
+		return -EAGAIN;
 	}
 
 	if (tt_vuart_buf_empty(vuart->tx_head, vuart->tx_tail)) {
-		return EOF;
+		return -EAGAIN;
 	}
 
 	volatile char *const tx_buf = (volatile char *)&vuart->buf[0];
-	int ch = tx_buf[vuart->tx_head % vuart->tx_cap];
+	char ch = tx_buf[vuart->tx_head % vuart->tx_cap];
 
 	++vuart->tx_head;
 
-	return ch;
+	return (int)ch;
 }
 
 static int loop(struct console *const cons)
 {
 	int ret;
 	bool ctrl_a_pressed = false;
+	bool using_tty = false;
 
 	ret = open_tt_dev(cons);
 	if (ret < 0) {
@@ -664,7 +671,17 @@ static int loop(struct console *const cons)
 		goto out;
 	}
 
-	I("Press Ctrl-a,x to quit");
+	/*
+	 * Check if STDOUT is a tty. If not, we should simply stream binary
+	 * data the file without any processing.
+	 */
+	if (isatty(STDOUT_FILENO)) {
+		using_tty = true;
+		I("Press Ctrl-a,x to quit");
+	} else {
+		fprintf(stderr, "Not a tty, streaming binary data to STDOUT. "
+				"Press Ctrl-C to quit.\n");
+	}
 
 	while (!cons->stop) {
 		if (cons->timeout_abs_ms != 0) {
@@ -692,8 +709,8 @@ static int loop(struct console *const cons)
 		int ch;
 
 		/* dump anything available from the console before sending anything */
-		while ((ch = vuart_getc(cons)) != EOF) {
-			if (ch == '\n') {
+		while ((ch = vuart_getc(cons)) != -EAGAIN) {
+			if (ch == '\n' && using_tty) {
 				putchar('\r');
 			}
 			(void)putchar(ch);
@@ -703,6 +720,11 @@ static int loop(struct console *const cons)
 		struct timeval tv = {
 			.tv_usec = 1,
 		};
+
+		if (!using_tty) {
+			/* Skip reading input */
+			continue;
+		}
 
 		FD_ZERO(&fds);
 		FD_SET(STDIN_FILENO, &fds);
@@ -758,6 +780,7 @@ static void usage(const char *progname)
 	  "\n"
 	  "args:\n"
 	  "-a <addr>          : vuart discovery address (default: %08x)\n"
+	  "-c <channel>       : channel number (default: %d)\n"
 	  "-d <path>          : path to device node (default: %s)\n"
 	  "-h                 : print this help message\n"
 	  "-i <pci_device_id> : pci device id (default: %04x)\n"
@@ -765,15 +788,15 @@ static void usage(const char *progname)
 	  "-q                 : decrease debug verbosity\n"
 	  "-v                 : increase debug verbosity\n"
 	  "-w <timeout>       : wait timeout ms and exit\n",
-	  __func__, progname, UART_TT_VIRT_DISCOVERY_ADDR, TT_DEVICE, BH_SCRAPPY_PCI_DEVICE_ID,
-	  UART_TT_VIRT_MAGIC);
+	  __func__, progname, UART_TT_VIRT_DISCOVERY_ADDR, UART_CHANNEL, TT_DEVICE,
+	  BH_SCRAPPY_PCI_DEVICE_ID, UART_TT_VIRT_MAGIC);
 }
 
 static int parse_args(struct console *cons, int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt(argc, argv, ":a:d:hi:m:qt:vw:")) != -1) {
+	while ((c = getopt(argc, argv, ":a:c:d:hi:m:qt:vw:")) != -1) {
 		switch (c) {
 		case 'a': {
 			unsigned long addr;
@@ -786,6 +809,23 @@ static int parse_args(struct console *cons, int argc, char **argv)
 				return -errno;
 			}
 			cons->addr = addr;
+		} break;
+		case 'c': {
+			unsigned long channel;
+
+			errno = 0;
+			channel = strtol(optarg, NULL, 0);
+			/* Limit to 16 channels so we don't use too many scratch registers */
+			if (channel > 15) {
+				E("Only channels 0-15 are supported, not %s", optarg);
+				usage(basename(argv[0]));
+				return -EINVAL;
+			} else if (errno != 0) {
+				E("invalid operand to -c %s: %s", optarg, strerror(errno));
+				usage(basename(argv[0]));
+				return -errno;
+			}
+			cons->channel = channel;
 		} break;
 		case 'd':
 			cons->dev_name = optarg;
@@ -860,6 +900,9 @@ static int parse_args(struct console *cons, int argc, char **argv)
 		}
 	}
 
+	/* Offset address based on channel selection */
+	cons->addr += cons->channel * sizeof(uint32_t);
+
 	/* perform extra checking here and error as needed */
 
 	return 0;
@@ -867,7 +910,7 @@ static int parse_args(struct console *cons, int argc, char **argv)
 
 static void handler(int sig)
 {
-	I("\nCaught signal %d (%s)", sig, strsignal(sig));
+	D(1, "\nCaught signal %d (%s)", sig, strsignal(sig));
 	_cons.stop = true;
 }
 
