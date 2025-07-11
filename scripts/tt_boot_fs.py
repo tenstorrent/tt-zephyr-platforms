@@ -877,8 +877,8 @@ def invoke_generate_bootfs_yaml(args):
     Generates a flash partition YAML file from the partitions node in the
     Zephyr devicetree at build time.
 
-    If a child of the partition has its nodelabel suffixed with '_executable',
-    then its executable bit will be set.
+    It parses the C style preceding a partition's 'label' property
+    to extract that partition's file path.
 
     See parse_args() for a descriptive list of arguments.
     """
@@ -890,30 +890,51 @@ def invoke_generate_bootfs_yaml(args):
 
     edt = edtlib.EDT(args.dts_file, args.bindings_dirs)
 
-    partitions_nodes = edt.compat2nodes.get("fixed-partitions")
+    partitions_nodes = edt.compat2nodes.get("tenstorrent,tt-boot-fs")
     partitions_node = partitions_nodes[0]
-    partitions_yml = {"flash_partitions": {}}
+
+    # Change 1: Initialize "images" as a list instead of a dictionary.
+    partitions_yml = {
+        "name": "p150a",
+        "product_name": "p150a",
+        "gen_name": "p150a",
+        "alignment": {
+            "flash_device_size": partitions_node.props["flash-device-size"].val,
+            "flash_block_size": partitions_node.props["flash-block-size"].val,
+        },
+        "images": [],
+    }
 
     for partition in partitions_node.children.values():
-        # Required properties
-        label = partition.props["label"].val
-        reg_val = partition.props["reg"].val
-        offset, size = reg_val
-        partitions_data = {"offset": offset, "size": size}
+        label = partition.label
+        offset, size = partition.props["reg"].val
+        path = partition.props["binary-path"].val
+        path = path.replace("$BUILD_DIR", args.build_dir)
+        path = path.replace("$ROOT", args.root)
+        read_only = partition.read_only
 
-        # Executable node label convention
-        exec_suffix = "executable"
-        if label.endswith(exec_suffix):
-            partitions_data[exec_suffix] = 1
-            label.removesuffix(exec_suffix)
+        # Change 2: Create a dictionary for the image and append it to the list.
+        # Also, use the correct keys ('name', 'binary', 'padto') that the
+        # BootImage.loads method expects.
+        image_entry = {
+            "name": label,
+            "offset": offset,
+            "padto": size,
+            "binary": path,
+            "executable": not read_only,
+        }
 
-        partitions_yml["flash_partitions"][label] = partitions_data
+        if label == "failover":
+            partitions_yml["fail_over_image"] = image_entry
+        else:
+            partitions_yml["images"].append(image_entry)
 
     output_dir = os.path.dirname(args.output_file)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
     with open(args.output_file, "w", encoding="utf-8") as f:
+        # The yaml.dump function will correctly format the list of dictionaries.
         yaml.dump(
             partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
         )
@@ -1012,6 +1033,8 @@ def parse_args():
     generate_bootfs_parser.add_argument(
         "--verbose", default=0, action="count", help="Log the YAML file."
     )
+    generate_bootfs_parser.add_argument("--build-dir")
+    generate_bootfs_parser.add_argument("--root")
     generate_bootfs_parser.set_defaults(func=invoke_generate_bootfs_yaml)
 
     # MKFS command- build a tt_boot_fs given a specification
