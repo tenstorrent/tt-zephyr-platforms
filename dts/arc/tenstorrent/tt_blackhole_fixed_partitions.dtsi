@@ -6,68 +6,84 @@
 
 / {
 	partitions {
-		compatible = "fixed-partitions";
+		compatible = "tenstorrent,tt-boot-fs", "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
 
+		flash-device-size = <0x1000000>;
+		flash-block-size = <0x1000>;
+
 		cmfwcfg@14000 {
 			label = "cmfwcfg";
-			reg = <0x14000 0x38>; /* 81920, 56 bytes */
+			reg = <0x14000 0x1000>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/P150A/fw_table.bin";
 		};
 
 		cmfw@15000 {
 			label = "cmfw";
-			reg = <0x15000 0x15248>; /* 86016, 86600 bytes */
+			reg = <0x15000 0x19000>;
+			binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
 		};
 
 		ethfwcfg@2b000 {
 			label = "ethfwcfg";
-			reg = <0x2b000 0x200>; /* 176128, 512 bytes */
+			reg = <0x2b000 0x1000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin";
 		};
 
 		ethfw@2c000 {
 			label = "ethfw";
-			reg = <0x2c000 0x8600>; /* 180224, 34304 bytes */
+			reg = <0x2c000 0x9000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_erisc.bin";
 		};
 
 		memfwcfg@35000 {
 			label = "memfwcfg";
-			reg = <0x35000 0x100>; /* 217088, 256 bytes */
+			reg = <0x35000 0x1000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_gddr_params_P150A.bin";
 		};
 
 		memfw@36000 {
 			label = "memfw";
-			reg = <0x36000 0x2730>; /* 221184, 10032 bytes */
+			reg = <0x36000 0x4000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin";
 		};
 
-		ethsdreg@39000 {
+		ethsdreg@3a000 {
 			label = "ethsdreg";
-			reg = <0x39000 0x480>; /* 233472, 1152 bytes */
+			reg = <0x3a000 0x1000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin";
 		};
 
-		ethsdfw@3a000 {
+		ethsdfw@3b000 {
 			label = "ethsdfw";
-			reg = <0x3a000 0x4c34>; /* 237568, 19508 bytes */
+			reg = <0x3b000 0x5000>;
+			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin";
 		};
 
-		bmfw@3f000 {
+		bmfw@40000 {
 			label = "bmfw";
-			reg = <0x3f000 0x8ba0>; /* 258048, 35744 bytes */
+			reg = <0x40000 0xc000>;
+			binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 		};
 
-		flshinfo@48000 {
+		flshinfo@4c000 {
 			label = "flshinfo";
-			reg = <0x48000 0x4>; /* 294912, 4 bytes */
+			reg = <0x4c000 0x4000>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/P150A/flash_info.bin";
 		};
 
-		failover@49000 {
+		failover@4d000 {
 			label = "failover";
-			reg = <0x49000 0x10124>; /* 299008, 65828 bytes */
+			reg = <0x4d000 0x13000>;
+			binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 		};
 
 		boardcfg@fff000 {
 			label = "boardcfg";
-			reg = <0xfff000 0x100>; /* 16773120, 256 bytes */
+			reg = <0xfff000 0x1000>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/P150A/read_only.bin";
+			read-only;
 		};
 	};
 };
