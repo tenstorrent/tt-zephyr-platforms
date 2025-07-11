@@ -92,3 +92,10 @@ int InitFW(uint32_t app_version)
 
 	return 0;
 }
+
+__weak int _InitFW(void)
+{
+	return InitFW((18 << 24) | (0 << 15) | (0 << 8) | 0);
+}
+
+SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
