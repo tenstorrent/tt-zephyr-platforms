@@ -17,6 +17,10 @@
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
 	};
+
+	aliases {
+		boot-flash = &flash1;
+	};
 };
 
 #include "tt_blackhole_dmc.dtsi"

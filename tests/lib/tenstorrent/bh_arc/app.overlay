@@ -1,9 +1,14 @@
 /
 {
+
+aliases
+	{
+		boot-flash = &flashcontroller0;
+	};
 fwtable: fwtable
 	{
 		compatible = "tenstorrent,bh-fwtable";
 		status = "okay";
-		flash_dev = <&flashcontroller0>;
+		flash-dev = <&flashcontroller0>;
 	};
 };

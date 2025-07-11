@@ -35,8 +35,6 @@
 
 LOG_MODULE_REGISTER(tt_fwupdate, CONFIG_TT_FWUPDATE_LOG_LEVEL);
 
-static tt_boot_fs boot_fs;
-
 #ifdef CONFIG_BOARD_QEMU_X86
 #define FLASH0_NODE DT_INST(0, zephyr_sim_flash)
 #define FLASH1_NODE FLASH0_NODE
@@ -54,6 +52,8 @@ static const struct device *const flash1_dev = DEVICE_DT_GET(FLASH1_NODE);
 static const struct device *flash1_dev;
 static struct gpio_dt_spec spi_mux;
 
+static tt_boot_fs_ng tt_boot_fs;
+
 /* The external SPI flash is not partitioned, so the image begins at 0 */
 #define TT_BOOT_FS_OFFSET 0
 
@@ -63,6 +63,9 @@ int tt_fwupdate_init(const struct device *dev, struct gpio_dt_spec mux)
 
 	flash1_dev = dev;
 	spi_mux = mux;
+
+	tt_boot_fs.magic = TT_BOOT_FS_NG_MAGIC;
+	tt_boot_fs.dev = dev;
 
 	if (spi_mux.port != NULL) {
 		ret = gpio_pin_configure_dt(&spi_mux, GPIO_OUTPUT_INACTIVE);
@@ -91,21 +94,6 @@ int tt_fwupdate_complete(void)
 
 static const struct device *const flash0_dev = DEVICE_DT_GET(FLASH0_NODE);
 /* Should just be an enable on the flash/spi */
-
-static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	return flash_read(flash1_dev, addr, dst, size);
-}
-
-static int z_tt_boot_fs_write(uint32_t addr, uint32_t size, const uint8_t *src)
-{
-	return flash_write(flash1_dev, addr, src, size);
-}
-
-static int z_tt_boot_fs_erase(uint32_t addr, uint32_t size)
-{
-	return flash_erase(flash1_dev, addr, size);
-}
 
 static void tt_fwupdate_dump_fd(const char *msg, const tt_boot_fs_fd *fd, bool verified)
 {
@@ -148,17 +136,10 @@ int tt_fwupdate_create_test_fs(const char *tag)
 	strncpy(fd.image_tag, tag, sizeof(fd.image_tag));
 	fd.fd_crc = tt_boot_fs_cksum(0, (uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t));
 
-	/* Create a tiny, fake image */
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
-	}
-
 	/* FIXME: tt_boot_fs_add_file() image_data_src should be const */
-	rc = tt_boot_fs_add_file(&boot_fs, fd, (uint8_t *)fake_image, false, false);
+	rc = tt_bootfs_ng_add_file(&tt_boot_fs, fd, (uint8_t *)fake_image, false, false);
 	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_add_file", rc);
+		LOG_ERR("%s() failed: %d", "tt_bootfs_ng_add_file", rc);
 		return rc;
 	}
 
@@ -186,43 +167,32 @@ int tt_fwupdate(const char *tag, bool dry_run, bool reboot)
 	tt_boot_fs_fd fd;
 	bool found = false;
 
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_DBG("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
-	}
-
-	if (!device_is_ready(flash1_dev)) {
-		LOG_DBG("Device %s is not ready", flash1_dev->name);
+	if (!device_is_ready(tt_boot_fs.dev)) {
+		LOG_DBG("Device %s is not ready", tt_boot_fs.dev->name);
 		return -ENODEV;
 	}
 
-	LOG_DBG("Parsing SPI flash %s", flash1_dev->name);
+	LOG_DBG("Parsing SPI flash %s", tt_boot_fs.dev->name);
 
-	for (uint32_t addr = TT_BOOT_FS_OFFSET + TT_BOOT_FS_FD_HEAD_ADDR, i = 0;
-	     i < CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX; addr = tt_boot_fs_next(addr), ++i) {
+	tt_boot_fs_fd fds[32];
+	int fd_count = tt_boot_fs_ls(&tt_boot_fs, fds, ARRAY_SIZE(fds));
 
-		rc = flash_read(flash1_dev, addr, (uint8_t *)&fd, sizeof(tt_boot_fs_fd));
-		if (rc < 0) {
-			LOG_DBG("%s() failed: %d", "flash_read", rc);
+	if (fd_count < 0) {
+		LOG_DBG("tt_boot_fs_ls() failed: %d", fd_count);
+		return -EIO;
+	}
+
+	/* Search through the file descriptors */
+	for (int i = 0; i < fd_count; i++) {
+		if (strncmp(fds[i].image_tag, tag, sizeof(fds[i].image_tag)) == 0) {
+			rc = tt_fwupdate_validate_image(&fds[i]);
+			if (rc < 0) {
+				continue;
+			}
+			fd = fds[i];
+			found = true;
 			break;
 		}
-
-		rc = tt_fwupdate_validate_fd(&fd);
-		if (rc < 0) {
-			break;
-		}
-		if (strncmp(fd.image_tag, tag, sizeof(fd.image_tag)) != 0) {
-			continue;
-		}
-
-		rc = tt_fwupdate_validate_image(&fd);
-		if (rc < 0) {
-			continue;
-		}
-
-		found = true;
-		break;
 	}
 
 	if (!found) {

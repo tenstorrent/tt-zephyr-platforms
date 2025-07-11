@@ -34,6 +34,10 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 
+	aliases {
+		boot-flash = &flash1;
+	};
+
 	chip1: chip1 {
 		compatible = "tenstorrent,bh-chip";
 

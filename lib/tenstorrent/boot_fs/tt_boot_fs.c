@@ -10,39 +10,66 @@
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
-
-tt_boot_fs boot_fs_data;
-static tt_boot_fs_fd boot_fs_cache[16];
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/devicetree.h>
 
 uint32_t tt_boot_fs_next(uint32_t last_fd_addr)
 {
 	return (last_fd_addr + sizeof(tt_boot_fs_fd));
 }
 
-static int tt_boot_fs_load_cache(tt_boot_fs *tt_boot_fs)
+static int tt_bootfs_ng_initial_check(const tt_boot_fs_ng *fs)
 {
-	tt_boot_fs->hal_spi_read_f(TT_BOOT_FS_FD_HEAD_ADDR, sizeof(boot_fs_cache),
-				   (uint8_t *)boot_fs_cache);
-
-	return TT_BOOT_FS_OK;
+	if (fs == NULL || fs->magic != TT_BOOT_FS_NG_MAGIC || !device_is_ready(fs->dev)) {
+		return 1;
+	}
+	return 0;
 }
 
-/* Sets up hardware abstraction layer (HAL) callbacks, initializes HEAD fd */
-int tt_boot_fs_mount(tt_boot_fs *tt_boot_fs, tt_boot_fs_read hal_read, tt_boot_fs_write hal_write,
-		     tt_boot_fs_erase hal_erase)
+int tt_bootfs_ng_read(const tt_boot_fs_ng *fs, uint32_t addr, uint8_t *buffer, size_t size)
 {
-	tt_boot_fs->hal_spi_read_f = hal_read;
-	tt_boot_fs->hal_spi_write_f = hal_write;
-	tt_boot_fs->hal_spi_erase_f = hal_erase;
+	if (tt_bootfs_ng_initial_check(fs) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
 
-	return tt_boot_fs_load_cache(tt_boot_fs);
+	return flash_read(fs->dev, addr, buffer, size);
+}
+
+int tt_bootfs_ng_write(const tt_boot_fs_ng *fs, uint32_t addr, const uint8_t *buffer, size_t size)
+{
+	if (tt_bootfs_ng_initial_check(fs) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!buffer) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	return flash_write(fs->dev, addr, buffer, size);
+}
+
+int tt_bootfs_ng_erase(const tt_boot_fs_ng *fs, uint32_t addr, size_t size)
+{
+	if (tt_bootfs_ng_initial_check(fs) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (size == 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	return flash_erase(fs->dev, addr, size);
 }
 
 /* Allocate new file descriptor on SPI device and write associated data to correct address */
-int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd,
-			const uint8_t *image_data_src, bool isFailoverEntry,
-			bool isSecurityBinaryEntry)
+int tt_bootfs_ng_add_file(const tt_boot_fs_ng *fs, tt_boot_fs_fd fd, const uint8_t *image_data_src,
+			  bool isFailoverEntry, bool isSecurityBinaryEntry)
 {
+	if (tt_bootfs_ng_initial_check(fs) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
 	uint32_t curr_fd_addr;
 
 	/* Failover image has specific file descriptor location (BOOT_START + DESC_REGION_SIZE) */
@@ -51,23 +78,25 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd,
 	} else if (isSecurityBinaryEntry) {
 		curr_fd_addr = TT_BOOT_FS_SECURITY_BINARY_FD_ADDR;
 	} else {
-		/* Regular file descriptor */
+		/* Regular file descriptor - find first invalid slot */
 		tt_boot_fs_fd head = {0};
 
 		curr_fd_addr = TT_BOOT_FS_FD_HEAD_ADDR;
 
-		tt_boot_fs->hal_spi_read_f(TT_BOOT_FS_FD_HEAD_ADDR, sizeof(tt_boot_fs_fd),
-					   (uint8_t *)&head);
+		tt_bootfs_ng_read(fs, TT_BOOT_FS_FD_HEAD_ADDR, (uint8_t *)&head,
+				  sizeof(tt_boot_fs_fd));
 
 		/* Traverse until we find an invalid file descriptor entry in SPI device array */
 		while (head.flags.f.invalid == 0) {
 			curr_fd_addr = tt_boot_fs_next(curr_fd_addr);
-			tt_boot_fs->hal_spi_read_f(curr_fd_addr, sizeof(tt_boot_fs_fd),
-						   (uint8_t *)&head);
+			tt_bootfs_ng_read(fs, curr_fd_addr, (uint8_t *)&head,
+					  sizeof(tt_boot_fs_fd));
 		}
 	}
 
-	tt_boot_fs->hal_spi_write_f(curr_fd_addr, sizeof(tt_boot_fs_fd), (uint8_t *)&fd);
+	if (tt_bootfs_ng_write(fs, curr_fd_addr, (uint8_t *)&fd, sizeof(tt_boot_fs_fd)) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
 
 	/*
 	 * Now copy total image size from image_data_src pointer into the specified address.
@@ -75,7 +104,9 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd,
 	 */
 	uint32_t total_image_size = fd.flags.f.image_size + fd.security_flags.f.signature_size;
 
-	tt_boot_fs->hal_spi_write_f(fd.spi_addr, total_image_size, image_data_src);
+	if (tt_bootfs_ng_write(fs, fd.spi_addr, image_data_src, total_image_size) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
 
 	return TT_BOOT_FS_OK;
 }
@@ -121,44 +152,81 @@ static tt_checksum_res_t calculate_and_compare_checksum(uint8_t *data, size_t nu
 	return TT_BOOT_FS_CHK_OK;
 }
 
-static int find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, tt_boot_fs_fd *fd_data)
+int tt_boot_fs_ls(const tt_boot_fs_ng *fs, tt_boot_fs_fd *fds, size_t nfds)
 {
-	for (uint32_t i = 0; i < ARRAY_SIZE(boot_fs_cache); i++) {
-		if (boot_fs_cache[i].flags.f.invalid) {
-			continue;
+	if (tt_bootfs_ng_initial_check(fs) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (!fds || nfds == 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	size_t count = 0;
+	uint32_t addr = TT_BOOT_FS_FD_HEAD_ADDR;
+
+	while (count < nfds) {
+		tt_boot_fs_fd fd;
+
+		if (tt_bootfs_ng_read(fs, addr, (uint8_t *)&fd, sizeof(tt_boot_fs_fd)) != 0) {
+			break;
 		}
 
-		if (memcmp(boot_fs_cache[i].image_tag, tag, TT_BOOT_FS_IMAGE_TAG_SIZE) != 0) {
-			continue;
+		if (fd.flags.f.invalid) {
+			break;
 		}
 
 		tt_checksum_res_t chk_res = calculate_and_compare_checksum(
-			(uint8_t *)&boot_fs_cache[i], sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
-			boot_fs_cache[i].fd_crc, false);
+			(uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t), fd.fd_crc, false);
 
-		if (chk_res == TT_BOOT_FS_CHK_FAIL) {
-			continue;
+		if (chk_res == TT_BOOT_FS_CHK_OK) {
+			fds[count] = fd;
+			count++;
 		}
 
-		/* Found the right file descriptor */
-		*fd_data = boot_fs_cache[i];
-		return TT_BOOT_FS_OK;
+		addr = tt_boot_fs_next(addr);
+
+		/* Safety check: don't scan past security binary address */
+		if (addr >= TT_BOOT_FS_SECURITY_BINARY_FD_ADDR) {
+			break;
+		}
+	}
+	return count;
+}
+
+int tt_bootfs_ng_find_fd_by_tag(const tt_boot_fs_ng *fs, const uint8_t *tag, tt_boot_fs_fd *fd_data)
+{
+	/* Use the new cacheless approach to get the list of all fds */
+	tt_boot_fs_fd fds[32];
+	int fd_count = tt_boot_fs_ls(fs, fds, ARRAY_SIZE(fds));
+
+	if (fd_count < 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
+	for (int i = 0; i < fd_count; i++) {
+		if (memcmp(fds[i].image_tag, tag, TT_BOOT_FS_IMAGE_TAG_SIZE) == 0) {
+			*fd_data = fds[i];
+			return TT_BOOT_FS_OK;
+		}
 	}
 
 	/* File descriptor not found */
 	return TT_BOOT_FS_ERR;
 }
 
-int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
-			size_t buf_size, size_t *file_size)
+int tt_bootfs_ng_get_file(const tt_boot_fs_ng *fs, const uint8_t *tag, uint8_t *buf,
+			  size_t buf_size, size_t *file_size)
 {
-	tt_boot_fs_fd fd_data;
-
-	if (tt_boot_fs == NULL || tag == NULL || buf == NULL || file_size == NULL) {
+	if (fs == NULL || fs->magic != TT_BOOT_FS_NG_MAGIC || tag == NULL || buf == NULL ||
+	    file_size == NULL || buf_size == 0) {
 		return TT_BOOT_FS_ERR;
 	}
 
-	if (find_fd_by_tag(tt_boot_fs, tag, &fd_data) != TT_BOOT_FS_OK) {
+	tt_boot_fs_fd fd_data;
+
+	/* Find the file with the matching tag */
+	if (tt_bootfs_ng_find_fd_by_tag(fs, tag, &fd_data) != TT_BOOT_FS_OK) {
 		return TT_BOOT_FS_ERR;
 	}
 
@@ -167,7 +235,10 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 	}
 	*file_size = fd_data.flags.f.image_size;
 
-	tt_boot_fs->hal_spi_read_f(fd_data.spi_addr, fd_data.flags.f.image_size, buf);
+	if (tt_bootfs_ng_read(fs, fd_data.spi_addr, buf, fd_data.flags.f.image_size) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+
 	if (calculate_and_compare_checksum(buf, fd_data.flags.f.image_size, fd_data.data_crc,
 					   false) != TT_BOOT_FS_CHK_OK) {
 		return TT_BOOT_FS_ERR;
