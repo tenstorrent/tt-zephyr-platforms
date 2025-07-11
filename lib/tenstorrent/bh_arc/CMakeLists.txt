@@ -54,6 +54,7 @@ if(CONFIG_ARC)
 endif()
 
 zephyr_library_include_directories(${CMAKE_BINARY_DIR}/modules/tt-zephyr-platforms/drivers/misc/bh_fwtable)
+add_dependencies(bh_arc nanopb_generated_headers)
 
 set(PROTOC ${PROTOBUF_PROTOC_EXECUTABLE})
 set(SPIROM_PROTOBUFS ${ZEPHYR_CURRENT_MODULE_DIR}/lib/tenstorrent/bh_arc/spirom_protobufs)
