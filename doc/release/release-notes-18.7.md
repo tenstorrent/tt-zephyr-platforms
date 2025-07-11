@@ -8,7 +8,11 @@
 Major enhancements with this release include:
 
 [comment]: <> (H3 Performance Improvements, if applicable)
-[comment]: <> (H3 New and Experimental Features, if applicable)
+
+### New and Experimental Features
+
+* Implement aiclk_ppm sweep handler
+
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 [comment]: <> (H3 Stability Improvements, if applicable)
 

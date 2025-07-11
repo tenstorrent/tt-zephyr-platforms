@@ -6,6 +6,8 @@
 
 #include "aiclk_ppm.h"
 
+#include <stdlib.h>
+
 #include <zephyr/sys/util.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
@@ -29,7 +31,21 @@ typedef enum {
 	CLOCK_MODE_PPM_UNFORCED = 3
 } ClockControlMode;
 
-AiclkPPM aiclk_ppm;
+typedef struct {
+	uint32_t curr_freq;   /* in MHz */
+	uint32_t targ_freq;   /* in MHz */
+	uint32_t boot_freq;   /* in MHz */
+	uint32_t fmax;        /* in MHz */
+	uint32_t fmin;        /* in MHz */
+	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
+	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
+	uint32_t sweep_low;   /* in MHz */
+	uint32_t sweep_high;  /* in MHz */
+	float arbiter_max[kAiclkArbMaxCount];
+	float arbiter_min[kAiclkArbMinCount];
+} AiclkPPM;
+
+static AiclkPPM aiclk_ppm;
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -66,6 +82,12 @@ void CalculateTargAiclk(void)
 	/* (it will not be above Fmax, since we calculated the max limits last) */
 	aiclk_ppm.targ_freq = MAX(targ_freq, aiclk_ppm.fmin);
 
+	/* Apply random frequency if sweep is enabled */
+	if (aiclk_ppm.sweep_en == 1) {
+		aiclk_ppm.targ_freq = rand() % (aiclk_ppm.sweep_high - aiclk_ppm.sweep_low + 1) +
+				      aiclk_ppm.sweep_low;
+	}
+
 	/* Apply forced frequency at the end, regardless of any limits */
 	if (aiclk_ppm.forced_freq != 0) {
 		aiclk_ppm.targ_freq = aiclk_ppm.forced_freq;
@@ -86,6 +108,11 @@ void IncreaseAiclk(void)
 		SetAICLK(aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
 	}
+}
+
+float GetThrottlerArbMax(AiclkArbMax arb_max)
+{
+	return aiclk_ppm.arbiter_max[arb_max];
 }
 
 /* TODO: Write a Zephyr unit test for this function */
@@ -133,6 +160,9 @@ void InitAiclkPPM(void)
 	/* disable forcing of AICLK */
 	aiclk_ppm.forced_freq = 0;
 
+	/* disable AICLK sweep */
+	aiclk_ppm.sweep_en = 0;
+
 	for (int i = 0; i < kAiclkArbMaxCount; i++) {
 		aiclk_ppm.arbiter_max[i] = aiclk_ppm.fmax;
 	}
@@ -160,6 +190,11 @@ uint8_t ForceAiclk(uint32_t freq)
 		SetAICLK(freq);
 	}
 	return 0;
+}
+
+uint32_t GetAiclkTarg(void)
+{
+	return aiclk_ppm.targ_freq;
 }
 
 static uint8_t AiclkBusyHandler(uint32_t msg_code, const struct request *request,
@@ -198,7 +233,25 @@ static uint8_t get_aiclk_handler(uint32_t msg_code, const struct request *reques
 	return 0;
 }
 
+static uint8_t SweepAiclkHandler(uint32_t msg_code, const struct request *request,
+				 struct response *response)
+{
+	if (msg_code == MSG_TYPE_AISWEEP_START) {
+		if (request->data[1] == 0 || request->data[2] == 0) {
+			return 1;
+		}
+		aiclk_ppm.sweep_low = MAX(request->data[1], aiclk_ppm.fmin);
+		aiclk_ppm.sweep_high = MIN(request->data[2], aiclk_ppm.fmax);
+		aiclk_ppm.sweep_en = 1;
+	} else {
+		aiclk_ppm.sweep_en = 0;
+	}
+	return 0;
+}
+
 REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_BUSY, AiclkBusyHandler);
 REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_LONG_IDLE, AiclkBusyHandler);
 REGISTER_MESSAGE(MSG_TYPE_FORCE_AICLK, ForceAiclkHandler);
 REGISTER_MESSAGE(MSG_TYPE_GET_AICLK, get_aiclk_handler);
+REGISTER_MESSAGE(MSG_TYPE_AISWEEP_START, SweepAiclkHandler);
+REGISTER_MESSAGE(MSG_TYPE_AISWEEP_STOP, SweepAiclkHandler);
