@@ -81,29 +81,32 @@ endif()
 # ======== Generate filesystem ========
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 set(PYTHON_DEVICETREE_SRC "$ENV{ZEPHYR_BASE}/scripts/dts/python-devicetree/src") # edtlib package
-set(DTS_FILE ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
-set(GEN_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
-set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml)
+
+set(BOOT_FS_DTS ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
+set(BOOT_FS_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
+set(BOOT_FS_YAML ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml)
 
 # Runs the generate_yaml.py script
 add_custom_command(
-    OUTPUT ${OUTPUT_FILE}
+    OUTPUT ${BOOT_FS_YAML}
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_DEVICETREE_SRC}:$ENV{PYTHONPATH}
-      python3 ${GEN_SCRIPT}
+      python3 ${BOOT_FS_SCRIPT}
       generate_bootfs
-      --dts-file ${DTS_FILE}
-      --output-file ${OUTPUT_FILE}
+      --dts-file ${BOOT_FS_DTS}
+      --output-file ${BOOT_FS_YAML}
       --bindings-dirs ${APP_DIR}/../../../zephyr/dts/bindings/ ${APP_DIR}/../../dts/bindings/
+      --build-dir ${CMAKE_BINARY_DIR}
+      --root ${APP_DIR}/../../
     DEPENDS
-      ${DTS_FILE}
-      ${GEN_SCRIPT}
+      ${BOOT_FS_DTS}
+      ${BOOT_FS_SCRIPT}
     VERBATIM
 )
 
 # Always run script during every build
 add_custom_target(
     generate_boot_yaml ALL
-    DEPENDS ${OUTPUT_FILE}
+    DEPENDS ${BOOT_FS_YAML}
 )
 
 if (PROD_NAME MATCHES "^P300")
@@ -114,7 +117,7 @@ if (PROD_NAME MATCHES "^P300")
 
     add_bootfs_and_fwbundle(
       ${BUNDLE_VERSION_STRING}
-      ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-${side}-bootfs.yaml
+      ${BOOT_FS_YAML}
       ${OUTPUT_BOOTFS_${side_upper}}
       ${OUTPUT_FWBUNDLE_${side_upper}}
       ${PROD_NAME}_${side}
@@ -136,7 +139,7 @@ else()
   set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
   add_bootfs_and_fwbundle(
     ${BUNDLE_VERSION_STRING}
-    ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml
+    ${BOOT_FS_YAML}
     ${OUTPUT_BOOTFS}
     ${OUTPUT_FWBUNDLE}
     ${PROD_NAME}
