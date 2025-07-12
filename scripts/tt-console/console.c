@@ -604,7 +604,7 @@ static inline size_t vuart_space(struct console *cons)
 		return 0;
 	}
 
-	return tt_vuart_buf_size(vuart->rx_head, vuart->rx_tail);
+	return tt_vuart_buf_space(vuart->rx_head, vuart->rx_tail, vuart->rx_cap);
 }
 
 static inline void vuart_putc(struct console *cons, int ch)
@@ -615,13 +615,13 @@ static inline void vuart_putc(struct console *cons, int ch)
 		return;
 	}
 
-	if (tt_vuart_buf_space(vuart->rx_head, vuart->rx_tail, vuart->rx_cap) > 0) {
-		++vuart->rx_tail;
-	}
-
 	volatile char *const rx_buf = (volatile char *)&vuart->buf[vuart->tx_cap];
 
 	rx_buf[vuart->rx_tail % vuart->rx_cap] = ch;
+
+	if (tt_vuart_buf_space(vuart->rx_head, vuart->rx_tail, vuart->rx_cap) > 0) {
+		++vuart->rx_tail;
+	}
 }
 
 static inline int vuart_getc(struct console *cons)
@@ -697,6 +697,8 @@ static int loop(struct console *const cons)
 				putchar('\r');
 			}
 			(void)putchar(ch);
+			/* Flush to STDOUT */
+			(void)fflush(stdout);
 		}
 
 		fd_set fds;
