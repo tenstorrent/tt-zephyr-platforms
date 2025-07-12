@@ -324,7 +324,7 @@ static int uart_tt_virt_poll_in(const struct device *dev, unsigned char *p_char)
 	const struct uart_tt_virt_config *config = dev->config;
 	volatile struct tt_vuart *vuart = config->vuart;
 
-	return tt_vuart_poll_in(vuart, p_char, TT_VUART_ROLE_DEVICE);
+	return (tt_vuart_poll_in(vuart, p_char, TT_VUART_ROLE_DEVICE) == -1) ? -1 : 0;
 }
 
 void uart_tt_virt_poll_out(const struct device *dev, unsigned char out_char)
