@@ -185,7 +185,7 @@ static inline int tt_vuart_poll_in(volatile struct tt_vuart *vuart, unsigned cha
 
 		if (atomic_compare_exchange_strong(headp, &head, head + 1)) {
 			*p_char = vuart->buf[offs + (head % cap)];
-			return *p_char;
+			return 0;
 		}
 	} while (true);
 
