@@ -38,7 +38,7 @@ struct uart_tt_virt_data {
 	bool err_irq_en;
 	bool rx_irq_en;
 	bool tx_irq_en;
-	struct k_work irq_work;
+	struct k_timer irq_timer;
 	const struct device *dev;
 
 	uart_irq_callback_user_data_t irq_cb;
@@ -168,30 +168,35 @@ static void uart_tt_virt_irq_callback_set(const struct device *dev,
 static void uart_tt_virt_irq_err_disable(const struct device *dev)
 {
 	struct uart_tt_virt_data *const data = dev->data;
+	k_spinlock_key_t rx_key, tx_key;
 
 	K_SPINLOCK(&data->err_lock) {
 		data->err_irq_en = false;
 	}
+	rx_key = k_spin_lock(&data->rx_lock);
+	tx_key = k_spin_lock(&data->tx_lock);
+	if (!(data->rx_irq_en || data->tx_irq_en)) {
+		/* If other interrupts are disabled, stop timer */
+		k_timer_stop(&data->irq_timer);
+	}
+	k_spin_unlock(&data->tx_lock, tx_key);
+	k_spin_unlock(&data->rx_lock, rx_key);
 }
 
 static void uart_tt_virt_irq_err_enable(const struct device *dev)
 {
-	bool submit;
 	struct uart_tt_virt_data *const data = dev->data;
 
 	K_SPINLOCK(&data->err_lock) {
 		data->err_irq_en = true;
-		submit = !!data->err_flags;
 	}
 
-	if (submit) {
-		(void)k_work_submit(&data->irq_work);
-	}
+	k_timer_start(&data->irq_timer, K_NO_WAIT, K_MSEC(CONFIG_UART_TT_VIRT_INTERRUPT_INTERVAL));
 }
 
-static void uart_tt_virt_irq_handler(struct k_work *work)
+static void uart_tt_virt_irq_handler(struct k_timer *timer)
 {
-	struct uart_tt_virt_data *data = CONTAINER_OF(work, struct uart_tt_virt_data, irq_work);
+	struct uart_tt_virt_data *data = CONTAINER_OF(timer, struct uart_tt_virt_data, irq_timer);
 	const struct device *dev = data->dev;
 	uart_irq_callback_user_data_t cb = data->irq_cb;
 	void *udata = data->irq_cb_udata;
@@ -214,27 +219,30 @@ static int uart_tt_virt_irq_is_pending(const struct device *dev)
 static void uart_tt_virt_irq_rx_disable(const struct device *dev)
 {
 	struct uart_tt_virt_data *const data = dev->data;
+	k_spinlock_key_t tx_key, err_key;
 
 	K_SPINLOCK(&data->rx_lock) {
 		data->rx_irq_en = false;
 	}
+	tx_key = k_spin_lock(&data->tx_lock);
+	err_key = k_spin_lock(&data->err_lock);
+	if (!(data->tx_irq_en || data->err_irq_en)) {
+		/* If other interrupts are disabled, stop timer */
+		k_timer_stop(&data->irq_timer);
+	}
+	k_spin_unlock(&data->err_lock, err_key);
+	k_spin_unlock(&data->tx_lock, tx_key);
 }
 
 static void uart_tt_virt_irq_rx_enable(const struct device *dev)
 {
-	bool submit;
-	const struct uart_tt_virt_config *config = dev->config;
 	struct uart_tt_virt_data *const data = dev->data;
-	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->rx_lock) {
 		data->rx_irq_en = true;
-		submit = !tt_vuart_buf_empty(vuart->rx_head, vuart->rx_tail);
 	}
 
-	if (submit) {
-		(void)k_work_submit(&data->irq_work);
-	}
+	k_timer_start(&data->irq_timer, K_NO_WAIT, K_MSEC(CONFIG_UART_TT_VIRT_INTERRUPT_INTERVAL));
 }
 
 static int uart_tt_virt_irq_rx_ready(const struct device *dev)
@@ -272,27 +280,30 @@ static int uart_tt_virt_irq_tx_complete(const struct device *dev)
 static void uart_tt_virt_irq_tx_disable(const struct device *dev)
 {
 	struct uart_tt_virt_data *const data = dev->data;
+	k_spinlock_key_t rx_key, err_key;
 
 	K_SPINLOCK(&data->tx_lock) {
 		data->tx_irq_en = false;
 	}
+	rx_key = k_spin_lock(&data->rx_lock);
+	err_key = k_spin_lock(&data->err_lock);
+	if (!(data->rx_irq_en || data->err_irq_en)) {
+		/* If other interrupts are disabled, stop timer */
+		k_timer_stop(&data->irq_timer);
+	}
+	k_spin_unlock(&data->err_lock, err_key);
+	k_spin_unlock(&data->rx_lock, rx_key);
 }
 
 static void uart_tt_virt_irq_tx_enable(const struct device *dev)
 {
-	bool submit;
-	const struct uart_tt_virt_config *config = dev->config;
 	struct uart_tt_virt_data *const data = dev->data;
-	volatile struct tt_vuart *vuart = config->vuart;
 
 	K_SPINLOCK(&data->tx_lock) {
 		data->tx_irq_en = true;
-		submit = tt_vuart_buf_space(vuart->tx_head, vuart->tx_tail, vuart->tx_cap) > 0;
 	}
 
-	if (submit) {
-		(void)k_work_submit(&data->irq_work);
-	}
+	k_timer_start(&data->irq_timer, K_NO_WAIT, K_MSEC(CONFIG_UART_TT_VIRT_INTERRUPT_INTERVAL));
 }
 
 static int uart_tt_virt_irq_tx_ready(const struct device *dev)
@@ -382,7 +393,7 @@ static int uart_tt_virt_init(const struct device *dev)
 	struct uart_tt_virt_data *const data = dev->data;
 
 	data->dev = dev;
-	(void)k_work_init(&data->irq_work, uart_tt_virt_irq_handler);
+	k_timer_init(&data->irq_timer, uart_tt_virt_irq_handler, NULL);
 #endif
 
 	uart_tt_virt_init_callback(dev, tt_vuart_inst(config->vuart));
