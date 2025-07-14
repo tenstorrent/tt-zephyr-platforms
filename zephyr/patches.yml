@@ -92,3 +92,14 @@ patches:
     upstreamable: true
     comments: |
       Skip building the upstream mspi-dw and flash-mspi-nor drivers.
+  - path: zephyr/pr-92709.patch
+    sha256sum: 1aeda42e476e60c1e2ac187d8855543fa59dd5c2445658b2cf792889c1c82105
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-07-14
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92709
+    merge-status: false
+    comments: |
+      Correct system-wide timekeeping utilities (used by multiple subsystems).
