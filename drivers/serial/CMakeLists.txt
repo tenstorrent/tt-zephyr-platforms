@@ -8,4 +8,8 @@ zephyr_library_sources_ifdef(CONFIG_UART_TT_VIRT uart_tt_virt.c)
 
 if(CONFIG_UART_TT_VIRT)
 zephyr_library_include_directories(../../lib/tenstorrent/bh_arc)
+
+if(CONFIG_UART_INTERRUPT_DRIVEN)
+  message(WARNING "VUART interrupt support is software timer based, expect limited performance")
+endif()
 endif()
