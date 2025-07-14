@@ -6,5 +6,16 @@ config UART_TT_VIRT
 	default y
 	depends on DT_HAS_TENSTORRENT_VUART_ENABLED
 	select SERIAL_HAS_DRIVER
+	select SERIAL_SUPPORT_INTERRUPT
 	help
 	  Enable the Tenstorrent virtual UART driver.
+
+config UART_TT_VIRT_INTERRUPT_INTERVAL
+	int "Interval (in ms) to check UART state for fake interrupt support"
+	default 100
+	depends on (UART_TT_VIRT && UART_INTERRUPT_DRIVEN)
+	help
+	  The virtual UART driver is memory based, and lacks support for
+	  hardware interrupts. Therefore we use a software timer on a set
+	  interval to fake this support where required. This setting
+	  allows adjusting the interval of the software timer.
