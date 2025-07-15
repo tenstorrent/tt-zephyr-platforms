@@ -11,14 +11,6 @@
 	status = "disabled";
 };
 
-/*
- * ARC clock will be raised to 800MHz in the application
- */
-&sysclk {
-	status = "okay";
-	clock-frequency = <800000000>;
-};
-
 &wdt0 {
 	status = "okay";
 };
