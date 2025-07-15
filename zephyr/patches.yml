@@ -103,3 +103,14 @@ patches:
     merge-status: false
     comments: |
       Correct system-wide timekeeping utilities (used by multiple subsystems).
+  - path: zephyr/dirty-hack-for-tt-hwinit.patch
+    sha256sum: b1fe44592ddc98f54f32ee8a5fb24e337d458f199fe74dec1a9353a5b3609106
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-07-15
+    upstreamable: false
+    comments: |
+      This is a filthy hack to enable TT HWInit and boot error reporting. Our checks should really
+      be done from a BIST (aka a POST) launched from the application. Let's burn this with fire
+      once we have a proper solution.
