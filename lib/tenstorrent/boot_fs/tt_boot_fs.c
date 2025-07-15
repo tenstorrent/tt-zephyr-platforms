@@ -121,7 +121,8 @@ static tt_checksum_res_t calculate_and_compare_checksum(uint8_t *data, size_t nu
 	return TT_BOOT_FS_CHK_OK;
 }
 
-int tt_boot_fs_find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, tt_boot_fs_fd *fd_data)
+int tt_boot_fs_find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag,
+			      tt_boot_fs_fd *fd_data)
 {
 	for (uint32_t i = 0; i < ARRAY_SIZE(boot_fs_cache); i++) {
 		if (boot_fs_cache[i].flags.f.invalid) {

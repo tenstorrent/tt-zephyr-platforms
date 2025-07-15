@@ -29,6 +29,8 @@
 
 #define MAX_SERDES_INSTANCES 6
 
+#define SERDES_ETH_SETUP_TLB 0
+
 #define SERDES_INST_BASE_ADDR(inst) (PCIE_PHY_SERDES0_BASE + ((inst) % 3 * 0x4000000))
 #define SERDES_INST_SRAM_ADDR(inst)                                                                \
 	(SERDES_INST_BASE_ADDR(inst) + PCIE_PHY_SERDES_SRAM_START_REG_ADDR)
@@ -40,6 +42,5 @@ typedef struct {
 
 void LoadSerdesEthRegs(uint32_t serdes_inst, uint32_t ring, const SerdesRegData *reg_table,
 		       uint32_t reg_count);
-int LoadSerdesEthFw(uint32_t serdes_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_size);
 
 #endif
