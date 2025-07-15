@@ -87,6 +87,8 @@ int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd_data,
 
 uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t size);
 
+int tt_boot_fs_find_fd_by_tag(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, tt_boot_fs_fd *fd_data);
+
 int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
 			size_t buf_size, size_t *file_size);
 
