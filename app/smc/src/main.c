@@ -75,6 +75,7 @@ int main(void)
 	Dm2CmReadyRequest();
 
 	while (1) {
+		sys_trace_named_event("main_loop", TimerTimestamp(), 0);
 		k_msleep(CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL);
 		wdt_feed(wdt0, 0);
 	}
