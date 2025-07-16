@@ -1,0 +1,20 @@
+name: PREFLASH
+
+product_name: PREFLASH
+gen_name: PREFLASH
+
+alignment:
+  flash_device_size: 0x1000000
+  flash_block_size: 4096
+
+images:
+
+  - name: cmfw
+    binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+    executable: true
+    offset: 0x10000000
+
+fail_over_image:
+  name: failover
+  binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+  offset: 0x10000000
