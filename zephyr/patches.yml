@@ -154,3 +154,16 @@ patches:
     date: 2025-07-24
     comments: |
       Implement smbus_block_read for smbus_stm32
+  - path: zephyr/smbus-cancel.patch
+    sha256sum: 70f500b9fb6bdac2f4e2ffa4ddd41664c6900e08c0c63711ad398bd26081b6c8
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Add SMBus/I2C transfer cancellation
+
+      Transfer cancellation immediately cancels the current transfer
+      and rejects all future transfers until cancellation is reversed.
+
+      Implementations are included for STM32 I2C and SMBus.
