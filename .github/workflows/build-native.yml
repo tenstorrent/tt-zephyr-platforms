@@ -31,4 +31,4 @@ jobs:
       - name: Run the script
         run: |
           gcc -Iinclude -O0 -g -Wall -Wextra -Werror -std=gnu11 -o tt-console \
-            scripts/tt-console/console.c
+            scripts/tooling/console.c
