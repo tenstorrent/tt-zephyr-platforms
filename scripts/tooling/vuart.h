@@ -86,4 +86,14 @@ int vuart_getc(struct vuart_data *data);
  */
 size_t vuart_space(struct vuart_data *data);
 
+/**
+ * Bulk read data from VUART.
+ * @param data Pointer to the VUART data structure
+ * @param buf Buffer to read data into
+ * @param size Number of bytes to read
+ * @return Number of bytes read. May be less than size
+ * @return -EAGAIN if no data is available
+ */
+int vuart_read(struct vuart_data *data, uint8_t *buf, size_t size);
+
 #endif /* SCRIPTS_TOOLING_VUART_H_ */
