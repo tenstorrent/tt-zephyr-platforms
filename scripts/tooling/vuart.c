@@ -41,6 +41,10 @@
 #define BIT_MASK(n) (BIT(n) - 1)
 #endif
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 #define ARC_X 8
 #define ARC_Y 0
 
@@ -576,4 +580,46 @@ int vuart_getc(struct vuart_data *data)
 	++vuart->tx_head;
 
 	return ch;
+}
+
+/**
+ * Bulk read data from VUART.
+ * @param data Pointer to the VUART data structure
+ * @param buf Buffer to read data into
+ * @param size Number of bytes to read
+ * @return Number of bytes read. May be less than size
+ * @return -EAGAIN if no data is available
+ */
+int vuart_read(struct vuart_data *data, uint8_t *buf, size_t size)
+{
+	volatile struct tt_vuart *const vuart = data->vuart;
+	uint32_t offset;
+
+	if (vuart->magic != data->magic) {
+		return -EAGAIN;
+	}
+
+	if (tt_vuart_buf_empty(vuart->tx_head, vuart->tx_tail)) {
+		return -EAGAIN;
+	}
+
+	if (vuart->tx_oflow) {
+		E("TX overflow detected, resetting flag");
+		vuart->tx_oflow = 0;
+	}
+
+	size = MIN(size, tt_vuart_buf_size(vuart->tx_head, vuart->tx_tail));
+	/* Cap copy size to end of vuart buffer */
+	offset = vuart->tx_head % vuart->tx_cap;
+	size = MIN(size, vuart->tx_cap - offset);
+
+	/*
+	 * Memcpy doesn't work with volatile buffers. However, metal uses a non
+	 * volatile buffer for TLB access, and this seems safe in testing.
+	 */
+	memcpy(buf, (uint8_t *)&vuart->buf[offset], size);
+
+	vuart->tx_head += size;
+
+	return (int)size;
 }
