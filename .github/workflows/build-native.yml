@@ -19,9 +19,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-tt-console:
+  build-tt-tooling:
     runs-on: ubuntu-22.04
-    name: Build tt-console
+    name: Build tt-tooling
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
@@ -29,6 +29,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
       - name: Run the script
+        working-directory: scripts/tooling
         run: |
-          gcc -Iinclude -O0 -g -Wall -Wextra -Werror -std=gnu11 -o tt-console \
-            scripts/tooling/console.c
+          make -j$(nproc)
