@@ -12,7 +12,7 @@ from twister_harness import DeviceAdapter
 
 SCRIPT_ROOT = Path(__file__)
 MODULE_ROOT = SCRIPT_ROOT.parents[3]
-CONSOLE_C = MODULE_ROOT / "scripts" / "tt-console" / "console.c"
+CONSOLE_C = MODULE_ROOT / "scripts" / "tooling" / "console.c"
 
 
 @pytest.fixture(scope="session")
