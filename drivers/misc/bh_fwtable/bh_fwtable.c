@@ -58,11 +58,11 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
+	if (!data->initialized
+	    && tt_bh_fwtable_load_tables(dev) != 0
+	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return NULL;
 	}
 
 	return &data->fw_table;
@@ -72,11 +72,11 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
+	if (!data->initialized
+	    && tt_bh_fwtable_load_tables(dev) != 0
+	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return NULL;
 	}
 
 	return &data->flash_info_table;
@@ -86,11 +86,11 @@ const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
+	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
+	if (!data->initialized
+	    && tt_bh_fwtable_load_tables(dev) != 0
+	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return NULL;
 	}
 
 	return &data->read_only_table;
