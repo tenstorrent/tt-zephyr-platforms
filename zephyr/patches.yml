@@ -115,3 +115,9 @@ patches:
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2025-06-26
+  - path: zephyr/smbus-cancel.patch
+    sha256sum: cb8ea8b96556612a9bcd1708c6b901f7a489ae2725064aa4c7175c3fb71a17e9
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-16
