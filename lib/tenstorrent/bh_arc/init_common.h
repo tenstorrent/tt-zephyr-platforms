@@ -102,7 +102,6 @@ typedef enum {
 	FW_ID_SMC_RECOVERY = 1,
 } FWID;
 
-int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst);
 void InitSpiFS(void);
 void InitResetInterrupt(uint8_t pcie_inst);
 void DeassertTileResets(void);
