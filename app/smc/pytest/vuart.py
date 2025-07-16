@@ -12,13 +12,15 @@ from twister_harness import DeviceAdapter
 
 SCRIPT_ROOT = Path(__file__)
 MODULE_ROOT = SCRIPT_ROOT.parents[3]
-CONSOLE_C = MODULE_ROOT / "scripts" / "tooling" / "console.c"
+SCRIPT_DIR = MODULE_ROOT / "scripts" / "tooling"
 
 
 @pytest.fixture(scope="session")
 def tt_console(tmp_path_factory: Path):
     tt_console_exe = tmp_path_factory.getbasetemp() / "tt-console"
-    cmd = f"gcc -O0 -g -Wall -Wextra -Werror -std=gnu11 -I {MODULE_ROOT}/include -o {tt_console_exe} {CONSOLE_C}"
+    cmd = "make tt-console"
+    subprocess.run(cmd.split(), capture_output=True, check=True, cwd=SCRIPT_DIR)
+    cmd = f"cp {SCRIPT_DIR / 'tt-console'} {tt_console_exe}"
     subprocess.run(cmd.split(), capture_output=True, check=True)
     return tt_console_exe
 
