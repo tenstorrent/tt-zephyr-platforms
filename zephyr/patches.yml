@@ -114,3 +114,12 @@ patches:
       This is a filthy hack to enable TT HWInit and boot error reporting. Our checks should really
       be done from a BIST (aka a POST) launched from the application. Let's burn this with fire
       once we have a proper solution.
+  - path: zephyr/tracing-ctf-take-IRQ-lock-before-generating-timestam.patch
+    sha256sum: fd2b1bb3bede94a697d1cbcee73ee181ee54e91b9e31eda226c0c6a641947170
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-07-16
+    upstreamable: true
+    comments: |
+      Fix timestamp generation in CTF_EVENT()

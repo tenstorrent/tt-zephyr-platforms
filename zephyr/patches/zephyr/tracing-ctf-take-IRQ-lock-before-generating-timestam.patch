@@ -1,0 +1,42 @@
+From 70798afa6d6ce8d52ee6d04bbe212d6446a6332a Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Wed, 16 Jul 2025 11:26:20 -0400
+Subject: [PATCH] tracing: ctf: take IRQ lock before generating timestamp
+
+CTF tracing relies on all packet timestamps being increasing- if a
+timestamp of a later packet is less than the prior packet, the CTF
+parser assumes the timestamp field has overflowed and adds to the
+overall timestamp to account for this.
+
+When taking a timestamp for a CTF packet, it was possible for an interrupt
+to occur before the packet was submitted to the tracing core framework
+but after the timestamp was generated. The interrupt itself would
+generate a tracing event with a later timestamp then the packet in
+question, leading to the packets being recorded out of order.
+
+To resolve this, take an IRQ lock before generating the timestamp and
+release it after submitting the packet to the tracing core.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ subsys/tracing/ctf/ctf_top.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/subsys/tracing/ctf/ctf_top.h b/subsys/tracing/ctf/ctf_top.h
+index 725602d41a9..3a80f9950e0 100644
+--- a/subsys/tracing/ctf/ctf_top.h
++++ b/subsys/tracing/ctf/ctf_top.h
+@@ -52,9 +52,11 @@
+ #ifdef CONFIG_TRACING_CTF_TIMESTAMP
+ #define CTF_EVENT(...)                                                         \
+ 	{                                                                      \
++		int key = irq_lock();                                          \
+ 		const uint32_t tstamp = k_cyc_to_ns_floor64(k_cycle_get_32()); \
+ 									       \
+ 		CTF_GATHER_FIELDS(tstamp, __VA_ARGS__)                         \
++		irq_unlock(key);                                               \
+ 	}
+ #else
+ #define CTF_EVENT(...)                                                         \
+--
+2.34.1
