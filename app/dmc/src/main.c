@@ -24,7 +24,6 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
 
-#include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
 #include <tenstorrent/event.h>
@@ -275,15 +274,6 @@ int main(void)
 		if (ret != 0) {
 			return ret;
 		}
-	}
-
-	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		if (chip->config.arc.smbus.bus == NULL) {
-			continue;
-		}
-
-		tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
-					     &((&chip->data)->bus_cancel_flag));
 	}
 
 	bist_rc = 0;
