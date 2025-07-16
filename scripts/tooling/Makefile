@@ -9,7 +9,7 @@ tools: $(TOOLS)
 
 CFLAGS += -O0 -g -Wall -Wextra -Werror -std=gnu11 -I ../../include
 
-tt-console: console.c
+tt-console: console.c vuart.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
