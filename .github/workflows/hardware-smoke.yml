@@ -271,7 +271,7 @@ jobs:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.58.0-rc26-5-g668476a4d2
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.60.0-rc20-142-g0eedd049aa
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
@@ -304,7 +304,7 @@ jobs:
           tt-flash --fw-tar /home/user/tt-metal/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
-          sh -c "$TEST_COMMAND"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
       - name: cleanup
         if: ${{ always() }}
         run: |
