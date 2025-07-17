@@ -7,3 +7,13 @@ config MSPI_DW
 	depends on DT_HAS_SNPS_DESIGNWARE_SSI_ENABLED
 	select PINCTRL if $(dt_compat_any_has_prop,$(DT_COMPAT_SNPS_DESIGNWARE_SSI),pinctrl-0)
 	imply MSPI_XIP
+
+config MSPI_DW_POLLING
+	bool "Use polling mode for DesignWare SSI controller"
+	depends on MSPI_DW
+	help
+	  Use polling mode for transfers instead of interrupts. This
+	  will send the entire transfer with interrupts locked, which can
+	  be desirable for this controller, as it will deassert CS
+	  when the TX FIFO is empty, which can cause issues with
+	  systems that have high interrupt latency.
