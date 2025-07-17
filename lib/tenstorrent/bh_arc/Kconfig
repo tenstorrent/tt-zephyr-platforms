@@ -72,4 +72,11 @@ config TT_BH_ARC_SCRATCHPAD_SIZE
 	  buffer is possible, then we can remove the statically allocated buffer entirely.
 	  If not, the size would likely only be able to be reduced down to 1 page (4096 bytes).
 
+config TT_BH_ARC_DMFW_PING_TIMEOUT
+	int "Timeout for DMFW ping in milliseconds"
+	default 200
+	help
+	  Timeout for DMFW ping in milliseconds. If the DMFW does not respond within this time,
+	  the ping will be considered failed.
+
 endif
