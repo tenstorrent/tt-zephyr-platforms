@@ -107,6 +107,7 @@ DEFINE_MM_REG_RD(rxflr,		0x24)
 DEFINE_MM_REG_RD(sr,		0x28)
 DEFINE_MM_REG_WR(imr,		0x2c)
 DEFINE_MM_REG_RD(isr,		0x30)
+DEFINE_MM_REG_RD(risr, 0x34)
 DEFINE_MM_REG_RD(icr,		0x48)
 DEFINE_MM_REG_RD_WR(dr,		0x60)
 DEFINE_MM_REG_WR(rx_sample_dly,	0xf0)
@@ -249,12 +250,13 @@ static void read_rx_fifo(const struct device *dev,
 	dev_data->buf_pos = buf_pos;
 }
 
-static void mspi_dw_isr(const struct device *dev)
+/* Returns true if transfer is complete */
+static bool mspi_dw_transfer(const struct device *dev, uint32_t int_status)
 {
 	struct mspi_dw_data *dev_data = dev->data;
 	const struct mspi_xfer_packet *packet =
 		&dev_data->xfer.packets[dev_data->packets_done];
-	uint32_t int_status = read_isr(dev);
+	bool transfer_complete = false;
 
 	if (int_status & ISR_RXFIS_BIT) {
 		read_rx_fifo(dev, packet);
@@ -269,7 +271,7 @@ static void mspi_dw_isr(const struct device *dev)
 		while (read_sr(dev) & SR_BUSY_BIT) {
 		}
 
-		k_sem_give(&dev_data->finished);
+		transfer_complete = true;
 	} else {
 		if (int_status & ISR_TXEIS_BIT) {
 			if (dev_data->dummy_bytes) {
@@ -284,7 +286,16 @@ static void mspi_dw_isr(const struct device *dev)
 
 	read_icr(dev);
 	vendor_specific_irq_clear(dev);
+	return transfer_complete;
+}
 
+static void mspi_dw_isr(const struct device *dev)
+{
+	struct mspi_dw_data *dev_data = dev->data;
+
+	if (mspi_dw_transfer(dev, read_isr(dev))) {
+		k_sem_give(&dev_data->finished);
+	}
 }
 
 static int api_config(const struct mspi_dt_spec *spec)
@@ -956,6 +967,21 @@ static int start_next_packet(const struct device *dev, k_timeout_t timeout)
 		tx_data(dev, packet);
 	}
 
+#if CONFIG_MSPI_DW_POLLING
+	/*
+	 * The SPI DW peripheral has a nasty implementation of CS. If
+	 * the TX FIFO empties, than the peripheral will deassert CS.
+	 * to avoid interrupts preempting us, we lock interrupts and poll out
+	 * the TX data while reading RX
+	 */
+	key = irq_lock();
+	/* Write SER to start the transfer */
+	write_ser(dev, BIT(dev_data->dev_id->dev_idx));
+	while (!mspi_dw_transfer(dev, read_risr(dev) & imr)) {
+		/* Wait for the transfer to finish */
+	}
+	irq_unlock(key);
+#else
 	/* Enable interrupts now and wait until the packet is done. */
 	write_imr(dev, imr);
 
@@ -966,6 +992,7 @@ static int start_next_packet(const struct device *dev, k_timeout_t timeout)
 	if (rc < 0) {
 		rc = -ETIMEDOUT;
 	}
+#endif
 
 	/* Disable the controller. This will immediately halt the transfer
 	 * if it hasn't finished yet.
