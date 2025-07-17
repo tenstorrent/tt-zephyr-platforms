@@ -267,7 +267,9 @@ static int api_write(const struct device *dev, off_t addr, const void *src,
 		/* Split write into parts, each within one page only. */
 		uint16_t page_offset = (uint16_t)(addr % page_size);
 		uint16_t page_left = page_size - page_offset;
-		uint16_t to_write = (uint16_t)MIN(size, page_left);
+		uint16_t to_write = MIN(size, CONFIG_FLASH_MSPI_NOR_MAX_WRITE_SIZE);
+
+		to_write = (uint16_t)MIN(size, page_left);
 
 		if (write_enable(dev) < 0) {
 			LOG_ERR("Write enable xfer failed: %d", rc);
