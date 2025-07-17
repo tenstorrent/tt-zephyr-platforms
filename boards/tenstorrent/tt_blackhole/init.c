@@ -83,6 +83,10 @@ static int flash_reset_init(void)
 
 	if ((spi_device_config.f.normal_spi_mode == SpiOctalMode) &&
 	    (spi_device_id == 0x2c5b1a10)) {
+		if (spi_device_config.f.normal_ddr) {
+			/* MX35 flash in DDR mode. */
+			mspi_dev_cfg.data_rate = MSPI_DATA_RATE_DUAL;
+		}
 		/* MX35 flash. Issue RESET ENABLE and RESET MEMORY commands in octal mode */
 		mspi_dev_cfg.io_mode = MSPI_IO_MODE_OCTAL;
 		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL,
