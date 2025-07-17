@@ -33,9 +33,6 @@
 
 LOG_MODULE_REGISTER(bh_fwtable, CONFIG_BH_FWTABLE_LOG_LEVEL);
 
-/* Forward declaration */
-static int tt_bh_fwtable_load_tables(const struct device *dev);
-
 enum bh_fwtable_e {
 	BH_FWTABLE_FLSHINFO,
 	BH_FWTABLE_BOARDCFG,
@@ -50,20 +47,12 @@ struct bh_fwtable_data {
 	FwTable fw_table;
 	FlashInfoTable flash_info_table;
 	ReadOnly read_only_table;
-	bool initialized; /* Track if tables have been loaded */
 };
 
 /* Getter function that returns a const pointer to the fw table */
 const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
-
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
-	}
 
 	return &data->fw_table;
 }
@@ -72,26 +61,12 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
-	}
-
 	return &data->flash_info_table;
 }
 
 const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
-
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return NULL;
-		}
-	}
 
 	return &data->read_only_table;
 }
@@ -101,13 +76,6 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 {
 	PcbType pcb_type;
 	struct bh_fwtable_data *data = dev->data;
-
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return PcbTypeUnknown;
-		}
-	}
 
 	/* Extract board type from board_id */
 	uint8_t board_type = (uint8_t)((data->read_only_table.board_id >> 36) & 0xFF);
@@ -153,13 +121,6 @@ bool tt_bh_fwtable_is_p300_left_chip(void)
 uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
-
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return 0;
-		}
-	}
 
 	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
 		return data->read_only_table.asic_location;
@@ -216,49 +177,33 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 	return 0;
 }
 
-static int tt_bh_fwtable_load_tables(const struct device *dev)
-{
-	struct bh_fwtable_data *data = dev->data;
-
-	if (data->initialized) {
-		return 0; /* Already loaded */
-	}
-
-	/* load firmware tables from flash */
-	int result;
-
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		result = tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
-	} else {
-		result = (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
-			  tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
-			  tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
-	}
-
-	if (result == 0) {
-		data->initialized = true;
-	} else {
-		LOG_ERR("bh_fwtable failed to load tables: %d", result);
-	}
-
-	return result;
-}
-
 static int tt_bh_fwtable_init(const struct device *dev)
 {
-	struct bh_fwtable_data *data = dev->data;
+	struct bh_fwtable_config *config = dev->config;
 
-	/* Initialize the data structure but don't load tables yet */
-	data->initialized = false;
+	if (!device_is_ready(config->flash)) {
+		LOG_ERR("Flash device is not ready");
+		return -ENODEV;
+	}
 
-	return 0;
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
+	} else {
+		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
+	}
+
+	CODE_UNREACHABLE;
 }
 
-static const struct bh_fwtable_config bh_fwtable_config_0 = {
-	.flash = NULL, /* Not using flash device directly */
-};
+#define BH_FWTABLE_INIT(_inst)                                                                     \
+	static const struct bh_fwtable_config bh_fwtable_config_##_inst = {                        \
+		.flash = DEVICE_DT_GET(DT_INST_PHANDLE(_inst, flash_dev)),                         \
+	};                                                                                         \
+	static struct bh_fwtable_data bh_fwtable_data_##_inst;                                     \
+	DEVICE_DT_INST_DEFINE(_inst, tt_bh_fwtable_init, NULL, &bh_fwtable_data_##_inst,           \
+			      &bh_fwtable_config_##_inst, POST_KERNEL,                             \
+			      CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
 
-static struct bh_fwtable_data bh_fwtable_data_0;
-
-DEVICE_DT_INST_DEFINE(0, tt_bh_fwtable_init, NULL, &bh_fwtable_data_0, &bh_fwtable_config_0,
-		      POST_KERNEL, CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
+DT_INST_FOREACH_STATUS_OKAY(BH_FWTABLE_INIT)
