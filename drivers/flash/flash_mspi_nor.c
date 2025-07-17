@@ -130,11 +130,13 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
 	}
 
 	if ((addr < 0) || ((addr + size) > flash_size)) {
+		LOG_ERR("invalid address");
 		return -EINVAL;
 	}
 
 	rc = acquire(dev);
 	if (rc < 0) {
+		LOG_ERR("acquire failed: %d", rc);
 		return rc;
 	}
 
@@ -145,6 +147,7 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
 	}
 
 	if (rc < 0) {
+		LOG_ERR("dev_cfg_apply failed: %d", rc);
 		return rc;
 	}
 

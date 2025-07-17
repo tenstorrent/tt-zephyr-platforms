@@ -11,6 +11,13 @@ config BH_FWTABLE
 
 if BH_FWTABLE
 
+config BH_FWTABLE_HAS_FWCFG
+	bool "Tenstorrent Blackhole firmware table has cmfwcfg"
+	default y
+	help
+		Set the initialization priority for the Tenstorrent Blackhole firmware table.
+		This priority should be selected so that bh_fwtable is initialized after the SPI EEPROM.
+
 config BH_FWTABLE_INIT_PRIORITY
 	int "Tenstorrent Blackhole firmware table init priority"
 	default 90
