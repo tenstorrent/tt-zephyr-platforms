@@ -1341,6 +1341,8 @@ static int dev_init(const struct device *dev)
 	}
 #endif
 
+	LOG_INF("MSPI DW driver initialized");
+
 	return pm_device_driver_init(dev, dev_pm_action_cb);
 }
 

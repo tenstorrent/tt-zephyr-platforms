@@ -10,8 +10,12 @@
 
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
+
+LOG_MODULE_REGISTER(tt_boot_fs, LOG_LEVEL_DBG);
 
 tt_boot_fs boot_fs_data;
 static tt_boot_fs_fd boot_fs_cache[16];
@@ -23,8 +27,21 @@ uint32_t tt_boot_fs_next(uint32_t last_fd_addr)
 
 static int tt_boot_fs_load_cache(tt_boot_fs *tt_boot_fs)
 {
-	tt_boot_fs->hal_spi_read_f(TT_BOOT_FS_FD_HEAD_ADDR, sizeof(boot_fs_cache),
-				   (uint8_t *)boot_fs_cache);
+	if (tt_boot_fs == NULL) {
+		LOG_ERR("tt_boot_fs pointer is NULL");
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (tt_boot_fs->hal_spi_read_f == NULL) {
+		LOG_ERR("hal_spi_read_f is NULL");
+		return TT_BOOT_FS_ERR;
+	}
+
+	if (tt_boot_fs->hal_spi_read_f(TT_BOOT_FS_FD_HEAD_ADDR, sizeof(boot_fs_cache),
+				       (uint8_t *)boot_fs_cache) != TT_BOOT_FS_OK) {
+		LOG_ERR("Failed to read boot fs cache");
+		return TT_BOOT_FS_ERR;
+	}
 
 	return TT_BOOT_FS_OK;
 }
@@ -184,22 +201,48 @@ static const struct device *flash_dev;
 
 static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
 {
-	return flash_read(flash_dev, addr, dst, size);
+	int ret;
+
+	LOG_INF("calling %s(%p, %p, %p, %u)", "flash_read", flash_dev, (void *)addr, (void *)dst,
+		size);
+	k_msleep(500);
+	ret = flash_read(flash_dev, addr, dst, size);
+	if (ret < 0) {
+		LOG_ERR("%s() failed: %d", "flash_read", ret);
+		k_msleep(500);
+	}
+
+	return ret;
 }
 
 static int z_tt_boot_fs_write(uint32_t addr, uint32_t size, const uint8_t *src)
 {
-	return flash_write(flash_dev, addr, src, size);
+	int ret;
+
+	ret = flash_write(flash_dev, addr, src, size);
+	if (ret < 0) {
+		LOG_ERR("%s() failed: %d", "flash_write", ret);
+	}
+
+	return ret;
 }
 
 static int z_tt_boot_fs_erase(uint32_t addr, uint32_t size)
 {
-	return flash_erase(flash_dev, addr, size);
+	int ret;
+
+	ret = flash_erase(flash_dev, addr, size);
+	if (ret < 0) {
+		LOG_ERR("%s() failed: %d", "flash_erase", ret);
+	}
+
+	return ret;
 }
 
 int tt_boot_fs_mount_by_device(const struct device *dev)
 {
 	if (!device_is_ready(dev)) {
+		LOG_ERR("Device is not ready");
 		return -ENODEV;
 	}
 
@@ -208,5 +251,6 @@ int tt_boot_fs_mount_by_device(const struct device *dev)
 	boot_fs_data.hal_spi_write_f = z_tt_boot_fs_write;
 	boot_fs_data.hal_spi_erase_f = z_tt_boot_fs_erase;
 
-	return tt_boot_fs_load_cache(&boot_fs_data);
+	LOG_INF("loading boot fs cache");
+	return tt_boot_fs_load_cache(&boot_fs_data) == TT_BOOT_FS_OK ? 0 : -EIO;
 }

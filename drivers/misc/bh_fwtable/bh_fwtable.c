@@ -147,7 +147,7 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 		return -EINVAL;
 	}
 
-	LOG_DBG("Loaded %s", loadcfg[table].tag);
+	LOG_INF("Loaded %s", loadcfg[table].tag);
 	return 0;
 }
 
@@ -163,7 +163,7 @@ static int tt_bh_fwtable_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	ret = tt_boot_fs_mount_by_device(dev);
+	ret = tt_boot_fs_mount_by_device(config->flash);
 	if (ret < 0) {
 		LOG_ERR("%s() failed: %d", "tt_boot_fs_mount_by_device", ret);
 		return ret;
