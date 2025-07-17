@@ -4,10 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <string.h>
 
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
 
@@ -174,4 +176,37 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 	}
 
 	return TT_BOOT_FS_OK;
+}
+
+/* The items below are stop-gap until there is a new tt boot fs api */
+
+static const struct device *flash_dev;
+
+static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
+{
+	return flash_read(flash_dev, addr, dst, size);
+}
+
+static int z_tt_boot_fs_write(uint32_t addr, uint32_t size, const uint8_t *src)
+{
+	return flash_write(flash_dev, addr, src, size);
+}
+
+static int z_tt_boot_fs_erase(uint32_t addr, uint32_t size)
+{
+	return flash_erase(flash_dev, addr, size);
+}
+
+int tt_boot_fs_mount_by_device(const struct device *dev)
+{
+	if (!device_is_ready(dev)) {
+		return -ENODEV;
+	}
+
+	flash_dev = dev;
+	boot_fs_data.hal_spi_read_f = z_tt_boot_fs_read;
+	boot_fs_data.hal_spi_write_f = z_tt_boot_fs_write;
+	boot_fs_data.hal_spi_erase_f = z_tt_boot_fs_erase;
+
+	return tt_boot_fs_load_cache(&boot_fs_data);
 }
