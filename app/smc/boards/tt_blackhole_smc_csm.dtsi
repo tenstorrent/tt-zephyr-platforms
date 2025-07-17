@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This file defines divisions of the CSM SRAM for the Blackhole SMC board.
+ * It should be included by the MCUBoot image as well as the application image.
+ */
+
+/ {
+	chosen {
+		zephyr,bootloader-info = &boot_info0;
+	};
+
+	csm_bootloader: memory@10000000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-MCUBOOT";
+		device_type = "memory";
+		reg = <0x10000000 0x10000>; /* 64  KiB for MCUBoot */
+	};
+
+	csm_app: memory@10010000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-APP";
+		device_type = "memory";
+		reg = <0x10010000 0x6f000>; /* 444 KiB for application */
+	};
+
+	csm_shared: memory@1007f000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-SHARED";
+		device_type = "memory";
+		reg = <0x1007f000 0x1000>; /* 4 KiB for shared memory */
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			boot_info0: boot_info@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+			};
+		};
+	};
+};
