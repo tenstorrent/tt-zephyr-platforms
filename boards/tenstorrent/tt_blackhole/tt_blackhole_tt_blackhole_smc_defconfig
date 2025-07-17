@@ -23,3 +23,6 @@ CONFIG_FLASH=y
 
 # enable external spi flash
 CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE=y
+
+# Use polling mode for DesignWare SSI controller
+CONFIG_MSPI_DW_POLLING=y
