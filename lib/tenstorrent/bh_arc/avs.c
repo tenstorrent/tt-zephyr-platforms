@@ -5,7 +5,9 @@
  */
 
 #include "avs.h"
+#include "regulator.h"
 
+#include <zephyr/init.h>
 #include <zephyr/sys/util.h>
 
 #include "timer.h"
@@ -288,3 +290,17 @@ AVSStatus AVSReadSystemInputCurrent(uint16_t *response)
 	 * sense amplifier.
 	 */
 }
+
+static int avs_init(void)
+{
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Initiate AVS interface and switch vout control to AVSBus */
+	AVSInit();
+	SwitchVoutControl(AVSVoutCommand);
+
+	return 0;
+}
+SYS_INIT(avs_init, APPLICATION, 17);

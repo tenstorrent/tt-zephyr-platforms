@@ -4,23 +4,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "harvesting.h"
 #include "noc_init.h"
+#include "noc.h"
+#include "noc2axi.h"
+#include "reg.h"
+#include "telemetry.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/misc/bh_fwtable.h>
-#include <zephyr/sys/util.h>
-
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
-#include "noc.h"
-#include "noc2axi.h"
-#include "reg.h"
-#include "harvesting.h"
-#include "telemetry.h"
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
 
 /* NIU config register indices for Read/WriteNocCfgReg */
 #define NIU_CFG_0                    0x0
@@ -170,8 +170,13 @@ static bool GetTileClkDisable(uint8_t px, uint8_t py)
 	return false;
 }
 
-void NocInit(void)
+int NocInit(void)
 {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Initialize NOC so we can broadcast to all Tensixes */
 	uint32_t niu_cfg_0_updates =
 		BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF); /* noc2axi tile header double-write feature
 						       * disable, ignored on all other nodes
@@ -214,7 +219,10 @@ void NocInit(void)
 	uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
 
 	ProgramBroadcastExclusion(bad_tensix_cols);
+
+	return 0;
 }
+SYS_INIT(NocInit, APPLICATION, 9);
 
 #define PRE_TRANSLATION_SIZE 32
 
@@ -547,8 +555,16 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 	UpdateTelemetryNocTranslation(true);
 }
 
-void InitNocTranslationFromHarvesting(void)
+int InitNocTranslationFromHarvesting(void)
 {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
+		return 0;
+	}
+
 	/* Set up the EP as pcie instance (at 19-24). If there's no EP, it doesn't matter. */
 	unsigned int pcie_instance;
 
@@ -575,7 +591,10 @@ void InitNocTranslationFromHarvesting(void)
 	skip_eth |= 1 << (find_msb_set(~tile_enable.eth_enabled & GENMASK(9, 7)) - 1);
 
 	InitNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
+
+	return 0;
 }
+SYS_INIT(InitNocTranslationFromHarvesting, APPLICATION, 19);
 
 static void DisableArcNocTranslation(void)
 {

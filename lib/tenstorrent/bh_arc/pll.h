@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-void PLLInit(void);
+int PLLInit(void);
 void PLLAllBypass(void);
 uint32_t GetAICLK(void);
 uint32_t GetAPBCLK(void);

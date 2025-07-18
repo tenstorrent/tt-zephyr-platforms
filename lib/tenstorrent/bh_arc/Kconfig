@@ -3,12 +3,10 @@
 
 config TT_BH_ARC
 	bool "Blackhole ARC firmware library"
-	depends on NANOPB
-	# Enable flash driver
 	select FLASH
 	select FLASH_PAGE_LAYOUT
-	# this is a hack
-	default y if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
+	select TT_BOOT_FS
+	select NANOPB
 	help
 	  This option enables the Blackhole ARC firmware library.
 
@@ -54,20 +52,6 @@ config TT_SMC_RECOVERY
 	bool "build smc recovery image"
 	help
 	  Enable to build smc recovery image.
-
-config TT_BH_ARC_SYSINIT
-	bool "Perform bh_arc FW and HW init prior to main()"
-	help
-	  Initialize blackhole firmware and hardware prior to starting the application.
-
-	  This allows our library drivers to work better with Zephyr's driver model.
-
-config TT_BH_ARC_SYSINIT_PRIORITY
-	int "Priority of bh_arc FW and HW init"
-	default 93
-	depends on TT_BH_ARC_SYSINIT
-	help
-	  Priority of the SYS_INIT call that initializes blackhole firmware and hardware.
 
 config TT_BH_ARC_WDT_FEED_INTERVAL
 	int "Feed interval for watchdog (ms)"

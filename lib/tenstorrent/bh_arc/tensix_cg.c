@@ -4,8 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdint.h>
 #include "noc2axi.h"
+
+#include <stdint.h>
+
+#include <tenstorrent/post_code.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
+
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 /* Enable CG_CTRL_EN in each non-harvested Tensix node and set CG hystersis to 2. */
 /* This requires NOC init so that broadcast is set up properly. */
@@ -54,3 +61,21 @@ void EnableTensixCG(void)
 
 	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_en, enable_all_tensix_cg);
 }
+
+static int tensix_cg_init(void)
+{
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
+		return 0;
+	}
+
+	EnableTensixCG();
+
+	return 0;
+}
+SYS_INIT(tensix_cg_init, APPLICATION, 18);

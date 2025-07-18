@@ -6,19 +6,19 @@
 #include "cm2dm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
-#include "init_common.h"
-#include "smbus_target.h"
-#include "telemetry.h"
-#include "status_reg.h"
+#include "init.h"
 #include "reg.h"
+#include "smbus_target.h"
+#include "status_reg.h"
+#include "telemetry.h"
 #include "timer.h"
 
 #include <stdint.h>
 
 #include <app_version.h>
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/uart_tt_virt.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/uart_tt_virt.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -90,26 +90,61 @@ int main(void)
 uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) = {
 	FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};
 
-static int _InitFW(void)
+static int tt_appversion_init(void)
 {
-	return InitFW(APPVERSION);
+	WriteReg(STATUS_FW_VERSION_REG_ADDR, APPVERSION);
+	return 0;
 }
-
-SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
+SYS_INIT(tt_appversion_init, EARLY, 0);
 
 static int record_cmfw_start_time(void)
 {
 	WriteReg(CMFW_START_TIME_REG_ADDR, TimerTimestamp());
 	return 0;
 }
-
 SYS_INIT(record_cmfw_start_time, EARLY, 0);
 
 #ifdef CONFIG_UART_TT_VIRT
-#include "status_reg.h"
-
 void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
 {
 	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
 }
 #endif
+
+static int bh_arc_init_start(void)
+{
+	/* Write a status register indicating HW init progress */
+	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+
+	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
+	boot_status0.f.hw_init_status = kHwInitStarted;
+	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
+
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
+
+	return 0;
+}
+SYS_INIT(bh_arc_init_start, APPLICATION, 3);
+
+int tt_init_status;
+
+static int bh_arc_init_end(void)
+{
+	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+
+	/* Indicate successful HW Init */
+	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
+	/* Record FW ID */
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		boot_status0.f.fw_id = FW_ID_SMC_RECOVERY;
+	} else {
+		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
+	}
+	boot_status0.f.hw_init_status = (tt_init_status == 0) ? kHwInitDone : kHwInitError;
+	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
+	WriteReg(STATUS_ERROR_STATUS0_REG_ADDR, error_status0.val);
+
+	return 0;
+}
+SYS_INIT(bh_arc_init_end, APPLICATION, 22);

@@ -4,22 +4,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "avs.h"
+#include "dw_apb_i2c.h"
 #include "regulator.h"
+#include "status_reg.h"
+#include "timer.h"
 
 #include <math.h>  /* for ldexp */
 #include <float.h> /* for FLT_MAX */
 #include <stdint.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
+
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/post_code.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
-
-#include "avs.h"
-#include "dw_apb_i2c.h"
-#include "timer.h"
-
-LOG_MODULE_REGISTER(regulator);
 
 #define LINEAR_FORMAT_CONSTANT (1 << 9)
 #define SCALE_LOOP             0.335f
@@ -76,8 +77,11 @@ typedef struct {
 	uint8_t on_off_state : 1;
 } OperationBits;
 
+LOG_MODULE_REGISTER(regulator);
+
 /* The default value is the regulator default */
 static uint8_t vout_cmd_source = VoutCommand;
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 static float ConvertLinear11ToFloat(uint16_t value)
 {
@@ -475,3 +479,24 @@ static uint8_t switch_vout_control_handler(uint32_t msg_code, const struct reque
 REGISTER_MESSAGE(MSG_TYPE_SET_VOLTAGE, set_voltage_handler);
 REGISTER_MESSAGE(MSG_TYPE_GET_VOLTAGE, get_voltage_handler);
 REGISTER_MESSAGE(MSG_TYPE_SWITCH_VOUT_CONTROL, switch_vout_control_handler);
+
+static int regulator_init(void)
+{
+	int ret;
+	extern STATUS_ERROR_STATUS0_reg_u error_status0;
+
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	ret = (int)RegulatorInit(tt_bh_fwtable_get_pcb_type(fwtable_dev));
+	if (ret != 0) {
+		error_status0.f.regulator_init_error = 1;
+		return -EIO;
+	}
+
+	return 0;
+}
+SYS_INIT(regulator_init, APPLICATION, 16);
