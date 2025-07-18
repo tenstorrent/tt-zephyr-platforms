@@ -23,3 +23,9 @@ CONFIG_FLASH=y
 
 # enable external spi flash
 CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE=y
+
+# Use polling mode for DesignWare SSI controller
+CONFIG_MSPI_DW_POLLING=y
+# Limit the maximum write size to avoid ever programming beyond
+# the TX FIFO depth of the SPI DW controller.
+CONFIG_FLASH_MSPI_NOR_MAX_WRITE_SIZE=10
