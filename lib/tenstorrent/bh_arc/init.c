@@ -427,43 +427,6 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
-	/* Initialize the serdes based on board type and asic location - data will be in fw_table */
-	/* p100: PCIe1 x16 */
-	/* p150: PCIe0 x16 */
-	/* p300: Left (CPU1) PCIe1 x8, Right (CPU0) PCIe0 x8 */
-	/* BH UBB: PCIe1 x8 */
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP8);
-
-	FwTable_PciPropertyTable pci0_property_table;
-	FwTable_PciPropertyTable pci1_property_table;
-
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		pci0_property_table = (FwTable_PciPropertyTable){
-			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 2,
-		};
-		pci1_property_table = (FwTable_PciPropertyTable){
-			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 2,
-		};
-	} else {
-		pci0_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table;
-		pci1_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table;
-	}
-
-	if (pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
-		PCIeInit(0, &pci0_property_table);
-	}
-
-	if (pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
-		PCIeInit(1, &pci1_property_table);
-	}
-
-	InitResetInterrupt(0);
-	InitResetInterrupt(1);
-
-	WriteReg(PCIE_INIT_CPL_TIME_REG_ADDR, TimerTimestamp());
-
 	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 	bool init_errors = false;
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);

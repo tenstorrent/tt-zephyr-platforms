@@ -4,18 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "init_common.h"
+#include "noc2axi.h"
 #include "pcie.h"
+#include "pciesd.h"
+#include "reg.h"
+#include "status_reg.h"
+#include "timer.h"
 
 #include <stdbool.h>
 
-#include "reg.h"
-#include "noc2axi.h"
-#include "timer.h"
-#include "pciesd.h"
-
-#include <zephyr/drivers/misc/bh_fwtable.h>
-#include <zephyr/sys/util.h>
+#include <tenstorrent/post_code.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/util.h>
 
 #define PCIE_SERDES0_ALPHACORE_TLB 0
 #define PCIE_SERDES1_ALPHACORE_TLB 1
@@ -346,3 +349,50 @@ PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_p
 
 	return status;
 }
+
+static int pcie_init(void)
+{
+	/* Initialize the serdes based on board type and asic location - data will be in fw_table */
+	/* p100: PCIe1 x16 */
+	/* p150: PCIe0 x16 */
+	/* p300: Left (CPU1) PCIe1 x8, Right (CPU0) PCIe0 x8 */
+	/* BH UBB: PCIe1 x8 */
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP8);
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	FwTable_PciPropertyTable pci0_property_table;
+	FwTable_PciPropertyTable pci1_property_table;
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		pci0_property_table = (FwTable_PciPropertyTable){
+			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
+			.num_serdes = 2,
+		};
+		pci1_property_table = (FwTable_PciPropertyTable){
+			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
+			.num_serdes = 2,
+		};
+	} else {
+		pci0_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table;
+		pci1_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table;
+	}
+
+	if (pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		PCIeInit(0, &pci0_property_table);
+	}
+
+	if (pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
+		PCIeInit(1, &pci1_property_table);
+	}
+
+	InitResetInterrupt(0);
+	InitResetInterrupt(1);
+
+	WriteReg(PCIE_INIT_CPL_TIME_REG_ADDR, TimerTimestamp());
+
+	return 0;
+}
+SYS_INIT(pcie_init, APPLICATION, 13);
