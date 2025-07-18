@@ -55,20 +55,6 @@ config TT_SMC_RECOVERY
 	help
 	  Enable to build smc recovery image.
 
-config TT_BH_ARC_SYSINIT
-	bool "Perform bh_arc FW and HW init prior to main()"
-	help
-	  Initialize blackhole firmware and hardware prior to starting the application.
-
-	  This allows our library drivers to work better with Zephyr's driver model.
-
-config TT_BH_ARC_SYSINIT_PRIORITY
-	int "Priority of bh_arc FW and HW init"
-	default 93
-	depends on TT_BH_ARC_SYSINIT
-	help
-	  Priority of the SYS_INIT call that initializes blackhole firmware and hardware.
-
 config TT_BH_ARC_WDT_FEED_INTERVAL
 	int "Feed interval for watchdog (ms)"
 	default 250
