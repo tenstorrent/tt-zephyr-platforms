@@ -299,3 +299,105 @@ static int InitMrisc(void)
 	return 0;
 }
 SYS_INIT(InitMrisc, APPLICATION, 14);
+
+static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
+{
+	do {
+		uint32_t poll_val = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+
+		if (poll_val == MRISC_INIT_FINISHED) {
+			return 0;
+		}
+		if (poll_val == MRISC_INIT_FAILED) {
+			LOG_ERR("%s[%d]: 0x%x", "MRISC_INIT_STATUS", gddr_inst, poll_val);
+			return -EIO;
+		}
+		k_msleep(1);
+	} while (!sys_timepoint_expired(timeout));
+
+	LOG_ERR("%s[%d]: 0x%x", "MRISC_POST_CODE", gddr_inst,
+		MriscRegRead32(gddr_inst, MRISC_POST_CODE));
+
+	return -ETIMEDOUT;
+}
+
+static int CheckGddrHwTest(void)
+{
+	/* First kick off all tests in parallel, then check their results. Test will take
+	 * approximately 300-400 ms.
+	 */
+	uint8_t test_started = 0; /* Bitmask of tests started */
+	int any_error = 0;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
+			int error = StartHwMemtest(gddr_inst, 26, 0, 0);
+
+			if (error == -ENOTSUP) {
+				/* Shouldn't be considered a test failure if MRISC FW is too old. */
+				LOG_DBG("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "skipped",
+					error);
+			} else if (error < 0) {
+				LOG_ERR("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "failed",
+					error);
+				any_error = -EIO;
+			} else {
+				test_started |= BIT(gddr_inst);
+			}
+		}
+	}
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(test_started, gddr_inst)) {
+			int error = CheckHwMemtestResult(gddr_inst, timeout);
+
+			if (error < 0) {
+				any_error = -EIO;
+				LOG_ERR("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"failed", error);
+			} else {
+				LOG_DBG("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"succeeded", error);
+			}
+		}
+	}
+	return any_error;
+}
+
+static int gddr_training(void)
+{
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPE);
+
+	/* Check GDDR training status. */
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	bool init_errors = false;
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_INIT_TIMEOUT));
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(GetDramMask(), gddr_inst)) {
+			int error = CheckGddrTraining(gddr_inst, timeout);
+
+			if (error == -ETIMEDOUT) {
+				LOG_ERR("GDDR instance %d timed out during training", gddr_inst);
+				init_errors = true;
+			} else if (error) {
+				LOG_ERR("GDDR instance %d failed training", gddr_inst);
+				init_errors = true;
+			}
+		}
+	}
+
+	if (!init_errors) {
+		if (CheckGddrHwTest() < 0) {
+			LOG_ERR("GDDR HW test failed");
+			return -EIO;
+		}
+	}
+
+	return 0;
+}
+SYS_INIT(gddr_training, APPLICATION, 20);
