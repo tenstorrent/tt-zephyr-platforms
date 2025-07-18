@@ -6,7 +6,6 @@
 
 #include "pll.h"
 #include "reg.h"
-#include "spi_eeprom.h"
 #include "timer.h"
 
 #include <stdbool.h>
