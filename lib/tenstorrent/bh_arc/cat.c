@@ -9,8 +9,11 @@
 #include "pvt.h"
 
 #include <stdbool.h>
-#include <zephyr/sys/util.h>
+
+#include <tenstorrent/post_code.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/util.h>
 
 #define RESET_UNIT_CATMON_THERM_TRIP_STATUS_REG_ADDR  0x80030164
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR    0x80030168
@@ -94,10 +97,16 @@ static void EnableCAT(uint8_t trim_code, bool shutdown_on_trip)
 	}
 }
 
-void CATEarlyInit(void)
+static int CATEarlyInit(void)
 {
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	EnableCAT(TempToTrimCode(CAT_EARLY_TRIP_TEMP), true);
+	return 0;
 }
+SYS_INIT(CATEarlyInit, APPLICATION, 4);
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 /* Calibrate catmon against thermal sensors by looping over the
