@@ -7,7 +7,7 @@
 #include "arc_dma.h"
 #include "gddr.h"
 #include "harvesting.h"
-#include "init_common.h"
+#include "init.h"
 #include "noc.h"
 #include "noc2axi.h"
 #include "pll.h"

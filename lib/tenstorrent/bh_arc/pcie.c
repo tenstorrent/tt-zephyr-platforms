@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "init_common.h"
+#include "init.h"
 #include "noc2axi.h"
 #include "pcie.h"
 #include "pciesd.h"
