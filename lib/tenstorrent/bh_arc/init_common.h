@@ -104,6 +104,5 @@ typedef enum {
 
 int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst);
 void InitResetInterrupt(uint8_t pcie_inst);
-void DeassertTileResets(void);
 
 #endif

@@ -401,11 +401,6 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP3);
-	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
-	PLLAllBypass();
-	DeassertTileResets();
-
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP4);
 	/* Init clocks to faster (but safe) levels */
 	PLLInit();
