@@ -8,7 +8,6 @@
 #include "fan_ctrl.h"
 #include "functional_efuse.h"
 #include "harvesting.h"
-#include "pll.h"
 #include "pvt.h"
 #include "reg.h"
 #include "regulator.h"
@@ -26,11 +25,19 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
 
 #define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *const pll_dev_0 = DEVICE_DT_GET(DT_NODELABEL(pll0));
+static const struct device *const pll_dev_1 = DEVICE_DT_GET(DT_NODELABEL(pll1));
+static const struct device *const pll_dev_4 = DEVICE_DT_GET(DT_NODELABEL(pll4));
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -316,15 +323,41 @@ static void update_telemetry(void)
 							    */
 	telemetry[TAG_VREG_TEMPERATURE] = 0x000000;  /* VREG temperature - need I2C line */
 	telemetry[TAG_BOARD_TEMPERATURE] = 0x000000; /* Board temperature - need I2C line */
-	telemetry[TAG_AICLK] = GetAICLK(); /* first 16 bits - MAX ASIC FREQ (Not Available yet),
-					    * lower 16 bits - current AICLK
-					    */
-	telemetry[TAG_AXICLK] = GetAXICLK();
-	telemetry[TAG_ARCCLK] = GetARCCLK();
-	telemetry[TAG_L2CPUCLK0] = GetL2CPUCLK(0);
-	telemetry[TAG_L2CPUCLK1] = GetL2CPUCLK(1);
-	telemetry[TAG_L2CPUCLK2] = GetL2CPUCLK(2);
-	telemetry[TAG_L2CPUCLK3] = GetL2CPUCLK(3);
+	
+	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK, &telemetry[TAG_AICLK]);
+	// first 16 bits - MAX ASIC FREQ (Not Available yet), lower 16 bits - current AICLK
+
+	clock_control_get_rate(
+		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,
+		&telemetry[TAG_AXICLK]); /* first 16 bits - MAX AXI FREQ (Not Available yet),
+					  * lower 16 bits - current AXICLK
+					  */
+	clock_control_get_rate(
+		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_ARCCLK,
+		&telemetry[TAG_ARCCLK]); /* first 16 bits - MAX ARC FREQ (Not Available yet),
+					  * lower 16 bits - current ARCCLK
+					  */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0,
+		&telemetry[TAG_L2CPUCLK0]); /* first 16 bits - MAX L2CPUCLK0 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK0
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1,
+		&telemetry[TAG_L2CPUCLK1]); /* first 16 bits - MAX L2CPUCLK1 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK1
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2,
+		&telemetry[TAG_L2CPUCLK2]); /* first 16 bits - MAX L2CPUCLK2 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK2
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3,
+		&telemetry[TAG_L2CPUCLK3]); /* first 16 bits - MAX L2CPUCLK3 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK3
+					     */
+
 	telemetry[TAG_ETH_LIVE_STATUS] =
 		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
 			     * retrain_status - Not Available yet

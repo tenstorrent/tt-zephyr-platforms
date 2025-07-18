@@ -20,7 +20,8 @@ enum clock_control_tt_bh_clock {
 };
 
 enum clock_control_tt_bh_clock_config {
-	CLOCK_CONTROL_TT_BH_CONFIG_BYPASS
+	CLOCK_CONTROL_TT_BH_CONFIG_BYPASS,
+	CLOCK_CONTROL_TT_BH_CONFIG_UNBYPASS
 };
 
 #endif /* ZEPHYR_INCLUDE_DRIVERS_PLL_H_ */
