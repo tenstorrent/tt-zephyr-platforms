@@ -42,14 +42,12 @@
 #define ETH_FW_TAG       "ethfw"
 #define ETH_SD_REG_TAG   "ethsdreg"
 #define ETH_SD_FW_TAG    "ethsdfw"
-#define MRISC_FW_CFG_TAG "memfwcfg"
-#define MRISC_FW_TAG     "memfw"
 
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
-static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
+uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -204,64 +202,6 @@ static int CheckGddrHwTest(void)
 		}
 	}
 	return any_error;
-}
-
-static int InitMrisc(void)
-{
-	size_t fw_size = 0;
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
-			SetAxiEnable(gddr_inst, noc2axi_port, true);
-		}
-	}
-
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
-		return -EIO;
-	}
-	uint32_t dram_mask = GetDramMask();
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFw(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
-				return -EIO;
-			}
-		}
-	}
-
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
-		return -EIO;
-	}
-
-	uint32_t gddr_speed = GetGddrSpeedFromCfg(large_sram_buffer);
-
-	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
-		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
-		gddr_speed = MIN_GDDR_SPEED;
-	}
-
-	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
-		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
-		return -EIO;
-	}
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
-				return -EIO;
-			}
-			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
-			ReleaseMriscReset(gddr_inst);
-		}
-	}
-
-	return EXIT_SUCCESS;
 }
 
 static void SerdesEthInit(void)
@@ -426,16 +366,7 @@ static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
-
-	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 	bool init_errors = false;
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (InitMrisc()) {
-			LOG_ERR("Failed to initialize GDDR");
-			init_errors = true;
-		}
-	}
 
 	/* TODO: Load ERISC (Ethernet RISC) FW to all ethernets (8 of them) */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPA);
