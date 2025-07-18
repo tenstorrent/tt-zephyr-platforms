@@ -268,9 +268,6 @@ static int InitHW(void)
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 	bool init_errors = false;
 
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPB);
-	InitSmbusTarget();
-
 	/* Initiate AVS interface and switch vout control to AVSBus */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
