@@ -11,12 +11,11 @@
 #include <pb_decode.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/devicetree.h>
-#include <zephyr/drivers/flash.h>
 
 #define BOARDTYPE_ORION 0x37
 #define BOARDTYPE_P100  0x36
@@ -64,7 +63,6 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->fw_table;
 }
 
@@ -78,7 +76,6 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->flash_info_table;
 }
 
@@ -92,7 +89,6 @@ const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
 	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->read_only_table;
 }
 
