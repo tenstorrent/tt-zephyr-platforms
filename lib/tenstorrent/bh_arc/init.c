@@ -56,7 +56,7 @@ static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 static int AssertSoftResets(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP6);
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
 		return 0;
 	}
 
@@ -110,7 +110,7 @@ static int DeassertRiscvResets(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
 
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
 		return 0;
 	}
 
@@ -426,11 +426,6 @@ static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
-
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		/* Initialize some AICLK tracking variables */
-		InitAiclkPPM();
-	}
 
 	/* Initialize the serdes based on board type and asic location - data will be in fw_table */
 	/* p100: PCIe1 x16 */

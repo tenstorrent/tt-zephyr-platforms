@@ -5,18 +5,18 @@
  */
 
 #include "aiclk_ppm.h"
-
-#include <stdlib.h>
-
-#include <zephyr/sys/util.h>
-#include <tenstorrent/msg_type.h>
-#include <tenstorrent/msgqueue.h>
-
+#include "dvfs.h"
 #include "pll.h"
 #include "voltage.h"
 #include "vf_curve.h"
-#include "dvfs.h"
+
+#include <stdlib.h>
+
+#include <tenstorrent/msg_type.h>
+#include <tenstorrent/msgqueue.h>
+#include <zephyr/init.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/sys/util.h>
 
 /* Bounds checks for FMAX and FMIN (in MHz) */
 #define AICLK_FMAX_MAX 1400.0F
@@ -146,8 +146,14 @@ void InitArbMaxVoltage(void)
 	SetAiclkArbMax(kAiclkArbMaxVoltage, GetMaxAiclkForVoltage(voltage_arbiter.vdd_max));
 }
 
-void InitAiclkPPM(void)
+static int InitAiclkPPM(void)
 {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Initialize some AICLK tracking variables */
+
 	aiclk_ppm.boot_freq = GetAICLK();
 	aiclk_ppm.curr_freq = aiclk_ppm.boot_freq;
 	aiclk_ppm.targ_freq = aiclk_ppm.curr_freq;
@@ -170,7 +176,10 @@ void InitAiclkPPM(void)
 	for (int i = 0; i < kAiclkArbMinCount; i++) {
 		aiclk_ppm.arbiter_min[i] = aiclk_ppm.fmin;
 	}
+
+	return 0;
 }
+SYS_INIT(InitAiclkPPM, APPLICATION, 12);
 
 uint8_t ForceAiclk(uint32_t freq)
 {
