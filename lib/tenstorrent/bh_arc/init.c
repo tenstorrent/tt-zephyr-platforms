@@ -401,9 +401,6 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
-	/* Enable CATMON for early thermal protection */
-	CATEarlyInit();
-
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		CalculateHarvesting();
 	}
