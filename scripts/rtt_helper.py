@@ -140,7 +140,7 @@ class RTTHelper:
         self._rtt_port = rtt_port
         self._search_dir = search_dir
 
-    def parse_args(self):
+    def parse_args(self, input_args):
         """
         Parse arguments from user, and store them as object properties
         """
@@ -202,7 +202,7 @@ class RTTHelper:
             action="store_true",
             help="Dump rtt data in non blocking mode, rather than running interactive server",
         )
-        args = parser.parse_args()
+        args = parser.parse_args(input_args)
         if args.debug == 2:
             logging.basicConfig(level=logging.DEBUG)
         elif args.debug == 1:
