@@ -217,11 +217,3 @@ static int bh_arc_init_end(void)
 	return 0;
 }
 SYS_INIT(bh_arc_init_end, APPLICATION, 22);
-
-#ifdef CONFIG_TT_BH_ARC_SYSINIT
-static int InitHW(void)
-{
-	return 0;
-}
-SYS_INIT(InitHW, APPLICATION, CONFIG_TT_BH_ARC_SYSINIT_PRIORITY);
-#endif /* CONFIG_TT_BH_ARC_SYSINIT */
