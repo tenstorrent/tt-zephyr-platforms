@@ -106,8 +106,19 @@ SYS_INIT(AssertSoftResets, APPLICATION, 10);
 
 /* Deassert RISC reset from reset_unit for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
-static void DeassertRiscvResets(void)
+static int DeassertRiscvResets(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return 0;
+	}
+
+	/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
+	PLLAllBypass();
+
+	/* Deassert RISC reset from reset_unit */
+
 	for (uint32_t i = 0; i < 8; i++) {
 		WriteReg(RESET_UNIT_TENSIX_RISC_RESET_0_REG_ADDR + i * 4, 0xffffffff);
 	}
@@ -123,7 +134,12 @@ static void DeassertRiscvResets(void)
 	ddr_reset.val = ReadReg(RESET_UNIT_DDR_RESET_REG_ADDR);
 	ddr_reset.f.ddr_risc_reset_n = 0xffffff;
 	WriteReg(RESET_UNIT_DDR_RESET_REG_ADDR, ddr_reset.val);
+
+	PLLInit();
+
+	return 0;
 }
+SYS_INIT(DeassertRiscvResets, APPLICATION, 11);
 
 static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 {
@@ -411,13 +427,7 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
-		PLLAllBypass();
-		/* Deassert RISC reset from reset_unit */
-		DeassertRiscvResets();
-		PLLInit();
 		/* Initialize some AICLK tracking variables */
 		InitAiclkPPM();
 	}
