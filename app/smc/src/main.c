@@ -6,7 +6,6 @@
 #include "cm2dm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
-#include "init_common.h"
 #include "smbus_target.h"
 #include "telemetry.h"
 #include "status_reg.h"

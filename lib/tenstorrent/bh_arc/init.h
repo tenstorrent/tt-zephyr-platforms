@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef INIT_COMMON_H
-#define INIT_COMMON_H
+#ifndef LIB_TENSTORRENT_BH_ARC_INIT_H_
+#define LIB_TENSTORRENT_BH_ARC_INIT_H_
 
 #include <stdint.h>
 
