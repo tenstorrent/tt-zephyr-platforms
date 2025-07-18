@@ -4,17 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <reg.h>
-#include <noc.h>
-#include <noc2axi.h>
-#include <arc_dma.h>
-
+#include "arc_dma.h"
 #include "gddr.h"
 #include "harvesting.h"
+#include "init.h"
+#include "noc.h"
+#include "noc2axi.h"
+#include "pll.h"
+#include "reg.h"
 
+#include <tenstorrent/post_code.h>
+#include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -23,7 +27,12 @@
 #define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
 
+#define MRISC_FW_TAG     "memfw"
+#define MRISC_FW_CFG_TAG "memfwcfg"
+
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
+
+extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -223,3 +232,172 @@ int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	LOG_DBG("GDDR %d memory test passed", gddr_inst);
 	return 0;
 }
+
+static int InitMrisc(void)
+{
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
+
+	size_t fw_size = 0;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
+			SetAxiEnable(gddr_inst, noc2axi_port, true);
+		}
+	}
+
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, (uint8_t *)large_sram_buffer,
+				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+		return -EIO;
+	}
+	uint32_t dram_mask = GetDramMask();
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFw(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
+				return -EIO;
+			}
+		}
+	}
+
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, (uint8_t *)large_sram_buffer,
+				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+		return -EIO;
+	}
+
+	uint32_t gddr_speed = GetGddrSpeedFromCfg((uint8_t *)large_sram_buffer);
+
+	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
+		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
+		gddr_speed = MIN_GDDR_SPEED;
+	}
+
+	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
+		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
+		return -EIO;
+	}
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFwCfg(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
+				return -EIO;
+			}
+			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
+			ReleaseMriscReset(gddr_inst);
+		}
+	}
+
+	return 0;
+}
+SYS_INIT(InitMrisc, APPLICATION, 14);
+
+static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
+{
+	do {
+		uint32_t poll_val = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+
+		if (poll_val == MRISC_INIT_FINISHED) {
+			return 0;
+		}
+		if (poll_val == MRISC_INIT_FAILED) {
+			LOG_ERR("%s[%d]: 0x%x", "MRISC_INIT_STATUS", gddr_inst, poll_val);
+			return -EIO;
+		}
+		k_msleep(1);
+	} while (!sys_timepoint_expired(timeout));
+
+	LOG_ERR("%s[%d]: 0x%x", "MRISC_POST_CODE", gddr_inst,
+		MriscRegRead32(gddr_inst, MRISC_POST_CODE));
+
+	return -ETIMEDOUT;
+}
+
+static int CheckGddrHwTest(void)
+{
+	/* First kick off all tests in parallel, then check their results. Test will take
+	 * approximately 300-400 ms.
+	 */
+	uint8_t test_started = 0; /* Bitmask of tests started */
+	int any_error = 0;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
+			int error = StartHwMemtest(gddr_inst, 26, 0, 0);
+
+			if (error == -ENOTSUP) {
+				/* Shouldn't be considered a test failure if MRISC FW is too old. */
+				LOG_DBG("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "skipped",
+					error);
+			} else if (error < 0) {
+				LOG_ERR("%s(%d) %s: %d", "StartHwMemtest", gddr_inst, "failed",
+					error);
+				any_error = -EIO;
+			} else {
+				test_started |= BIT(gddr_inst);
+			}
+		}
+	}
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(test_started, gddr_inst)) {
+			int error = CheckHwMemtestResult(gddr_inst, timeout);
+
+			if (error < 0) {
+				any_error = -EIO;
+				LOG_ERR("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"failed", error);
+			} else {
+				LOG_DBG("%s(%d) %s: %d", "CheckHwMemtestResult", gddr_inst,
+					"succeeded", error);
+			}
+		}
+	}
+	return any_error;
+}
+
+static int gddr_training(void)
+{
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPE);
+
+	/* Check GDDR training status. */
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	bool init_errors = false;
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_INIT_TIMEOUT));
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(GetDramMask(), gddr_inst)) {
+			int error = CheckGddrTraining(gddr_inst, timeout);
+
+			if (error == -ETIMEDOUT) {
+				LOG_ERR("GDDR instance %d timed out during training", gddr_inst);
+				init_errors = true;
+			} else if (error) {
+				LOG_ERR("GDDR instance %d failed training", gddr_inst);
+				init_errors = true;
+			}
+		}
+	}
+
+	if (!init_errors) {
+		if (CheckGddrHwTest() < 0) {
+			LOG_ERR("GDDR HW test failed");
+			return -EIO;
+		}
+	}
+
+	return 0;
+}
+SYS_INIT(gddr_training, APPLICATION, 20);

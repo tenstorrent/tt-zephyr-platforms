@@ -30,8 +30,6 @@ zephyr_library_sources_ifndef(
   voltage.c
 )
 
-zephyr_library_sources_ifdef(CONFIG_TT_BH_ARC_SYSINIT init.c)
-
 zephyr_library_sources(
   asic_state.c
   arc_dma.c
@@ -39,12 +37,12 @@ zephyr_library_sources(
   cat.c
   cm2dm_msg.c
   dw_apb_i2c.c
-  init_common.c
   msgqueue.c
   noc2axi.c
   pcie.c
   pll.c
   post_code.c
+  reset.c
   smbus_target.c
   spi_eeprom.c
   timer.c

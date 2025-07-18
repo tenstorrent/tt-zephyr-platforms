@@ -12,9 +12,11 @@
 
 #include <stdint.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/i2c.h>
+#include <tenstorrent/post_code.h>
 #include <tenstorrent/tt_smbus_regs.h>
+#include <zephyr/kernel.h>
+#include <zephyr/init.h>
+#include <zephyr/drivers/i2c.h>
 
 /* DMFW to CMFW i2c interface is on I2C0 of tensix_sm */
 #define CM_I2C_DM_TARGET_INST 0
@@ -421,11 +423,19 @@ struct i2c_target_config i2c_target_config_impl = {
 	.callbacks = &i2c_target_cb_impl,
 };
 
-void InitSmbusTarget(void)
+static int InitSmbusTarget(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPB);
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	I2CInitGPIO(CM_I2C_DM_TARGET_INST);
 	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
+	return 0;
 }
+SYS_INIT(InitSmbusTarget, APPLICATION, 16);
 
 void PollSmbusTarget(void)
 {

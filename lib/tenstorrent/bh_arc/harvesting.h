@@ -32,8 +32,6 @@ typedef struct {
 
 extern TileEnable tile_enable;
 
-void CalculateHarvesting(void);
-
 #ifdef __cplusplus
 }
 #endif

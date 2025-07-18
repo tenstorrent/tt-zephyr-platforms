@@ -23,7 +23,6 @@ typedef enum {
 #define AVS_VCORE_RAIL  0
 #define AVS_VCOREM_RAIL 1
 
-void AVSInit(void);
 AVSStatus AVSReadVoltage(uint8_t rail_sel, uint16_t *voltage_in_mV);
 AVSStatus AVSWriteVoltage(uint16_t voltage_in_mV, uint8_t rail_sel);
 AVSStatus AVSReadVoutTransRate(uint8_t rail_sel, uint8_t *rise_rate, uint8_t *fall_rate);

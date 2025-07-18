@@ -4,11 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/sys/util.h>
-#include <zephyr/drivers/misc/bh_fwtable.h>
-#include "harvesting.h"
 #include "functional_efuse.h"
+#include "harvesting.h"
 #include "noc.h"
+
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/util.h>
 
 TileEnable tile_enable = {
 	.tensix_col_enabled = BIT_MASK(14),
@@ -162,8 +164,12 @@ static void HarvestingSLTFuses(void)
 	/* No SLT L2CPU or PCIe harvesting */
 }
 
-void CalculateHarvesting(void)
+static int CalculateHarvesting(void)
 {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	/* These are just the default values, taking some SPI parameters into account */
 	/* This function needs to be completed with fuse reading and additional SPI parameters */
 
@@ -253,4 +259,7 @@ void CalculateHarvesting(void)
 			tile_enable.eth_serdes_connected &= ~(BIT(11) | BIT(10) | BIT(9) | BIT(8));
 		}
 	}
+
+	return 0;
 }
+SYS_INIT(CalculateHarvesting, APPLICATION, 5);
