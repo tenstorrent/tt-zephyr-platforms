@@ -404,9 +404,6 @@ static int InitHW(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		/* Enable Process + Voltage + Thermal monitors */
-		PVTInit();
-
 		/* Initialize NOC so we can broadcast to all Tensixes */
 		NocInit();
 	}

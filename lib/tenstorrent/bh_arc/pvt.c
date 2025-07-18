@@ -4,19 +4,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "pll.h"
 #include "pvt.h"
+#include "reg.h"
+#include "telemetry.h"
+#include "timer.h"
 
 #include <float.h> /* for FLT_MAX */
 
+#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
-
-#include "timer.h"
-#include "reg.h"
-#include "pll.h"
-#include "timer.h"
-#include "telemetry.h"
+#include <tenstorrent/post_code.h>
 
 #define SDIF_DONE_TIMEOUT_MS 10
 
@@ -397,8 +397,15 @@ static void EnableAgingMeas(void)
 
 /* setup Interrupt and clk configurations, TS, PD, VM IP configurations. */
 /* Enable contiuous mode for TS and VM. For PD, run once mode should be used. */
-void PVTInit(void)
+static int PVTInit(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Enable Process + Voltage + Thermal monitors */
 	PVTInterruptConfig();
 	PVTClkConfig();
 
@@ -431,7 +438,10 @@ void PVTInit(void)
 
 	/* Wait for all sensors to power up, TS takes 256 ip_clk cycles */
 	Wait(100 * WAIT_1US);
+
+	return 0;
 }
+SYS_INIT(PVTInit, APPLICATION, 8);
 
 static uint32_t get_pvt_addr(PvtType type, uint32_t id, uint32_t base_addr)
 {
