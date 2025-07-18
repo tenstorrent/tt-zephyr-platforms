@@ -17,11 +17,7 @@
 #include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
-#define MRISC_FW_NOC2AXI_PORT 0
-#define MRISC_SETUP_TLB       13
-#define MRISC_L1_ADDR         (1ULL << 37)
-#define MRISC_REG_ADDR        (1ULL << 40)
-#define MRISC_FW_CFG_OFFSET   0x3C00
+#define MRISC_REG_ADDR (1ULL << 40)
 
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -128,24 +124,6 @@ void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
 			*niu_cfg_0[i] &= ~(1 << NIU_CFG_0_AXI_SLAVE_ENABLE);
 		}
 	}
-}
-
-int LoadMriscFw(uint8_t gddr_inst, uint8_t *fw_image, uint32_t fw_size)
-{
-	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-
-	bool dma_pass = ArcDmaTransfer(fw_image, (void *)mrisc_l1, fw_size);
-
-	return dma_pass ? 0 : -1;
-}
-
-int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *fw_cfg_image, uint32_t fw_cfg_size)
-{
-	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-
-	bool dma_pass = ArcDmaTransfer(fw_cfg_image, (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET,
-				       fw_cfg_size);
-	return dma_pass ? 0 : -1;
 }
 
 uint32_t GetDramMask(void)

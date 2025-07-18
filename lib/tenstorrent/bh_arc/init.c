@@ -21,6 +21,7 @@
 #include "regulator.h"
 #include "serdes_eth.h"
 #include "smbus_target.h"
+#include "spi_eeprom.h"
 #include "status_reg.h"
 #include "telemetry.h"
 #include "telemetry_internal.h"
@@ -33,6 +34,7 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
@@ -48,8 +50,7 @@
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-
-static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
+static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -88,7 +89,7 @@ static void AssertSoftResets(void)
 				GetGddrNocCoords(gddr_inst, noc_node_inst, kNocRing, &x, &y);
 				NOC2AXITlbSetup(kNocRing, kNocTlb, x, y, kSoftReset0Addr);
 				NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr,
-					kAllRiscSoftReset);
+					       kAllRiscSoftReset);
 			}
 		}
 	}
@@ -180,9 +181,66 @@ static int CheckGddrHwTest(void)
 	return any_error;
 }
 
+static int copy_spi_flash_data_to_buf(const struct device *dev, uint32_t src_addr, size_t size,
+				      uint32_t **buf)
+{
+	*buf = (uint32_t *)malloc(size * sizeof(uint32_t));
+	/* Log allocation failures */
+	if (*buf == NULL) {
+		LOG_ERR("Failed allocating memory for temp buffer");
+		return -EIO;
+	}
+
+	int error = 0;
+
+	error = flash_read(dev, src_addr, *buf, size);
+	if (error < 0) {
+		LOG_ERR("flash_read at %x %s: %d", src_addr, "failed", error);
+		free(*buf);
+		*buf = NULL;
+	}
+
+	return error;
+}
+
+static int copy_spi_flash_data_to_tile(const struct device *dev, uint32_t src_addr, uint8_t x,
+				       uint8_t y, uint64_t dst_addr, uint32_t dst_offset,
+				       size_t size, uint32_t *buf, size_t buf_size, uint8_t tlb_num)
+{
+	int error = 0;
+	int temp_buff = 0;
+
+	if (buf == NULL) {
+		error = copy_spi_flash_data_to_buf(dev, src_addr, size, &buf);
+
+		if (error < 0) {
+			LOG_ERR("%s failed: %d", "copy_spi_flash_data_to_buf", error);
+			return error;
+		}
+
+		temp_buff = 1;
+	} else if (buf_size < size) {
+		LOG_ERR("Insufficient buffer size provided");
+		return -EIO;
+	}
+
+	bool dma_pass;
+
+	NOC2AXITlbSetup(0, tlb_num, x, y, dst_addr);
+	volatile void *tlb = GetTlbWindowAddr(0, tlb_num, dst_addr);
+
+	dma_pass = ArcDmaTransfer(buf, (void *)((uint8_t *)tlb + dst_offset), size);
+
+	if (temp_buff) {
+		free(buf);
+	}
+
+	return dma_pass ? 0 : -1;
+}
+
 static int InitMrisc(void)
 {
-	size_t fw_size = 0;
+	tt_boot_fs_fd fd_data;
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
@@ -190,29 +248,43 @@ static int InitMrisc(void)
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, MRISC_FW_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_TAG, -EIO);
 		return -EIO;
 	}
+
 	uint32_t dram_mask = GetDramMask();
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFw(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
+			uint8_t x, y;
+
+			GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+
+			if (copy_spi_flash_data_to_tile(
+				    flash, fd_data.spi_addr, x, y, MRISC_L1_ADDR, 0,
+				    fd_data.flags.f.image_size, NULL, fd_data.flags.f.image_size,
+				    MRISC_SETUP_TLB)) {
+				LOG_ERR("%s MriscFw(%d) failed: %d", "copy_spi_flash_data_to_tile",
+					gddr_inst, -EIO);
 				return -EIO;
 			}
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, MRISC_FW_CFG_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_CFG_TAG, -EIO);
 		return -EIO;
 	}
 
-	uint32_t gddr_speed = GetGddrSpeedFromCfg(large_sram_buffer);
+	/* Allocate buffer externally to read gddr_speed */
+	uint32_t *buf = NULL;
+
+	if (copy_spi_flash_data_to_buf(flash, fd_data.spi_addr, fd_data.flags.f.image_size, &buf)) {
+		LOG_ERR("%s failed: %d", "copy_spi_flash_data_to_buf", -EIO);
+		return -EIO;
+	}
+	uint32_t gddr_speed = GetGddrSpeedFromCfg((uint8_t *)buf);
 
 	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
 		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
@@ -221,13 +293,23 @@ static int InitMrisc(void)
 
 	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
 		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
+		free(buf);
 		return -EIO;
 	}
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFwCfg(gddr_inst, large_sram_buffer, fw_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
+			uint8_t x, y;
+
+			GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+
+			if (copy_spi_flash_data_to_tile(
+				    NULL, 0, x, y, MRISC_L1_ADDR, MRISC_FW_CFG_OFFSET,
+				    fd_data.flags.f.image_size, buf, fd_data.flags.f.image_size,
+				    MRISC_SETUP_TLB)) {
+				LOG_ERR("%s MriscFwCfg(%d) failed: %d",
+					"copy_spi_flash_data_to_tile", gddr_inst, -EIO);
+				free(buf);
 				return -EIO;
 			}
 			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
@@ -235,11 +317,14 @@ static int InitMrisc(void)
 		}
 	}
 
+	free(buf);
+
 	return EXIT_SUCCESS;
 }
 
 static void SerdesEthInit(void)
 {
+	tt_boot_fs_fd fd_data;
 	uint32_t ring = 0;
 
 	SetupEthSerdesMux(tile_enable.eth_enabled);
@@ -262,33 +347,49 @@ static void SerdesEthInit(void)
 	}
 
 	/* Load fw regs */
-	uint32_t reg_table_size = 0;
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, ETH_SD_REG_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_SD_REG_TAG, -EIO);
+		return;
+	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
+	/* Allocate buffer externally to use LoadSerdesEthRegs */
+	uint32_t *buf = NULL;
+
+	if (copy_spi_flash_data_to_buf(flash, fd_data.spi_addr, fd_data.flags.f.image_size, &buf)) {
+		LOG_ERR("%s failed: %d", "copy_spi_flash_data_to_buf", -EIO);
 		return;
 	}
 
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthRegs(serdes_inst, ring, (SerdesRegData *)large_sram_buffer,
-					  reg_table_size / sizeof(SerdesRegData));
+			LoadSerdesEthRegs(serdes_inst, ring, (SerdesRegData *)buf,
+					  fd_data.flags.f.image_size / sizeof(SerdesRegData));
 		}
 	}
 
-	/* Load fw */
-	size_t fw_size = 0;
+	free(buf);
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
+	/* Load fw */
+
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, ETH_SD_FW_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_SD_FW_TAG, -EIO);
 		return;
 	}
 
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthFw(serdes_inst, ring, large_sram_buffer, fw_size);
+			uint8_t x, y;
+
+			GetSerdesNocCoords(serdes_inst, ring, &x, &y);
+
+			if (copy_spi_flash_data_to_tile(flash, fd_data.spi_addr, x, y,
+							SERDES_INST_SRAM_ADDR(serdes_inst), 0,
+							fd_data.flags.f.image_size, NULL,
+							fd_data.flags.f.image_size,
+							SERDES_ETH_SETUP_TLB)) {
+				LOG_ERR("%s SerdesEthFw(%d) failed: %d",
+					"copy_spi_flash_data_to_tile", serdes_inst, -EIO);
+			}
 		}
 	}
 }
@@ -303,34 +404,50 @@ static void EthInit(void)
 	}
 
 	/* Load fw */
-	size_t fw_size = 0;
+	tt_boot_fs_fd fd_data;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, ETH_FW_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_FW_TAG, -EIO);
+		return;
+	}
+
+	/* Allocate buffer externally to use LoadEthFw and LoadEthFwCfg */
+	uint32_t *buf = NULL;
+
+	if (copy_spi_flash_data_to_buf(flash, fd_data.spi_addr, fd_data.flags.f.image_size, &buf)) {
+		LOG_ERR("%s failed: %d", "copy_spi_flash_data_to_buf", -EIO);
 		return;
 	}
 
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFw(eth_inst, ring, large_sram_buffer, fw_size);
+			LoadEthFw(eth_inst, ring, (uint8_t *)buf, fd_data.flags.f.image_size);
 		}
 	}
 
+	free(buf);
+	buf = NULL;
+
 	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, ETH_FW_CFG_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_FW_CFG_TAG, -EIO);
+		return;
+	}
+
+	if (copy_spi_flash_data_to_buf(flash, fd_data.spi_addr, fd_data.flags.f.image_size, &buf)) {
+		LOG_ERR("%s failed: %d", "copy_spi_flash_data_to_buf", -EIO);
 		return;
 	}
 
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFwCfg(eth_inst, ring, tile_enable.eth_enabled,
-				large_sram_buffer, fw_size);
+			LoadEthFwCfg(eth_inst, ring, tile_enable.eth_enabled, (uint8_t *)buf,
+				     fd_data.flags.f.image_size);
 			ReleaseEthReset(eth_inst, ring);
 		}
 	}
+
+	free(buf);
 }
 
 #ifndef CONFIG_TT_SMC_RECOVERY
