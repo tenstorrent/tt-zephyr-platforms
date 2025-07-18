@@ -195,13 +195,12 @@ static int bh_arc_init_start(void)
 }
 SYS_INIT(bh_arc_init_start, APPLICATION, 3);
 
+int tt_init_status;
 STATUS_ERROR_STATUS0_reg_u error_status0;
 
-#ifdef CONFIG_TT_BH_ARC_SYSINIT
-static int InitHW(void)
+static int bh_arc_init_end(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
-	bool init_errors = false;
 
 	/* Indicate successful HW Init */
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
@@ -211,10 +210,17 @@ static int InitHW(void)
 	} else {
 		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
 	}
-	boot_status0.f.hw_init_status = init_errors ? kHwInitError : kHwInitDone;
+	boot_status0.f.hw_init_status = (tt_init_status == 0) ? kHwInitDone : kHwInitError;
 	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
 	WriteReg(STATUS_ERROR_STATUS0_REG_ADDR, error_status0.val);
 
+	return 0;
+}
+SYS_INIT(bh_arc_init_end, APPLICATION, 22);
+
+#ifdef CONFIG_TT_BH_ARC_SYSINIT
+static int InitHW(void)
+{
 	return 0;
 }
 SYS_INIT(InitHW, APPLICATION, CONFIG_TT_BH_ARC_SYSINIT_PRIORITY);
