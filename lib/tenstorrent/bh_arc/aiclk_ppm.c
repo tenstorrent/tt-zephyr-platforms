@@ -240,6 +240,16 @@ uint32_t GetAiclkTarg(void)
 	return aiclk_ppm.targ_freq;
 }
 
+uint32_t GetAiclkFmin(void)
+{
+	return aiclk_ppm.fmin;
+}
+
+uint32_t GetAiclkFmax(void)
+{
+	return aiclk_ppm.fmax;
+}
+
 void aiclk_set_busy(bool is_busy)
 {
 	if (is_busy) {
