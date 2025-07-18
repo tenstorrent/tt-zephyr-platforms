@@ -269,12 +269,7 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	bool init_errors = false;
 
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
-			EnableTensixCG();
-		}
-
 		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
 			InitNocTranslationFromHarvesting();
 		}
