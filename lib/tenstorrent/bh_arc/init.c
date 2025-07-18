@@ -53,8 +53,15 @@ static uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
-static void AssertSoftResets(void)
+static int AssertSoftResets(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP6);
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return 0;
+	}
+
+	/* Assert Soft Reset for ERISC, MRISC Tensix (skip L2CPU due to bug) */
+
 	const uint8_t kNocRing = 0;
 	const uint8_t kNocTlb = 0;
 	const uint32_t kSoftReset0Addr = 0xFFB121B0; /* NOC address in each tile */
@@ -92,7 +99,10 @@ static void AssertSoftResets(void)
 			}
 		}
 	}
+
+	return 0;
 }
+SYS_INIT(AssertSoftResets, APPLICATION, 10);
 
 /* Deassert RISC reset from reset_unit for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -400,17 +410,6 @@ static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
-
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		/* Initialize NOC so we can broadcast to all Tensixes */
-		NocInit();
-	}
-
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP6);
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		/* Assert Soft Reset for ERISC, MRISC Tensix (skip L2CPU due to bug) */
-		AssertSoftResets();
-	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
