@@ -4,17 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <reg.h>
-#include <noc.h>
-#include <noc2axi.h>
-#include <arc_dma.h>
-
+#include "arc_dma.h"
 #include "gddr.h"
 #include "harvesting.h"
+#include "init_common.h"
+#include "noc.h"
+#include "noc2axi.h"
+#include "pll.h"
+#include "reg.h"
 
+#include <tenstorrent/post_code.h>
+#include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/misc/bh_fwtable.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -23,7 +27,12 @@
 #define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
 
+#define MRISC_FW_TAG     "memfw"
+#define MRISC_FW_CFG_TAG "memfwcfg"
+
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
+
+extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -223,3 +232,70 @@ int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	LOG_DBG("GDDR %d memory test passed", gddr_inst);
 	return 0;
 }
+
+static int InitMrisc(void)
+{
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
+
+	size_t fw_size = 0;
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
+			SetAxiEnable(gddr_inst, noc2axi_port, true);
+		}
+	}
+
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, (uint8_t *)large_sram_buffer,
+				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+		return -EIO;
+	}
+	uint32_t dram_mask = GetDramMask();
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFw(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
+				return -EIO;
+			}
+		}
+	}
+
+	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, (uint8_t *)large_sram_buffer,
+				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+		return -EIO;
+	}
+
+	uint32_t gddr_speed = GetGddrSpeedFromCfg((uint8_t *)large_sram_buffer);
+
+	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
+		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
+		gddr_speed = MIN_GDDR_SPEED;
+	}
+
+	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
+		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
+		return -EIO;
+	}
+
+	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			if (LoadMriscFwCfg(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
+				return -EIO;
+			}
+			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
+			ReleaseMriscReset(gddr_inst);
+		}
+	}
+
+	return 0;
+}
+SYS_INIT(InitMrisc, APPLICATION, 14);
