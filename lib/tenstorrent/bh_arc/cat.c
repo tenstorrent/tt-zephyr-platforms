@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include <tenstorrent/post_code.h>
+#include <zephyr/sys/util.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/init.h>
 #include <zephyr/sys/util.h>
@@ -153,10 +154,18 @@ static float CalibrateCAT(void)
 	return catmon_error;
 }
 
-void CATInit(void)
+static int CATInit(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPF);
+
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	float catmon_error = CalibrateCAT();
 
 	EnableCAT(TempToTrimCode(T_J_SHUTDOWN + catmon_error), true);
+	return 0;
 }
+SYS_INIT(CATInit, APPLICATION, 20);
 #endif
