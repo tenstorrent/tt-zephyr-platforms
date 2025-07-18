@@ -379,12 +379,10 @@ static uint8_t ReinitTensix(uint32_t msg_code, const struct request *req, struct
 REGISTER_MESSAGE(MSG_TYPE_REINIT_TENSIX, ReinitTensix);
 #endif
 
-#ifdef CONFIG_TT_BH_ARC_SYSINIT
-static int InitHW(void)
+static int bh_arc_init_start(void)
 {
 	/* Write a status register indicating HW init progress */
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
-	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
 	boot_status0.f.hw_init_status = kHwInitStarted;
@@ -392,6 +390,17 @@ static int InitHW(void)
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
+
+	return 0;
+}
+SYS_INIT(bh_arc_init_start, APPLICATION, 3);
+
+#ifdef CONFIG_TT_BH_ARC_SYSINIT
+static int InitHW(void)
+{
+	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
+
 	/* Enable CATMON for early thermal protection */
 	CATEarlyInit();
 
