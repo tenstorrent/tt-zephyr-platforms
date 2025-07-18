@@ -40,8 +40,6 @@
 
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
-static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-
 uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 /* Assert soft reset for all RISC-V cores */
@@ -200,6 +198,8 @@ static int CheckGddrHwTest(void)
 }
 
 #ifndef CONFIG_TT_SMC_RECOVERY
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
 static uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req, struct response *rsp)
 {
 	/* Assert reset (active low) */
@@ -268,12 +268,6 @@ static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	bool init_errors = false;
-
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
-			InitNocTranslationFromHarvesting();
-		}
-	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPE);
 	/* Check GDDR training status. */
