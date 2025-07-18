@@ -38,11 +38,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 
-#define ETH_FW_CFG_TAG   "ethfwcfg"
-#define ETH_FW_TAG       "ethfw"
-#define ETH_SD_REG_TAG   "ethsdreg"
-#define ETH_SD_FW_TAG    "ethsdfw"
-
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
@@ -204,101 +199,6 @@ static int CheckGddrHwTest(void)
 	return any_error;
 }
 
-static void SerdesEthInit(void)
-{
-	uint32_t ring = 0;
-
-	SetupEthSerdesMux(tile_enable.eth_enabled);
-
-	uint32_t load_serdes = BIT(2) | BIT(5); /* Serdes 2, 5 are always for ETH */
-	/* Select the other ETH Serdes instances based on pcie serdes properties */
-	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.pcie_mode ==
-	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable Serdes 0, 1 */
-		load_serdes |= BIT(0) | BIT(1);
-	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table.num_serdes ==
-		   1) { /* Just enable Serdes 1 */
-		load_serdes |= BIT(1);
-	}
-	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.pcie_mode ==
-	    FwTable_PciPropertyTable_PcieMode_DISABLED) { /* Enable Serdes 3, 4 */
-		load_serdes |= BIT(3) | BIT(4);
-	} else if (tt_bh_fwtable_get_fw_table(fwtable_dev)->pci1_property_table.num_serdes ==
-		   1) { /* Just enable Serdes 4 */
-		load_serdes |= BIT(4);
-	}
-
-	/* Load fw regs */
-	uint32_t reg_table_size = 0;
-
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
-		return;
-	}
-
-	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
-		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthRegs(serdes_inst, ring, (SerdesRegData *)large_sram_buffer,
-					  reg_table_size / sizeof(SerdesRegData));
-		}
-	}
-
-	/* Load fw */
-	size_t fw_size = 0;
-
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
-		return;
-	}
-
-	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
-		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthFw(serdes_inst, ring, large_sram_buffer, fw_size);
-		}
-	}
-}
-
-static void EthInit(void)
-{
-	uint32_t ring = 0;
-
-	/* Early exit if no ETH tiles enabled */
-	if (tile_enable.eth_enabled == 0) {
-		return;
-	}
-
-	/* Load fw */
-	size_t fw_size = 0;
-
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
-		return;
-	}
-
-	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
-		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFw(eth_inst, ring, large_sram_buffer, fw_size);
-		}
-	}
-
-	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
-		return;
-	}
-
-	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
-		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFwCfg(eth_inst, ring, tile_enable.eth_enabled,
-				large_sram_buffer, fw_size);
-			ReleaseEthReset(eth_inst, ring);
-		}
-	}
-}
-
 #ifndef CONFIG_TT_SMC_RECOVERY
 static uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req, struct response *rsp)
 {
@@ -367,13 +267,6 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 	bool init_errors = false;
-
-	/* TODO: Load ERISC (Ethernet RISC) FW to all ethernets (8 of them) */
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPA);
-	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		SerdesEthInit();
-		EthInit();
-	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPB);
 	InitSmbusTarget();
