@@ -261,21 +261,16 @@ static int bh_arc_init_start(void)
 }
 SYS_INIT(bh_arc_init_start, APPLICATION, 3);
 
+STATUS_ERROR_STATUS0_reg_u error_status0;
+
 #ifdef CONFIG_TT_BH_ARC_SYSINIT
 static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
-	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 	bool init_errors = false;
 
 	/* Initiate AVS interface and switch vout control to AVSBus */
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		if (RegulatorInit(tt_bh_fwtable_get_pcb_type(fwtable_dev))) {
-			LOG_ERR("Failed to initialize regulators.\n");
-			error_status0.f.regulator_init_error = 1;
-			init_errors = true;
-		}
 		AVSInit();
 		SwitchVoutControl(AVSVoutCommand);
 	}
