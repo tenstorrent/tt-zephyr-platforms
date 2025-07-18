@@ -140,7 +140,7 @@ class RTTHelper:
         self._rtt_port = rtt_port
         self._search_dir = search_dir
 
-    def parse_args(self):
+    def parse_args(self, input_args):
         """
         Parse arguments from user, and store them as object properties
         """
@@ -202,7 +202,7 @@ class RTTHelper:
             action="store_true",
             help="Dump rtt data in non blocking mode, rather than running interactive server",
         )
-        args = parser.parse_args()
+        args = parser.parse_args(input_args)
         if args.debug == 2:
             logging.basicConfig(level=logging.DEBUG)
         elif args.debug == 1:
@@ -264,18 +264,22 @@ class RTTHelper:
         sel = selectors.DefaultSelector()
         sel.register(sys.stdin, selectors.EVENT_READ)
         sel.register(sock, selectors.EVENT_READ)
-        while True:
-            events = sel.select()
-            for key, _ in events:
-                if key.fileobj == sys.stdin:
-                    text = sys.stdin.readline()
-                    if text:
-                        sock.send(text.encode())
+        try:
+            while True:
+                events = sel.select()
+                for key, _ in events:
+                    if key.fileobj == sys.stdin:
+                        text = sys.stdin.readline()
+                        if text:
+                            sock.send(text.encode())
 
-                elif key.fileobj == sock:
-                    resp = sock.recv(2048)
-                    if resp:
-                        print(resp.decode())
+                    elif key.fileobj == sock:
+                        resp = sock.recv(2048)
+                        if resp:
+                            print(resp.decode(), end="")
+        except KeyboardInterrupt:
+            # If the user interrupts the command, we need to stop the openocd server
+            print("Caught SIGINT, exiting...")
 
         # Finally, shutdown the RTT server
         openocd.stop_openocd_server()
