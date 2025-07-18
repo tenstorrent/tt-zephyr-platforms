@@ -5,7 +5,6 @@
 
 #include "aiclk_ppm.h"
 #include "avs.h"
-#include "cat.h"
 #include "dvfs.h"
 #include "eth.h"
 #include "fan_ctrl.h"
@@ -203,11 +202,6 @@ static int InitHW(void)
 {
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	bool init_errors = false;
-
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPF);
-#ifndef CONFIG_TT_SMC_RECOVERY
-	CATInit();
-#endif
 
 	/* Indicate successful HW Init */
 	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
