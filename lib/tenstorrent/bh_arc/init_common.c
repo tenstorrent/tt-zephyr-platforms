@@ -85,9 +85,3 @@ void DeassertTileResets(void)
 	l2cpu_reset.f.l2cpu_reset_n = 0xf;
 	WriteReg(RESET_UNIT_L2CPU_RESET_REG_ADDR, l2cpu_reset.val);
 }
-
-int InitFW(uint32_t app_version)
-{
-	WriteReg(STATUS_FW_VERSION_REG_ADDR, app_version);
-	return 0;
-}
