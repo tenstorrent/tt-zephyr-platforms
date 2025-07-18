@@ -6,6 +6,7 @@
 #include "cm2dm_msg.h"
 #include "dvfs.h"
 #include "fan_ctrl.h"
+#include "init.h"
 #include "smbus_target.h"
 #include "telemetry.h"
 #include "status_reg.h"
@@ -111,3 +112,41 @@ void uart_tt_virt_init_callback(const struct device *dev, size_t inst)
 	sys_write32((uint32_t)(uintptr_t)uart_tt_virt_get(dev), STATUS_FW_VUART_REG_ADDR(inst));
 }
 #endif
+
+static int bh_arc_init_start(void)
+{
+	/* Write a status register indicating HW init progress */
+	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+
+	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
+	boot_status0.f.hw_init_status = kHwInitStarted;
+	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
+
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
+
+	return 0;
+}
+SYS_INIT(bh_arc_init_start, APPLICATION, 3);
+
+int tt_init_status;
+
+static int bh_arc_init_end(void)
+{
+	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
+
+	/* Indicate successful HW Init */
+	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
+	/* Record FW ID */
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		boot_status0.f.fw_id = FW_ID_SMC_RECOVERY;
+	} else {
+		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
+	}
+	boot_status0.f.hw_init_status = (tt_init_status == 0) ? kHwInitDone : kHwInitError;
+	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
+	WriteReg(STATUS_ERROR_STATUS0_REG_ADDR, error_status0.val);
+
+	return 0;
+}
+SYS_INIT(bh_arc_init_end, APPLICATION, 22);

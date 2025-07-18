@@ -6,6 +6,8 @@
 #ifndef LIB_TENSTORRENT_BH_ARC_INIT_H_
 #define LIB_TENSTORRENT_BH_ARC_INIT_H_
 
+#include "status_reg.h"
+
 #include <stdint.h>
 
 #define RESET_UNIT_GLOBAL_RESET_REG_ADDR 0x80030000
@@ -102,7 +104,6 @@ typedef enum {
 	FW_ID_SMC_RECOVERY = 1,
 } FWID;
 
-int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst);
-void InitResetInterrupt(uint8_t pcie_inst);
+extern STATUS_ERROR_STATUS0_reg_u error_status0;
 
 #endif

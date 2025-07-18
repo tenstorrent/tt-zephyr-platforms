@@ -15,7 +15,6 @@
 #include "noc2axi.h"
 #include "pll.h"
 #include "reg.h"
-#include "spi_eeprom.h"
 #include "status_reg.h"
 #include "tensix_cg.h"
 
@@ -30,10 +29,13 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/toolchain.h>
 
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
+STATUS_ERROR_STATUS0_reg_u error_status0;
 
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -79,7 +81,7 @@ static int AssertSoftResets(void)
 				GetGddrNocCoords(gddr_inst, noc_node_inst, kNocRing, &x, &y);
 				NOC2AXITlbSetup(kNocRing, kNocTlb, x, y, kSoftReset0Addr);
 				NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr,
-					kAllRiscSoftReset);
+					       kAllRiscSoftReset);
 			}
 		}
 	}
@@ -125,10 +127,8 @@ static int DeassertRiscvResets(void)
 }
 SYS_INIT(DeassertRiscvResets, APPLICATION, 11);
 
-#ifndef CONFIG_TT_SMC_RECOVERY
-static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-
-static uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req, struct response *rsp)
+static __maybe_unused uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req,
+						struct response *rsp)
 {
 	/* Assert reset (active low) */
 	RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = {.val = 0};
@@ -146,14 +146,17 @@ static uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req, s
 	return 0;
 }
 
+#ifndef CONFIG_TT_SMC_RECOVERY
 REGISTER_MESSAGE(MSG_TYPE_TOGGLE_TENSIX_RESET, ToggleTensixReset);
+#endif
 
 /**
  * @brief Redo Tensix init that gets cleared on Tensix reset
  *
  * This includes all NOC programming and any programming within the tile.
  */
-static uint8_t ReinitTensix(uint32_t msg_code, const struct request *req, struct response *rsp)
+static __maybe_unused uint8_t ReinitTensix(uint32_t msg_code, const struct request *req,
+					   struct response *rsp)
 {
 	ClearNocTranslation();
 	/* We technically don't have to re-program the entire NOC (only the Tensix NOC portions),
@@ -169,83 +172,9 @@ static uint8_t ReinitTensix(uint32_t msg_code, const struct request *req, struct
 
 	return 0;
 }
-
+#ifndef CONFIG_TT_SMC_RECOVERY
 REGISTER_MESSAGE(MSG_TYPE_REINIT_TENSIX, ReinitTensix);
 #endif
-
-static int bh_arc_init_start(void)
-{
-	/* Write a status register indicating HW init progress */
-	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
-
-	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
-	boot_status0.f.hw_init_status = kHwInitStarted;
-	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
-
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP1);
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP2);
-
-	return 0;
-}
-SYS_INIT(bh_arc_init_start, APPLICATION, 3);
-
-int tt_init_status;
-STATUS_ERROR_STATUS0_reg_u error_status0;
-
-static int bh_arc_init_end(void)
-{
-	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
-
-	/* Indicate successful HW Init */
-	boot_status0.val = ReadReg(STATUS_BOOT_STATUS0_REG_ADDR);
-	/* Record FW ID */
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		boot_status0.f.fw_id = FW_ID_SMC_RECOVERY;
-	} else {
-		boot_status0.f.fw_id = FW_ID_SMC_NORMAL;
-	}
-	boot_status0.f.hw_init_status = (tt_init_status == 0) ? kHwInitDone : kHwInitError;
-	WriteReg(STATUS_BOOT_STATUS0_REG_ADDR, boot_status0.val);
-	WriteReg(STATUS_ERROR_STATUS0_REG_ADDR, error_status0.val);
-
-	return 0;
-}
-SYS_INIT(bh_arc_init_end, APPLICATION, 22);
-
-int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	if (SpiBlockRead(addr, size, dst) != 0) {
-		return TT_BOOT_FS_ERR;
-	}
-	return TT_BOOT_FS_OK;
-}
-
-static int InitSpiFS(void)
-{
-	if (!IS_ENABLED(CONFIG_ARC)) {
-		return 0;
-	}
-
-	EepromSetup();
-	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
-	return 0;
-}
-SYS_INIT(InitSpiFS, APPLICATION, 2);
-
-void InitResetInterrupt(uint8_t pcie_inst)
-{
-#if CONFIG_ARC
-	if (pcie_inst == 0) {
-		IRQ_CONNECT(IRQNUM_PCIE0_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE0_ERR_INTR, 0);
-		irq_enable(IRQNUM_PCIE0_ERR_INTR);
-	} else if (pcie_inst == 1) {
-		IRQ_CONNECT(IRQNUM_PCIE1_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE1_ERR_INTR, 0);
-		irq_enable(IRQNUM_PCIE1_ERR_INTR);
-	}
-#else
-	ARG_UNUSED(pcie_inst);
-#endif
-}
 
 static int DeassertTileResets(void)
 {

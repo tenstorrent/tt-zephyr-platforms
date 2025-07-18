@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cm2dm_msg.h"
 #include "init.h"
+#include "irqnum.h"
 #include "noc2axi.h"
 #include "pcie.h"
 #include "pciesd.h"
@@ -167,6 +169,21 @@ static inline void SetupDbiAccess(void)
 	 * location
 	 */
 	ReadSiiReg(PCIE_NOC_TLB_DATA_REG_OFFSET(DBI_PCIE_TLB_ID));
+}
+
+static void InitResetInterrupt(uint8_t pcie_inst)
+{
+#if CONFIG_ARC
+	if (pcie_inst == 0) {
+		IRQ_CONNECT(IRQNUM_PCIE0_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE0_ERR_INTR, 0);
+		irq_enable(IRQNUM_PCIE0_ERR_INTR);
+	} else if (pcie_inst == 1) {
+		IRQ_CONNECT(IRQNUM_PCIE1_ERR_INTR, 0, ChipResetRequest, IRQNUM_PCIE1_ERR_INTR, 0);
+		irq_enable(IRQNUM_PCIE1_ERR_INTR);
+	}
+#else
+	ARG_UNUSED(pcie_inst);
+#endif
 }
 
 static void SetupOutboundTlbs(void)

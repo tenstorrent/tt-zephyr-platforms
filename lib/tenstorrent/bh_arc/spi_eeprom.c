@@ -4,21 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "spi_eeprom.h"
+#include "pll.h"
+#include "reg.h"
 #include "status_reg.h"
+#include "util.h"
 
 #include <stdbool.h>
 #include <string.h>
-#include <zephyr/kernel.h>
+
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
-
-#include "reg.h"
-#include "util.h"
-#include "pll.h"
-
+#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/mspi.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
 
 #define SPI_PAGE_SIZE   256
 #define SECTOR_SIZE     4096
@@ -198,3 +198,23 @@ static uint8_t write_eeprom_handler(uint32_t msg_code, const struct request *req
 
 REGISTER_MESSAGE(MSG_TYPE_READ_EEPROM, read_eeprom_handler);
 REGISTER_MESSAGE(MSG_TYPE_WRITE_EEPROM, write_eeprom_handler);
+
+static int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
+{
+	if (SpiBlockRead(addr, size, dst) != 0) {
+		return TT_BOOT_FS_ERR;
+	}
+	return TT_BOOT_FS_OK;
+}
+
+static int InitSpiFS(void)
+{
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	EepromSetup();
+	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
+	return 0;
+}
+SYS_INIT(InitSpiFS, APPLICATION, 2);

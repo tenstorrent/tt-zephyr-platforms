@@ -37,12 +37,12 @@ zephyr_library_sources(
   cat.c
   cm2dm_msg.c
   dw_apb_i2c.c
-  init.c
   msgqueue.c
   noc2axi.c
   pcie.c
   pll.c
   post_code.c
+  reset.c
   smbus_target.c
   spi_eeprom.c
   timer.c
