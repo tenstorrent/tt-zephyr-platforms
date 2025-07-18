@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/sys/util.h>
@@ -170,8 +171,13 @@ static bool GetTileClkDisable(uint8_t px, uint8_t py)
 	return false;
 }
 
-void NocInit(void)
+int NocInit(void)
 {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Initialize NOC so we can broadcast to all Tensixes */
 	uint32_t niu_cfg_0_updates =
 		BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF); /* noc2axi tile header double-write feature
 						       * disable, ignored on all other nodes
@@ -214,7 +220,10 @@ void NocInit(void)
 	uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
 
 	ProgramBroadcastExclusion(bad_tensix_cols);
+
+	return 0;
 }
+SYS_INIT(NocInit, APPLICATION, 9);
 
 #define PRE_TRANSLATION_SIZE 32
 
