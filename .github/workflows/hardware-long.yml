@@ -129,4 +129,4 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
