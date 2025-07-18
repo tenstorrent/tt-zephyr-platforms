@@ -90,19 +90,18 @@ int main(void)
 uint32_t FW_VERSION[4] __attribute__((section(".fw_version"))) = {
 	FW_VERSION_SEMANTIC, FW_VERSION_DATE, FW_VERSION_LOW, FW_VERSION_HIGH};
 
-static int _InitFW(void)
+static int tt_appversion_init(void)
 {
-	return InitFW(APPVERSION);
+	WriteReg(STATUS_FW_VERSION_REG_ADDR, APPVERSION);
+	return 0;
 }
-
-SYS_INIT(_InitFW, APPLICATION, UTIL_DEC(CONFIG_TT_BH_ARC_SYSINIT_PRIORITY));
+SYS_INIT(tt_appversion_init, EARLY, 0);
 
 static int record_cmfw_start_time(void)
 {
 	WriteReg(CMFW_START_TIME_REG_ADDR, TimerTimestamp());
 	return 0;
 }
-
 SYS_INIT(record_cmfw_start_time, EARLY, 0);
 
 #ifdef CONFIG_UART_TT_VIRT
