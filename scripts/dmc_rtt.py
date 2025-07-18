@@ -9,6 +9,7 @@ Script to open RTT console to DMC
 
 from rtt_helper import RTTHelper
 from pathlib import Path
+import sys
 
 DEFAULT_CFG = (
     Path(__file__).parents[1]
@@ -27,7 +28,7 @@ def start_dmc_rtt():
         search_base=DEFAULT_SEARCH_BASE,
         search_range=DEFAULT_SEARCH_RANGE,
     )
-    rtt_helper.parse_args()
+    rtt_helper.parse_args(sys.argv[1:])
     rtt_helper.run_rtt_server()
 
 

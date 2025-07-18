@@ -142,7 +142,7 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
 
   smoke-e2e-test:
     strategy:
@@ -247,7 +247,7 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_rtt.py -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
 
   build-fw-artifact:
     uses: ./.github/workflows/build-fw.yml
