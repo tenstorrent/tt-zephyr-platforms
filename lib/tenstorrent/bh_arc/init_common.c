@@ -7,12 +7,14 @@
 #include "cm2dm_msg.h"
 #include "init_common.h"
 #include "irqnum.h"
+#include "pll.h"
 #include "reg.h"
 #include "spi_eeprom.h"
 #include "status_reg.h"
 
 #include <stdint.h>
 
+#include <tenstorrent/post_code.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
@@ -52,8 +54,17 @@ void InitResetInterrupt(uint8_t pcie_inst)
 #endif
 }
 
-void DeassertTileResets(void)
+static int DeassertTileResets(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP3);
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
+	PLLAllBypass();
+
 	RESET_UNIT_GLOBAL_RESET_reg_u global_reset = {.val = RESET_UNIT_GLOBAL_RESET_REG_DEFAULT};
 
 	global_reset.f.noc_reset_n = 1;
@@ -84,4 +95,7 @@ void DeassertTileResets(void)
 
 	l2cpu_reset.f.l2cpu_reset_n = 0xf;
 	WriteReg(RESET_UNIT_L2CPU_RESET_REG_ADDR, l2cpu_reset.val);
+
+	return 0;
 }
+SYS_INIT(DeassertTileResets, APPLICATION, 6);
