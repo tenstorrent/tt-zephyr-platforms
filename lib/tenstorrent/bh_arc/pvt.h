@@ -19,6 +19,5 @@ typedef enum {
 	SdifTimeout = 3,
 } ReadStatus;
 
-void PVTInit(void);
 float GetAvgChipTemp(void);
 #endif
