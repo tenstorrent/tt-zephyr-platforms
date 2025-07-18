@@ -401,10 +401,6 @@ static int InitHW(void)
 	STATUS_BOOT_STATUS0_reg_u boot_status0 = {0};
 	STATUS_ERROR_STATUS0_reg_u error_status0 = {0};
 
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP4);
-	/* Init clocks to faster (but safe) levels */
-	PLLInit();
-
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
