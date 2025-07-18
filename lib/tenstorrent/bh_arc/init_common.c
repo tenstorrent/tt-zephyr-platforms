@@ -83,10 +83,6 @@ int InitFW(uint32_t app_version)
 {
 	WriteReg(STATUS_FW_VERSION_REG_ADDR, app_version);
 
-	/* Initialize ARC DMA */
-	ArcDmaConfig();
-	ArcDmaInitCh(0, 0, 15);
-
 	/* Initialize SPI EEPROM and the filesystem */
 	InitSpiFS();
 

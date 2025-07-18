@@ -8,6 +8,8 @@
 #include "arc.h"
 #include "timer.h"
 
+#include <zephyr/init.h>
+
 void ArcDmaConfig(void)
 {
 	uint32_t reg = 0;
@@ -85,3 +87,16 @@ bool ArcDmaTransfer(const void *src, void *dst, uint32_t size)
 
 	return false;
 }
+
+static int arc_dma_init(void)
+{
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Initialize ARC DMA */
+	ArcDmaConfig();
+	ArcDmaInitCh(0, 0, 15);
+	return 0;
+}
+SYS_INIT(arc_dma_init, APPLICATION, 1);
