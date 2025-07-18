@@ -5,13 +5,15 @@
  */
 
 #include "pll.h"
-
-#include <stdbool.h>
-#include <zephyr/sys/util.h>
-
 #include "reg.h"
 #include "spi_eeprom.h"
 #include "timer.h"
+
+#include <stdbool.h>
+
+#include <tenstorrent/post_code.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/util.h>
 
 #define VCO_MIN_FREQ              1600
 #define VCO_MAX_FREQ              5000
@@ -342,8 +344,16 @@ static void enable_clk_counters(void)
 }
 
 /* set AICLK to 800 MHz, AXICLK and ARCCLK to 475 MHz, APBCLK to 118.75 MHz */
-void PLLInit(void)
+int PLLInit(void)
 {
+	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP4);
+
+	if (!IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* Init clocks to faster (but safe) levels */
+
 	PLL_CNTL_PLL_CNTL_0_reg_u pll_cntl_0;
 
 	for (PLLNum i = 0; i < PLL_COUNT; i++) {
@@ -396,7 +406,10 @@ void PLLInit(void)
 	WaitNs(300);
 
 	enable_clk_counters();
+
+	return 0;
 }
+SYS_INIT(PLLInit, APPLICATION, 7);
 
 uint32_t GetExtPostdiv(uint8_t postdiv_index, PLL_CNTL_PLL_CNTL_5_reg_u pll_cntl_5,
 		       PLL_CNTL_USE_POSTDIV_reg_u use_postdiv)
