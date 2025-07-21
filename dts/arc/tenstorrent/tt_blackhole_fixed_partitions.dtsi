@@ -15,55 +15,55 @@
 
 		cmfwcfg@14000 {
 			label = "cmfwcfg";
-			reg = <0x014000 0x50>;
+			reg = <0x014000 0x100>;
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
 			read-only;
 		};
 
 		origcfg@15000 {
 			label = "origcfg";
-			reg = <0x015000 0x50>;
+			reg = <0x015000 0x100>;
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
 			read-only;
 		};
 
 		cmfw@16000 {
 			label = "cmfw";
-			reg = <0x016000 0x19bb0>;
+			reg = <0x016000 0x19ff0>;
 			binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
 		};
 
 		ethfwcfg@30000 {
 			label = "ethfwcfg";
-			reg = <0x030000 0x200>;
+			reg = <0x030000 0x500>;
 			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_erisc_params.bin";
 			read-only;
 		};
 
 		ethfw@31000 {
 			label = "ethfw";
-			reg = <0x031000 0x8600>;
+			reg = <0x031000 0x8a00>;
 			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_erisc.bin";
 			read-only;
 		};
 
 		memfwcfg@3a000 {
 			label = "memfwcfg";
-			reg = <0x03a000 0x100>;
+			reg = <0x03a000 0x500>;
 			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_gddr_params_$BOARD_REV.bin";
 			read-only;
 		};
 
 		memfw@3b000 {
 			label = "memfw";
-			reg = <0x03b000 0x3434>;
+			reg = <0x03b000 0x3a00>;
 			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_gddr_init.bin";
 			read-only;
 		};
 
 		ethsdreg@3f000 {
 			label = "ethsdreg";
-			reg = <0x03f000 0x480>;
+			reg = <0x03f000 0x600>;
 			binary-path = "$ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin";
 			read-only;
 		};
@@ -99,7 +99,7 @@
 
 		failover@53000 {
 			label = "failover";
-			reg = <0x53000 0x124E4>;
+			reg = <0x53000 0x13000>;
 			binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 			read-only;
 		};
