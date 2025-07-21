@@ -14,13 +14,6 @@ function(add_bootfs_and_fwbundle bundle_version bootfs_yaml output_bootfs output
     --build-dir ${CMAKE_BINARY_DIR}
     DEPENDS ${bootfs_deps})
 
-  # Run fsck
-  add_custom_target(run_fsck_${side} ALL
-    COMMAND ${PYTHON_EXECUTABLE}
-    ${APP_DIR}/../../scripts/tt_boot_fs.py fsck
-    ${output_bootfs}
-    DEPENDS ${output_bootfs})
-
   # Generate firmware bundle that can be used to flash this build on a board
   # using tt-flash
   add_custom_command(OUTPUT ${output_fwbundle}
