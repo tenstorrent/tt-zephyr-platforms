@@ -50,6 +50,7 @@
 
 /* SR - Status Register */
 #define SR_BUSY_BIT	        BIT(0)
+#define SR_TFE_BIT              BIT(2)
 
 /* IMR - Interrupt Mask Register */
 #define IMR_TXEIM_BIT		BIT(0)

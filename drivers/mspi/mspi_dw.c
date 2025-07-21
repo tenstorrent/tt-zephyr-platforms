@@ -269,6 +269,10 @@ static bool mspi_dw_transfer(const struct device *dev, uint32_t int_status)
 		 * shifting out the last frame (the last interrupt occurs when
 		 * the TX FIFO is empty). Wait if it signals that it is busy.
 		 */
+
+		while ((read_sr(dev) & SR_TFE_BIT) == 0) {
+			/* Wait until TX FIFO is empty */
+		}
 		while (read_sr(dev) & SR_BUSY_BIT) {
 		}
 
