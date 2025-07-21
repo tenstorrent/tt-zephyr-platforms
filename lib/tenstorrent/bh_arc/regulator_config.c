@@ -12,6 +12,7 @@
 	{0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask, \
 	sizeof(regulator##_##cmd##_data)}
 
+/***** Start of p1x0 (p150 / p100) settings */
 /* VCORE */
 static const uint8_t p1x0_vcore_b0_data[] = {
 	0x00, 0x00, 0x00, 0x00,
@@ -106,6 +107,35 @@ static const RegulatorData p1x0_vcorem_data[] = {
 	REGULATOR_DATA(p1x0_vcorem, e7),
 };
 
+/***** End of p1x0 settings */
+
+/***** Start of p300 settings */
+
+/***** End of p300 settings */
+
+/***** Start of Galaxy/UBB settings */
+
+/* VOUT_SCALE_LOOP (0x29) = 444 (write word) */
+static const uint8_t ubb_gddrio_29_data[] = {0xbc, 0x01};
+static const uint8_t ubb_gddrio_29_mask[] = {0xff, 0xff};
+
+BUILD_ASSERT(sizeof(ubb_gddrio_29_data) == sizeof(ubb_gddrio_29_mask));
+
+/* VOUT_CMD (0x21) = 675 (write word) */
+static const uint8_t ubb_gddrio_21_data[] = {0xa3, 0x02};
+static const uint8_t ubb_gddrio_21_mask[] = {0xff, 0xff};
+
+BUILD_ASSERT(sizeof(ubb_gddrio_21_data) == sizeof(ubb_gddrio_21_mask));
+
+static const RegulatorData ubb_gddrio_data[] = {
+	REGULATOR_DATA(ubb_gddrio, 29),
+	REGULATOR_DATA(ubb_gddrio, 21),
+};
+
+/***** End of Galaxy/UBB settings */
+
+/***** Start of common serdes VR settings */
+
 static const uint8_t serdes_vr_d2_data[] = {0x07};
 static const uint8_t serdes_vr_d2_mask[] = {0xff};
 
@@ -115,7 +145,27 @@ static const RegulatorData serdes_vr_data[] = {
 	REGULATOR_DATA(serdes_vr, d2),
 };
 
-static const RegulatorConfig p1x0_config[] = {
+/***** End of common serdes VR settings */
+
+static const RegulatorConfig p100_config[] = {
+	{
+		.address = P0V8_VCORE_ADDR,
+		.regulator_data = p1x0_vcore_data,
+		.count = ARRAY_SIZE(p1x0_vcore_data),
+	},
+	{
+		.address = P0V8_VCOREM_ADDR,
+		.regulator_data = p1x0_vcorem_data,
+		.count = ARRAY_SIZE(p1x0_vcorem_data),
+	},
+};
+
+const BoardRegulatorsConfig p100_regulators_config = {
+	.regulator_config = p100_config,
+	.count = ARRAY_SIZE(p100_config),
+};
+
+static const RegulatorConfig p150_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
 		.regulator_data = p1x0_vcore_data,
@@ -143,7 +193,67 @@ static const RegulatorConfig p1x0_config[] = {
 	},
 };
 
-const BoardRegulatorsConfig p1x0_regulators_config = {
-	.regulator_config = p1x0_config,
-	.count = ARRAY_SIZE(p1x0_config),
+const BoardRegulatorsConfig p150_regulators_config = {
+	.regulator_config = p150_config,
+	.count = ARRAY_SIZE(p150_config),
+};
+
+static const RegulatorConfig p300_left_config[] = {
+	{
+		.address = SERDES_VDDL_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	/* Left chip doesn't have its own SERDES_VDD */
+	{
+		.address = SERDES_VDDH_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+};
+
+const BoardRegulatorsConfig p300_left_regulators_config = {
+	.regulator_config = p300_left_config,
+	.count = ARRAY_SIZE(p300_left_config),
+};
+
+static const RegulatorConfig p300_right_config[] = {
+	{
+		.address = SERDES_VDDL_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDD_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDDH_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+};
+
+const BoardRegulatorsConfig p300_right_regulators_config = {
+	.regulator_config = p300_right_config,
+	.count = ARRAY_SIZE(p300_right_config),
+};
+
+static const RegulatorConfig ubb_config[] = {
+	{
+		.address = GDDRIO_WEST_ADDR,
+		.regulator_data = ubb_gddrio_data,
+		.count = ARRAY_SIZE(ubb_gddrio_data),
+	},
+	{
+		.address = GDDRIO_EAST_ADDR,
+		.regulator_data = ubb_gddrio_data,
+		.count = ARRAY_SIZE(ubb_gddrio_data),
+	},
+};
+
+const BoardRegulatorsConfig ubb_regulators_config = {
+	.regulator_config = ubb_config,
+	.count = ARRAY_SIZE(ubb_config),
 };

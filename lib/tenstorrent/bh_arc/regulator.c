@@ -221,10 +221,28 @@ uint32_t RegulatorInit(PcbType board_type)
 	uint32_t aggregate_i2c_errors = 0;
 	uint32_t i2c_error = 0;
 
-	if (board_type == PcbTypeP150 || board_type == PcbTypeP100) {
-		for (uint32_t i = 0; i < p1x0_regulators_config.count; i++) {
+	const BoardRegulatorsConfig *regulators_config = NULL;
+
+	if (board_type == PcbTypeP100) {
+		regulators_config = &p100_regulators_config;
+	} else if (board_type == PcbTypeP150) {
+		regulators_config = &p150_regulators_config;
+	} else if (board_type == PcbTypeP300) {
+		if (tt_bh_fwtable_is_p300_left_chip()) {
+			regulators_config = &p300_left_regulators_config;
+		} else {
+			regulators_config = &p300_right_regulators_config;
+		}
+	} else if (board_type == PcbTypeUBB) {
+		regulators_config = &ubb_regulators_config;
+	} else {
+		LOG_ERR("Unsupported board type %d", board_type);
+		return -ENOTSUP;
+	}
+	if (regulators_config) {
+		for (uint32_t i = 0; i < regulators_config->count; i++) {
 			const RegulatorConfig *regulator_config =
-				&p1x0_regulators_config.regulator_config[i];
+				regulators_config->regulator_config + i;
 
 			I2CInit(I2CMst, regulator_config->address, I2CFastMode, PMBUS_MST_ID);
 
@@ -262,38 +280,6 @@ uint32_t RegulatorInit(PcbType board_type)
 					}
 				}
 			}
-		}
-	}
-
-	/* GDDRIO */
-	if (board_type == PcbTypeUBB) {
-		static const uint8_t gddrio_addr[] = {GDDRIO_WEST_ADDR, GDDRIO_EAST_ADDR};
-		uint16_t vout_scale_loop = 444;
-		uint16_t vout_cmd = 675;
-
-		ARRAY_FOR_EACH_PTR(gddrio_addr, addr_ptr) {
-			I2CInit(I2CMst, *addr_ptr, I2CFastMode, PMBUS_MST_ID);
-			I2CWriteBytes(PMBUS_MST_ID, VOUT_SCALE_LOOP, PMBUS_CMD_BYTE_SIZE,
-				      (uint8_t *)&vout_scale_loop, VOUT_SCALE_LOOP_DATA_BYTE_SIZE);
-			I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE,
-				      (uint8_t *)&vout_cmd, VOUT_COMMAND_DATA_BYTE_SIZE);
-		}
-	}
-
-	if (board_type == PcbTypeP300 || board_type == PcbTypeUBB) {
-		static const uint8_t serdes_vr_addr[] = {SERDES_VDDL_ADDR, SERDES_VDD_ADDR,
-							 SERDES_VDDH_ADDR};
-		uint8_t mfr_ctrl_ops = 7;
-
-		ARRAY_FOR_EACH_PTR(serdes_vr_addr, addr_ptr) {
-			/* Skip serdes_vdd for p300 left chip */
-			if (tt_bh_fwtable_is_p300_left_chip() && *addr_ptr == SERDES_VDD_ADDR) {
-				continue;
-			}
-
-			I2CInit(I2CMst, *addr_ptr, I2CFastMode, PMBUS_MST_ID);
-			I2CWriteBytes(PMBUS_MST_ID, MFR_CTRL_OPS, PMBUS_CMD_BYTE_SIZE,
-				      &mfr_ctrl_ops, MFR_CTRL_OPS_DATA_BYTE_SIZE);
 		}
 	}
 	return aggregate_i2c_errors;
