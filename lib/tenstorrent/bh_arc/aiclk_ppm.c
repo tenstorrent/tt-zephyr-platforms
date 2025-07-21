@@ -12,11 +12,17 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "pll.h"
 #include "voltage.h"
 #include "vf_curve.h"
 #include "dvfs.h"
 #include <zephyr/drivers/misc/bh_fwtable.h>
+
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+static const struct device *const pll_dev_0 = DEVICE_DT_GET(DT_NODELABEL(pll0));
 
 /* Bounds checks for FMAX and FMIN (in MHz) */
 #define AICLK_FMAX_MAX 1400.0F
@@ -97,7 +103,7 @@ void CalculateTargAiclk(void)
 void DecreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq < aiclk_ppm.curr_freq) {
-		SetAICLK(aiclk_ppm.targ_freq);
+		clock_control_set_rate(pll_dev_0,(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,(clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
 	}
 }
@@ -105,7 +111,7 @@ void DecreaseAiclk(void)
 void IncreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq > aiclk_ppm.curr_freq) {
-		SetAICLK(aiclk_ppm.targ_freq);
+		clock_control_set_rate(pll_dev_0,(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,(clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
 	}
 }
@@ -148,7 +154,8 @@ void InitArbMaxVoltage(void)
 
 void InitAiclkPPM(void)
 {
-	aiclk_ppm.boot_freq = GetAICLK();
+	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,&aiclk_ppm.boot_freq);
+	//aiclk_ppm.boot_freq = GetAICLK();
 	aiclk_ppm.curr_freq = aiclk_ppm.boot_freq;
 	aiclk_ppm.targ_freq = aiclk_ppm.curr_freq;
 
@@ -186,8 +193,7 @@ uint8_t ForceAiclk(uint32_t freq)
 		if (freq == 0) {
 			freq = aiclk_ppm.boot_freq;
 		}
-
-		SetAICLK(freq);
+		clock_control_set_rate(pll_dev_0,(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,(clock_control_subsys_rate_t)freq);
 	}
 	return 0;
 }
@@ -220,8 +226,8 @@ static uint8_t ForceAiclkHandler(uint32_t msg_code, const struct request *reques
 static uint8_t get_aiclk_handler(uint32_t msg_code, const struct request *request,
 				 struct response *response)
 {
-	response->data[1] = GetAICLK();
-
+	//response->data[1] = GetAICLK();
+	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,&(response->data[1]));
 	if (!dvfs_enabled) {
 		response->data[2] = CLOCK_MODE_UNCONTROLLED;
 	} else if (aiclk_ppm.forced_freq != 0) {

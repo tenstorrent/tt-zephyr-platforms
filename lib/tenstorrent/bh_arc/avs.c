@@ -10,7 +10,13 @@
 
 #include "timer.h"
 #include "reg.h"
-#include "pll.h"
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+static const struct device *const pll_dev_1 = DEVICE_DT_GET(DT_NODELABEL(pll1));
+
 
 #define APB2AVSBUS_AVS_INTERRUPT_MASK_REG_ADDR 0x80100034
 #define APB2AVSBUS_AVS_CFG_1_REG_ADDR          0x80100054
@@ -161,7 +167,10 @@ void AVSInit(void)
 	/* use divided version of APB clock as AVS clock, and set the divider value to get a clock
 	 * of 20MHz.
 	 */
-	avs_cfg_1.f.clk_divider_value = DIV_ROUND_UP(GetAPBCLK(), AVSCLK_FREQ_MHZ);
+	uint32_t apb_clk_freq = 0;
+	clock_control_get_rate(pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_APBCLK,
+			       &apb_clk_freq);
+	avs_cfg_1.f.clk_divider_value = DIV_ROUND_UP(apb_clk_freq, AVSCLK_FREQ_MHZ);
 	avs_cfg_1.f.avs_clock_select = 1;
 	WriteReg(APB2AVSBUS_AVS_CFG_1_REG_ADDR, avs_cfg_1.val);
 	/* enable all clocks entering AVS clock mux. */

@@ -15,7 +15,6 @@
 #include "noc.h"
 #include "noc_init.h"
 #include "pcie.h"
-#include "pll.h"
 #include "pvt.h"
 #include "reg.h"
 #include "regulator.h"
@@ -45,6 +44,23 @@
 #define MRISC_FW_CFG_TAG "memfwcfg"
 #define MRISC_FW_TAG     "memfw"
 
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+#define DT_DRV_COMPAT tenstorrent_bh_clock_control
+#define PLL_DEVICE_INIT(inst) DEVICE_DT_INST_GET(inst),
+static const struct device *const pll_devs[] = {
+	DT_INST_FOREACH_STATUS_OKAY(PLL_DEVICE_INIT)
+};
+/*
+static const struct device *const pll_dev_0 = DEVICE_DT_GET(DT_NODELABEL(pll0));
+static const struct device *const pll_dev_1 = DEVICE_DT_GET(DT_NODELABEL(pll1));
+static const struct device *const pll_dev_2 = DEVICE_DT_GET(DT_NODELABEL(pll2));
+static const struct device *const pll_dev_3 = DEVICE_DT_GET(DT_NODELABEL(pll3));
+static const struct device *const pll_dev_4 = DEVICE_DT_GET(DT_NODELABEL(pll4));
+*/
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
@@ -219,7 +235,9 @@ static int InitMrisc(void)
 		gddr_speed = MIN_GDDR_SPEED;
 	}
 
-	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
+	if (clock_control_set_rate(pll_devs[3],
+		(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK,
+		(clock_control_subsys_rate_t)(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO))) {
 		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
 		return -EIO;
 	}
@@ -400,13 +418,22 @@ static int InitHW(void)
 	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP3);
+
 	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
-	PLLAllBypass();
+	for (size_t i = 0; i < ARRAY_SIZE(pll_devs); i++) {
+		clock_control_configure(pll_devs[i], NULL,
+			(void *)CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+	}
 	DeassertTileResets();
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP4);
 	/* Init clocks to faster (but safe) levels */
-	PLLInit();
+	//PLLInit();
+	for (size_t i = 0; i < ARRAY_SIZE(pll_devs); i++) {
+		clock_control_configure(pll_devs[i], NULL,
+			(void *)CLOCK_CONTROL_TT_BH_CONFIG_UNBYPASS);
+	}
+	//set rate to the default rate
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
@@ -425,15 +452,22 @@ static int InitHW(void)
 	}
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
+
+	#if 0
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
-		PLLAllBypass();
+		clock_control_configure(pll_dev_0, NULL, CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+		clock_control_configure(pll_dev_1, NULL, CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+		clock_control_configure(pll_dev_2, NULL, CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+		clock_control_configure(pll_dev_3, NULL, CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+		clock_control_configure(pll_dev_4, NULL, CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
 		/* Deassert RISC reset from reset_unit */
 		DeassertRiscvResets();
 		PLLInit();
 		/* Initialize some AICLK tracking variables */
 		InitAiclkPPM();
 	}
+	#endif
 
 	/* Initialize the serdes based on board type and asic location - data will be in fw_table */
 	/* p100: PCIe1 x16 */

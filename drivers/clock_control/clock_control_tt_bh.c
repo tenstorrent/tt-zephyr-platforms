@@ -157,6 +157,7 @@ struct clock_control_tt_bh_config {
 
 struct clock_control_tt_bh_data {
 	struct k_spinlock lock;
+	uint32_t saved_used_postdiv;
 };
 
 static uint32_t clock_control_tt_bh_read_reg(const struct clock_control_tt_bh_config *config,
@@ -510,11 +511,30 @@ static int clock_control_tt_bh_configure(const struct device *dev, clock_control
 		k_busy_wait(3);
 
 		/* Disable all external postdivs on all PLLs */
+		data->saved_used_postdiv = clock_control_tt_bh_read_reg(config, PLL_USE_POSTDIV_OFFSET);
+
 		clock_control_tt_bh_write_reg(config, PLL_USE_POSTDIV_OFFSET, 0);
 
 		k_spin_unlock(&data->lock, key);
 		return 0;
+	}else if ((enum clock_control_tt_bh_clock_config)option == CLOCK_CONTROL_TT_BH_CONFIG_UNBYPASS) {
+		pll_cntl_0_reg pll_cntl_0;
+
+		/* Unbypass PLL to refclk */
+		pll_cntl_0.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_0_OFFSET);
+		pll_cntl_0.f.bypass = 1;
+
+		clock_control_tt_bh_write_reg(config, PLL_CNTL_0_OFFSET, pll_cntl_0.val);
+
+		k_busy_wait(3);
+
+		/* Enable all external postdivs on all PLLs */
+		clock_control_tt_bh_write_reg(config, PLL_USE_POSTDIV_OFFSET, data->saved_used_postdiv);
+
+		k_spin_unlock(&data->lock, key);
+		return 0;
 	}
+
 
 	k_spin_unlock(&data->lock, key);
 	return -ENOTSUP;
