@@ -156,3 +156,14 @@ patches:
       and rejects all future transfers until cancelation is reversed.
       
       Implementations are included for STM32 I2C and SMBus.
+  - path: zephyr/i2c-timeout.patch
+    sha256sum: 119ca0aea2fdf6dfda5e72220ae9dba72c44c9a6c349ffde965b42a2d0a7c9ed
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Move STM32 I2C v2 transfer timeout to device tree
+      
+      Create transfer-timeout device tree property for st,stm32-i2c-v2
+      devices, replacing a hard-coded value. The default is unchanged.
