@@ -668,14 +668,6 @@ class FileImage:
         boot_fs = {}
         for addr, image in tracker.iter():
             image = cast(BootImage, image)
-
-            image.load_addr = 0
-            if image.tag == "cmfw":
-                image.load_addr = 0x10000000
-            if image.tag == "boardcfg":
-                image.provisioning_only = True
-                addr = 0xFFF000
-
             boot_fs[image.tag] = FsEntry(
                 provisioning_only=image.provisioning_only,
                 tag=image.tag,
@@ -688,6 +680,8 @@ class FileImage:
             if image.tag not in tag_order:
                 tag_order.append(image.tag)
 
+        failover_spi_addr = tracker.find_gap_of_size(len(self.failover.binary))[0]
+
         return BootFs(
             tag_order,
             boot_fs,
@@ -695,8 +689,8 @@ class FileImage:
                 provisioning_only=False,
                 tag=self.failover.tag,
                 data=self.failover.binary,
-                spi_addr=self.failover.load_addr,
-                load_addr=0x10000000,
+                spi_addr=failover_spi_addr,
+                load_addr=self.failover.load_addr,
                 executable=True,
             ),
         )
@@ -878,76 +872,13 @@ def mkbundle(
         shutil.rmtree(bundle_dir)
 
 
-def _generate_bootfs_yaml(args, partitions_node, p300_chip: str = ""):
-    if p300_chip == "_L":
-        name_suffix = "_left"
-    elif p300_chip == "_R":
-        name_suffix = "_right"
-    else:
-        name_suffix = ""
-
-    partitions_yml = {
-        "name": args.board.upper() + "-1" + name_suffix,
-        "product_name": args.board.upper(),
-        "gen_name": args.board.upper() + p300_chip,
-        "alignment": {
-            "flash_device_size": partitions_node.props["flash-device-size"].val,
-            "flash_block_size": partitions_node.props["flash-block-size"].val,
-        },
-        "images": [],
-    }
-
-    _logger.debug(partitions_yml)
-
-    for partition in partitions_node.children.values():
-        # Galaxy does not have BM firmware
-        if args.board == "galaxy" and partition.label == "bmfw":
-            continue
-        # P300 right chip does not have BM firmware
-        if p300_chip == "_R" and partition.label == "bmfw":
-            continue
-        # P300 does not have origcfg
-        if p300_chip != "" and partition.label == "origcfg":
-            continue
-
-        label = partition.label
-        offset, size = partition.props["reg"].val
-        path = partition.props["binary-path"].val
-        path = path.replace(
-            "$BOARD_REV",
-            args.board.upper() + (p300_chip if partition.label != "memfwcfg" else ""),
-        )
-        path = path.replace("$BUILD_DIR", args.build_dir)
-        path = path.replace("$ROOT", args.root)
-        read_only = partition.read_only
-
-        image_entry = {
-            "name": label,
-            "offset": offset,
-            "padto": size,
-            "binary": path,
-            "executable": not read_only,
-        }
-
-        if label == "failover":
-            partitions_yml["fail_over_image"] = image_entry
-        else:
-            partitions_yml["images"].append(image_entry)
-
-    output_dir = os.path.dirname(args.output_file)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-
-    return partitions_yml
-
-
 def invoke_generate_bootfs_yaml(args):
     """
     Generates a flash partition YAML file from the partitions node in the
     Zephyr devicetree at build time.
 
-    It parses the C style preceding a partition's 'label' property
-    to extract that partition's file path.
+    If a child of the partition has its nodelabel suffixed with '_executable',
+    then its executable bit will be set.
 
     See parse_args() for a descriptive list of arguments.
     """
@@ -959,51 +890,38 @@ def invoke_generate_bootfs_yaml(args):
 
     edt = edtlib.EDT(args.dts_file, args.bindings_dirs)
 
-    partitions_nodes = edt.compat2nodes.get("tenstorrent,tt-boot-fs")
+    partitions_nodes = edt.compat2nodes.get("fixed-partitions")
     partitions_node = partitions_nodes[0]
+    partitions_yml = {"flash_partitions": {}}
 
-    if "p300" in args.board:
-        partitions_yml = _generate_bootfs_yaml(args, partitions_node, "_L")
+    for partition in partitions_node.children.values():
+        # Required properties
+        label = partition.props["label"].val
+        reg_val = partition.props["reg"].val
+        offset, size = reg_val
+        partitions_data = {"offset": offset, "size": size}
 
-        with open(args.output_file[:-5] + "_left.yaml", "w", encoding="utf-8") as f:
-            yaml.dump(
-                partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
-            )
+        # Executable node label convention
+        exec_suffix = "executable"
+        if label.endswith(exec_suffix):
+            partitions_data[exec_suffix] = 1
+            label.removesuffix(exec_suffix)
 
-        _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
-        _logger.debug(
-            yaml.dump(
-                partitions_yml, default_flow_style=False, sort_keys=False, indent=2
-            )
+        partitions_yml["flash_partitions"][label] = partitions_data
+
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    with open(args.output_file, "w", encoding="utf-8") as f:
+        yaml.dump(
+            partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
         )
 
-        partitions_yml = _generate_bootfs_yaml(args, partitions_node, "_R")
-
-        with open(args.output_file[:-5] + "_right.yaml", "w", encoding="utf-8") as f:
-            yaml.dump(
-                partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
-            )
-
-        _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
-        _logger.debug(
-            yaml.dump(
-                partitions_yml, default_flow_style=False, sort_keys=False, indent=2
-            )
-        )
-    else:
-        partitions_yml = _generate_bootfs_yaml(args, partitions_node)
-
-        with open(args.output_file, "w", encoding="utf-8") as f:
-            yaml.dump(
-                partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
-            )
-
-        _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
-        _logger.debug(
-            yaml.dump(
-                partitions_yml, default_flow_style=False, sort_keys=False, indent=2
-            )
-        )
+    _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
+    _logger.debug(
+        yaml.dump(partitions_yml, default_flow_style=False, sort_keys=False, indent=2)
+    )
 
     return os.EX_OK
 
@@ -1077,11 +995,6 @@ def parse_args():
         allow_abbrev=False,
     )
     generate_bootfs_parser.add_argument(
-        "--board",
-        required=True,
-        help="Type of Tenstorrent Blackhole board.",
-    )
-    generate_bootfs_parser.add_argument(
         "--dts-file",
         required=True,
         help="Zephyr devicetree file containing the partition node.",
@@ -1099,8 +1012,6 @@ def parse_args():
     generate_bootfs_parser.add_argument(
         "--verbose", default=0, action="count", help="Log the YAML file."
     )
-    generate_bootfs_parser.add_argument("--build-dir")
-    generate_bootfs_parser.add_argument("--root")
     generate_bootfs_parser.set_defaults(func=invoke_generate_bootfs_yaml)
 
     # MKFS command- build a tt_boot_fs given a specification
