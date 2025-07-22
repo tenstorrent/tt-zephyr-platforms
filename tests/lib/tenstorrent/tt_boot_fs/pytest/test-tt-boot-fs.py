@@ -1,13 +1,18 @@
+#!/usr/bin/env python3
+
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
 import logging
 import pykwalify.core
+import pytest
+import requests
 import sys
 import tarfile
 import yaml
 
+from argparse import Namespace
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -215,25 +220,25 @@ def test_tt_boot_fs_mkfs():
     """
     Test the ability to make a tt_boot_fs.
     """
-    assert (
-        tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None
-    ), "tt_boot_fs.mkfs() failed"
+    assert tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None, (
+        "tt_boot_fs.mkfs() failed"
+    )
 
 
 def test_tt_boot_fs_fsck(tmp_path: Path):
     """
     Test the ability to check a tt_boot_fs.
     """
-    assert tt_boot_fs.fsck(
-        get_test_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() failed with valid image"
-    assert not tt_boot_fs.fsck(
-        get_corrupted_test_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() succeeded with invalid image"
+    assert tt_boot_fs.fsck(get_test_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() failed with valid image"
+    )
+    assert not tt_boot_fs.fsck(get_corrupted_test_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() succeeded with invalid image"
+    )
 
-    assert tt_boot_fs.fsck(
-        get_released_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() failed with released image"
+    assert tt_boot_fs.fsck(get_released_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() failed with released image"
+    )
 
 
 def test_tt_boot_fs_cksum():
@@ -379,6 +384,58 @@ def test_tt_boot_fs_ls(tmp_path: Path):
     )
     assert actual_fds == expected_fds, "tt_boot_fs.ls() failed with valid image"
 
-    assert not tt_boot_fs.ls(
-        get_corrupted_test_image_path(tmp_path)
-    ), "tt_boot_fs.ls() succeeded with invalid image"
+    assert not tt_boot_fs.ls(get_corrupted_test_image_path(tmp_path)), (
+        "tt_boot_fs.ls() succeeded with invalid image"
+    )
+
+
+def test_tt_boot_fs_gen_yaml(tmp_path: Path):
+    """
+    Test tt_boot_fs YAML file generation from a devicetree.
+
+    Expects build/tt_boot_fs.yaml to already exist from sysbuild.
+    """
+
+    # Fetch expected YAML from main branch on GitHub
+    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/heads/main/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
+    response = requests.get(expected_yaml_raw)
+    response.raise_for_status()
+    expected_yaml = yaml.safe_load(response.text)
+
+    # Generate YAML from bootfs
+    tmp_path.mkdir(parents=True, exist_ok=True)
+
+    dtsi = MODULE_ROOT / "dts/arc/tenstorrent/tt_blackhole_fixed_partitions.dtsi"
+    dts_tmp = tmp_path / "tt_blackhole_fixed_partitions.dts"
+
+    # 3. Prepend the dts-v1 header and write to the new temp file
+    with open(dtsi, "r") as f:
+        dtsi_content = f.read()
+
+    with open(dts_tmp, "w") as f:
+        f.write("/dts-v1/;\n")
+        f.write(dtsi_content)
+
+    args = Namespace(
+        board="p150a",
+        dts_file=dts_tmp,
+        bindings_dirs=[
+            MODULE_ROOT / "dts/bindings/",
+            MODULE_ROOT / "../zephyr/dts/bindings/",
+        ],
+        output_file=tmp_path / "tt_boot_fs.yaml",
+        build_dir=MODULE_ROOT / "build/",
+        blobs_dir=MODULE_ROOT / "zephyr/blobs/",
+        verbose="",
+    )
+
+    # Get generated YAML as a data structure
+    tt_boot_fs.invoke_generate_bootfs_yaml(args)
+    with open(tmp_path / "tt_boot_fs.yaml", "r") as f:
+        generated_yaml = yaml.safe_load(f)
+
+    assert generated_yaml == expected_yaml, "Generated yaml differes from expected yaml"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-s"])
