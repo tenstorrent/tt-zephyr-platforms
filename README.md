@@ -9,6 +9,8 @@ Welcome to TT-Zephyr-Platforms!
 
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
 
+![Zephyr Shell on Blackhole](./doc/img/tt-z-p-v4.2.0.gif)
+
 ## Getting Started
 
 For those completely new to Zephyr, please refer to the
@@ -50,7 +52,10 @@ cd $MODULE
 gcc -Iinclude -std=gnu11 -o tt-console scripts/tt-console/console.c
 
 # Build and flash firmware
-west build --sysbuild -p -b tt_blackhole@p100/tt_blackhole/smc app/smc
+west build --sysbuild -p -b tt_blackhole@p100/tt_blackhole/smc app/smc \
+  -- -DEXTRA_CONF_FILE=vuart.conf \
+  -DEXTRA_DTC_OVERLAY_FILE=vuart.overlay \
+  -DCONFIG_SHELL=y
 west flash -r tt_flash --force
 
 # Reset the board and rescan the PCIe bus
@@ -61,9 +66,42 @@ tt-smi -r
 ./scripts/tt-console/tt-console
 ```
 
-Output should appear as shown below
+### Build, Flash, Debug & Test DMC FW
+
+> [!NOTE]
+> When building SMC firmware with `--sysbuild` (as shown above) it is not necessary to build and
+> flash DMC firmware separately, since the `tt_flash` runner also flashes the DMC application.
+> Developers should only build DMC firmware with `--sysbuild` in the event that they must perform
+> an update to MCUBoot. Updating MCUBoot is not required or recommended for any end user.
+
+**Build, flash, and view output from the target with `west`**
 ```shell
-Press Ctrl-a,x to quit
+# Set up a convenience variable for DMC FW
+BOARD=tt_blackhole/tt_blackhole/dmc
+BOARD_SANITIZED=tt_blackhole_tt_blackhole_dmc
+
+# Build DMC firmware
+west build --sysbuild -p -b $BOARD app/dmc
+
+# Flash mcuboot and the app
+west flash
+
+# Open RTT viewer
+west rtt
+```
+
+Console output should appear as shown below.
+```shell
+*** Booting MCUboot v2.1.0-rc1-389-g4eba8087fa60 ***
+*** Using Zephyr OS build v4.2.0-rc3 ***
+I: Starting bootloader
+I: Primary image: magic=good, swap_type=0x2, copy_done=0x1, image_ok=0x1
+I: Secondary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
+I: Boot source: none
+I: Image index: 0, Swap type: none
+I: Bootloader chainload address offset: 0xc000
+I: Image version: v0.9.99
+I: Jumping to the first image slot
          .:.                 .:
       .:-----:..             :+++-.
    .:------------:.          :++++++=:
@@ -84,42 +122,10 @@ Press Ctrl-a,x to quit
             :-==========-:.
                 .:====-.
 
-*** Booting tt_blackhole with Zephyr OS v4.1.0 ***
-Tenstorrent Blackhole CMFW 0.9.1
-```
-
-### Build, Flash, Debug & Test DMC FW
-
-**Build, flash, and view output from the target with `west`**
-```shell
-# Set up a convenience variable for DMC FW
-BOARD=tt_blackhole/tt_blackhole/dmc
-BOARD_SANITIZED=tt_blackhole_tt_blackhole_dmc
-
-# Build DMC firmware
-west build --sysbuild -p -S rtt-console -b $BOARD app/dmc
-
-# Flash mcuboot and the app
-west flash
-
-# Open RTT viewer
-west rtt
-```
-
-Console output should appear as shown below.
-```shell
-*** Booting MCUboot v2.1.0-rc1-233-g346f7374ff44 ***
-*** Using Zephyr OS build v4.1.0 ***
-I: Starting bootloader
-I: Primary image: magic=good, swap_type=0x2, copy_done=0x1, image_ok=0x1
-I: Secondary image: magic=good, swap_type=0x2, copy_done=0x3, image_ok=0x3
-I: Boot source: none
-I: Image index: 0, Swap type: test
-I: Starting swap using move algorithm.
-I: Bootloader chainload address offset: 0xc000
-I: Image version: v0.3.2
-I: Jumping to the first image slot
-*** Booting Zephyr OS build 7823374e8721 ***
+*** Booting tt_blackhole with Zephyr OS v4.2.0-rc3 ***
+*** TT_GIT_VERSION v18.6.0-78-gf104f347ff0f ***
+*** SDK_VERSION zephyr sdk 0.17.2 ***
+DMFW VERSION 0.9.99
 ```
 
 **Build and run tests on hardware with `twister`**
@@ -127,20 +133,7 @@ I: Jumping to the first image slot
 ```shell
 twister -i -p $BOARD --device-testing --west-flash \
   --device-serial-pty rtt --west-runner openocd \
-  -s samples/hello_world/sample.basic.helloworld.rtt \
-  -s tests/boot/test_mcuboot/bootloader.mcuboot.rtt
-```
-
-**Re-flash stable firmware**
-
-Note: `fw.hex` is mostly available on CI machines at this time although nothing prevents any
-developer from creating a similar directory structure and firmware hex file on developer machines.
-The file `fw.hex` is a concatenation of the mcuboot `zephyr.bin` and the `app/smc`
-`zephyr.signed.bin` concatenated with the tool `srec_cat`.
-
-```shell
-./scripts/dmc-reset.py /opt/tenstorrent/fw/stable/$BOARD_SANITIZED/fw.hex
-./scripts/rescan-pcie.sh
+  -s samples/hello_world/sample.basic.helloworld.rtt
 ```
 
 ## Enable Git Hooks for Development
