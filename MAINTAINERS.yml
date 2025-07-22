@@ -457,6 +457,7 @@ Release Notes:
   status: maintained
   maintainers:
     - cfriedt
+    - danieldegrasse
   files:
     - doc/release/
   labels:
