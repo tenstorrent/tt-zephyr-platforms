@@ -7,6 +7,8 @@ CONFIG_SERIAL=y
 CONFIG_UART_CONSOLE=y
 # required for vuart
 CONFIG_MAIN_STACK_SIZE=4096
+# required for flash-aware loading algo
+CONFIG_HEAP_MEM_POOL_SIZE=8192
 # log backend
 CONFIG_USE_SEGGER_RTT=y
 
