@@ -1232,6 +1232,8 @@ static int api_timing_config(const struct device *dev,
 			     const uint32_t param_mask, void *cfg)
 {
 	if (param_mask & MSPI_DW_RX_TIMING_CFG) {
+		/* Disable controller before configuring */
+		write_ssienr(dev, 0);
 		write_rx_sample_dly(dev, (uint32_t)(uintptr_t)cfg);
 		return 0;
 	}
