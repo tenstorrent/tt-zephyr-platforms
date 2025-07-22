@@ -36,6 +36,9 @@ west blobs fetch
 # Apply local patches
 west patch apply
 
+# Install Python packages
+west packages pip --install
+
 # Set up Zephyr environment
 source zephyr/zephyr-env.sh
 
@@ -45,14 +48,18 @@ cd $MODULE
 
 ### Build & Flash
 
+> [!NOTE]
+> Please replace `p100a` with the appropriate board revision for subsequent steps.
+> E.g. `p100a`, `p150a`, `p150b`, `p150c`, etc.
+
 **Build and flash targets with `west`**
 
 ```shell
 # Build tt-console
-gcc -Iinclude -std=gnu11 -o tt-console scripts/tt-console/console.c
+gcc -Iinclude -std=gnu11 -o /tmp/tt-console scripts/tt-console/console.c
 
 # Build and flash firmware
-west build --sysbuild -p -b tt_blackhole@p100/tt_blackhole/smc app/smc \
+west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/smc app/smc \
   -- -DEXTRA_CONF_FILE=vuart.conf \
   -DEXTRA_DTC_OVERLAY_FILE=vuart.overlay \
   -DCONFIG_SHELL=y
@@ -63,7 +70,7 @@ tt-smi -r
 ./scripts/rescan-pcie.sh
 
 # Interact via tt-console
-./scripts/tt-console/tt-console
+/tmp/tt-console
 ```
 
 ### Build, Flash, Debug & Test DMC FW
@@ -77,11 +84,8 @@ tt-smi -r
 **Build, flash, and view output from the target with `west`**
 ```shell
 # Set up a convenience variable for DMC FW
-BOARD=tt_blackhole/tt_blackhole/dmc
-BOARD_SANITIZED=tt_blackhole_tt_blackhole_dmc
-
 # Build DMC firmware
-west build --sysbuild -p -b $BOARD app/dmc
+west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/dmc app/dmc
 
 # Flash mcuboot and the app
 west flash
@@ -130,8 +134,13 @@ DMFW VERSION 0.9.99
 
 **Build and run tests on hardware with `twister`**
 
+> [!NOTE]
+> Users may be required to patch their OpenOCD binaries to support Segger's RTT on RISC-V and ARC
+> architectures. For more information, please see
+> [this PR](https://github.com/zephyrproject-rtos/openocd/pull/66).
+
 ```shell
-twister -i -p $BOARD --device-testing --west-flash \
+twister -i -p tt_blackhole@p100a/tt_blackhole/smc --device-testing --west-flash \
   --device-serial-pty rtt --west-runner openocd \
   -s samples/hello_world/sample.basic.helloworld.rtt
 ```
