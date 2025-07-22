@@ -104,7 +104,7 @@ patches:
     comments: |
       Correct system-wide timekeeping utilities (used by multiple subsystems).
   - path: zephyr/dirty-hack-for-tt-hwinit.patch
-    sha256sum: b1fe44592ddc98f54f32ee8a5fb24e337d458f199fe74dec1a9353a5b3609106
+    sha256sum: 12f1b5793791e9eac256055f6a05bf491bb62b0b1b9bafa60969b36b984495be
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com

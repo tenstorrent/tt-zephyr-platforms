@@ -1,9 +1,9 @@
 diff --git a/kernel/init.c b/kernel/init.c
-index 2ab9804c7cf..549c2a57095 100644
+index dd9f3d7258f..4e338a6e599 100644
 --- a/kernel/init.c
 +++ b/kernel/init.c
-@@ -346,6 +346,8 @@ static inline bool is_entry_about_service(const void *obj)
- 		obj < (void *)_service_list_end);
+@@ -337,6 +337,8 @@ static int do_device_init(const struct device *dev)
+ 	return rc;
  }
  
 +__weak int tt_init_status;
@@ -11,13 +11,13 @@ index 2ab9804c7cf..549c2a57095 100644
  /**
   * @brief Execute all the init entry initialization functions at a given level
   *
-@@ -386,6 +388,9 @@ static void z_sys_init_run_level(enum init_level level)
- 			const struct service *srv = entry->srv;
- 
- 			result = srv->init();
-+			if (result != 0 && tt_init_status == 0) {
-+				tt_init_status = result;
-+			}
+@@ -376,6 +378,9 @@ static void z_sys_init_run_level(enum init_level level)
  		} else {
- 			const struct device *dev = entry->dev;
- 
+ 			result = entry->init_fn();
+ 		}
++		if (result != 0 && tt_init_status == 0) {
++			tt_init_status = result;
++		}
+ 		sys_trace_sys_init_exit(entry, level, result);
+ 	}
+ }
