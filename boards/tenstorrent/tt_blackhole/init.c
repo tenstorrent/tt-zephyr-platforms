@@ -12,6 +12,7 @@
 
 #define SPI_RX_TRAIN_ADDR 0x13FFC
 #define SPI_RX_TRAIN_DATA 0xa5a55a5a
+#define SSI_RX_DLY_SR_DEPTH 64
 
 const struct device *mspi_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi0));
 const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
@@ -189,7 +190,7 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < 255));
+	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
 	delay_lb = rx_delay;
 	/* Find the upper bound on the delay setting */
 	do {
@@ -202,7 +203,7 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) && (rx_delay < 255));
+	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
 	delay_ub = rx_delay - 1;
 
 	/* Find midpoint of both delay settings */
