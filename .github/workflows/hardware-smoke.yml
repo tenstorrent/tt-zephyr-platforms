@@ -271,7 +271,7 @@ jobs:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.60.0-rc20-142-g0eedd049aa
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.61.0-30-g3a3d9d704e
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
