@@ -1197,9 +1197,30 @@ static int api_timing_config(const struct device *dev,
 			     const struct mspi_dev_id *dev_id,
 			     const uint32_t param_mask, void *cfg)
 {
+	struct mspi_dw_data *dev_data = dev->data;
+	int rc, rc2;
+
 	if (param_mask & MSPI_DW_RX_TIMING_CFG) {
+		rc = pm_device_runtime_get(dev);
+		if (rc < 0) {
+			LOG_ERR("pm_device_runtime_get() failed: %d", rc);
+			return rc;
+		}
+
+		(void)k_sem_take(&dev_data->ctx_lock, K_FOREVER);
+		/* Disable controller before configuring */
+		write_ssienr(dev, 0);
 		write_rx_sample_dly(dev, (uint32_t)(uintptr_t)cfg);
-		return 0;
+
+		k_sem_give(&dev_data->ctx_lock);
+
+		rc2 = pm_device_runtime_put(dev);
+		if (rc2 < 0) {
+			LOG_ERR("pm_device_runtime_put() failed: %d", rc2);
+			rc = (rc < 0 ? rc : rc2);
+		}
+
+		return rc;
 	}
 	return -ENOTSUP;
 }
