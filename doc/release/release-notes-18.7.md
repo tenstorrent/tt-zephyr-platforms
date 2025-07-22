@@ -14,7 +14,13 @@ Major enhancements with this release include:
 * Implement aiclk_ppm sweep handler
 
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
-[comment]: <> (H3 Stability Improvements, if applicable)
+
+### Stability Improvements
+
+* Update Wormhole FW blob
+  * CMFW 2.35.0.0
+    * Fix telemetry entry ENABLED_TENSIX_ROW
+    * Add telemetry entries for ASIC_ID_{HIGH,LOW}
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
