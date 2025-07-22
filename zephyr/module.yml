@@ -195,9 +195,9 @@ blobs:
     description: "Modified bootrom to boot Blackhole"
     doc-url: https://tenstorrent.com
   - path: fw_pack-wormhole.tar.gz
-    sha256: b98fdfb4c330e4cef38633a106ca8048639242722251801493a44cc8ac72294a
+    sha256: 93e6445aab5221ea310c20c399bff970ac11c26755fa31de9e8d615f1c6e5925
     type: img
-    version: '18.6.0-rc1'
+    version: '18.7.0-rc1'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/fw_pack-wormhole.tar.gz"
