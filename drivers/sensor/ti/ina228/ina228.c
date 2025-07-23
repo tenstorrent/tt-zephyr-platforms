@@ -67,7 +67,7 @@ LOG_MODULE_REGISTER(INA228, CONFIG_SENSOR_LOG_LEVEL);
 #define INA228_SHUNT_CAL_SCALING 131072ULL
 
 /** @brief Power scaling value */
-#define INA228_POWER_SCALING(x) ((x) * 32U / 10U)
+#define INA228_POWER_SCALING(x) ((x) * 32ULL / 10ULL)
 
 /** @brief The conversion factor for the bus voltage register, in microvolts/LSB. */
 #define INA228_BUS_VOLTAGE_TO_uV(x) ((x) * 1953125ULL / 10000ULL)
