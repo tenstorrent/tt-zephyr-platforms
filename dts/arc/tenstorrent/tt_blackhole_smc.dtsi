@@ -104,6 +104,7 @@
 
 	pll0: pll@80020100 {
 		compatible = "tenstorrent,bh-clock-control";
+		status = "disabled";
 
 		reg = <0x80020100 0x100>;
 		clocks = <&ref_clk>;
@@ -120,6 +121,7 @@
 
 	pll1: pll@80020200 {
 		compatible = "tenstorrent,bh-clock-control";
+		status = "disabled";
 
 		reg = <0x80020200 0x100>;
 		clocks = <&ref_clk>;
@@ -136,6 +138,7 @@
 
 	pll2: pll@80020300 {
 		compatible = "tenstorrent,bh-clock-control";
+		status = "disabled";
 
 		reg = <0x80020300 0x100>;
 		clocks = <&ref_clk>;
@@ -152,6 +155,7 @@
 
 	pll3: pll@80020400 {
 		compatible = "tenstorrent,bh-clock-control";
+		status = "disabled";
 
 		reg = <0x80020400 0x100>;
 		clocks = <&ref_clk>;
@@ -168,6 +172,7 @@
 
 	pll4: pll@80020500 {
 		compatible = "tenstorrent,bh-clock-control";
+		status = "disabled";
 
 		reg = <0x80020500 0x100>;
 		clocks = <&ref_clk>;
