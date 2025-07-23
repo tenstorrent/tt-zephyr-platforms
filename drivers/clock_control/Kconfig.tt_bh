@@ -6,4 +6,22 @@ config CLOCK_CONTROL_TT_BH
 	default y
 	depends on DT_HAS_TENSTORRENT_BH_CLOCK_CONTROL_ENABLED
 	help
-		Enable the Tenstorrent Blackhole Clock Control driver.
+	  Enable the Tenstorrent Blackhole Clock Control driver.
+
+if CLOCK_CONTROL_TT_BH
+
+config CLOCK_CONTROL_TT_BH_PLL_COMMON_INIT
+	bool "Initialize Blackhole PLLs all at once"
+	help
+	  Rather than initializing each PLL individually, this option allows
+	  the driver to initialize all PLLs at once, which can be more efficient.
+
+config CLOCK_CONTROL_TT_BH_LOCK_TIMEOUT_MS
+	int "Timeout for PLL lock in milliseconds"
+	range 1 10000
+	default 400
+	help
+	  Specify the timeout for PLL lock in milliseconds. This is the maximum
+	  time the driver will wait for a PLL to lock before giving up.
+
+endif
