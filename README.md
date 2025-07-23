@@ -23,9 +23,8 @@ all Python dependencies, and the Zephyr SDK are already installed and activated.
 
 ```shell
 # Create a west workspace
-MODULE=tt-zephyr-platforms
-west init -m https://github.com/tenstorrent/$MODULE ~/$MODULE-work
-cd ~/$MODULE-work
+west init -m https://github.com/tenstorrent/tt-zephyr-platforms ~/tt-zephyr-platforms-work
+cd ~/tt-zephyr-platforms-work
 
 # Fetch Zephyr modules
 west update
@@ -43,10 +42,10 @@ west packages pip --install
 source zephyr/zephyr-env.sh
 
 # Enter the module
-cd $MODULE
+cd tt-zephyr-platforms
 ```
 
-### Build & Flash
+### Build & Flash SMC FW
 
 > [!NOTE]
 > Please replace `p100a` with the appropriate board revision for subsequent steps.
@@ -73,7 +72,7 @@ tt-smi -r
 /tmp/tt-console
 ```
 
-### Build, Flash, Debug & Test DMC FW
+### Build and Flash DMC FW
 
 > [!NOTE]
 > When building SMC firmware with `--sysbuild` (as shown above) it is not necessary to build and
@@ -83,9 +82,8 @@ tt-smi -r
 
 **Build, flash, and view output from the target with `west`**
 ```shell
-# Set up a convenience variable for DMC FW
 # Build DMC firmware
-west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/dmc app/dmc
+west build -b tt_blackhole@p100a/tt_blackhole/dmc app/dmc
 
 # Flash mcuboot and the app
 west flash
@@ -132,7 +130,9 @@ I: Jumping to the first image slot
 DMFW VERSION 0.9.99
 ```
 
-**Build and run tests on hardware with `twister`**
+### Run Tests
+
+**Build and run tests on SMC with `twister`**
 
 > [!NOTE]
 > Users may be required to patch their OpenOCD binaries to support Segger's RTT on RISC-V and ARC
@@ -141,6 +141,14 @@ DMFW VERSION 0.9.99
 
 ```shell
 twister -i -p tt_blackhole@p100a/tt_blackhole/smc --device-testing --west-flash \
+  --device-serial-pty rtt --west-runner /opt/tenstorrent/bin/openocd-rtt \
+  -s samples/hello_world/sample.basic.helloworld.rtt
+```
+
+**Build and run tests on DMC with `twister`**
+
+```shell
+twister -i -p tt_blackhole@p100a/tt_blackhole/dmc --device-testing --west-flash \
   --device-serial-pty rtt --west-runner openocd \
   -s samples/hello_world/sample.basic.helloworld.rtt
 ```
