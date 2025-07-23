@@ -39,8 +39,8 @@
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
 void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable);
-int LoadMriscFw(uint8_t gddr_inst, uint8_t *fw_image, uint32_t fw_size);
-int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *fw_cfg_image, uint32_t fw_cfg_size);
+int LoadMriscFw(uint8_t gddr_inst, const uint8_t *tag);
+int LoadMriscFwCfg(uint8_t gddr_inst, const uint8_t *tag);
 void ReleaseMriscReset(uint8_t gddr_inst);
 static inline uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
 {
