@@ -41,3 +41,11 @@
 &vuart1 {
 	status = "okay";
 };
+
+/*
+ * Slow SPI flash frequency. Otherwise programming will fail with
+ * additional tracing overhead
+ */
+&spi_flash {
+	mspi-max-frequency = <DT_FREQ_M(4)>;
+};
