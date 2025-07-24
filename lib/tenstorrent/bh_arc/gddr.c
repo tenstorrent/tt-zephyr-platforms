@@ -10,7 +10,6 @@
 #include "init.h"
 #include "noc.h"
 #include "noc2axi.h"
-#include "pll.h"
 #include "reg.h"
 
 #include <tenstorrent/post_code.h>
@@ -19,6 +18,12 @@
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -280,7 +285,9 @@ static int InitMrisc(void)
 		gddr_speed = MIN_GDDR_SPEED;
 	}
 
-	if (SetGddrMemClk(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO)) {
+	if (clock_control_set_rate(
+		    pll_dev_3, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK,
+		    (clock_control_subsys_rate_t)(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO))) {
 		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
 		return -EIO;
 	}

@@ -10,7 +10,6 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-#include "pll.h"
 #include "regulator.h"
 #include "aiclk_ppm.h"
 #include "voltage.h"
