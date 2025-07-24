@@ -266,12 +266,12 @@ ZTEST(tt_boot_fs, test_bootfs_ls_comprehensive)
 	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
 
 	/* Test 1: NULL device */
-	int result1 = tt_bootfs_ls(NULL, fds, 10);
+	int result1 = tt_bootfs_ls(NULL, fds, CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX);
 
 	zassert_equal(result1, TT_BOOT_FS_ERR, "Should return error for NULL device");
 
 	/* Test 2: NULL fds array */
-	int result2 = tt_bootfs_ls(FLASH_DEVICE, NULL, 10);
+	int result2 = tt_bootfs_ls(FLASH_DEVICE, NULL, CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX);
 
 	zassert_equal(result2, TT_BOOT_FS_ERR, "Should return error for NULL fds");
 

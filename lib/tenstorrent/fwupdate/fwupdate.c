@@ -35,8 +35,6 @@
 
 LOG_MODULE_REGISTER(tt_fwupdate, CONFIG_TT_FWUPDATE_LOG_LEVEL);
 
-static tt_boot_fs boot_fs;
-
 #ifdef CONFIG_BOARD_QEMU_X86
 #define FLASH0_NODE DT_INST(0, zephyr_sim_flash)
 #define FLASH1_NODE FLASH0_NODE
@@ -92,21 +90,6 @@ int tt_fwupdate_complete(void)
 static const struct device *const flash0_dev = DEVICE_DT_GET(FLASH0_NODE);
 /* Should just be an enable on the flash/spi */
 
-static int z_tt_boot_fs_read(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	return flash_read(flash1_dev, addr, dst, size);
-}
-
-static int z_tt_boot_fs_write(uint32_t addr, uint32_t size, const uint8_t *src)
-{
-	return flash_write(flash1_dev, addr, src, size);
-}
-
-static int z_tt_boot_fs_erase(uint32_t addr, uint32_t size)
-{
-	return flash_erase(flash1_dev, addr, size);
-}
-
 static void tt_fwupdate_dump_fd(const char *msg, const tt_boot_fs_fd *fd, bool verified)
 {
 	LOG_DBG("%s%s{spi_addr: %x, copy_dest: %x, flags: { image_size: %zu, executable: %d, "
@@ -148,17 +131,19 @@ int tt_fwupdate_create_test_fs(const char *tag)
 	strncpy(fd.image_tag, tag, sizeof(fd.image_tag));
 	fd.fd_crc = tt_boot_fs_cksum(0, (uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t));
 
-	/* Create a tiny, fake image */
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
+	/* FIXME: image_data_src should be const */
+	rc = tt_bootfs_ng_write(flash1_dev, TT_BOOT_FS_OFFSET, (const uint8_t *)&fd, sizeof(fd));
+	if (rc < 0) {
+		LOG_ERR("%s() failed: %d", "tt_bootfs_ng_write (fd)", rc);
+		return rc;
 	}
 
-	/* FIXME: tt_boot_fs_add_file() image_data_src should be const */
-	rc = tt_boot_fs_add_file(&boot_fs, fd, (uint8_t *)fake_image, false, false);
+	uint32_t total_image_size = fd.flags.f.image_size + fd.security_flags.f.signature_size;
+
+	rc = tt_bootfs_ng_write(flash1_dev, fd.spi_addr, (const uint8_t *)fake_image,
+				total_image_size);
 	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "tt_boot_fs_add_file", rc);
+		LOG_ERR("%s() failed: %d", "tt_bootfs_ng_write (image)", rc);
 		return rc;
 	}
 
@@ -185,12 +170,6 @@ int tt_fwupdate(const char *tag, bool dry_run, bool reboot)
 	uint32_t cksum;
 	tt_boot_fs_fd fd;
 	bool found = false;
-
-	rc = tt_boot_fs_mount(&boot_fs, z_tt_boot_fs_read, z_tt_boot_fs_write, z_tt_boot_fs_erase);
-	if (rc != TT_BOOT_FS_OK) {
-		LOG_DBG("%s() failed: %d", "tt_boot_fs_mount", rc);
-		return -EIO;
-	}
 
 	if (!device_is_ready(flash1_dev)) {
 		LOG_DBG("Device %s is not ready", flash1_dev->name);
