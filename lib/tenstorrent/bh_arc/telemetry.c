@@ -8,7 +8,6 @@
 #include "fan_ctrl.h"
 #include "functional_efuse.h"
 #include "harvesting.h"
-#include "pll.h"
 #include "pvt.h"
 #include "reg.h"
 #include "regulator.h"
@@ -25,12 +24,19 @@
 #include <tenstorrent/post_code.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
 
 LOG_MODULE_REGISTER(telemetry, CONFIG_TT_APP_LOG_LEVEL);
 
 #define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
+static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
+static const struct device *const pll_dev_4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -110,8 +116,6 @@ static struct k_timer telem_update_timer;
 static struct k_work telem_update_worker;
 static int telem_update_interval = 100;
 
-
-
 uint32_t ConvertFloatToTelemetry(float value)
 {
 	/* Convert float to signed int 16.16 format */
@@ -172,8 +176,8 @@ static void UpdateGddrTelemetry(void)
 			 * [15] - Error GDDR 7
 			 */
 			telemetry[TAG_GDDR_STATUS] |=
-						  (gddr_telemetry.training_complete << (i * 2)) |
-						  (gddr_telemetry.gddr_error << (i * 2 + 1));
+				(gddr_telemetry.training_complete << (i * 2)) |
+				(gddr_telemetry.gddr_error << (i * 2 + 1));
 
 			/* DDR_x_y_TEMP:
 			 * [31:24] GDDR y top
@@ -230,10 +234,10 @@ int GetMaxGDDRTemp(void)
 
 static void write_static_telemetry(uint32_t app_version)
 {
-	telemetry_table.version = TELEMETRY_VERSION;    /* v0.1.0 - Only update when redefining the
-							 * meaning of an existing tag
-							 */
-	telemetry_table.entry_count = TAG_COUNT; /* Runtime count of telemetry entries */
+	telemetry_table.version = TELEMETRY_VERSION; /* v0.1.0 - Only update when redefining the
+						      * meaning of an existing tag
+						      */
+	telemetry_table.entry_count = TAG_COUNT;     /* Runtime count of telemetry entries */
 	telemetry[TAG_TELEM_ENUM_COUNT] = TAG_COUNT; /* Count of telemetry tags */
 
 	/* Get the static values */
@@ -260,8 +264,8 @@ static void write_static_telemetry(uint32_t app_version)
 				     "writing static telemetry");
 		} else {
 			telemetry[TAG_GDDR_FW_VERSION] =
-					(gddr_telemetry.mrisc_fw_version_major << 16) |
-					 gddr_telemetry.mrisc_fw_version_minor;
+				(gddr_telemetry.mrisc_fw_version_major << 16) |
+				gddr_telemetry.mrisc_fw_version_minor;
 		}
 	}
 	/* DM_APP_FW_VERSION and DM_BL_FW_VERSION assumes zero-init, it might be
@@ -278,8 +282,7 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[TAG_ENABLED_GDDR] = tile_enable.gddr_enabled;
 	telemetry[TAG_ENABLED_L2CPU] = tile_enable.l2cpu_enabled;
 	telemetry[TAG_PCIE_USAGE] =
-		((tile_enable.pcie_usage[1] & 0x3) << 2) |
-		(tile_enable.pcie_usage[0] & 0x3);
+		((tile_enable.pcie_usage[1] & 0x3) << 2) | (tile_enable.pcie_usage[0] & 0x3);
 	/* telemetry[TAG_NOC_TRANSLATION] assumes zero-init, see also
 	 * UpdateTelemetryNocTranslation.
 	 */
@@ -304,27 +307,55 @@ static void update_telemetry(void)
 	telemetry[TAG_VCORE] =
 		telemetry_internal_data
 			.vcore_voltage; /* reported in mV, will be truncated to uint32_t */
-	telemetry[TAG_TDP] = telemetry_internal_data
-				 .vcore_power; /* reported in W, will be truncated to uint32_t */
-	telemetry[TAG_TDC] = telemetry_internal_data
-				 .vcore_current; /* reported in A, will be truncated to uint32_t */
-	telemetry[TAG_VDD_LIMITS] = 0x00000000;      /* VDD limits - Not Available yet */
-	telemetry[TAG_THM_LIMITS] = 0x00000000;      /* THM limits - Not Available yet */
+	telemetry[TAG_TDP] =
+		telemetry_internal_data
+			.vcore_power; /* reported in W, will be truncated to uint32_t */
+	telemetry[TAG_TDC] =
+		telemetry_internal_data
+			.vcore_current;         /* reported in A, will be truncated to uint32_t */
+	telemetry[TAG_VDD_LIMITS] = 0x00000000; /* VDD limits - Not Available yet */
+	telemetry[TAG_THM_LIMITS] = 0x00000000; /* THM limits - Not Available yet */
 	telemetry[TAG_ASIC_TEMPERATURE] = ConvertFloatToTelemetry(
 		telemetry_internal_data.asic_temperature); /* ASIC temperature - reported in
 							    * signed int 16.16 format
 							    */
-	telemetry[TAG_VREG_TEMPERATURE] = 0x000000;  /* VREG temperature - need I2C line */
-	telemetry[TAG_BOARD_TEMPERATURE] = 0x000000; /* Board temperature - need I2C line */
-	telemetry[TAG_AICLK] = GetAICLK(); /* first 16 bits - MAX ASIC FREQ (Not Available yet),
-					    * lower 16 bits - current AICLK
-					    */
-	telemetry[TAG_AXICLK] = GetAXICLK();
-	telemetry[TAG_ARCCLK] = GetARCCLK();
-	telemetry[TAG_L2CPUCLK0] = GetL2CPUCLK(0);
-	telemetry[TAG_L2CPUCLK1] = GetL2CPUCLK(1);
-	telemetry[TAG_L2CPUCLK2] = GetL2CPUCLK(2);
-	telemetry[TAG_L2CPUCLK3] = GetL2CPUCLK(3);
+	telemetry[TAG_VREG_TEMPERATURE] = 0x000000;        /* VREG temperature - need I2C line */
+	telemetry[TAG_BOARD_TEMPERATURE] = 0x000000;       /* Board temperature - need I2C line */
+	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
+			       &telemetry[TAG_AICLK]);
+	/* first 16 bits - MAX ASIC FREQ (Not Available yet), lower 16 bits - current AICLK */
+
+	clock_control_get_rate(
+		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,
+		&telemetry[TAG_AXICLK]); /* first 16 bits - MAX AXI FREQ (Not Available yet),
+					  * lower 16 bits - current AXICLK
+					  */
+	clock_control_get_rate(
+		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_ARCCLK,
+		&telemetry[TAG_ARCCLK]); /* first 16 bits - MAX ARC FREQ (Not Available yet),
+					  * lower 16 bits - current ARCCLK
+					  */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0,
+		&telemetry[TAG_L2CPUCLK0]); /* first 16 bits - MAX L2CPUCLK0 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK0
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1,
+		&telemetry[TAG_L2CPUCLK1]); /* first 16 bits - MAX L2CPUCLK1 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK1
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2,
+		&telemetry[TAG_L2CPUCLK2]); /* first 16 bits - MAX L2CPUCLK2 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK2
+					     */
+	clock_control_get_rate(
+		pll_dev_4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3,
+		&telemetry[TAG_L2CPUCLK3]); /* first 16 bits - MAX L2CPUCLK3 FREQ (Not Available
+					     * yet), lower 16 bits - current L2CPUCLK3
+					     */
+
 	telemetry[TAG_ETH_LIVE_STATUS] =
 		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
 			     * retrain_status - Not Available yet

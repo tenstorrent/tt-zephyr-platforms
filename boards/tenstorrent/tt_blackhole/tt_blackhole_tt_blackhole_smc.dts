@@ -124,3 +124,23 @@
 &vuart0 {
 	status = "okay";
 };
+
+&pll0{
+	status = "okay";
+};
+
+&pll1 {
+	status = "okay";
+};
+
+&pll2 {
+	status = "okay";
+};
+
+&pll3 {
+	status = "okay";
+};
+
+&pll4 {
+	status = "okay";
+};

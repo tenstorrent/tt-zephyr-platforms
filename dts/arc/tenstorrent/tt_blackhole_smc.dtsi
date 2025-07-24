@@ -134,6 +134,7 @@
 		ctrl_bus5 = <1>;
 		post_divs = <3 0 0 0>;
 		use_post_divs = <1 1 1 1>;
+		status = "disabled";
 	};
 
 	pll1: pll@80020200 {
@@ -150,6 +151,7 @@
 		ctrl_bus5 = <1>;
 		post_divs = <5 4 23 0>;
 		use_post_divs = <1 1 1 1>;
+		status = "disabled";
 	};
 
 	pll2: pll@80020300 {
@@ -166,6 +168,7 @@
 		ctrl_bus5 = <1>;
 		post_divs = <1 0 0 0>;
 		use_post_divs = <1 1 1 1>;
+		status = "disabled";
 	};
 
 	pll3: pll@80020400 {
@@ -182,6 +185,7 @@
 		ctrl_bus5 = <1>;
 		post_divs = <3 0 0 0>;
 		use_post_divs = <1 1 1 1>;
+		status = "disabled";
 	};
 
 	pll4: pll@80020500 {
@@ -198,6 +202,7 @@
 		ctrl_bus5 = <1>;
 		post_divs = <1 1 1 1>;
 		use_post_divs = <1 1 1 1>;
+		status = "disabled";
 	};
 
 	sysclk: system-clock {
