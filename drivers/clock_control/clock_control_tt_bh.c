@@ -344,13 +344,13 @@ static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *
 	/* Setup external postdivs */
 	clock_control_tt_bh_config_ext_postdivs(config, settings);
 
-	k_busy_wait(300);
+	k_busy_wait_ns(300);
 
 	/* Disable PLL bypass */
 	pll_cntl_0.f.bypass = 1;
 	clock_control_tt_bh_write_reg(config, PLL_CNTL_0_OFFSET, pll_cntl_0.val);
 
-	k_busy_wait(300);
+	k_busy_wait_ns(300);
 }
 
 static int clock_control_tt_bh_on(const struct device *dev, clock_control_subsys_t sys)
@@ -473,7 +473,7 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 			}
 
 			clock_control_tt_bh_write_reg(config, PLL_CNTL_1_OFFSET, pll_cntl_1.val);
-			k_busy_wait(100);
+			k_busy_wait_ns(100);
 		}
 	} else {
 		k_spin_unlock(&data->lock, key);
@@ -565,13 +565,13 @@ static int clock_control_tt_bh_init(const struct device *dev)
 	/* Setup external postdivs */
 	clock_control_tt_bh_config_ext_postdivs(config, &config->init_settings);
 
-	k_busy_wait(300);
+	k_busy_wait_ns(300);
 
 	/* Disable PLL bypass */
 	pll_cntl_0.f.bypass = 1;
 	clock_control_tt_bh_write_reg(config, PLL_CNTL_0_OFFSET, pll_cntl_0.val);
 
-	k_busy_wait(300);
+	k_busy_wait_ns(300);
 
 	clock_control_enable_clk_counters(config);
 

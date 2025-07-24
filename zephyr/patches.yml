@@ -123,3 +123,12 @@ patches:
     upstreamable: true
     comments: |
       Fix timestamp generation in CTF_EVENT()
+  - path: zephyr/k-busy-wait-ns.patch
+    sha256sum: 3d8753d4f2d8d803bb0b14bc393f8ee35c46402c029206faa7ea22267dfc500d
+    module: zephyr
+    author: Lee Zheng
+    email: lzheng@tenstorrent.com
+    date: 2025-07-25
+    upstreamable: false
+    comments: |
+      Add k_busy_wait_ns() helper for nanosecond busy wait support.
