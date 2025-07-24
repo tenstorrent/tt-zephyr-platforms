@@ -475,6 +475,11 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 			clock_control_tt_bh_write_reg(config, PLL_CNTL_1_OFFSET, pll_cntl_1.val);
 			k_busy_wait_ns(100);
 		}
+	} else if (clock == CLOCK_CONTROL_TT_BH_INIT_STATE) {
+		PLLSettings pll_settings = config->init_settings;
+
+		clock_control_tt_bh_update(config, &pll_settings);
+		clock_control_enable_clk_counters(config);
 	} else {
 		k_spin_unlock(&data->lock, key);
 		return -ENOTSUP;
