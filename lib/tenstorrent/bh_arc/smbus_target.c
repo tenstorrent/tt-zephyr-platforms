@@ -336,8 +336,7 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		/* Calculate the PEC */
 		uint8_t pec = 0;
 
-		pec = Crc8(pec, I2C_TARGET_ADDR << 1 |
-					I2C_WRITE_BIT); /* Address byte needs to be included */
+		pec = Crc8(pec, I2C_TARGET_ADDR << 1 | I2C_WRITE_BIT); /* start address byte */
 		pec = Crc8(pec, smbus_data.command);
 		if (curr_cmd->trans_type == kSmbusTransBlockWrite) {
 			pec = Crc8(pec, smbus_data.blocksize);
@@ -424,18 +423,30 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		}
 	} else if (smbus_data.state == kSmbusStateSendPec) {
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0060);
-		/* Calculate PEC then send it */
+		/* Calculate and send PEC. This is a read-type operation, so it starts with a
+		 * sequence of writes, then some reads.
+		 */
+
 		uint8_t pec = 0;
 
-		pec = Crc8(pec, I2C_TARGET_ADDR << 1 |
-					I2C_READ_BIT); /* Address byte needs to be included */
+		pec = Crc8(pec, I2C_TARGET_ADDR << 1 | I2C_WRITE_BIT); /* start address byte */
 		pec = Crc8(pec, smbus_data.command);
+
+		/* any received data */
+		for (int i = 0; i < smbus_data.rcv_index; i++) {
+			pec = Crc8(pec, smbus_data.received_data[i]);
+		}
+
+		pec = Crc8(pec, I2C_TARGET_ADDR << 1 | I2C_READ_BIT); /* restart address byte */
+
+		/* sent data */
 		if (curr_cmd->trans_type == kSmbusTransBlockRead) {
 			pec = Crc8(pec, smbus_data.blocksize);
 		}
 		for (int i = 0; i < smbus_data.blocksize; i++) {
 			pec = Crc8(pec, smbus_data.send_data[i]);
 		}
+
 		*val = pec;
 		smbus_data.state = kSmbusStateWaitIdle;
 	} else {
