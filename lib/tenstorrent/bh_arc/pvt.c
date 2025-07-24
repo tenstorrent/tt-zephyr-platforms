@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "pll.h"
 #include "pvt.h"
 #include "reg.h"
 #include "telemetry.h"
@@ -17,6 +16,12 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
 
 #define SDIF_DONE_TIMEOUT_MS 10
 
@@ -347,7 +352,10 @@ static inline void PVTInterruptConfig(void)
 /* target a PVT clock of 5 MHz */
 static inline void PVTClkConfig(void)
 {
-	uint32_t apb_clk = GetAPBCLK();
+	uint32_t apb_clk = 0;
+
+	clock_control_get_rate(pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_APBCLK,
+			       &apb_clk);
 	PVT_CNTL_CLK_SYNTH_reg_u clk_synt;
 
 	clk_synt.val = PVT_CNTL_CLK_SYNTH_REG_DEFAULT;

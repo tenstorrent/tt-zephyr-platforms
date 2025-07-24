@@ -13,7 +13,6 @@
 #include "noc.h"
 #include "noc_init.h"
 #include "noc2axi.h"
-#include "pll.h"
 #include "reg.h"
 #include "status_reg.h"
 #include "tensix_cg.h"
@@ -30,6 +29,15 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/toolchain.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/clock_control.h>
+
+#define DT_DRV_COMPAT         tenstorrent_bh_clock_control
+#define PLL_DEVICE_INIT(inst) DEVICE_DT_INST_GET(inst),
+
+static const struct device *const pll_devs[] = {DT_INST_FOREACH_STATUS_OKAY(PLL_DEVICE_INIT)};
 
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -101,8 +109,10 @@ static int DeassertRiscvResets(void)
 	}
 
 	/* Go back to PLL bypass, since RISCV resets need to be deasserted at low speed */
-	PLLAllBypass();
-
+	ARRAY_FOR_EACH(pll_devs, i) {
+		clock_control_configure(pll_devs[i], NULL,
+					(void *)CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+	}
 	/* Deassert RISC reset from reset_unit */
 
 	for (uint32_t i = 0; i < 8; i++) {
@@ -121,7 +131,11 @@ static int DeassertRiscvResets(void)
 	ddr_reset.f.ddr_risc_reset_n = 0xffffff;
 	WriteReg(RESET_UNIT_DDR_RESET_REG_ADDR, ddr_reset.val);
 
-	PLLInit();
+	ARRAY_FOR_EACH(pll_devs, i) {
+		clock_control_set_rate(pll_devs[i],
+				       (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_INIT_STATE,
+				       (clock_control_subsys_rate_t)-1);
+	};
 
 	return 0;
 }
@@ -185,7 +199,10 @@ static int DeassertTileResets(void)
 	}
 
 	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
-	PLLAllBypass();
+	ARRAY_FOR_EACH(pll_devs, i) {
+		clock_control_configure(pll_devs[i], NULL,
+					(void *)CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
+	}
 
 	RESET_UNIT_GLOBAL_RESET_reg_u global_reset = {.val = RESET_UNIT_GLOBAL_RESET_REG_DEFAULT};
 

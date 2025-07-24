@@ -28,3 +28,6 @@ CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE=y
 CONFIG_TT_BH_ARC=y
 # BH_ARC will raise system clock frequency, update it here
 CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=800000000
+
+#enable pll
+CONFIG_CLOCK_CONTROL=y
