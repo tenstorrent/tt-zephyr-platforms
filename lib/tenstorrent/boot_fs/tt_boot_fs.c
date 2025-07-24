@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdint.h>
+#define _POSIX_C_SOURCE 200809L
 #include <string.h>
 
 #include <tenstorrent/tt_boot_fs.h>
@@ -253,9 +253,25 @@ int tt_bootfs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds)
 
 const tt_boot_fs_fd *tt_bootfs_ng_find_fd_by_tag(const uint8_t *tag, tt_boot_fs_fd *fds, int count)
 {
+	if (!tag || !fds || count <= 0) {
+		return NULL;
+	}
+
+	size_t tag_len = strnlen((const char *)tag, TT_BOOT_FS_IMAGE_TAG_SIZE);
+
 	for (int i = 0; i < count; i++) {
-		if (strncmp(fds[i].image_tag, tag, sizeof(fds[i].image_tag)) == 0) {
-			return &fds[i];
+		if (fds[i].flags.f.invalid) {
+			continue;
+		}
+		if (tag_len == TT_BOOT_FS_IMAGE_TAG_SIZE) {
+			if (memcmp(fds[i].image_tag, tag, TT_BOOT_FS_IMAGE_TAG_SIZE) == 0) {
+				return &fds[i];
+			}
+		} else {
+			if (strncmp((char *)fds[i].image_tag, (char *)tag,
+				    TT_BOOT_FS_IMAGE_TAG_SIZE) == 0) {
+				return &fds[i];
+			}
 		}
 	}
 	return NULL;
