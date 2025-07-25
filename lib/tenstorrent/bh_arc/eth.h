@@ -15,9 +15,8 @@
 #define MAX_ETH_INSTANCES 14
 
 void SetupEthSerdesMux(uint32_t eth_enabled);
-int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_size);
-int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled,
-	uint8_t *fw_cfg_image, uint32_t fw_cfg_size);
+int LoadEthFw(uint32_t eth_inst, uint32_t ring, const uint8_t *tag);
+int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled, const uint8_t *tag);
 
 void ReleaseEthReset(uint32_t eth_inst, uint32_t ring);
 
