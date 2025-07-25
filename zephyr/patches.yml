@@ -178,3 +178,11 @@ patches:
 
       Create transfer-timeout device tree property for st,stm32-i2c-v2
       devices, replacing a hard-coded value. The default is unchanged.
+  - path: zephyr/smbus_stm32-pec.patch
+    sha256sum: 4e3f00df96e7e9536553f1230262ee4e28efea8e537b07885a7cb314427bd819
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      SMBus controller PEC for smbus_stm32
