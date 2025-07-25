@@ -29,14 +29,14 @@ cd ~/tt-zephyr-platforms-work
 # Fetch Zephyr modules
 west update
 
+# Install Python packages
+west packages pip --install
+
 # Verify binary blobs
 west blobs fetch
 
 # Apply local patches
 west patch apply
-
-# Install Python packages
-west packages pip --install
 
 # Set up Zephyr environment
 source zephyr/zephyr-env.sh
