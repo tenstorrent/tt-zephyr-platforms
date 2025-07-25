@@ -9,7 +9,7 @@ include: base.yaml
 
 properties:
 
-  flash_dev:
+  flash-dev:
     type: phandle
     required: true
     description: |

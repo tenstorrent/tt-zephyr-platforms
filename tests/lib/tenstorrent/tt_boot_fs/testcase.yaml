@@ -1,6 +1,7 @@
 common:
   platform_allow:
     - native_sim
+    - tt_blackhole@p150a/tt_blackhole/smc
 tests:
   lib.tenstorrent.boot_fs: {}
   lib.tenstorrent.boot_fs.python:

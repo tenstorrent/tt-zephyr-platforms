@@ -11,12 +11,11 @@
 #include <pb_decode.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/devicetree.h>
-#include <zephyr/drivers/flash.h>
 
 #define BOARDTYPE_ORION 0x37
 #define BOARDTYPE_P100  0x36
@@ -50,7 +49,6 @@ struct bh_fwtable_data {
 	FwTable fw_table;
 	FlashInfoTable flash_info_table;
 	ReadOnly read_only_table;
-	bool initialized; /* Track if tables have been loaded */
 };
 
 /* Getter function that returns a const pointer to the fw table */
@@ -59,12 +57,9 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
-	if (!data->initialized
-	    && tt_bh_fwtable_load_tables(dev) != 0
-	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+	if (tt_bh_fwtable_load_tables(dev) != 0 && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->fw_table;
 }
 
@@ -73,12 +68,9 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
-	if (!data->initialized
-	    && tt_bh_fwtable_load_tables(dev) != 0
-	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+	if (tt_bh_fwtable_load_tables(dev) != 0 && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->flash_info_table;
 }
 
@@ -87,12 +79,9 @@ const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev)
 	struct bh_fwtable_data *data = dev->data;
 
 	/* Load tables on first access but allow zero-initialized table for SMC recovery image */
-	if (!data->initialized
-	    && tt_bh_fwtable_load_tables(dev) != 0
-	    && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+	if (tt_bh_fwtable_load_tables(dev) != 0 && !IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return NULL;
 	}
-
 	return &data->read_only_table;
 }
 
@@ -102,11 +91,8 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 	PcbType pcb_type;
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return PcbTypeUnknown;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return PcbTypeUnknown;
 	}
 
 	/* Extract board type from board_id */
@@ -154,11 +140,8 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 {
 	struct bh_fwtable_data *data = dev->data;
 
-	/* Load tables on first access */
-	if (!data->initialized) {
-		if (tt_bh_fwtable_load_tables(dev) != 0) {
-			return 0;
-		}
+	if (tt_bh_fwtable_load_tables(dev) != 0) {
+		return 0;
 	}
 
 	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
@@ -170,7 +153,8 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 }
 
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
-static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
+static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table,
+			      const tt_boot_fs_fd *fd)
 {
 #define BH_FWTABLE_LOADCFG(_enum, _tag, _field, _msgtype)                                          \
 	[BH_FWTABLE_##_enum] = {                                                                   \
@@ -183,6 +167,7 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 	uint8_t buffer[96];
 	size_t bytes_read = 0;
 	struct bh_fwtable_data *data = dev->data;
+	const struct bh_fwtable_config *config = dev->config;
 	static const struct loadcfg {
 		const char *tag;
 		size_t offs;             /* field offset within the bh_fwtable_data struct */
@@ -196,12 +181,21 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 	__ASSERT_NO_MSG(table < ARRAY_SIZE(loadcfg));
 
-	int result = tt_boot_fs_get_file(&boot_fs_data, loadcfg[table].tag, buffer, sizeof(buffer),
-					 &bytes_read);
-	if (result != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed with error code %d", loadcfg[table].tag, result);
+	if (fd == NULL) {
+		LOG_ERR("Could not find file descriptor for %s", loadcfg[table].tag);
+		return -ENOENT;
+	}
+
+	/* Use the provided fd with known address */
+	bytes_read = MIN(fd->flags.f.image_size, sizeof(buffer));
+
+	if (tt_bootfs_ng_read(config->flash, fd->spi_addr, buffer, bytes_read) != 0) {
+		LOG_ERR("Failed to read %s from SPI flash at address 0x%08X", loadcfg[table].tag,
+			fd->spi_addr);
 		return -EIO;
 	}
+	LOG_DBG("Read %s from SPI flash at address 0x%08X, size %zu bytes", loadcfg[table].tag,
+		fd->spi_addr, bytes_read);
 
 	/* Convert the binary data to a pb_istream_t that is expected by decode */
 	pb_istream_t stream = pb_istream_from_buffer(buffer, bytes_read);
@@ -218,47 +212,51 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 static int tt_bh_fwtable_load_tables(const struct device *dev)
 {
-	struct bh_fwtable_data *data = dev->data;
+	const struct bh_fwtable_config *config = dev->config;
 
-	if (data->initialized) {
-		return 0; /* Already loaded */
+	if (!device_is_ready(config->flash)) {
+		LOG_ERR("Boot filesystem flash device %s is not ready", config->flash->name);
+		return -ENODEV;
 	}
+
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+	int fd_count = tt_bootfs_ls(config->flash, fds, ARRAY_SIZE(fds));
+
+	if (fd_count < 0) {
+		LOG_ERR("Failed to list boot filesystem: %d", fd_count);
+		return fd_count;
+	}
+
+	/* Find fds for fwtables */
+	const tt_boot_fs_fd *fd_flashinfo = tt_bootfs_ng_find_fd_by_tag("flshinfo", fds, fd_count);
+	const tt_boot_fs_fd *fd_boardcfg = tt_bootfs_ng_find_fd_by_tag("boardcfg", fds, fd_count);
+	const tt_boot_fs_fd *fd_cmfwcfg = tt_bootfs_ng_find_fd_by_tag("cmfwcfg", fds, fd_count);
 
 	/* load firmware tables from flash */
-	int result;
-
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
-		result = tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
+		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG, fd_boardcfg);
 	} else {
-		result = (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
-			  tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
-			  tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
+		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO, fd_flashinfo) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG, fd_boardcfg) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG, fd_cmfwcfg));
 	}
-
-	if (result == 0) {
-		data->initialized = true;
-	} else {
-		LOG_ERR("bh_fwtable failed to load tables: %d", result);
-	}
-
-	return result;
-}
-
-static int tt_bh_fwtable_init(const struct device *dev)
-{
-	struct bh_fwtable_data *data = dev->data;
-
-	/* Initialize the data structure but don't load tables yet */
-	data->initialized = false;
 
 	return 0;
 }
 
-static const struct bh_fwtable_config bh_fwtable_config_0 = {
-	.flash = NULL, /* Not using flash device directly */
-};
+static int tt_bh_fwtable_init(const struct device *dev)
+{
+	return 0;
+}
 
-static struct bh_fwtable_data bh_fwtable_data_0;
+#define DEFINE_BH_FWTABLE(_inst)                                                                   \
+	static struct bh_fwtable_data bh_fwtable_data_##_inst;                                     \
+	static const struct bh_fwtable_config bh_fwtable_config_##_inst = {                        \
+		.flash = DEVICE_DT_GET(DT_INST_PHANDLE(_inst, flash_dev)),                         \
+	};                                                                                         \
+                                                                                                   \
+	DEVICE_DT_INST_DEFINE(_inst, tt_bh_fwtable_init, NULL, &bh_fwtable_data_##_inst,           \
+			      &bh_fwtable_config_##_inst, POST_KERNEL,                             \
+			      CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
 
-DEVICE_DT_INST_DEFINE(0, tt_bh_fwtable_init, NULL, &bh_fwtable_data_0, &bh_fwtable_config_0,
-		      POST_KERNEL, CONFIG_BH_FWTABLE_INIT_PRIORITY, NULL);
+DT_INST_FOREACH_STATUS_OKAY(DEFINE_BH_FWTABLE)
