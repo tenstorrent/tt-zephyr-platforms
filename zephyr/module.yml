@@ -177,7 +177,7 @@ blobs:
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_GALAXY.bin
-    sha256: 95b97f12bd66bf9d7681c5bc47711779dc30c5f6f2e52d67ec76488743294c21
+    sha256: 16788603c14561a785dd9dff6f5ce31f635abdb41affb45f744a78af31a2d9a9
     type: img
     version: '2.8'
     license-path: zephyr/blobs/license.txt
