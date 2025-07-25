@@ -85,22 +85,25 @@ set(DTS_FILE ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
 set(GEN_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
 set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml)
 
-# Runs the generate_yaml.py script
+# Generates boot filesystem YAML from devicetrees
 add_custom_command(
     OUTPUT ${OUTPUT_FILE}
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_DEVICETREE_SRC}:$ENV{PYTHONPATH}
       python3 ${GEN_SCRIPT}
       generate_bootfs
+      --board ${PROD_NAME}
       --dts-file ${DTS_FILE}
-      --output-file ${OUTPUT_FILE}
       --bindings-dirs ${APP_DIR}/../../../zephyr/dts/bindings/ ${APP_DIR}/../../dts/bindings/
+      --output-file ${OUTPUT_FILE}
+      --build-dir ${CMAKE_BINARY_DIR}
+      --blobs-dir ${APP_DIR}/zephyr/blobs
     DEPENDS
       ${DTS_FILE}
       ${GEN_SCRIPT}
     VERBATIM
 )
 
-# Always run script during every build
+# Generate boot filesystem YAML on every build
 add_custom_target(
     generate_boot_yaml ALL
     DEPENDS ${OUTPUT_FILE}
