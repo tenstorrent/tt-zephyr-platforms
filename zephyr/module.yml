@@ -25,6 +25,7 @@ boards:
 # Runner for tt-flash
 runners:
   - file: scripts/tt_flash_runner.py
+  - file: scripts/tt_runner.py
 
 package-managers:
   pip:
