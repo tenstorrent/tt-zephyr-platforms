@@ -12,6 +12,7 @@
 
 #define SPI_RX_TRAIN_ADDR 0x13FFC
 #define SPI_RX_TRAIN_DATA 0xa5a55a5a
+#define SSI_RX_DLY_SR_DEPTH 64
 
 const struct device *mspi_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi0));
 const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
@@ -83,6 +84,10 @@ static int flash_reset_init(void)
 
 	if ((spi_device_config.f.normal_spi_mode == SpiOctalMode) &&
 	    (spi_device_id == 0x2c5b1a10)) {
+		if (spi_device_config.f.normal_ddr) {
+			/* MX35 flash in DDR mode. */
+			mspi_dev_cfg.data_rate = MSPI_DATA_RATE_DUAL;
+		}
 		/* MX35 flash. Issue RESET ENABLE and RESET MEMORY commands in octal mode */
 		mspi_dev_cfg.io_mode = MSPI_IO_MODE_OCTAL;
 		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL,
@@ -185,7 +190,7 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < 255));
+	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
 	delay_lb = rx_delay;
 	/* Find the upper bound on the delay setting */
 	do {
@@ -198,7 +203,7 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) && (rx_delay < 255));
+	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
 	delay_ub = rx_delay - 1;
 
 	/* Find midpoint of both delay settings */
