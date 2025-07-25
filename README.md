@@ -56,7 +56,7 @@ cd $MODULE
 
 ```shell
 # Build tt-console
-gcc -Iinclude -std=gnu11 -o /tmp/tt-console scripts/tooling/console.c
+make -j -C scripts/tooling OUTDIR=/tmp tt-console
 
 # Build and flash firmware
 west build --sysbuild -p -b tt_blackhole@p100a/tt_blackhole/smc app/smc \
