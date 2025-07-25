@@ -204,7 +204,7 @@ static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, en
 
 	/* There isn't a new API for getting the current TLB programming */
 	/* D(2, "tlb[%u]: %s", data->tlb_id, tlb2m2str(reg)); */
-	D(2, "tlb[%u]: %lx", data->tlb_id, phys & ~TLB_2M_WINDOW_MASK);
+	D(2, "tlb[%u]: %llx", data->tlb_id, (long long)phys & ~TLB_2M_WINDOW_MASK);
 
 	return 0;
 }
