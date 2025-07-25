@@ -24,7 +24,6 @@
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
 
-#include <tenstorrent/tt_smbus.h>
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
 #include <tenstorrent/event.h>
@@ -277,15 +276,6 @@ int main(void)
 		}
 	}
 
-	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		if (chip->config.arc.smbus.bus == NULL) {
-			continue;
-		}
-
-		tt_smbus_stm32_set_abort_ptr(chip->config.arc.smbus.bus,
-					     &((&chip->data)->bus_cancel_flag));
-	}
-
 	bist_rc = 0;
 	if (IS_ENABLED(CONFIG_TT_BIST)) {
 		bist_rc = tt_bist();
@@ -375,6 +365,11 @@ int main(void)
 		}
 
 		LOG_DBG("Bootrom workaround successfully applied");
+	}
+
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		const struct device *smbus = chip->config.arc.smbus.bus;
+		smbus_configure(smbus, SMBUS_MODE_CONTROLLER | SMBUS_MODE_PEC);
 	}
 
 	printk("DMFW VERSION " APP_VERSION_STRING "\n");
