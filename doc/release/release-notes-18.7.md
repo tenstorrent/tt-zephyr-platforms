@@ -17,6 +17,7 @@ Major enhancements with this release include:
 
 ### Stability Improvements
 
+* Reduce Blackhole Galaxy GDDR speed from 16G to 14G
 * Update Wormhole FW blob
   * CMFW 2.35.0.0
     * Fix telemetry entry ENABLED_TENSIX_ROW
