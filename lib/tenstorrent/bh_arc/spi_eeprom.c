@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "pll.h"
 #include "reg.h"
 #include "status_reg.h"
 #include "util.h"
