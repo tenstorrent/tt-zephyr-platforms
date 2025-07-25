@@ -25,7 +25,7 @@ config RGF_NUM_BANKS
 	default 1
 
 config SYS_CLOCK_HW_CYCLES_PER_SEC
-	default 540000000
+	default 800000000
 
 config CODE_DENSITY
 	default y
