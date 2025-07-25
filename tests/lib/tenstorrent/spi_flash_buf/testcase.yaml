@@ -1,0 +1,9 @@
+tests:
+  lib.tenstorrent.spi_flash_buf:
+    platform_allow:
+      - tt_blackhole@p100/tt_blackhole/smc
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
+    extra_args: DTC_OVERLAY_FILE=app.overlay
+    tags: smoke
