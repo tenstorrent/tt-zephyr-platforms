@@ -367,6 +367,12 @@ int main(void)
 		LOG_DBG("Bootrom workaround successfully applied");
 	}
 
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		const struct device *smbus = chip->config.arc.smbus.bus;
+
+		smbus_configure(smbus, SMBUS_MODE_CONTROLLER | SMBUS_MODE_PEC);
+	}
+
 	printk("DMFW VERSION " APP_VERSION_STRING "\n");
 
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
