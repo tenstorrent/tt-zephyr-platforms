@@ -3,18 +3,20 @@
 
 # Makefile for tooling scripts that need direct TLB access.
 
-TOOLS = tt-console tt-tracing
+OUTDIR ?= .
+TOOLS = $(addprefix $(OUTDIR)/, tt-console tt-tracing)
 
-tools: $(TOOLS)
+.PHONY: all clean $(notdir $(TOOLS))
+
+all: $(notdir $(TOOLS))
 
 CFLAGS += -O0 -g -Wall -Wextra -Werror -std=gnu11 -I ../../include
 
 tt-console: console.c vuart.c
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $(OUTDIR)/$@ $^
 
 tt-tracing: tracing.c vuart.c
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $(OUTDIR)/$@ $^
 
-.PHONY: clean
 clean:
 	rm -f $(TOOLS)
