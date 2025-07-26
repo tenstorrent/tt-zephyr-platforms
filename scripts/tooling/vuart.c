@@ -9,9 +9,11 @@
 #endif
 
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,6 +27,8 @@
 
 #include "logging.h"
 #include "vuart.h"
+
+#define PCI_DEVICES_PATH "/sys/bus/pci/devices"
 
 #define KB(n) (1024 * (n))
 #define MB(n) (1024 * 1024 * (n))
@@ -184,6 +188,187 @@ struct tenstorrent_configure_tlb {
 	struct tenstorrent_configure_tlb_out out;
 };
 
+static int pcie_read_unsigned_long_from_file(char *path, size_t path_size, unsigned long *value)
+{
+	int fd;
+	int ret;
+	char buf[32];
+
+	(void)path_size;
+
+	/*
+	 * easier to use open / read / strtoul in this case than fopen / fscanf because the
+	 * former supports optional 0x prefix and automatically detects base.
+	 */
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		D(1, "Failed to open %s: %s", path, strerror(errno));
+		return 0;
+	}
+
+	ret = read(fd, buf, sizeof(buf));
+	if (ret < 0) {
+		E("Failed to read from %s: %s", path, strerror(errno));
+		goto out;
+	}
+
+	buf[ret] = '\0';
+	errno = 0;
+	*value = strtoul(buf, NULL, 0);
+	ret = -errno;
+
+out:
+	close(fd);
+
+	return ret;
+}
+
+static int pcie_walk_sysfs(uint16_t match_vid, uint16_t match_pid,
+			   int (*cb)(char *path, size_t path_size, void *data), void *data)
+{
+	int ret;
+	DIR *dir;
+	unsigned long pid;
+	unsigned long vid;
+	struct dirent *dent;
+	static char path[PATH_MAX];
+	unsigned int counter = 0;
+
+	_Static_assert(PATH_MAX >= 1024, "PATH_MAX is too small");
+
+	ret = MIN(sizeof(path) - 1, strlen(PCI_DEVICES_PATH));
+	strncpy(path, PCI_DEVICES_PATH, (size_t)ret);
+	path[ret] = '\0';
+
+	dir = opendir(path);
+	if (dir == NULL) {
+		E("Failed to open %s: %s", PCI_DEVICES_PATH, strerror(errno));
+		return -errno;
+	}
+
+	for (dent = readdir(dir); dent != NULL; dent = readdir(dir)) {
+
+#ifndef DT_LNK
+#define DT_LNK 10
+#endif
+
+		D(3, "Found %s/%s with d_type %d", PCI_DEVICES_PATH, dent->d_name, dent->d_type);
+
+		if (dent->d_type == DT_LNK) {
+			snprintf(path, sizeof(path), "%s/%s/vendor", PCI_DEVICES_PATH,
+				 dent->d_name);
+			ret = pcie_read_unsigned_long_from_file(path, sizeof(path), &vid);
+			if (ret != 0) {
+				continue;
+			}
+			snprintf(path, sizeof(path), "%s/%s/device", PCI_DEVICES_PATH,
+				 dent->d_name);
+			ret = pcie_read_unsigned_long_from_file(path, sizeof(path), &pid);
+			if (ret != 0) {
+				continue;
+			}
+
+			if (((vid == match_vid) || (match_vid == 0xffff)) &&
+			    ((pid == match_pid) || (match_pid == 0xffff))) {
+
+				D(1, "Found %s/%s with vendor id %04lx and product id %04lx",
+				  PCI_DEVICES_PATH, dent->d_name, vid, pid);
+
+				snprintf(path, sizeof(path), "%s/%s", PCI_DEVICES_PATH,
+					 dent->d_name);
+
+				ret = cb(path, sizeof(path), data);
+				if (ret < 0) {
+					goto out;
+				}
+				counter += ret;
+			}
+		}
+	}
+
+	ret = counter;
+
+out:
+	closedir(dir);
+
+	return ret;
+}
+
+static int pcie_remove_cb(char *path, size_t path_size, void *data)
+{
+	int fd;
+	int ret;
+
+	(void)data;
+
+	strncat(path, "/remove", path_size);
+
+	fd = open(path, O_WRONLY);
+	if (fd < 0) {
+		E("Failed to open %s: %s", path, strerror(errno));
+		return -errno;
+	}
+
+	if (write(fd, "1", 1) < 0) {
+		E("Failed to write to %s: %s", path, strerror(errno));
+		ret = -errno;
+		goto out;
+	}
+
+	path[strlen(path) - 7] = '\0';
+	D(1, "Removed PCIe device %s", path);
+
+	ret = 1; /* success: count the number of devices removed */
+
+out:
+	close(fd);
+
+	return ret;
+}
+
+int pcie_remove(void)
+{
+	return pcie_walk_sysfs(TENSTORRENT_PCI_VENDOR_ID, 0xffff, pcie_remove_cb, NULL);
+}
+
+static int pcie_count_cb(char *path, size_t path_size, void *data)
+{
+	(void)path;
+	(void)path_size;
+	(void)data;
+
+	return 1;
+}
+
+int pcie_rescan(void)
+{
+	int fd;
+	int ret;
+
+	fd = open("/sys/bus/pci/rescan", O_WRONLY);
+	if (fd < 0) {
+		E("Failed to open %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+		return -errno;
+	}
+
+	if (write(fd, "1", 1) < 0) {
+		E("Failed to write to %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+		close(fd);
+		return -errno;
+	}
+
+	close(fd);
+
+	ret = pcie_walk_sysfs(TENSTORRENT_PCI_VENDOR_ID, 0xffff, pcie_count_cb, NULL);
+
+	if (ret >= 0) {
+		D(1, "Found %d Tenstorrent PCIe devices", ret);
+	}
+
+	return ret;
+}
+
 static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, enum tlb_order order,
 		       uint64_t phys, uint64_t *adjust)
 {
@@ -211,14 +396,17 @@ static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, en
 
 static int64_t arc_read32(const struct vuart_data *data, uint32_t phys)
 {
+	int ret;
+	uint32_t *virt;
 	uint64_t adjust;
-	int ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys, &adjust);
 
+	ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys, &adjust);
 	if (ret) {
-		E("failed to configure tlb to point to ARC addr %x", phys);
+		E("failed to configure tlb to point to ARC addr %x: %d", phys, ret);
 		return ret;
 	}
-	uint32_t *virt = (uint32_t *)(data->tlb + adjust);
+
+	virt = (uint32_t *)(data->tlb + adjust);
 
 	D(2, "32-bit read from (%p,%p) %p (phys,virt)", (void *)(uintptr_t)phys, virt,
 	  (void *)(uintptr_t)adjust);
@@ -258,7 +446,11 @@ static int open_tt_dev(struct vuart_data *vuart)
 
 	vuart->fd = open(vuart->dev_name, O_RDWR);
 	if (vuart->fd < 0) {
-		E("%s: %s", strerror(errno), vuart->dev_name);
+		if (errno == ENOENT) {
+			D(1, "%s: %s", strerror(errno), vuart->dev_name);
+		} else {
+			E("%s: %s", strerror(errno), vuart->dev_name);
+		}
 		return -errno;
 	}
 
@@ -283,12 +475,12 @@ static int open_tt_dev(struct vuart_data *vuart)
 
 	if (vid != TENSTORRENT_PCI_VENDOR_ID) {
 		E("expected vendor id %04x (not %04x)", TENSTORRENT_PCI_VENDOR_ID, vid);
-		return -ENODEV;
+		return -ENOENT;
 	}
 
 	if (did != vuart->pci_device_id) {
 		E("expected device id %04x (not %04x)", vuart->pci_device_id, did);
-		return -ENODEV;
+		return -ENOENT;
 	}
 
 	struct tenstorrent_get_driver_info driver_info = {
@@ -318,12 +510,12 @@ static void close_tt_dev(struct vuart_data *vart)
 	}
 
 	if (close(vart->fd) < 0) {
+		vart->fd = -1;
 		E("fd %d: %s", vart->fd, strerror(errno));
 		return;
 	}
 
 	D(1, "closed fd %d", vart->fd);
-
 	vart->fd = -1;
 }
 
@@ -410,23 +602,14 @@ static int check_post_code(const struct vuart_data *vuart)
 	}
 	val.data = ret;
 	if (val.prefix != POST_CODE_PREFIX) {
-		E("prefix 0x%04x does not match expected prefix 0x%04x", val.prefix,
+		D(1, "prefix 0x%04x does not match expected prefix 0x%04x", val.prefix,
 		  POST_CODE_PREFIX);
-		return -EINVAL;
+		return -ENOENT;
 	}
 
 	D(2, "POST code: (%04x, %02x, %04x)", val.prefix, val.id, val.code);
 
 	return 0;
-}
-
-static void lose_vuart(struct vuart_data *vuart)
-{
-	if (vuart->vuart == NULL) {
-		return;
-	}
-
-	vuart->vuart = NULL;
 }
 
 /**
@@ -471,7 +654,7 @@ fail:
  */
 void vuart_close(struct vuart_data *data)
 {
-	lose_vuart(data);
+	data->vuart = NULL;
 	unmap_tlb(data);
 	close_tt_dev(data);
 }
@@ -499,16 +682,16 @@ int vuart_start(struct vuart_data *data)
 
 		ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, data->vuart_addr, &adjust);
 		if (ret) {
-			E("failed to program NOC to point to the virtual uart (%x)",
-			  data->vuart_addr);
+			E("failed to program NOC to point to the virtual uart (%x): %d",
+			  data->vuart_addr, (int)ret);
 			return ret;
 		}
 		data->vuart = (volatile struct tt_vuart *)(data->tlb + adjust);
 
 		if (data->vuart->magic != data->magic) {
-			E("0x%08x does not match expected magic 0x%08x", data->vuart->magic,
+			D(1, "0x%08x does not match expected magic 0x%08x", data->vuart->magic,
 			  data->magic);
-			return -EIO;
+			return -ENOENT;
 		}
 
 		D(1, "found vuart descriptor at %p", data->vuart);
