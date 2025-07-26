@@ -9,6 +9,7 @@
 #endif
 
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -184,6 +185,113 @@ struct tenstorrent_configure_tlb {
 	struct tenstorrent_configure_tlb_out out;
 };
 
+int pcie_remove(void)
+{
+	int fd;
+	int ret;
+	DIR *dir;
+	unsigned long vid;
+	struct dirent *dent;
+	static char path[1024];
+	const char *pci_devices_path = "/sys/bus/pci/devices";
+
+	strncpy(path, pci_devices_path, sizeof(path));
+	dir = opendir(path);
+	if (dir == NULL) {
+		E("Failed to open %s: %s", pci_devices_path, strerror(errno));
+		return -errno;
+	}
+
+	for (dent = readdir(dir); dent != NULL; dent = readdir(dir)) {
+
+#ifndef DT_LNK
+#define DT_LNK 10
+#endif
+
+		D(3, "Found %s/%s with d_type %d", pci_devices_path, dent->d_name, dent->d_type);
+
+		if (dent->d_type == DT_LNK) {
+			snprintf(path, sizeof(path), "%s/%s/vendor", pci_devices_path,
+				 dent->d_name);
+
+			fd = open(path, O_RDONLY);
+			if (fd < 0) {
+				D(1, "Failed to open %s: %s", path, strerror(errno));
+				continue;
+			}
+
+			ret = read(fd, path, 6);
+			if (ret < 0) {
+				E("Failed to read from %s: %s", path, strerror(errno));
+				goto next;
+			}
+			if (ret < 6) {
+				E("Short read from %s", path);
+				goto next;
+			}
+			path[6] = '\0';
+
+			vid = strtol(path, NULL, 0);
+			if (vid != TENSTORRENT_PCI_VENDOR_ID) {
+				D(3, "Skipping %s with vendor id %04lx", dent->d_name, vid);
+				goto next;
+			}
+
+			D(1, "Found %s/%s with vendor id %04lx", pci_devices_path, dent->d_name,
+			  vid);
+
+			close(fd);
+
+			snprintf(path, sizeof(path), "%s/%s/remove", pci_devices_path,
+				 dent->d_name);
+			fd = open(path, O_WRONLY);
+			if (fd < 0) {
+				E("Failed to open %s: %s", path, strerror(errno));
+				goto next;
+			}
+
+			if (write(fd, "1", 1) < 0) {
+				E("Failed to write to %s: %s", path, strerror(errno));
+				goto next;
+			}
+
+			D(1, "Removed PCIe device %s/%s", pci_devices_path, dent->d_name);
+			goto next;
+
+next:
+			if (fd >= 0) {
+				close(fd);
+			}
+		}
+	}
+
+	closedir(dir);
+
+	return ret;
+}
+
+int pcie_rescan(void)
+{
+	int fd;
+
+	fd = open("/sys/bus/pci/rescan", O_WRONLY);
+	if (fd < 0) {
+		E("Failed to open %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+		return -errno;
+	}
+
+	if (write(fd, "1", 1) < 0) {
+		E("Failed to write to %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+		close(fd);
+		return -errno;
+	}
+
+	D(1, "PCIe bus rescan requested");
+
+	close(fd);
+	return 0;
+}
+
 static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, enum tlb_order order,
 		       uint64_t phys, uint64_t *adjust)
 {
@@ -211,14 +319,17 @@ static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, en
 
 static int64_t arc_read32(const struct vuart_data *data, uint32_t phys)
 {
+	int ret;
+	uint32_t *virt;
 	uint64_t adjust;
-	int ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys, &adjust);
 
+	ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, phys, &adjust);
 	if (ret) {
-		E("failed to configure tlb to point to ARC addr %x", phys);
+		E("failed to configure tlb to point to ARC addr %x: %d", phys, ret);
 		return ret;
 	}
-	uint32_t *virt = (uint32_t *)(data->tlb + adjust);
+
+	virt = (uint32_t *)(data->tlb + adjust);
 
 	D(2, "32-bit read from (%p,%p) %p (phys,virt)", (void *)(uintptr_t)phys, virt,
 	  (void *)(uintptr_t)adjust);
@@ -258,7 +369,11 @@ static int open_tt_dev(struct vuart_data *vuart)
 
 	vuart->fd = open(vuart->dev_name, O_RDWR);
 	if (vuart->fd < 0) {
-		E("%s: %s", strerror(errno), vuart->dev_name);
+		if (errno == ENOENT) {
+			D(1, "%s: %s", strerror(errno), vuart->dev_name);
+		} else {
+			E("%s: %s", strerror(errno), vuart->dev_name);
+		}
 		return -errno;
 	}
 
@@ -283,12 +398,12 @@ static int open_tt_dev(struct vuart_data *vuart)
 
 	if (vid != TENSTORRENT_PCI_VENDOR_ID) {
 		E("expected vendor id %04x (not %04x)", TENSTORRENT_PCI_VENDOR_ID, vid);
-		return -ENODEV;
+		return -ENOENT;
 	}
 
 	if (did != vuart->pci_device_id) {
 		E("expected device id %04x (not %04x)", vuart->pci_device_id, did);
-		return -ENODEV;
+		return -ENOENT;
 	}
 
 	struct tenstorrent_get_driver_info driver_info = {
@@ -318,12 +433,12 @@ static void close_tt_dev(struct vuart_data *vart)
 	}
 
 	if (close(vart->fd) < 0) {
+		vart->fd = -1;
 		E("fd %d: %s", vart->fd, strerror(errno));
 		return;
 	}
 
 	D(1, "closed fd %d", vart->fd);
-
 	vart->fd = -1;
 }
 
@@ -410,23 +525,14 @@ static int check_post_code(const struct vuart_data *vuart)
 	}
 	val.data = ret;
 	if (val.prefix != POST_CODE_PREFIX) {
-		E("prefix 0x%04x does not match expected prefix 0x%04x", val.prefix,
+		D(1, "prefix 0x%04x does not match expected prefix 0x%04x", val.prefix,
 		  POST_CODE_PREFIX);
-		return -EINVAL;
+		return -ENOENT;
 	}
 
 	D(2, "POST code: (%04x, %02x, %04x)", val.prefix, val.id, val.code);
 
 	return 0;
-}
-
-static void lose_vuart(struct vuart_data *vuart)
-{
-	if (vuart->vuart == NULL) {
-		return;
-	}
-
-	vuart->vuart = NULL;
 }
 
 /**
@@ -471,7 +577,7 @@ fail:
  */
 void vuart_close(struct vuart_data *data)
 {
-	lose_vuart(data);
+	data->vuart = NULL;
 	unmap_tlb(data);
 	close_tt_dev(data);
 }
@@ -499,16 +605,16 @@ int vuart_start(struct vuart_data *data)
 
 		ret = program_noc(data, ARC_X, ARC_Y, TLB_ORDER_STRICT, data->vuart_addr, &adjust);
 		if (ret) {
-			E("failed to program NOC to point to the virtual uart (%x)",
-			  data->vuart_addr);
+			E("failed to program NOC to point to the virtual uart (%x): %d",
+			  data->vuart_addr, (int)ret);
 			return ret;
 		}
 		data->vuart = (volatile struct tt_vuart *)(data->tlb + adjust);
 
 		if (data->vuart->magic != data->magic) {
-			E("0x%08x does not match expected magic 0x%08x", data->vuart->magic,
+			D(1, "0x%08x does not match expected magic 0x%08x", data->vuart->magic,
 			  data->magic);
-			return -EIO;
+			return -ENOENT;
 		}
 
 		D(1, "found vuart descriptor at %p", data->vuart);

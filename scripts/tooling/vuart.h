@@ -9,6 +9,14 @@
 
 #include <sys/mman.h>
 
+#ifndef UART_TT_VIRT_MAGIC
+#define UART_TT_VIRT_MAGIC 0x775e21a1
+#endif
+
+#ifndef UART_TT_VIRT_DISCOVERY_ADDR
+#define UART_TT_VIRT_DISCOVERY_ADDR 0x800304a0
+#endif
+
 #define VUART_DATA_INIT(_dev_name, _addr, _magic, _pci_device_id, _channel)                        \
 	{.dev_name = _dev_name,                                                                    \
 	 .addr = _addr,                                                                            \
@@ -95,5 +103,19 @@ size_t vuart_space(struct vuart_data *data);
  * @return -EAGAIN if no data is available
  */
 int vuart_read(struct vuart_data *data, uint8_t *buf, size_t size);
+
+/**
+ * @brief Remove all tenstorrent PCIe devices from the system.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int pcie_remove(void);
+
+/**
+ * @brief Rescan PCIe devices.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int pcie_rescan(void);
 
 #endif /* SCRIPTS_TOOLING_VUART_H_ */

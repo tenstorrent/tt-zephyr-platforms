@@ -23,19 +23,11 @@
 #include <string.h>
 #include <sys/select.h>
 #include <termios.h>
-#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "logging.h"
 #include "vuart.h"
-
-#ifndef UART_TT_VIRT_MAGIC
-#define UART_TT_VIRT_MAGIC 0x775e21a1
-#endif
-
-#ifndef UART_TT_VIRT_DISCOVERY_ADDR
-#define UART_TT_VIRT_DISCOVERY_ADDR 0x800304a0
-#endif
 
 #ifndef UART_CHANNEL
 #define UART_CHANNEL 0
@@ -46,6 +38,7 @@
 #define MSEC_PER_SEC  1000UL
 #define USEC_PER_MSEC 1000UL
 #define USEC_PER_SEC  1000000UL
+#define NSEC_PER_MSEC 1000000UL
 
 #define VUART_NOT_READY_SLEEP_US (1 * USEC_PER_SEC)
 
@@ -56,7 +49,8 @@
 
 struct console {
 	bool stop;
-	uint64_t timeout_abs_ms;
+	timer_t timer;
+	unsigned long timeout_rel_ms;
 
 	/* backup of original termios settings */
 	struct termios term;
@@ -129,31 +123,21 @@ static int loop(struct console *const cons)
 
 	ret = vuart_open(&cons->vuart);
 	if (ret < 0) {
+		usleep(VUART_NOT_READY_SLEEP_US);
 		goto out;
 	}
 
 	I("Press Ctrl-a,x to quit");
 
 	while (!cons->stop) {
-		if (cons->timeout_abs_ms != 0) {
-			struct timeval now;
-			uint64_t now_ms;
-
-			gettimeofday(&now, NULL);
-			now_ms = now.tv_sec * MSEC_PER_SEC + now.tv_usec / USEC_PER_MSEC;
-
-			if (now_ms >= cons->timeout_abs_ms) {
-				D(2, "timeout reached");
-				break;
-			}
-		}
-
-		if (vuart_start(&cons->vuart) < 0) {
-			usleep(VUART_NOT_READY_SLEEP_US);
-			continue;
+		ret = vuart_start(&cons->vuart);
+		if (ret < 0) {
+			D(2, "Lost vuart connection..");
+			goto out;
 		}
 
 		if (termio_raw(cons) < 0) {
+			E("Failed to set terminal to raw mode");
 			break;
 		}
 
@@ -329,11 +313,7 @@ static int parse_args(struct console *cons, int argc, char **argv)
 				return -errno;
 			}
 
-			struct timeval now;
-
-			gettimeofday(&now, NULL);
-			cons->timeout_abs_ms = (uint64_t)timeout + now.tv_sec * MSEC_PER_SEC +
-					       now.tv_usec / USEC_PER_MSEC;
+			cons->timeout_rel_ms = timeout;
 		} break;
 		case ':':
 			E("option -%c requires an operand\n", optopt);
@@ -362,6 +342,8 @@ static void handler(int sig)
 
 int main(int argc, char **argv)
 {
+	int ret;
+
 	console_init(&_cons);
 
 	if (parse_args(&_cons, argc, argv) < 0) {
@@ -373,9 +355,56 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (loop(&_cons) < 0) {
-		return EXIT_FAILURE;
+	if (_cons.timeout_rel_ms != 0) {
+		/* timeout parameter has been specified, so fire off a timer */
+
+		ret = timer_create(CLOCK_REALTIME, NULL, &_cons.timer);
+		if (ret < 0) {
+			E("%s() failed: %s", "timer_create", strerror(errno));
+			return EXIT_FAILURE;
+		}
+
+		D(1, "Setting timer for %lu ms", _cons.timeout_rel_ms);
+		struct itimerspec its = {
+			.it_value.tv_sec = _cons.timeout_rel_ms / MSEC_PER_SEC,
+			.it_value.tv_nsec = _cons.timeout_rel_ms % NSEC_PER_MSEC,
+		};
+
+		ret = timer_settime(_cons.timer, 0, &its, NULL);
+		if (ret < 0) {
+			E("%s() failed: %s", "timer_settime", strerror(errno));
+			return EXIT_FAILURE;
+		}
+
+		if (signal(SIGALRM, handler) == SIG_ERR) {
+			E("signal: %s", strerror(errno));
+			return EXIT_FAILURE;
+		}
 	}
 
-	return EXIT_SUCCESS;
+	do {
+		ret = loop(&_cons);
+		if (ret == -ENOENT) {
+			/*
+			 * Lost the virtual uart connection OR it was not found in the first place.
+			 * Remove and rescan for the device if possible (requires permissions).
+			 */
+			(void)pcie_remove();
+			ret = pcie_rescan();
+			if (ret < 0) {
+				E("Failed to remove and rescan PCIe devices: %s", strerror(-ret));
+				return EXIT_FAILURE;
+			}
+
+			continue;
+		}
+
+		if (ret < 0) {
+			/* other I/O or permission error */
+			return EXIT_FAILURE;
+		}
+
+		/* gracefully terminated via Ctrl+a,x */
+		return EXIT_SUCCESS;
+	} while (!_cons.stop);
 }
