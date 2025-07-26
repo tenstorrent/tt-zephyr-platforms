@@ -44,7 +44,7 @@ typedef union {
 } RESET_UNIT_SPI_DEVICE_CONFIG_reg_u;
 
 #define RESET_UNIT_SPI_DEVICE_CONFIG_REG_ADDR 0x800300D4
-#define RESET_UNIT_SPI_DEVICE_ID_REG_ADDR 0x800300D8
+#define RESET_UNIT_SPI_DEVICE_ID_REG_ADDR     0x800300D8
 
 static int flash_reset_init(void)
 {
@@ -85,8 +85,7 @@ static int flash_reset_init(void)
 	    (spi_device_id == 0x2c5b1a10)) {
 		/* MX35 flash. Issue RESET ENABLE and RESET MEMORY commands in octal mode */
 		mspi_dev_cfg.io_mode = MSPI_IO_MODE_OCTAL;
-		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL,
-				     &mspi_dev_cfg);
+		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL, &mspi_dev_cfg);
 		if (rc < 0) {
 			return rc;
 		}
@@ -120,8 +119,7 @@ static int flash_reset_init(void)
 		}
 		/* MT25 flash. Issue RESET ENABLE and RESET MEMORY commands in quad mode */
 		mspi_dev_cfg.io_mode = MSPI_IO_MODE_QUAD;
-		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL,
-				     &mspi_dev_cfg);
+		rc = mspi_dev_config(mspi_dev, &mspi_dev_id, MSPI_DEVICE_CONFIG_ALL, &mspi_dev_cfg);
 		if (rc < 0) {
 			return rc;
 		}
@@ -148,12 +146,10 @@ static int flash_reset_init(void)
 		sys_write32(spi_device_config.val, RESET_UNIT_SPI_DEVICE_CONFIG_REG_ADDR);
 	}
 
-
 	/* Release the MSPI controller - it was acquired by the call to
 	 * mspi_dev_config()
 	 */
 	(void)mspi_get_channel_status(mspi_dev, 0);
-
 
 	return 0;
 }

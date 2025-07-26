@@ -140,9 +140,9 @@ jobs:
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
+          python3 ./scripts/dmc_rtt.py -n || true
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt || true
 
   smoke-e2e-test:
     strategy:
@@ -206,7 +206,7 @@ jobs:
             -p $SMC_BOARD --device-testing \
             --tag e2e \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
-            -T ../tt-zephyr-platforms/app \
+            -T ../tt-zephyr-platforms/app -ll DEBUG \
             --outdir twister-smc-e2e
 
       - name: run-e2e-flash-test
@@ -217,8 +217,8 @@ jobs:
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
-            --device-testing -c \
-            --device-serial-pty rtt \
+            --device-testing -c -ll DEBUG \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
             --outdir twister-e2e-flash
 
       - name: Upload E2E Test results
@@ -245,9 +245,9 @@ jobs:
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
+          python3 ./scripts/dmc_rtt.py -n || true
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt || true
 
   build-fw-artifact:
     uses: ./.github/workflows/build-fw.yml
