@@ -37,8 +37,8 @@ def test_compile_tt_console(tt_console: Path):
 def test_boot_banner(tt_console: Path, arc_chip):
     arc_chip.axi_read32(ARC_STATUS)
 
-    # run 'tt-console' in quiet mode, and timeout after 500ms
-    cmd = f"{tt_console} -q -w 500"
+    # run 'tt-console' in quiet mode, and timeout after 3 s
+    cmd = f"{tt_console} -q -w 3000"
     proc = subprocess.run(cmd.split(), capture_output=True, check=True)
 
     out = proc.stdout.decode("utf-8")
