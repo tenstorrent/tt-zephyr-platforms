@@ -132,3 +132,14 @@ patches:
     upstreamable: false
     comments: |
       Add k_busy_wait_ns() helper for nanosecond busy wait support.
+  - path: zephyr/stm-i2c-reload.patch
+    sha256sum: 9575d1a86a2a6fd5142e37ecdbfd84b78194c30c739eb864aecf4a469b96b8e4
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-28
+    comments: |
+      Exit reload mode before stop or repeated start
+
+      The code checked that there's no following stop/restart before enabling
+      reload mode, but once in reload mode, it never checked again.
