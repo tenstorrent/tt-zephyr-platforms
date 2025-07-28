@@ -10,6 +10,6 @@
  * Note that linker scripts do not allow expressions in this context.
  */
 #define SRAM_START 0x10000000
-#define SRAM_SIZE 0x30000
+#define SRAM_SIZE 0x40000
 
 #include <zephyr/arch/arc/v2/linker.ld>
