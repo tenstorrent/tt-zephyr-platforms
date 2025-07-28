@@ -33,7 +33,7 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 		.ack_ret = -1,
 	};
 	uint8_t count = sizeof(output.msg);
-	uint8_t buf[32]; /* Max block counter per API */
+	uint8_t buf[255]; /* Max SMBus block read */
 
 	output.ret = bharc_smbus_block_read(&chip->config.arc, CMFW_SMBUS_REQ, &count, buf);
 	memcpy(&output.msg, buf, sizeof(output.msg));
