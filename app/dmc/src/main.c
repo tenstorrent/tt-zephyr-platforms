@@ -229,7 +229,7 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	int ret;
 	int pass_val = 0xFEEDFACE;
 	uint8_t count;
-	uint8_t data[32]; /* Max size of SMBUS block read */
+	uint8_t data[255]; /* Max size of SMBUS block read */
 
 	/* Test SMBUS telemetry by selecting TAG_DM_APP_FW_VERSION and reading it back */
 	ret = bharc_smbus_byte_data_write(&chip->config.arc, 0x26, 26);
