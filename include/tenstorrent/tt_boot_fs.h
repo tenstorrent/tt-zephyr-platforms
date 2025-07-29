@@ -96,39 +96,48 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 			size_t buf_size, size_t *file_size);
 
 /**
- * @brief Read data from the boot filesystem at a specified address
+ * @brief List file descriptors in boot filesystem
  *
- * @param dev Flash device to read from
- * @param addr Flash address to read from
- * @param buffer Output buffer to store read data
- * @param size Number of bytes to read
- */
-int tt_bootfs_ng_read(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size);
-
-int tt_bootfs_ng_write(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size);
-
-int tt_bootfs_ng_erase(const struct device *dev, uint32_t addr, size_t size);
-
-/**
- * @brief List all file descriptors in boot filesystem
+ * Read up to @p nfds file descriptors from a boot filesystem on flash device @p flash_dev starting
+ * from index @p offset. If reading from @p flash_dev causes an error, then this function will
+ * return `-EIO`. If @p flash_dev does not contain a valid boot fs, this function returns `-ENXIO`.
+ * On success, the number of file descriptors is returned.
+ *
+ * This function may also be used to count the number of files that exist on a boot filesystem if @p
+ * fds is `NULL`. In that case, the `nfds` and `offset` parameters are ignored.
  *
  * @param dev Flash device containing the boot filesystem
- * @param fds Output array to store file descriptors
+ * @param fds Output array to store file descriptors, or `NULL` to count files
  * @param nfds Maximum number of file descriptors to read
+ * @param offset File index from which to begin reading file descriptors
+ *
+ * @return the number of file descriptors successfully read or a negative error code on failure.
  */
-int tt_bootfs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds);
+int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, size_t offset);
 
 /**
- * @brief Find file descriptor by image tag in provided array
+ * @brief Find a boot filesystem file descriptor by name on a given flash device.
  *
- * @param tag Image tag to search for (null-terminated string)
- * @param fds Array of file descriptors to search
- * @param count Number of file descriptors in array
+ * If @p fd is `NULL`, then a return value of 0 indicates that a file named @p name exists in the
+ * boot filesystem residing on @p flash_dev.
  *
- * @return Pointer to matching file descriptor, or NULL if not found
- * @retval NULL Tag not found or invalid parameters
+ * If @p fd is non-`NULL`, then file descriptor contents are written to the memory pointed to by it.
+ * The output file descriptor includes useful information about the file, like
+ * - the address of the file in @p flash_dev,
+ * - the size of the file, and
+ * - the checksum of the file, and more.
+ *
+ * @param flash_dev flash device containing the boot filesystem
+ * @param tag name of the image to search for
+ * @param[out] fd optional pointer to memory where the file descriptor will be written, if found
+ *
+ * @retval 0 on success
+ * @retval -EIO if an I/O error occurs
+ * @retval -ENXIO if @p flash_dev does not contain a boot filesystem
+ * @retval -ENOENT if no file was found matching the specified tag
  */
-const tt_boot_fs_fd *tt_bootfs_ng_find_fd_by_tag(const uint8_t *tag, tt_boot_fs_fd *fds, int count);
+int tt_boot_fs_find_fd_by_tag(const struct device *flash_dev, const uint8_t *tag,
+			      tt_boot_fs_fd *fd);
 
 #ifdef __cplusplus
 }
