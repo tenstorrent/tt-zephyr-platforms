@@ -23,8 +23,19 @@
 
 #define MAX_FDS CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX
 
-#define DECL_TEST_SPEC(dev, fds, nfds, offset, expect)                                             \
-	{.dev = (dev), .fds = (fds), .nfds = (nfds), .offset = (offset), .expect = (expect)}
+struct test_spec_ls {
+	const struct device *dev;
+	tt_boot_fs_fd *fds;
+	size_t nfds;
+	size_t offset;
+	int expect;
+};
+
+struct test_spec_find {
+	const struct device *dev;
+	const uint8_t *tag;
+	tt_boot_fs_fd *fd;
+};
 
 static void *setup_bootfs(void)
 {
@@ -165,14 +176,7 @@ ZTEST(tt_boot_fs, test_boot_fs_ls_comprehensive)
 	size_t offset_options[] = {0, 1, MAX_FDS - 1, MAX_FDS, SIZE_MAX};
 	const struct device *dev_options[] = {null_dev, valid_dev};
 
-	static const struct test_spec {
-		const struct device *dev;
-		tt_boot_fs_fd *fds;
-		size_t nfds;
-		size_t offset;
-		int expect;
-	};
-	struct test_spec specs[80];
+	static struct test_spec_ls specs[80];
 	size_t idx = 0;
 
 	for (size_t d = 0; d < ARRAY_SIZE(dev_options); ++d) {
@@ -196,16 +200,19 @@ ZTEST(tt_boot_fs, test_boot_fs_ls_comprehensive)
 								 : available;
 					}
 
-					specs[idx++] = DECL_TEST_SPEC(
-						dev_options[d], fds_options[f], nfds_options[n],
-						offset_options[o], expect);
+					specs[idx].dev = dev_options[d];
+					specs[idx].fds = fds_options[f];
+					specs[idx].nfds = nfds_options[n];
+					specs[idx].offset = offset_options[o];
+					specs[idx].expect = expect;
+					idx++;
 				}
 			}
 		}
 	}
 
 	ARRAY_FOR_EACH(specs, i) {
-		const struct test_spec *spec = &specs[i];
+		const struct test_spec_ls *spec = &specs[i];
 
 		int actual = tt_boot_fs_ls(spec->dev, spec->fds, spec->nfds, spec->offset);
 
@@ -232,31 +239,27 @@ ZTEST(tt_boot_fs, test_find_fd_by_tag_comprehensive)
 	const struct device *dev_options[] = {null_dev, valid_dev};
 	tt_boot_fs_fd *fd_options[] = {valid_fd, null_fd};
 
-	struct test_spec {
-		const struct device *dev;
-		const uint8_t *tag;
-		tt_boot_fs_fd *fd;
-	};
-
-	struct test_spec specs[12];
+	static struct test_spec_find specs[12];
 	size_t idx = 0;
 
 	for (size_t d = 0; d < ARRAY_SIZE(dev_options); ++d) {
 		for (size_t t = 0; t < ARRAY_SIZE(tags); ++t) {
 			for (size_t f = 0; f < ARRAY_SIZE(fd_options); ++f) {
-				specs[idx++] =
-					DECL_TEST_SPEC(dev_options[d], tags[t], fd_options[f]);
+				specs[idx].dev = dev_options[d];
+				specs[idx].tag = tags[t];
+				specs[idx].fd = fd_options[f];
+				idx++;
 			}
 		}
 	}
 
 	ARRAY_FOR_EACH(specs, i) {
-		const struct test_spec *spec = &specs[i];
+		const struct test_spec_find *spec = &specs[i];
 
 		int actual = tt_boot_fs_find_fd_by_tag(spec->dev, spec->tag, spec->fd);
 
 		if (spec->dev == NULL) {
-			zexpect_equal(actual, -ENXIO, "%zu: expected -ENXIO for NULL device", i);
+			zassert_equal(actual, -ENXIO, "%zu: expected -ENXIO for NULL device", i);
 		} else if (spec->fd == NULL) {
 			zassert_true(actual == 0 || actual == -ENOENT,
 				     "%zu: expected 0 or -ENOENT for NULL fd", i);
@@ -264,8 +267,8 @@ ZTEST(tt_boot_fs, test_find_fd_by_tag_comprehensive)
 			zassert_true(actual == 0 || actual == -ENOENT,
 				     "%zu: expected 0 or -ENOENT for 'cmfw' tag", i);
 		} else {
-			zexpect_equal(actual, -ENOENT, "%zu: expected
-				 -ENOENT for 'notfound' tag", i);
+			zassert_equal(actual, -ENOENT, "%zu: expected -ENOENT for 'notfound' tag",
+				      i);
 		}
 	}
 }
