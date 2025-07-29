@@ -47,13 +47,22 @@ Major enhancements with this release include:
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
-[comment]: <> (H2 Other Notable Changes, if applicable)
+### Other Notable Changes
 
 [comment]: <> (UL PCIe)
 [comment]: <> (UL DDR)
 [comment]: <> (UL Ethernet)
 [comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
+
+#### Debug / Developer Features
+
+* The `tenstorrent,vuart` virtual PCIe serial device is now the default for console I/O. The
+  virtual uart supports multiple instances, so one instance may be used for console I/O while
+  another instance may be used for e.g. RPC, tracing, coredump, profiling, or other
+  functionality
+
+![Zephyr Shell on Blackhole](../img/shell.gif)
+
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
