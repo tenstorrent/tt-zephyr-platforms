@@ -188,49 +188,56 @@ int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, siz
 	}
 
 	int ret;
-	tt_boot_fs_fd temp_fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
 
 	if (nfds == 0) {
 		return 0;
 	}
 
-	/* Skipping to offset, iterate through the whole fs, when fds is NULL, or at most nfds */
-	for (size_t i = 0, found = 0, addr = TT_BOOT_FS_FD_HEAD_ADDR;
-	     (fds == NULL) || (found < nfds); i++, found++, addr += sizeof(tt_boot_fs_fd)) {
-		/* use either a pointer to local storage, or a pointer to caller-provided storage */
-		tt_boot_fs_fd *current_fd = (fds == NULL) ? &temp_fds[i] : &fds[found];
+	size_t found = 0;
+	size_t i = 0;
+	size_t addr = TT_BOOT_FS_FD_HEAD_ADDR;
 
-		/* start reading after offset */
-		if (i < offset) {
-			continue;
-		}
+	while (1) {
+		tt_boot_fs_fd fd;
 
-		if (current_fd->flags.f.invalid) {
-			return found;
-		}
-
-		ret = calculate_and_compare_checksum((uint8_t *)current_fd,
-						     sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
-						     current_fd->fd_crc, false);
-
-		if (ret != TT_BOOT_FS_CHK_OK) {
-			/* a checksum is invalid - not a valid tt boot fs*/
-			return -ENXIO;
-		}
-		ret = flash_read(dev, addr, current_fd, sizeof(tt_boot_fs_fd));
-
-		if ((ret < 0) || (ret != sizeof(tt_boot_fs_fd))) {
-			/* read failed, or not enough data */
+		ret = flash_read(dev, addr, &fd, sizeof(tt_boot_fs_fd));
+		if (ret < 0) {
 			LOG_ERR("%s() failed: %d", "flash_read", ret);
 			return -EIO;
 		}
+
+		if (fd.flags.f.invalid) {
+			break;
+		}
+
+		ret = calculate_and_compare_checksum(
+			(uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t), fd.fd_crc, false);
+		if (ret != TT_BOOT_FS_CHK_OK) {
+			return -ENXIO;
+		}
+
+		if (i >= offset) {
+			if (fds != NULL && found < nfds) {
+				fds[found] = fd;
+			}
+			found++;
+			if (found == nfds) {
+				break;
+			}
+		}
+		i++;
+		addr += sizeof(tt_boot_fs_fd);
 	}
 
-	CODE_UNREACHABLE;
+	return found;
 }
 
 int tt_boot_fs_find_fd_by_tag(const struct device *flash_dev, const uint8_t *tag, tt_boot_fs_fd *fd)
 {
+	if (tag == NULL) {
+		return -EINVAL;
+	}
+
 	int ret;
 
 	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
