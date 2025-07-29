@@ -63,6 +63,14 @@ Major enhancements with this release include:
 
 ![Zephyr Shell on Blackhole](../img/shell.gif)
 
+* Zephyr's tracing subsystem may now be used over the virtual uart. For now it is limited to a
+  an app
+  [overlay](https://github.com/tenstorrent/tt-zephyr-platforms/blob/main/app/smc/tracing.conf)
+  but plans are in place to integrate this feature into production firmware with support for
+  dynamically configurable tracing
+
+![Scheduler and ISR tracing](../img/tracing.gif)
+
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
