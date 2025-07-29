@@ -123,6 +123,11 @@
 	status = "okay";
 };
 
+/* Limit CSM to 192KB */
+&csm {
+	reg = <0x10000000 0x30000>; /* 192KB */
+};
+
 &vuart0 {
 	status = "okay";
 };
