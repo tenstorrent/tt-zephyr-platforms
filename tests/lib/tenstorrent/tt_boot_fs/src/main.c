@@ -11,82 +11,91 @@
 #include <string.h>
 #include <tenstorrent/tt_boot_fs.h>
 
-#define SPI_FLASH_NODE DT_NODELABEL(spi_flash)
+#define FLASH_NODE DT_NODELABEL(flashcontroller0)
 
-#if DT_NODE_EXISTS(SPI_FLASH_NODE) && DT_NODE_HAS_STATUS(SPI_FLASH_NODE, okay)
-#define FLASH_DEVICE           DEVICE_DT_GET(SPI_FLASH_NODE)
-#define FLASH_DEVICE_AVAILABLE 1
-#else
-#define FLASH_DEVICE           NULL
-#define FLASH_DEVICE_AVAILABLE 0
-#endif
+const struct device *FLASH_DEVICE = DEVICE_DT_GET(FLASH_NODE);
 
 #define MAX_FDS CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX
 
-#define DECL_TEST_SPEC(dev, fds, nfds, offset, expect)                                             \
-	{.dev = (dev), .fds = (fds), .nfds = (nfds), .offset = (offset), .expect = (expect)}
+#define IMAGE_ADDR     0x14000
+#define TEST_ALIGNMENT 0x1000
+
+static void setup_fd(tt_boot_fs_fd *fd, uint32_t spi_addr, uint32_t copy_dest, uint32_t flags,
+		     const char *tag, const uint8_t *img, size_t img_len)
+{
+	memset(fd, 0, sizeof(*fd));
+	fd->spi_addr = spi_addr;
+	fd->copy_dest = copy_dest;
+	fd->flags.val = flags;
+	fd->data_crc = tt_boot_fs_cksum(0, img, img_len);
+	fd->security_flags.val = 0;
+	memset(fd->image_tag, 0, TT_BOOT_FS_IMAGE_TAG_SIZE);
+	memcpy(fd->image_tag, tag, strlen(tag));
+	fd->fd_crc = 0;
+}
 
 static void *setup_bootfs(void)
 {
-#if FLASH_DEVICE_AVAILABLE
 	printk("FLASH_DEVICE: %p\n", FLASH_DEVICE);
 	printk("Flash device name: %s\n", FLASH_DEVICE->name);
 	printk("Flash device ready: %s\n", device_is_ready(FLASH_DEVICE) ? "YES" : "NO");
 	zassert_not_null(FLASH_DEVICE, "FLASH_DEVICE is NULL!");
 
-	static tt_boot_fs_fd fds[MAX_FDS];
+	static tt_boot_fs_fd fds[3];
+	uint8_t image_A[] = {0x73, 0x73, 0x42, 0x42};
+	uint8_t image_B[] = {0x73, 0x73, 0x42, 0x42, 0x37, 0x37, 0x24, 0x24};
+	uint8_t image_C[] = {0x73, 0x73, 0x42, 0x42};
 
-	memset(fds, 0, sizeof(fds));
+	uint32_t spi_addr = IMAGE_ADDR;
+#define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
 
-	struct {
-		uint32_t spi_addr;
-		const char *image_tag;
-		uint32_t size;
-		uint32_t copy_dest;
-		uint32_t data_crc;
-		uint32_t flags;
-		uint32_t fd_crc;
-	} expected_fds[] = {
-		{81920, "cmfwcfg", 56, 0, 2158370831, 56, 4168430605},
-		{86016, "cmfw", 86600, 268435456, 1374720981, 33641032, 3680084864},
-		{176128, "ethfwcfg", 512, 0, 2352493, 512, 3455414089},
-		{180224, "ethfw", 34304, 0, 433295191, 34304, 2151631411},
-		{217088, "memfwcfg", 256, 0, 15943, 256, 3453442091},
-		{221184, "memfw", 10032, 0, 3642299916, 10032, 1066009376},
-		{233472, "ethsdreg", 1152, 0, 897437643, 1152, 273632020},
-		{237568, "ethsdfw", 19508, 0, 3168980852, 19508, 818321009},
-		{258048, "bmfw", 35744, 0, 2928587200, 35744, 637115074},
-		{294912, "flshinfo", 4, 0, 50462976, 4, 3672136659},
-		{299008, "failover", 65828, 268435456, 2239637331, 33620260, 1985122380},
-		{16773120, "boardcfg", 0, 0, 0, 0, 3670524614},
-	};
+	setup_fd(&fds[0], spi_addr, 0x1000000, (sizeof(image_A) & 0xFFFFFF) | (1 << 25), "imageA",
+		 image_A, sizeof(image_A));
+	spi_addr += ALIGN_UP(sizeof(image_A), TEST_ALIGNMENT);
 
-	size_t n = ARRAY_SIZE(expected_fds);
+	setup_fd(&fds[1], spi_addr, 0, (sizeof(image_B) & 0xFFFFFF), "imageB", image_B,
+		 sizeof(image_B));
+	spi_addr += ALIGN_UP(sizeof(image_B), TEST_ALIGNMENT);
 
-	for (size_t i = 0; i < n && i < MAX_FDS; ++i) {
-		memset(&fds[i], 0, sizeof(tt_boot_fs_fd));
-		fds[i].spi_addr = expected_fds[i].spi_addr;
-		fds[i].copy_dest = expected_fds[i].copy_dest;
-		fds[i].flags.val = expected_fds[i].flags;
-		fds[i].data_crc = expected_fds[i].data_crc;
-		fds[i].security_flags.val = 0;
-		memset(fds[i].image_tag, 0, sizeof(fds[i].image_tag));
-		strncpy((char *)fds[i].image_tag, expected_fds[i].image_tag,
-			sizeof(fds[i].image_tag));
-		fds[i].fd_crc = expected_fds[i].fd_crc;
+	setup_fd(&fds[2], spi_addr, 0x1000000, (sizeof(image_C) & 0xFFFFFF), "failover", image_C,
+		 sizeof(image_C));
+
+	for (size_t i = 0; i < 3; ++i) {
+		fds[i].fd_crc = tt_boot_fs_cksum(0, (uint8_t *)&fds[i],
+						 sizeof(tt_boot_fs_fd) - sizeof(fds[i].fd_crc));
 	}
 
-	if (n < MAX_FDS) {
-		fds[n].flags.f.invalid = 1;
-	}
-
-	int rc = flash_erase(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR, sizeof(fds));
+	uint32_t erase_size =
+		(spi_addr + ALIGN_UP(sizeof(image_C), TEST_ALIGNMENT)) - TT_BOOT_FS_FD_HEAD_ADDR;
+	int rc = flash_erase(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR, ROUND_UP(erase_size, 4096));
 
 	zassert_equal(rc, 0, "Failed to erase test bootfs area in flash");
 
-	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR, (const uint8_t *)fds, sizeof(fds));
-	zassert_equal(rc, 0, "Failed to write test bootfs to flash");
-#endif
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR, &fds[0], sizeof(tt_boot_fs_fd));
+	zassert_equal(rc, 0, "Failed to write fd[0] to flash");
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR + sizeof(tt_boot_fs_fd), &fds[1],
+			 sizeof(tt_boot_fs_fd));
+	zassert_equal(rc, 0, "Failed to write fd[1] to flash");
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR + 2 * sizeof(tt_boot_fs_fd), &fds[2],
+			 sizeof(tt_boot_fs_fd));
+	zassert_equal(rc, 0, "Failed to write fd[2] to flash");
+
+	tt_boot_fs_fd invalid_fd = {0};
+
+	invalid_fd.flags.f.invalid = 1;
+	invalid_fd.fd_crc = tt_boot_fs_cksum(0, (uint8_t *)&invalid_fd,
+					     sizeof(tt_boot_fs_fd) - sizeof(invalid_fd.fd_crc));
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_FD_HEAD_ADDR + 3 * sizeof(tt_boot_fs_fd),
+			 &invalid_fd, sizeof(tt_boot_fs_fd));
+	zassert_equal(rc, 0, "Failed to write invalid FD to flash");
+
+	rc = flash_write(FLASH_DEVICE, fds[0].spi_addr, image_A, sizeof(image_A));
+	zassert_equal(rc, 0, "Failed to write image_A to flash");
+	rc = flash_write(FLASH_DEVICE, fds[1].spi_addr, image_B, sizeof(image_B));
+	zassert_equal(rc, 0, "Failed to write image_B to flash");
+	rc = flash_write(FLASH_DEVICE, fds[2].spi_addr, image_C, sizeof(image_C));
+	zassert_equal(rc, 0, "Failed to write image_C to flash");
+
 	return NULL;
 }
 
@@ -149,123 +158,99 @@ ZTEST(tt_boot_fs, test_tt_boot_fs_cksum)
 	}
 }
 
-ZTEST(tt_boot_fs, test_boot_fs_ls_comprehensive)
-{
-#if !FLASH_DEVICE_AVAILABLE
-	ztest_test_skip();
-	return;
-#endif
+#define DECL_TEST_SPEC(d, f, n, o, e)                                                              \
+	(struct test_spec)                                                                         \
+	{                                                                                          \
+		.dev = d, .fds = f, .nfds = n, .offset = o, .expect = e                            \
+	}
 
+ZTEST(tt_boot_fs, test_boot_fs_ls)
+{
 	static tt_boot_fs_fd fds[MAX_FDS];
 	const struct device *valid_dev = FLASH_DEVICE;
 	const struct device *null_dev = NULL;
 
-	tt_boot_fs_fd *fds_options[] = {NULL, fds};
-	size_t nfds_options[] = {0, 1, MAX_FDS - 1, MAX_FDS};
-	size_t offset_options[] = {0, 1, MAX_FDS - 1, MAX_FDS, SIZE_MAX};
-	const struct device *dev_options[] = {null_dev, valid_dev};
+	const int total_valid_fds_on_flash = 3;
 
-	static const struct test_spec {
+	struct test_spec {
 		const struct device *dev;
 		tt_boot_fs_fd *fds;
 		size_t nfds;
 		size_t offset;
 		int expect;
-	};
-	struct test_spec specs[80];
-	size_t idx = 0;
+	} specs[10];
 
-	for (size_t d = 0; d < ARRAY_SIZE(dev_options); ++d) {
-		for (size_t f = 0; f < ARRAY_SIZE(fds_options); ++f) {
-			for (size_t n = 0; n < ARRAY_SIZE(nfds_options); ++n) {
-				for (size_t o = 0; o < ARRAY_SIZE(offset_options); ++o) {
-					int expect;
+	size_t i = 0;
 
-					if (dev_options[d] == NULL) {
-						expect = -ENXIO;
-					} else if (nfds_options[n] == 0) {
-						expect = 0;
-					} else {
-						size_t total_fds = 12;
-						size_t available =
-							(offset_options[o] < total_fds)
-								? total_fds - offset_options[o]
-								: 0;
-						expect = (nfds_options[n] < available)
-								 ? nfds_options[n]
-								 : available;
-					}
+	specs[i++] = DECL_TEST_SPEC(null_dev, fds, MAX_FDS, 0, -ENXIO);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, NULL, MAX_FDS, 0, total_valid_fds_on_flash);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, 0, 0, 0);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, 1, 0, 1);
 
-					specs[idx++] = DECL_TEST_SPEC(
-						dev_options[d], fds_options[f], nfds_options[n],
-						offset_options[o], expect);
-				}
-			}
-		}
-	}
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, MAX_FDS, 0, total_valid_fds_on_flash);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, 2, 0, 2);
+
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, MAX_FDS, 1, 2);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, MAX_FDS, 2, 1);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, MAX_FDS, 3, 0);
+	specs[i++] = DECL_TEST_SPEC(valid_dev, fds, MAX_FDS, 4, 0);
 
 	ARRAY_FOR_EACH(specs, i) {
-		const struct test_spec *spec = &specs[i];
+		struct test_spec *spec = &specs[i];
 
 		int actual = tt_boot_fs_ls(spec->dev, spec->fds, spec->nfds, spec->offset);
 
-		zassert_true(actual == spec->expect || actual == -ENXIO || actual == -EIO,
-			     "%zu: actual: %d expected: %d or error", i, actual, spec->expect);
+		zassert_equal(
+			actual, spec->expect,
+			"Case %zu: tt_boot_fs_ls(dev:%p, fds:%p, nfds:%zu, offset:%zu) failed. "
+			"Got %d, expected %d",
+			i, spec->dev, spec->fds, spec->nfds, spec->offset, actual, spec->expect);
 	}
 }
 
-ZTEST(tt_boot_fs, test_find_fd_by_tag_comprehensive)
-{
-#if !FLASH_DEVICE_AVAILABLE
-	ztest_test_skip();
-	return;
-#endif
+#define DECL_TEST_FIND_SPEC(d, t, f, e)                                                            \
+	(struct test_spec)                                                                         \
+	{                                                                                          \
+		.dev = (d), .tag = (t), .fd_out = (f), .expect = (e)                               \
+	}
 
-	tt_boot_fs_fd fd;
+ZTEST(tt_boot_fs, test_find_fd_by_tag)
+{
+	tt_boot_fs_fd result_fd;
 	const struct device *valid_dev = FLASH_DEVICE;
 	const struct device *null_dev = NULL;
 
-	tt_boot_fs_fd *valid_fd = &fd;
-	tt_boot_fs_fd *null_fd = NULL;
-
-	const uint8_t *tags[] = {(const uint8_t *)"notfound", (const uint8_t *)"cmfw"};
-	const struct device *dev_options[] = {null_dev, valid_dev};
-	tt_boot_fs_fd *fd_options[] = {valid_fd, null_fd};
+	const uint8_t found_tag[8] = "imageA";
+	const uint8_t not_found_tag[8] = "notFound";
 
 	struct test_spec {
 		const struct device *dev;
 		const uint8_t *tag;
-		tt_boot_fs_fd *fd;
-	};
+		tt_boot_fs_fd *fd_out;
+		int expect;
+	} specs[6];
 
-	struct test_spec specs[12];
-	size_t idx = 0;
+	size_t i = 0;
 
-	for (size_t d = 0; d < ARRAY_SIZE(dev_options); ++d) {
-		for (size_t t = 0; t < ARRAY_SIZE(tags); ++t) {
-			for (size_t f = 0; f < ARRAY_SIZE(fd_options); ++f) {
-				specs[idx++] =
-					DECL_TEST_SPEC(dev_options[d], tags[t], fd_options[f]);
-			}
-		}
-	}
+	specs[i++] = DECL_TEST_FIND_SPEC(null_dev, found_tag, &result_fd, -ENXIO);
+	specs[i++] = DECL_TEST_FIND_SPEC(valid_dev, found_tag, NULL, 0);
+	specs[i++] = DECL_TEST_FIND_SPEC(valid_dev, not_found_tag, NULL, -ENOENT);
+	specs[i++] = DECL_TEST_FIND_SPEC(valid_dev, NULL, &result_fd, -EINVAL);
+	specs[i++] = DECL_TEST_FIND_SPEC(valid_dev, found_tag, &result_fd, 0);
+	specs[i++] = DECL_TEST_FIND_SPEC(valid_dev, not_found_tag, &result_fd, -ENOENT);
 
 	ARRAY_FOR_EACH(specs, i) {
-		const struct test_spec *spec = &specs[i];
+		struct test_spec *spec = &specs[i];
 
-		int actual = tt_boot_fs_find_fd_by_tag(spec->dev, spec->tag, spec->fd);
+		int actual = tt_boot_fs_find_fd_by_tag(spec->dev, spec->tag, spec->fd_out);
 
-		if (spec->dev == NULL) {
-			zexpect_equal(actual, -ENXIO, "%zu: expected -ENXIO for NULL device", i);
-		} else if (spec->fd == NULL) {
-			zassert_true(actual == 0 || actual == -ENOENT,
-				     "%zu: expected 0 or -ENOENT for NULL fd", i);
-		} else if (strcmp((const char *)spec->tag, "cmfw") == 0) {
-			zassert_true(actual == 0 || actual == -ENOENT,
-				     "%zu: expected 0 or -ENOENT for 'cmfw' tag", i);
-		} else {
-			zexpect_equal(actual, -ENOENT, "%zu: expected
-				 -ENOENT for 'notfound' tag", i);
+		zassert_equal(actual, spec->expect,
+			      "Case %zu: find(tag:\"%s\") failed. Got %d, expected %d", i,
+			      spec->tag, actual, spec->expect);
+		if (actual == 0 && spec->fd_out != NULL) {
+			zassert_mem_equal(spec->fd_out->image_tag, found_tag,
+					  TT_BOOT_FS_IMAGE_TAG_SIZE,
+					  "Case %zu: Returned FD tag does not match", i);
 		}
 	}
 }
