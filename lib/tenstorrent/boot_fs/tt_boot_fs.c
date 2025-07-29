@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdint.h>
 #include <string.h>
 
 #include <tenstorrent/tt_boot_fs.h>
@@ -13,6 +12,9 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(tt_boot_fs, CONFIG_TT_APP_LOG_LEVEL);
 
 tt_boot_fs boot_fs_data;
 static tt_boot_fs_fd boot_fs_cache[16];
@@ -179,84 +181,77 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 	return TT_BOOT_FS_OK;
 }
 
-int tt_bootfs_ng_read(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size)
+int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, size_t offset)
 {
-	if (!device_is_ready(dev)) {
-		return TT_BOOT_FS_ERR;
-	}
-	return flash_read(dev, addr, buffer, size);
-}
-
-int tt_bootfs_ng_write(const struct device *dev, uint32_t addr, uint8_t *buffer, size_t size)
-{
-	if (!device_is_ready(dev)) {
-		return TT_BOOT_FS_ERR;
-	}
-	if (!buffer) {
-		return TT_BOOT_FS_ERR;
-	}
-	return flash_write(dev, addr, buffer, size);
-}
-
-int tt_bootfs_ng_erase(const struct device *dev, uint32_t addr, size_t size)
-{
-	if (!device_is_ready(dev)) {
-		return TT_BOOT_FS_ERR;
-	}
-	if (size == 0) {
-		return TT_BOOT_FS_ERR;
-	}
-	return flash_erase(dev, addr, size);
-}
-
-int tt_bootfs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds)
-{
-	if (!device_is_ready(dev)) {
-		return TT_BOOT_FS_ERR;
+	if (!dev || !device_is_ready(dev)) {
+		return -ENXIO;
 	}
 
-	if (!fds || nfds == 0) {
-		return TT_BOOT_FS_ERR;
-	}
-
+	int ret;
 	tt_boot_fs_fd temp_fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
 
-	if (tt_bootfs_ng_read(dev, TT_BOOT_FS_FD_HEAD_ADDR, (uint8_t *)temp_fds,
-			      sizeof(temp_fds)) != 0) {
-		return TT_BOOT_FS_ERR;
+	if (nfds == 0) {
+		return 0;
 	}
 
-	size_t count = 0;
-	/* Iterate through the fds now in RAM */
-	for (size_t i = 0; i < CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX; i++) {
-		if (count >= nfds) {
-			break;
-		}
+	/* Skipping to offset, iterate through the whole fs, when fds is NULL, or at most nfds */
+	for (size_t i = 0, found = 0, addr = TT_BOOT_FS_FD_HEAD_ADDR;
+	     (fds == NULL) || (found < nfds); i++, found++, addr += sizeof(tt_boot_fs_fd)) {
+		/* use either a pointer to local storage, or a pointer to caller-provided storage */
+		tt_boot_fs_fd *current_fd = (fds == NULL) ? &temp_fds[i] : &fds[found];
 
-		tt_boot_fs_fd *current_fd = &temp_fds[i];
+		/* start reading after offset */
+		if (i < offset) {
+			continue;
+		}
 
 		if (current_fd->flags.f.invalid) {
+			return found;
+		}
+
+		ret = calculate_and_compare_checksum((uint8_t *)current_fd,
+						     sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
+						     current_fd->fd_crc, false);
+
+		if (ret != TT_BOOT_FS_CHK_OK) {
+			/* a checksum is invalid - not a valid tt boot fs*/
+			return -ENXIO;
+		}
+		ret = flash_read(dev, addr, current_fd, sizeof(tt_boot_fs_fd));
+
+		if ((ret < 0) || (ret != sizeof(tt_boot_fs_fd))) {
+			/* read failed, or not enough data */
+			LOG_ERR("%s() failed: %d", "flash_read", ret);
+			return -EIO;
+		}
+	}
+
+	CODE_UNREACHABLE;
+}
+
+int tt_boot_fs_find_fd_by_tag(const struct device *flash_dev, const uint8_t *tag, tt_boot_fs_fd *fd)
+{
+	int ret;
+
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+
+	ret = tt_boot_fs_ls(flash_dev, fds, ARRAY_SIZE(fds), 0);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	ARRAY_FOR_EACH(fds, i) {
+		if (i >= ret) {
 			break;
 		}
 
-		tt_checksum_res_t chk_res = calculate_and_compare_checksum(
-			(uint8_t *)current_fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
-			current_fd->fd_crc, false);
-
-		if (chk_res == TT_BOOT_FS_CHK_OK) {
-			fds[count] = *current_fd;
-			count++;
+		if (strncmp(tag, fds[i].image_tag, sizeof(fds[i].image_tag)) == 0) {
+			if (fd != NULL) {
+				*fd = fds[i];
+			}
+			return 0;
 		}
 	}
-	return count;
-}
-
-const tt_boot_fs_fd *tt_bootfs_ng_find_fd_by_tag(const uint8_t *tag, tt_boot_fs_fd *fds, int count)
-{
-	for (int i = 0; i < count; i++) {
-		if (strncmp(fds[i].image_tag, tag, sizeof(fds[i].image_tag)) == 0) {
-			return &fds[i];
-		}
-	}
-	return NULL;
+	return -ENOENT;
 }
