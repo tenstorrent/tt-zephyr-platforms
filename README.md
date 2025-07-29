@@ -9,7 +9,7 @@ Welcome to TT-Zephyr-Platforms!
 
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
 
-![Zephyr Shell on Blackhole](./doc/img/tt-z-p-v4.2.0.gif)
+![Zephyr Shell on Blackhole](./doc/img/shell.gif)
 
 ## Getting Started
 
