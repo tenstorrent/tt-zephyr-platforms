@@ -1,0 +1,417 @@
+diff --git a/drivers/i2c/i2c_ll_stm32.c b/drivers/i2c/i2c_ll_stm32.c
+index 3146188f150..8601f0c03ba 100644
+--- a/drivers/i2c/i2c_ll_stm32.c
++++ b/drivers/i2c/i2c_ll_stm32.c
+@@ -309,6 +309,23 @@ restore:
+ }
+ #endif /* CONFIG_I2C_STM32_BUS_RECOVERY */
+ 
++static void i2c_stm32_cancel(const struct device *dev)
++{
++	struct i2c_stm32_data *data = dev->data;
++	if (!data->cancelled) {
++		data->cancelled = true;
++#ifdef CONFIG_I2C_STM32_INTERRUPT
++		k_sem_give(&data->device_sync_sem);
++#endif
++	}
++}
++
++static void i2c_stm32_uncancel(const struct device *dev)
++{
++	struct i2c_stm32_data *data = dev->data;
++	data->cancelled = false;
++}
++
+ static DEVICE_API(i2c, api_funcs) = {
+ 	.configure = i2c_stm32_runtime_configure,
+ 	.transfer = i2c_stm32_transfer,
+@@ -323,6 +340,8 @@ static DEVICE_API(i2c, api_funcs) = {
+ #ifdef CONFIG_I2C_RTIO
+ 	.iodev_submit = i2c_iodev_submit_fallback,
+ #endif
++	.cancel = i2c_stm32_cancel,
++	.uncancel = i2c_stm32_uncancel,
+ };
+ 
+ static int i2c_stm32_init(const struct device *dev)
+diff --git a/drivers/i2c/i2c_ll_stm32.h b/drivers/i2c/i2c_ll_stm32.h
+index b194bc5e8f6..5297bdc3a3f 100644
+--- a/drivers/i2c/i2c_ll_stm32.h
++++ b/drivers/i2c/i2c_ll_stm32.h
+@@ -126,6 +126,7 @@ struct i2c_stm32_data {
+ 	struct dma_config dma_rx_cfg;
+ 	struct dma_block_config dma_blk_cfg;
+ #endif /* CONFIG_I2C_STM32_V2_DMA */
++	bool cancelled;
+ #endif /* CONFIG_I2C_RTIO */
+ 
+ #ifdef CONFIG_I2C_TARGET
+diff --git a/drivers/i2c/i2c_ll_stm32_v2.c b/drivers/i2c/i2c_ll_stm32_v2.c
+index ce07e20d9a4..9bc19d51c0b 100644
+--- a/drivers/i2c/i2c_ll_stm32_v2.c
++++ b/drivers/i2c/i2c_ll_stm32_v2.c
+@@ -672,7 +672,6 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 	const struct i2c_stm32_config *cfg = dev->config;
+ 	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+-	bool is_timeout = false;
+ 
+ 	data->current.len = msg->len;
+ 	data->current.buf = msg->buf;
+@@ -694,15 +693,16 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 	i2c_stm32_enable_transfer_interrupts(dev);
+ 	LL_I2C_EnableIT_TX(i2c);
+ 
+-	if (k_sem_take(&data->device_sync_sem,
+-		       K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0) {
++	bool is_timeout = (k_sem_take(&data->device_sync_sem,
++				      K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0);
++
++	if (is_timeout || data->cancelled) {
+ 		i2c_stm32_master_mode_end(dev);
+ 		k_sem_take(&data->device_sync_sem, K_FOREVER);
+-		is_timeout = true;
+ 	}
+ 
+ 	if (data->current.is_nack || data->current.is_err ||
+-	    data->current.is_arlo || is_timeout) {
++	    data->current.is_arlo || data->cancelled || is_timeout) {
+ 		goto error;
+ 	}
+ 
+@@ -725,6 +725,10 @@ error:
+ 		data->current.is_err = 0U;
+ 	}
+ 
++	if (data->cancelled) {
++		LOG_DBG("%s: CANCELLED", __func__);
++	}
++
+ 	if (is_timeout) {
+ 		LOG_DBG("%s: TIMEOUT", __func__);
+ 	}
+@@ -738,7 +742,6 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 	const struct i2c_stm32_config *cfg = dev->config;
+ 	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+-	bool is_timeout = false;
+ 
+ 	data->current.len = msg->len;
+ 	data->current.buf = msg->buf;
+@@ -753,13 +756,15 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 	i2c_stm32_enable_transfer_interrupts(dev);
+ 	LL_I2C_EnableIT_RX(i2c);
+ 
+-	if (k_sem_take(&data->device_sync_sem,
+-		       K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0) {
++	bool is_timeout = (k_sem_take(&data->device_sync_sem,
++				      K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0);
++
++	if (is_timeout || data->cancelled) {
+ 		i2c_stm32_master_mode_end(dev);
+ 		k_sem_take(&data->device_sync_sem, K_FOREVER);
+-		is_timeout = true;
+ 	}
+-#if defined(CONFIG_I2C_STM32_V2_DMA)
++
++	#if defined(CONFIG_I2C_STM32_V2_DMA)
+ 	if (!stm32_buf_in_nocache((uintptr_t)msg->buf, msg->len)) {
+ 		LOG_DBG("Rx buffer at %p (len %zu) is in cached memory; invalidating cache",
+ 			msg->buf, msg->len);
+@@ -768,7 +773,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ #endif /* CONFIG_I2C_STM32_V2_DMA */
+ 
+ 	if (data->current.is_nack || data->current.is_err ||
+-	    data->current.is_arlo || is_timeout) {
++	    data->current.is_arlo || data->cancelled || is_timeout) {
+ 		goto error;
+ 	}
+ 
+@@ -791,6 +796,10 @@ error:
+ 		data->current.is_err = 0U;
+ 	}
+ 
++	if (data->cancelled) {
++		LOG_DBG("%s: CANCELLED", __func__);
++	}
++
+ 	if (is_timeout) {
+ 		LOG_DBG("%s: TIMEOUT", __func__);
+ 	}
+@@ -840,6 +849,7 @@ static inline int msg_done(const struct device *dev,
+ 			   unsigned int current_msg_flags)
+ {
+ 	const struct i2c_stm32_config *cfg = dev->config;
++	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+ 	int64_t start_time = k_uptime_get();
+ 
+@@ -848,6 +858,10 @@ static inline int msg_done(const struct device *dev,
+ 		if (check_errors(dev, __func__)) {
+ 			return -EIO;
+ 		}
++		if (data->cancelled) {
++			/* proceed to issue stop */
++			break;
++		}
+ 		if ((k_uptime_get() - start_time) >
+ 		    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
+ 			return -ETIMEDOUT;
+@@ -856,7 +870,8 @@ static inline int msg_done(const struct device *dev,
+ 	/* Issue stop condition if necessary */
+ 	if (current_msg_flags & I2C_MSG_STOP) {
+ 		LL_I2C_GenerateStopCondition(i2c);
+-		while (!LL_I2C_IsActiveFlag_STOP(i2c)) {
++		while (!LL_I2C_IsActiveFlag_STOP(i2c)
++		       && !data->cancelled) {
+ 			if ((k_uptime_get() - start_time) >
+ 			    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
+ 				return -ETIMEDOUT;
+@@ -867,13 +882,14 @@ static inline int msg_done(const struct device *dev,
+ 		LL_I2C_DisableReloadMode(i2c);
+ 	}
+ 
+-	return 0;
++	return data->cancelled ? -EIO : 0;
+ }
+ 
+ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 			       uint8_t *next_msg_flags, uint16_t slave)
+ {
+ 	const struct i2c_stm32_config *cfg = dev->config;
++	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+ 	unsigned int len = 0U;
+ 	uint8_t *buf = msg->buf;
+@@ -882,8 +898,8 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_WRITE);
+ 
+ 	len = msg->len;
+-	while (len) {
+-		while (1) {
++	while (len && !data->cancelled) {
++		while (!data->cancelled) {
+ 			if (LL_I2C_IsActiveFlag_TXIS(i2c)) {
+ 				break;
+ 			}
+@@ -910,6 +926,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 			      uint8_t *next_msg_flags, uint16_t slave)
+ {
+ 	const struct i2c_stm32_config *cfg = dev->config;
++	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+ 	unsigned int len = 0U;
+ 	uint8_t *buf = msg->buf;
+@@ -918,8 +935,8 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_READ);
+ 
+ 	len = msg->len;
+-	while (len) {
+-		while (!LL_I2C_IsActiveFlag_RXNE(i2c)) {
++	while (len && !data->cancelled) {
++		while (!data->cancelled && !LL_I2C_IsActiveFlag_RXNE(i2c)) {
+ 			if (check_errors(dev, __func__)) {
+ 				return -EIO;
+ 			}
+diff --git a/drivers/smbus/smbus_stm32.c b/drivers/smbus/smbus_stm32.c
+index 7d12188e243..590db91f54c 100644
+--- a/drivers/smbus/smbus_stm32.c
++++ b/drivers/smbus/smbus_stm32.c
+@@ -288,6 +288,18 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
+ 	return res;
+ }
+ 
++static int smbus_stm32_cancel(const struct device *dev)
++{
++	const struct smbus_stm32_config *config = dev->config;
++	return i2c_cancel(config->i2c_dev);
++}
++
++static int smbus_stm32_uncancel(const struct device *dev)
++{
++	const struct smbus_stm32_config *config = dev->config;
++	return i2c_uncancel(config->i2c_dev);
++}
++
+ static DEVICE_API(smbus, smbus_stm32_api) = {
+ 	.configure = smbus_stm32_configure,
+ 	.get_config = smbus_stm32_get_config,
+@@ -301,6 +313,8 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
+ 	.smbus_pcall = smbus_stm32_pcall,
+ 	.smbus_block_write = smbus_stm32_block_write,
+ 	.smbus_block_read = smbus_stm32_block_read,
++	.smbus_cancel = smbus_stm32_cancel,
++	.smbus_uncancel = smbus_stm32_uncancel,
+ #ifdef CONFIG_SMBUS_STM32_SMBALERT
+ 	.smbus_smbalert_set_cb = smbus_stm32_smbalert_set_cb,
+ 	.smbus_smbalert_remove_cb = smbus_stm32_smbalert_remove_cb,
+diff --git a/include/zephyr/drivers/i2c.h b/include/zephyr/drivers/i2c.h
+index c1972782660..ea783482406 100644
+--- a/include/zephyr/drivers/i2c.h
++++ b/include/zephyr/drivers/i2c.h
+@@ -241,6 +241,9 @@ typedef void (*i2c_api_iodev_submit)(const struct device *dev,
+ 
+ typedef int (*i2c_api_recover_bus_t)(const struct device *dev);
+ 
++typedef void (*i2c_api_cancel_t)(const struct device *dev);
++typedef void (*i2c_api_uncancel_t)(const struct device *dev);
++
+ __subsystem struct i2c_driver_api {
+ 	i2c_api_configure_t configure;
+ 	i2c_api_get_config_t get_config;
+@@ -254,6 +257,8 @@ __subsystem struct i2c_driver_api {
+ 	i2c_api_iodev_submit iodev_submit;
+ #endif
+ 	i2c_api_recover_bus_t recover_bus;
++	i2c_api_cancel_t cancel;
++	i2c_api_uncancel_t uncancel;
+ };
+ 
+ typedef int (*i2c_target_api_register_t)(const struct device *dev);
+@@ -1336,6 +1341,58 @@ static inline int z_impl_i2c_target_driver_unregister(const struct device *dev)
+ 	return api->driver_unregister(dev);
+ }
+ 
++/**
++ * @brief Cancel all outstanding I2C transactions and block future
++ *
++ * Any current I2C transaction on this device immediately fails
++ * and returns -ECANCELED. Further I2C transactions fail until
++ * i2c_uncancel is called.
++ *
++ * @param dev Pointer to the device structure for the I2C controller.
++ *
++ * @retval 0 If successful.
++ * @retval -ENOSYS If cancellation is not implemented by the driver.
++ */
++__syscall int i2c_cancel(const struct device *dev);
++
++static inline int z_impl_i2c_cancel(const struct device *dev)
++{
++	const struct i2c_driver_api *api = (const struct i2c_driver_api *)dev->api;
++
++	if (api->cancel == NULL) {
++		return -ENOSYS;
++	}
++
++	api->cancel(dev);
++
++	return 0;
++}
++
++/**
++ * @brief Restore normal I2C operation after cancellation
++ *
++ * The I2C controller processes transactions.
++ *
++ * @param dev Pointer to the device structure for the I2C controller.
++ *
++ * @retval 0 If successful.
++ * @retval -ENOSYS If cancellation is not implemented by the driver.
++ */
++__syscall int i2c_uncancel(const struct device *dev);
++
++static inline int z_impl_i2c_uncancel(const struct device *dev)
++{
++	const struct i2c_driver_api *api = (const struct i2c_driver_api *)dev->api;
++
++	if (api->uncancel == NULL) {
++		return -ENOSYS;
++	}
++
++	api->uncancel(dev);
++
++	return 0;
++}
++
+ /*
+  * Derived i2c APIs -- all implemented in terms of i2c_transfer()
+  */
+@@ -1757,6 +1814,7 @@ static inline int i2c_reg_update_byte_dt(const struct i2c_dt_spec *spec,
+ 				   reg_addr, mask, value);
+ }
+ 
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/include/zephyr/drivers/smbus.h b/include/zephyr/drivers/smbus.h
+index de197becbc2..c249a24bfd6 100644
+--- a/include/zephyr/drivers/smbus.h
++++ b/include/zephyr/drivers/smbus.h
+@@ -377,6 +377,8 @@ typedef int (*smbus_api_smbalert_cb_t)(const struct device *dev,
+ 				       struct smbus_callback *cb);
+ typedef int (*smbus_api_host_notify_cb_t)(const struct device *dev,
+ 					  struct smbus_callback *cb);
++typedef int (*smbus_api_cancel_t)(const struct device *dev);
++typedef int (*smbus_api_uncancel_t)(const struct device *dev);
+ 
+ __subsystem struct smbus_driver_api {
+ 	smbus_api_configure_t configure;
+@@ -396,6 +398,8 @@ __subsystem struct smbus_driver_api {
+ 	smbus_api_smbalert_cb_t smbus_smbalert_remove_cb;
+ 	smbus_api_host_notify_cb_t smbus_host_notify_set_cb;
+ 	smbus_api_host_notify_cb_t smbus_host_notify_remove_cb;
++	smbus_api_cancel_t smbus_cancel;
++	smbus_api_uncancel_t smbus_uncancel;
+ };
+ 
+ /**
+@@ -1084,6 +1088,56 @@ static inline int z_impl_smbus_block_pcall(const struct device *dev,
+ 				       rcv_count, rcv_buf);
+ }
+ 
++/**
++ * @brief Cancel all outstanding SMBus transactions and block future
++ *
++ * Any current SMBus transaction on this device immediately fails
++ * and returns -ECANCELED. Further SMBus transactions fail until
++ * smbus_uncancel is called.
++ *
++ * Note that this sets cancellation on the underlying I2C.
++ *
++ * @param dev Pointer to the device structure for the SMBus driver instance.
++ *
++ * @retval 0 If successful.
++ * @retval -ENOSYS If cancellation is not implemented by the driver.
++ */
++__syscall int smbus_cancel(const struct device *dev);
++
++static inline int z_impl_smbus_cancel(const struct device *dev)
++{
++	const struct smbus_driver_api *api = (const struct smbus_driver_api *)dev->api;
++
++	if (api->smbus_cancel == NULL) {
++		return -ENOSYS;
++	}
++
++	return api->smbus_cancel(dev);
++}
++
++/**
++ * @brief Restore normal SMBus operation after cancellation
++ *
++ * SMBus and underlying I2C return to normal operation.
++ *
++ * @param dev Pointer to the device structure for the SMBus driver instance.
++ *
++ * @retval 0 If successful.
++ * @retval -ENOSYS If cancellation is not implemented by the driver.
++ */
++__syscall int smbus_uncancel(const struct device *dev);
++
++static inline int z_impl_smbus_uncancel(const struct device *dev)
++{
++	const struct smbus_driver_api *api = (const struct smbus_driver_api *)dev->api;
++
++	if (api->smbus_uncancel == NULL) {
++		return -ENOSYS;
++	}
++
++	return api->smbus_uncancel(dev);
++}
++
+ #ifdef __cplusplus
+ }
+ #endif
