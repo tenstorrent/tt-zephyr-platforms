@@ -43,7 +43,7 @@ jobs:
       - id: run
         shell: bash
         run: |
-          west twister -i --run-only --retry-failed=3 $platforms $roots -v
+          west twister -i --run-only $platforms $roots -v
 
       - name: Upload test results
         if: ${{ always() }}
@@ -83,7 +83,7 @@ jobs:
       - name: build and run
         shell: bash
         run: |
-          west twister -i --retry-failed=3 $platforms $tags $configroots $roots
+          west twister -i $platforms $tags $configroots $roots
 
       - name: Upload test results
         if: ${{ always() }}
