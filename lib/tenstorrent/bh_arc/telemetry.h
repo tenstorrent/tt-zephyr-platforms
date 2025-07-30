@@ -72,11 +72,12 @@
 #define TAG_THERM_TRIP_COUNT     60
 #define TAG_ASIC_ID_HIGH         61
 #define TAG_ASIC_ID_LOW          62
+#define TAG_AICLK_MAX            63
+#define TAG_TDC_MAX              64
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
- * Note tt-smi currently only supports up to 62 tags on blackhole.
  */
-#define TAG_COUNT                63
+#define TAG_COUNT                65
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)

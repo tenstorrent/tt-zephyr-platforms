@@ -51,6 +51,7 @@ struct telemetry_table {
 };
 
 /* Global variables */
+/* clang-format off */
 static struct telemetry_table telemetry_table = {
 	.tag_table = {
 		[0] = {TAG_BOARD_ID_HIGH, TELEM_OFFSET(TAG_BOARD_ID_HIGH)},
@@ -108,8 +109,11 @@ static struct telemetry_table telemetry_table = {
 		[53] = {TAG_ASIC_ID_LOW, TELEM_OFFSET(TAG_ASIC_ID_LOW)},
 		[54] = {TAG_THERM_TRIP_COUNT, TELEM_OFFSET(TAG_THERM_TRIP_COUNT)},
 		[55] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
+		[63] = {TAG_AICLK_MAX, TELEM_OFFSET(TAG_AICLK_MAX)},
+		[64] = {TAG_TDC_MAX, TELEM_OFFSET(TAG_TDC_MAX)},
 	},
 };
+/* clang-format on */
 static uint32_t *telemetry = &telemetry_table.telemetry[0];
 
 static struct k_timer telem_update_timer;
@@ -239,6 +243,20 @@ static void write_static_telemetry(uint32_t app_version)
 						      */
 	telemetry_table.entry_count = TAG_COUNT;     /* Runtime count of telemetry entries */
 	telemetry[TAG_TELEM_ENUM_COUNT] = TAG_COUNT; /* Count of telemetry tags */
+
+#if DT_NODE_HAS_PROP(DT_NODELABEL(pll0), max_freqs)
+	uint16_t pll0_max_freqs[] = DT_PROP(DT_NODELABEL(pll0), max_freqs);
+#else
+	uint16_t pll0_max_freqs[4] = {};
+#endif
+
+	telemetry[TAG_AICLK_MAX] = pll0_max_freqs[0];
+
+	const FwTable *fw_table = tt_bh_fwtable_get_fw_table(fwtable_dev);
+
+	telemetry[TAG_VDD_LIMITS] = fw_table->chip_limits.vdd_max;
+	telemetry[TAG_THM_LIMITS] = fw_table->chip_limits.thm_limit;
+	telemetry[TAG_TDC_MAX] = fw_table->chip_limits.tdc_limit;
 
 	/* Get the static values */
 	telemetry[TAG_BOARD_ID_HIGH] =
