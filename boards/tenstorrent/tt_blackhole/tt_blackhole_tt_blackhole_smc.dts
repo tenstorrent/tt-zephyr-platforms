@@ -39,6 +39,11 @@
 	};
 };
 
+/* BH_ARC PLL library will raise system clock to 800MHz */
+&sysclk {
+	clock-frequency = <800000000>;
+};
+
 &i2c0 {
 	status = "okay";
 };
