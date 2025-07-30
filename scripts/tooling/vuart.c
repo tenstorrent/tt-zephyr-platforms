@@ -446,7 +446,8 @@ static int open_tt_dev(struct vuart_data *vuart)
 
 	vuart->fd = open(vuart->dev_name, O_RDWR);
 	if (vuart->fd < 0) {
-		if (errno == ENOENT) {
+		if ((errno == ENOENT) || (errno == ENXIO)) {
+			/* Device isn't found. This is ok, we can perform a rescan */
 			D(1, "%s: %s", strerror(errno), vuart->dev_name);
 		} else {
 			E("%s: %s", strerror(errno), vuart->dev_name);

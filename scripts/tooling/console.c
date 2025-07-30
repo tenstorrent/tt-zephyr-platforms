@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 		loop_ratelimit();
 
 		ret = loop(&_cons);
-		if (ret == -ENOENT) {
+		if ((ret == -ENOENT) || (ret == -ENXIO)) {
 			/*
 			 * Lost the virtual uart connection OR it was not found in the first place.
 			 * Remove and rescan for the device if possible (requires permissions).
