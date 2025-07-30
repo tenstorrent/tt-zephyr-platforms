@@ -79,28 +79,29 @@ else()
 endif()
 
 # ======== Generate filesystem ========
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-set(PYTHON_DEVICETREE_SRC "$ENV{ZEPHYR_BASE}/scripts/dts/python-devicetree/src") # edtlib package
 set(DTS_FILE ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
 set(GEN_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
 set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml)
 
-# Runs the generate_yaml.py script
+# Generates boot filesystem YAML from devicetrees
 add_custom_command(
     OUTPUT ${OUTPUT_FILE}
     COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_DEVICETREE_SRC}:$ENV{PYTHONPATH}
       python3 ${GEN_SCRIPT}
       generate_bootfs
+      --board ${BOARD_REVISION}
       --dts-file ${DTS_FILE}
-      --output-file ${OUTPUT_FILE}
       --bindings-dirs ${APP_DIR}/../../../zephyr/dts/bindings/ ${APP_DIR}/../../dts/bindings/
+      --output-file ${OUTPUT_FILE}
+      --build-dir ${CMAKE_BINARY_DIR}
+      --blobs-dir ${APP_DIR}/../../zephyr/blobs
     DEPENDS
       ${DTS_FILE}
       ${GEN_SCRIPT}
     VERBATIM
 )
 
-# Always run script during every build
+# Generate boot filesystem YAML on every build
 add_custom_target(
     generate_boot_yaml ALL
     DEPENDS ${OUTPUT_FILE}
@@ -109,12 +110,12 @@ add_custom_target(
 if (PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
-    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.bin)
+    set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs_${side}.bin)
     set(OUTPUT_FWBUNDLE_${side_upper} ${CMAKE_BINARY_DIR}/update-${side}.fwbundle)
 
     add_bootfs_and_fwbundle(
       ${BUNDLE_VERSION_STRING}
-      ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-${side}-bootfs.yaml
+      ${CMAKE_BINARY_DIR}/tt_boot_fs_${side}.yaml
       ${OUTPUT_BOOTFS_${side_upper}}
       ${OUTPUT_FWBUNDLE_${side_upper}}
       ${PROD_NAME}_${side}
@@ -136,7 +137,7 @@ else()
   set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.bin)
   add_bootfs_and_fwbundle(
     ${BUNDLE_VERSION_STRING}
-    ${BOARD_DIRECTORIES}/bootfs/${BOARD_REVISION}-bootfs.yaml
+    ${CMAKE_BINARY_DIR}/tt_boot_fs.yaml
     ${OUTPUT_BOOTFS}
     ${OUTPUT_FWBUNDLE}
     ${PROD_NAME}
