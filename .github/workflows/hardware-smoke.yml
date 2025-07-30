@@ -35,17 +35,19 @@ jobs:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v0.0.1
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
         with:
-          path: tt-zephyr-platforms
           ref: ${{ github.ref }}
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-zephyr-platforms
+
+      - name: Prepare Container
+        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -65,7 +67,8 @@ jobs:
           # Run tests tagged with "smoke"
           ./scripts/twister -i \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --flash-before \
+            --west-flash --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -99,14 +102,17 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --west-flash --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-dmc-e2e
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --flash-before \
+            --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -139,7 +145,7 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n
 
   smoke-e2e-test:
     strategy:
@@ -156,20 +162,20 @@ jobs:
             runs-on:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
-    env:
-      "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v0.0.1
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent:/opt/tenstorrent
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
         with:
-          path: tt-zephyr-platforms
           ref: ${{ github.ref }}
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-zephyr-platforms
+
+      - name: Prepare Container
+        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -193,7 +199,8 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --west-flash --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-dmc-e2e
           # Run E2E test to verify DMC and SMC firmware boot, and that
@@ -201,7 +208,9 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --flash-before \
+            --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
 
@@ -243,7 +252,7 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n
 
   build-fw-artifact:
     uses: ./.github/workflows/build-fw.yml
