@@ -64,8 +64,7 @@ jobs:
           # flash DMC and SMC firmware, but since each chip uses a separate
           # debug adapter this doesn't work. For now, just flash DMC
           # then run twister with SMC firmware
-          ./scripts/twister -i --retry-failed 3 \
-            --retry-interval 5 \
+          ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
             --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
