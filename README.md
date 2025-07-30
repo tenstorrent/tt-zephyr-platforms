@@ -169,3 +169,17 @@ Learn more about `twister`
 
 For more information on creating Zephyr Testsuites, visit
 [this](https://docs.zephyrproject.org/latest/develop/test/ztest.html) page.
+
+## Software License
+
+This source code in this repository is made available under the terms of the
+[Apache-2.0 software license](https://www.apache.org/licenses/LICENSE-2.0), as described in the
+accompanying [LICENSE](LICENSE) file.
+
+Additional binary artifacts are separately licensed with terms be found in
+[zephyr/blobs/license.txt](zephyr/blobs/license.txt).
+
+For the avoidance of doubt, this software assists in programming
+[Tenstorrent](https://tenstorrent.com) products. However, making, using, or selling hardware,
+models, or IP may require the license of rights (such as patent rights) from Tenstorrent or
+others.
