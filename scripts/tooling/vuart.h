@@ -104,18 +104,4 @@ size_t vuart_space(struct vuart_data *data);
  */
 int vuart_read(struct vuart_data *data, uint8_t *buf, size_t size);
 
-/**
- * @brief Remove all tenstorrent PCIe devices from the system.
- *
- * @return 0 on success, or a negative error code on failure.
- */
-int pcie_remove(void);
-
-/**
- * @brief Rescan PCIe devices.
- *
- * @return 0 on success, or a negative error code on failure.
- */
-int pcie_rescan(void);
-
 #endif /* SCRIPTS_TOOLING_VUART_H_ */

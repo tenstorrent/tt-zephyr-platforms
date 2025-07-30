@@ -27,6 +27,7 @@
 #include <unistd.h>
 
 #include "logging.h"
+#include "rescan.h"
 #include "vuart.h"
 
 #ifndef UART_CHANNEL
@@ -427,10 +428,9 @@ int main(int argc, char **argv)
 		if (ret == -ENOENT) {
 			/*
 			 * Lost the virtual uart connection OR it was not found in the first place.
-			 * Remove and rescan for the device if possible (requires permissions).
+			 * Remove and rescan for the device if possible
 			 */
-			(void)pcie_remove();
-			ret = pcie_rescan();
+			ret = rescan_pcie(_cons.vuart.dev_name);
 
 			if (ret > 0) {
 				/* found at least one device */
