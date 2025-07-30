@@ -59,13 +59,21 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
+      - name: build-tt-smc_console
+        working-directory: tt-zephyr-platforms/scripts/tooling
+        run: |
+          # Build tt-console
+          make
+
       - name: run-dmc-tests
         working-directory: zephyr
         run: |
           # Run tests tagged with "smoke"
           ./scripts/twister -i \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -99,14 +107,18 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --west-flash \
+            --flash-before \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-dmc-e2e
 
           # Run tests tagged with "smoke"
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
+            --west-flash \
+            --flash-before \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -193,7 +205,9 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
+            --west-flash \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-dmc-e2e
           # Run E2E test to verify DMC and SMC firmware boot, and that
@@ -201,7 +215,9 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
+            --flash-before \
+            --west-flash \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
 
@@ -215,6 +231,7 @@ jobs:
             --west-runner tt_flash \
             --device-testing -c \
             --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
+            --flash-before \
             --outdir twister-e2e-flash
 
       - name: Upload E2E Test results

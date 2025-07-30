@@ -57,6 +57,12 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
+      - name: build-tt-smc_console
+        working-directory: tt-zephyr-platforms/scripts/tooling
+        run: |
+          # Build tt-console
+          make
+
       - name: run-e2e-stress-test
         working-directory: zephyr
         run: |
@@ -67,7 +73,9 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --hardware-map /opt/tenstorrent/twister/hw-map.yml --west-flash \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
+            --west-flash \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-dmc-e2e
           # Rescan PCIe before we run tt-flash
@@ -78,7 +86,8 @@ jobs:
             --west-flash="--force" \
             --west-runner tt_flash \
             --device-testing -c \
-            --device-serial-pty rtt \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
+            --flash-before \
             --outdir twister-e2e-stress
 
       - name: Upload Stress Test results
