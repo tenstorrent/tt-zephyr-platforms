@@ -4,70 +4,107 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#define DT_SIZE_K(x) ((x) * 1024)
+#define DT_SIZE_M(x) (DT_SIZE_K(x) * 1024)
+
 / {
 	partitions {
-		compatible = "fixed-partitions";
+		compatible = "tenstorrent,tt-boot-fs", "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
 
+		flash-device-size = <DT_SIZE_M(16)>;
+		flash-block-size = <DT_SIZE_K(4)>;
+
 		cmfwcfg@14000 {
 			label = "cmfwcfg";
-			reg = <0x14000 0x38>; /* 81920, 56 bytes */
+			reg = <0x14000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+			read-only;
 		};
 
-		cmfw@15000 {
+		origcfg@15000 {
+			label = "origcfg";
+			reg = <0x15000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+			read-only;
+		};
+
+		cmfw@10000000 {
 			label = "cmfw";
-			reg = <0x15000 0x15248>; /* 86016, 86600 bytes */
+			reg = <0x10000000 DT_SIZE_K(106)>;
+			binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
 		};
 
-		ethfwcfg@2b000 {
+		ethfwcfg@30000 {
 			label = "ethfwcfg";
-			reg = <0x2b000 0x200>; /* 176128, 512 bytes */
+			reg = <0x30000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+			read-only;
 		};
 
-		ethfw@2c000 {
+		ethfw@31000 {
 			label = "ethfw";
-			reg = <0x2c000 0x8600>; /* 180224, 34304 bytes */
+			reg = <0x31000 DT_SIZE_K(36)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
+			read-only;
 		};
 
-		memfwcfg@35000 {
+		memfwcfg@3a000 {
 			label = "memfwcfg";
-			reg = <0x35000 0x100>; /* 217088, 256 bytes */
+			reg = <0x3a000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+			read-only;
 		};
 
-		memfw@36000 {
+		memfw@3b000 {
 			label = "memfw";
-			reg = <0x36000 0x2730>; /* 221184, 10032 bytes */
+			reg = <0x3b000 DT_SIZE_K(16)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
+			read-only;
 		};
 
-		ethsdreg@39000 {
+		ethsdreg@3f000 {
 			label = "ethsdreg";
-			reg = <0x39000 0x480>; /* 233472, 1152 bytes */
+			reg = <0x3f000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
+			read-only;
 		};
 
-		ethsdfw@3a000 {
+		ethsdfw@40000 {
 			label = "ethsdfw";
-			reg = <0x3a000 0x4c34>; /* 237568, 19508 bytes */
+			reg = <0x40000 DT_SIZE_K(20)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
+			read-only;
 		};
 
-		bmfw@3f000 {
+		bmfw@45000 {
 			label = "bmfw";
-			reg = <0x3f000 0x8ba0>; /* 258048, 35744 bytes */
+			reg = <0x45000 DT_SIZE_K(52)>;
+			binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
+			read-only;
 		};
 
-		flshinfo@48000 {
+		flshinfo@52000 {
 			label = "flshinfo";
-			reg = <0x48000 0x4>; /* 294912, 4 bytes */
+			reg = <0x52000 DT_SIZE_K(4)>;
+			binary-path =
+				"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
+			read-only;
 		};
 
-		failover@49000 {
-			label = "failover";
-			reg = <0x49000 0x10124>; /* 299008, 65828 bytes */
-		};
-
-		boardcfg@fff000 {
+		boardcfg@53000 {
 			label = "boardcfg";
-			reg = <0xfff000 0x100>; /* 16773120, 256 bytes */
+			reg = <0x53000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+			read-only;
+		};
+
+		failover@10000000 {
+			label = "failover";
+			reg = <0x10000000 DT_SIZE_K(76)>;
+			binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
+			read-only;
 		};
 	};
 };

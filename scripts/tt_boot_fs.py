@@ -872,13 +872,110 @@ def mkbundle(
         shutil.rmtree(bundle_dir)
 
 
+def _generate_bootfs_yaml(
+    args, partitions_node, name: str, gen_name: str, out_yaml: str
+):
+    """
+    Parameters:
+      name - Name of the board (eg. P100A-1, P300A-1_left)
+      gen_name - Gen name of the board (eg. P100A, P300A_L)
+      out_yaml - Output YAML file name
+    """
+
+    prod_name = args.board.upper()
+
+    partitions_yml = {
+        "name": name,
+        "product_name": prod_name,
+        "gen_name": gen_name,
+        "alignment": {
+            "flash_device_size": partitions_node.props["flash-device-size"].val,
+            "flash_block_size": partitions_node.props["flash-block-size"].val,
+        },
+        "images": [],
+    }
+
+    _logger.debug(partitions_yml)
+
+    for partition in partitions_node.children.values():
+        # Galaxy does not have BM firmware
+        if args.board == "galaxy" and partition.label == "bmfw":
+            continue
+        # P300 right chip does not have BM firmware
+        if name[-5:] == "right" and partition.label == "bmfw":
+            continue
+        # P300 does not have origcfg
+        if args.board == "p300" and partition.label == "origcfg":
+            continue
+
+        label = partition.label
+        offset, size = partition.props["reg"].val
+        path = partition.props["binary-path"].val
+        path = path.replace(
+            "$BOARD_REV",
+            gen_name if partition.label != "memfwcfg" else prod_name,
+        )
+        path = path.replace("$BUILD_DIR", str(args.build_dir))
+        path = path.replace("$BLOBS_DIR", str(args.blobs_dir))
+        read_only = partition.read_only
+
+        # Right now tt_boot_fs expects a very specific format, so that's why
+        # the YAML generation is done in a more manual way below.
+        if label == "cmfw":
+            image_entry = {
+                "name": label,
+                "offset": offset,
+                "binary": path,
+                "executable": not read_only,
+            }
+        elif label == "bmfw":
+            image_entry = {
+                "name": label,
+                "padto": size,
+                "binary": path,
+            }
+        elif label == "boardcfg":
+            image_entry = {
+                "name": label,
+                "binary": path,
+                "provisioning_only": True,
+                "source": "$END - 0x1000",
+            }
+        elif label == "failover":
+            image_entry = {
+                "name": label,
+                "offset": offset,
+                "binary": path,
+            }
+        else:
+            image_entry = {
+                "name": label,
+                "binary": path,
+            }
+
+        if label == "failover":
+            partitions_yml["fail_over_image"] = image_entry
+        else:
+            partitions_yml["images"].append(image_entry)
+
+    # Create output file directory
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    # Write YAML to output file
+    with open(out_yaml, "w", encoding="utf-8") as f:
+        yaml_str = yaml.dump(
+            partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
+        )
+
+    _logger.debug(f"\nGenerated YAML Content: {args.output_file}\n{yaml_str}")
+
+
 def invoke_generate_bootfs_yaml(args):
     """
-    Generates a flash partition YAML file from the partitions node in the
+    Generates a boot filesystem YAML file from the partitions node in the
     Zephyr devicetree at build time.
-
-    If a child of the partition has its nodelabel suffixed with '_executable',
-    then its executable bit will be set.
 
     See parse_args() for a descriptive list of arguments.
     """
@@ -890,38 +987,32 @@ def invoke_generate_bootfs_yaml(args):
 
     edt = edtlib.EDT(args.dts_file, args.bindings_dirs)
 
-    partitions_nodes = edt.compat2nodes.get("fixed-partitions")
+    partitions_nodes = edt.compat2nodes.get("tenstorrent,tt-boot-fs")
     partitions_node = partitions_nodes[0]
-    partitions_yml = {"flash_partitions": {}}
 
-    for partition in partitions_node.children.values():
-        # Required properties
-        label = partition.props["label"].val
-        reg_val = partition.props["reg"].val
-        offset, size = reg_val
-        partitions_data = {"offset": offset, "size": size}
-
-        # Executable node label convention
-        exec_suffix = "executable"
-        if label.endswith(exec_suffix):
-            partitions_data[exec_suffix] = 1
-            label.removesuffix(exec_suffix)
-
-        partitions_yml["flash_partitions"][label] = partitions_data
-
-    output_dir = os.path.dirname(args.output_file)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
-
-    with open(args.output_file, "w", encoding="utf-8") as f:
-        yaml.dump(
-            partitions_yml, f, default_flow_style=False, sort_keys=False, indent=2
+    if "p300" in args.board:
+        _generate_bootfs_yaml(
+            args,
+            partitions_node,
+            args.board.upper() + "-1_left",
+            args.board.upper() + "_L",
+            args.output_file[:-5] + "_left.yaml",
         )
-
-    _logger.debug(f"\nGenerated YAML Content: {args.output_file}")
-    _logger.debug(
-        yaml.dump(partitions_yml, default_flow_style=False, sort_keys=False, indent=2)
-    )
+        _generate_bootfs_yaml(
+            args,
+            partitions_node,
+            args.board.upper() + "-1_right",
+            args.board.upper() + "_R",
+            args.output_file[:-5] + "_right.yaml",
+        )
+    else:
+        _generate_bootfs_yaml(
+            args,
+            partitions_node,
+            args.board.upper() + "-1",
+            args.board.upper(),
+            args.output_file,
+        )
 
     return os.EX_OK
 
@@ -995,6 +1086,11 @@ def parse_args():
         allow_abbrev=False,
     )
     generate_bootfs_parser.add_argument(
+        "--board",
+        required=True,
+        help="Type of Tenstorrent Blackhole board.",
+    )
+    generate_bootfs_parser.add_argument(
         "--dts-file",
         required=True,
         help="Zephyr devicetree file containing the partition node.",
@@ -1008,6 +1104,16 @@ def parse_args():
     )
     generate_bootfs_parser.add_argument(
         "--output-file", required=True, help="Output YAML file."
+    )
+    generate_bootfs_parser.add_argument(
+        "--build-dir",
+        required=True,
+        help="Build directory containing smc, dmc and recovery firmware binaries.",
+    )
+    generate_bootfs_parser.add_argument(
+        "--blobs-dir",
+        required=True,
+        help="Blobs directory containing ethernet and memory firmware binaries.",
     )
     generate_bootfs_parser.add_argument(
         "--verbose", default=0, action="count", help="Log the YAML file."
