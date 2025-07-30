@@ -36,3 +36,6 @@ properties:
   use_post_divs:
     type: array
     required: true
+
+  max_freqs:
+    type: array
