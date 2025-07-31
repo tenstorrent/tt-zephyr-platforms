@@ -21,7 +21,7 @@ if(CONFIG_SOC_TT_BLACKHOLE_SMC)
   endif()
 
   zephyr_library()
-  zephyr_library_sources(soc.c)
+  zephyr_library_sources(soc.c fpu_init.c)
 
   set(SOC_LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/tt_blackhole_smc.ld CACHE INTERNAL "")
 endif()
