@@ -8,7 +8,7 @@ if(CONFIG_SOC_TT_BLACKHOLE_SMC)
   if(COMPILER STREQUAL gcc)
     # GNU compiler options
     zephyr_compile_options(-mno-sdata)
-    zephyr_compile_options_ifdef(CONFIG_FPU -mfpu=fpud_all -mtune=hs4xd)
+    zephyr_compile_options_ifdef(CONFIG_FPU -mfpu=fpud_all)
   else()
     # MWDT compiler options
      zephyr_compile_options(-arcv2hs -core4 -Xdual_issue -Xcode_density -Hrgf_banked_regs=32 -HL
