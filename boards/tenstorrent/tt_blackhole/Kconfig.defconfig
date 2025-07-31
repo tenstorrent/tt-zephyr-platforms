@@ -10,12 +10,9 @@ choice LOG_MODE
 	default LOG_MODE_DEFERRED
 endchoice
 choice LOG_BACKEND_RTT_MODE
-	# Do not block the logging thread in case of a full buffer
+	# Do not block the logging thread in case of a full buffer, preserve the oldest logs
 	default LOG_BACKEND_RTT_MODE_DROP
 endchoice
-# RTT is the primary log backend for devices connected via JTAG or SWD without UARTs
-config LOG_BACKEND_RTT
-	default y if LOG
 
 endif
 
@@ -26,4 +23,14 @@ if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
 config FLASH_INIT_PRIORITY
 	default 80 if BOARD_TT_BLACKHOLE_TT_BLACKHOLE_SMC
 
+choice LOG_BACKEND_RTT_MODE
+	# Do not block the logging thread in case of a full buffer, preserve the newest logs
+	default LOG_BACKEND_RTT_MODE_OVERWRITE
+endchoice
+
 endif
+
+# RTT is the primary log backend for devices connected via JTAG or SWD without UARTs
+# It is also used for collecting logs from SMC before PCIe enumerates
+config LOG_BACKEND_RTT
+	default y if LOG
