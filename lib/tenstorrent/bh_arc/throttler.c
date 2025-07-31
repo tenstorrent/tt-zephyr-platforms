@@ -213,7 +213,7 @@ int32_t Dm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 
 	uint32_t power_limit = sys_get_le16(data);
 
-	LOG_INF("Cable Power Limit: %u\n", power_limit);
+	LOG_INF("Cable Power Limit: %u", power_limit);
 	power_limit = MIN(power_limit,
 			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.board_power_limit);
 
