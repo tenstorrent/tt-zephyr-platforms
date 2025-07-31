@@ -250,12 +250,12 @@ uint32_t RegulatorInit(PcbType board_type)
 				const RegulatorData *regulator_data =
 					&regulator_config->regulator_data[j];
 
-				LOG_DBG("Regulator %#x init on cmd %#x",
-					regulator_config->address, regulator_data->cmd);
+				LOG_DBG("Regulator %#x init on cmd %#x", regulator_config->address,
+					regulator_data->cmd);
 
 				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-					regulator_data->mask, regulator_data->size);
+						    PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+						    regulator_data->mask, regulator_data->size);
 
 				if (i2c_error) {
 					LOG_WRN("Regulator %#x init retried on cmd %#x "
@@ -266,9 +266,10 @@ uint32_t RegulatorInit(PcbType board_type)
 					/* First, try a bus recovery */
 					I2CRecoverBus(PMBUS_MST_ID);
 					/* Retry once */
-					i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-						PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-						regulator_data->mask, regulator_data->size);
+					i2c_error =
+						I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+							PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+							regulator_data->mask, regulator_data->size);
 					if (i2c_error) {
 						LOG_ERR("Regulator init failed on cmd %#x "
 							"with error %#x",
