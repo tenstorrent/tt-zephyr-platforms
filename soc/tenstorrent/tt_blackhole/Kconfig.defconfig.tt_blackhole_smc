@@ -81,4 +81,12 @@ config GPIO
 # config RESET
 #	default y
 
+if LOG_BACKEND_RTT
+
+# Enable RTT mode overwrite for the RTT logger backend so that we never block any threads.
+config LOG_BACKEND_RTT_MODE_OVERWRITE
+	default y
+
+endif
+
 endif # SOC_TT_BLACKHOLE_SMC
