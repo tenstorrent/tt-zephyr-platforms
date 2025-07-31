@@ -132,3 +132,17 @@ patches:
     upstreamable: false
     comments: |
       Add k_busy_wait_ns() helper for nanosecond busy wait support.
+  - path: zephyr/rtt-logging-snippet.patch
+    sha256sum: de21cc2e133a3339e6d89c9dba1867241a8163b06476319206daaf51471756d3
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-07-31
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/93950
+    comments: |
+      Add a snippet to enable RTT logging. This allows us to extract log information
+      even if PCIe has not enumerated. Multiple log backends may be enabled at the same time.
+      The strategy is to enable RTT until PCIe has enumerated, and then disable it later.
+      RTT has been configured to overwrite by default when the log buffer is full, since
+      otherwise, the system may hang.
