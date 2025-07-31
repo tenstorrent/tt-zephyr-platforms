@@ -46,6 +46,8 @@ Major enhancements with this release include:
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
 
+* Expose firmware telemetry values `AICLK_MAX`, `VDD_LIMIT`, `THM_LIMIT` and `TDC_LIMIT` in the telemetry table for `tt-smi`.
+
 [comment]: <> (H2 New Boards, if applicable)
 
 ## Migration guide
