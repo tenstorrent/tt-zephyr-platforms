@@ -13,6 +13,7 @@
 #include "reg.h"
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
@@ -36,8 +37,6 @@ static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 #define MRISC_FW_CFG_TAG "memfwcfg"
 
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
-
-extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -89,8 +88,8 @@ void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
 {
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	bool dma_pass = ArcDmaTransfer((const void *) (mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-		gddr_telemetry, sizeof(*gddr_telemetry));
+	bool dma_pass = ArcDmaTransfer((const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
+				       gddr_telemetry, sizeof(*gddr_telemetry));
 	if (!dma_pass) {
 		/* If DMA failed, can read 32b at a time via NOC2AXI */
 		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
@@ -144,22 +143,37 @@ void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
 	}
 }
 
-int LoadMriscFw(uint8_t gddr_inst, uint8_t *fw_image, uint32_t fw_size)
+int LoadMriscFw(uint8_t gddr_inst, const uint8_t *tag)
 {
+	tt_boot_fs_fd fd_data;
+
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, tag, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", tag, -EIO);
+		return -EIO;
+	}
+	uint32_t spi_address = fd_data.spi_addr;
+	uint32_t image_size = fd_data.flags.f.image_size;
+
 	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 
-	bool dma_pass = ArcDmaTransfer(fw_image, (void *)mrisc_l1, fw_size);
-
-	return dma_pass ? 0 : -1;
+	return spi_arc_dma_transfer_to_tile(spi_address, image_size, (uint8_t *)mrisc_l1);
 }
 
-int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *fw_cfg_image, uint32_t fw_cfg_size)
+int LoadMriscFwCfg(uint8_t gddr_inst, const uint8_t *tag)
 {
+	tt_boot_fs_fd fd_data;
+
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, tag, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", tag, -EIO);
+		return -EIO;
+	}
+	uint32_t spi_address = fd_data.spi_addr;
+	uint32_t image_size = fd_data.flags.f.image_size;
+
 	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 
-	bool dma_pass = ArcDmaTransfer(fw_cfg_image, (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET,
-				       fw_cfg_size);
-	return dma_pass ? 0 : -1;
+	return spi_arc_dma_transfer_to_tile(spi_address, image_size,
+					    (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET);
 }
 
 uint32_t GetDramMask(void)
@@ -248,37 +262,41 @@ static int InitMrisc(void)
 
 	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 
-	size_t fw_size = 0;
-
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
 			SetAxiEnable(gddr_inst, noc2axi_port, true);
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_TAG, (uint8_t *)large_sram_buffer,
-				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
-		return -EIO;
-	}
 	uint32_t dram_mask = GetDramMask();
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFw(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+			if (LoadMriscFw(gddr_inst, MRISC_FW_TAG)) {
 				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
 				return -EIO;
 			}
 		}
 	}
 
-	if (tt_boot_fs_get_file(&boot_fs_data, MRISC_FW_CFG_TAG, (uint8_t *)large_sram_buffer,
-				SCRATCHPAD_SIZE, &fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+	/* Allocate a temp buffer to read gddr speed from cfg */
+	tt_boot_fs_fd fd_data;
+	uint8_t *buf = NULL;
+
+	if (tt_boot_fs_find_fd_by_tag(&boot_fs_data, MRISC_FW_CFG_TAG, &fd_data) != TT_BOOT_FS_OK) {
+		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_CFG_TAG, -EIO);
 		return -EIO;
 	}
 
-	uint32_t gddr_speed = GetGddrSpeedFromCfg((uint8_t *)large_sram_buffer);
+	if (spi_flash_read_data_to_buf(fd_data.spi_addr, fd_data.flags.f.image_size, &buf)) {
+		LOG_ERR("%s failed: %d", "spi_flash_read_data_to_buf", -EIO);
+		return -EIO;
+	}
+
+	uint32_t gddr_speed = GetGddrSpeedFromCfg(buf);
+
+	k_free(buf);
+	buf = NULL;
 
 	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
 		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
@@ -294,7 +312,7 @@ static int InitMrisc(void)
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFwCfg(gddr_inst, (uint8_t *)large_sram_buffer, fw_size)) {
+			if (LoadMriscFwCfg(gddr_inst, MRISC_FW_CFG_TAG)) {
 				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
 				return -EIO;
 			}
@@ -302,6 +320,8 @@ static int InitMrisc(void)
 			ReleaseMriscReset(gddr_inst);
 		}
 	}
+	k_free(buf);
+	buf = NULL;
 
 	return 0;
 }
