@@ -31,7 +31,6 @@ $zep_base/scripts/ci/check_compliance.py \
 	-e KconfigBasicNoModules \
 	-e SysbuildKconfigBasic \
 	-e BinaryFiles \
-	-e ClangFormat \
 	-n -o /dev/null \
 	-c main..$HEAD
 
