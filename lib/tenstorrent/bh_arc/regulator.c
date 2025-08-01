@@ -7,6 +7,7 @@
 #include "avs.h"
 #include "dw_apb_i2c.h"
 #include "regulator.h"
+#include "regulator_config.h"
 #include "status_reg.h"
 #include "timer.h"
 
@@ -45,20 +46,6 @@
 #define OPERATION_DATA_BYTE_SIZE       1
 #define PMBUS_CMD_BYTE_SIZE            1
 #define PMBUS_FLIP_BYTES               0
-
-/* I2C slave addresses */
-#define SERDES_VDDL_ADDR            0x30
-#define SERDES_VDD_ADDR             0x31
-#define SERDES_VDDH_ADDR            0x32
-#define GDDR_VDDR_ADDR              0x33
-#define GDDRIO_WEST_ADDR            0x36
-#define GDDRIO_EAST_ADDR            0x37
-#define CB_GDDR_VDDR_WEST_ADDR      0x54
-#define CB_GDDR_VDDR_EAST_ADDR      0x55
-#define SCRAPPY_GDDR_VDDR_WEST_ADDR 0x56
-#define SCRAPPY_GDDR_VDDR_EAST_ADDR 0x57
-#define P0V8_VCORE_ADDR             0x64
-#define P0V8_VCOREM_ADDR            0x65
 
 /* VR feedback resistors */
 #define GDDR_VDDR_FB1         0.422
@@ -231,202 +218,68 @@ void SwitchVoutControl(VoltageCmdSource source)
 
 uint32_t RegulatorInit(PcbType board_type)
 {
-	/* Helpers used in this function */
-	#define REGULATOR_DATA(regulator, cmd) \
-		{0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask, \
-		sizeof(regulator##_##cmd##_data)}
-
-	typedef struct {
-		uint8_t cmd;
-		const uint8_t *data;
-		const uint8_t *mask;
-		uint32_t size;
-	} RegulatorData;
-
 	uint32_t aggregate_i2c_errors = 0;
 	uint32_t i2c_error = 0;
 
-	if (board_type == PcbTypeP150 || board_type == PcbTypeP100) {
-		/* VCORE */
-		static const uint8_t vcore_b0_data[] = {
-			0x00, 0x00, 0x00, 0x00,
-			0x00, 0x02, 0x00, 0x00,
-			0x11, 0x00, 0x00, 0x00,
-			0x00, 0x41, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00};
-		static const uint8_t vcore_b0_mask[] = {
-			0x00, 0x00, 0x00, 0x00,
-			0x00, 0x1f, 0x00, 0x00,
-			0x1f, 0x00, 0x00, 0x00,
-			0x00, 0x7f, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00};
+	const BoardRegulatorsConfig *regulators_config = NULL;
 
-		BUILD_ASSERT(sizeof(vcore_b0_data) == sizeof(vcore_b0_mask));
+	if (board_type == PcbTypeP100) {
+		regulators_config = &p100_regulators_config;
+	} else if (board_type == PcbTypeP150) {
+		regulators_config = &p150_regulators_config;
+	} else if (board_type == PcbTypeP300) {
+		if (tt_bh_fwtable_is_p300_left_chip()) {
+			regulators_config = &p300_left_regulators_config;
+		} else {
+			regulators_config = &p300_right_regulators_config;
+		}
+	} else if (board_type == PcbTypeUBB) {
+		regulators_config = &ubb_regulators_config;
+	} else {
+		LOG_ERR("Unsupported board type %d", board_type);
+		return -ENOTSUP;
+	}
+	if (regulators_config) {
+		for (uint32_t i = 0; i < regulators_config->count; i++) {
+			const RegulatorConfig *regulator_config =
+				regulators_config->regulator_config + i;
 
-		static const uint8_t vcore_cb_data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-		static const uint8_t vcore_cb_mask[] = {0x00, 0x07, 0x00, 0x00, 0x00, 0x00};
+			I2CInit(I2CMst, regulator_config->address, I2CFastMode, PMBUS_MST_ID);
 
-		BUILD_ASSERT(sizeof(vcore_cb_data) == sizeof(vcore_cb_mask));
+			for (uint32_t j = 0; j < regulator_config->count; j++) {
+				const RegulatorData *regulator_data =
+					&regulator_config->regulator_data[j];
 
-		static const uint8_t vcore_d3_data[] = {0x00};
-		static const uint8_t vcore_d3_mask[] = {0x80};
+				LOG_DBG("Regulator %#x init on cmd %#x",
+					regulator_config->address, regulator_data->cmd);
 
-		BUILD_ASSERT(sizeof(vcore_d3_data) == sizeof(vcore_d3_mask));
-
-		static const uint8_t vcore_ca_data[] = {0x00, 0x78, 0x00, 0x00, 0x00};
-		static const uint8_t vcore_ca_mask[] = {0x00, 0xff, 0x00, 0x00, 0x00};
-
-		BUILD_ASSERT(sizeof(vcore_ca_data) == sizeof(vcore_ca_mask));
-
-		static const uint8_t vcore_38_data[] = {0x08, 0x00};
-		static const uint8_t vcore_38_mask[] = {0xff, 0x07};
-
-		BUILD_ASSERT(sizeof(vcore_38_data) == sizeof(vcore_38_mask));
-
-		static const uint8_t vcore_39_data[] = {0x0c, 0x00};
-		static const uint8_t vcore_39_mask[] = {0xff, 0x07};
-
-		BUILD_ASSERT(sizeof(vcore_39_data) == sizeof(vcore_39_mask));
-
-		static const uint8_t vcore_e7_data[] = {0x01};
-		static const uint8_t vcore_e7_mask[] = {0x07};
-
-		BUILD_ASSERT(sizeof(vcore_e7_data) == sizeof(vcore_e7_mask));
-
-		static const RegulatorData vcore_data[] = {
-			REGULATOR_DATA(vcore, b0),
-			REGULATOR_DATA(vcore, cb),
-			REGULATOR_DATA(vcore, d3),
-			REGULATOR_DATA(vcore, ca),
-			REGULATOR_DATA(vcore, 38),
-			REGULATOR_DATA(vcore, 39),
-			REGULATOR_DATA(vcore, e7),
-		};
-
-		I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
-
-		ARRAY_FOR_EACH_PTR(vcore_data, regulator_data) {
-			LOG_DBG("Vcore regulator init on cmd %#x", regulator_data->cmd);
-			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-				regulator_data->mask, regulator_data->size);
-
-			if (i2c_error) {
-				LOG_WRN("Vcore regulator init retried on cmd %#x with error %#x",
-					regulator_data->cmd, i2c_error);
-				/* First, try a bus recovery */
-				I2CRecoverBus(PMBUS_MST_ID);
-				/* Retry once */
 				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
 					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
 					regulator_data->mask, regulator_data->size);
+
 				if (i2c_error) {
-					LOG_ERR("Vcore regulator init failed on cmd %#x "
+					LOG_WRN("Regulator %#x init retried on cmd %#x "
 						"with error %#x",
-						regulator_data->cmd, i2c_error);
-					aggregate_i2c_errors |= i2c_error;
-				} else {
-					LOG_INF("Vcore regulator init succeeded on cmd %#x",
-						regulator_data->cmd);
+						regulator_config->address, regulator_data->cmd,
+						i2c_error);
+
+					/* First, try a bus recovery */
+					I2CRecoverBus(PMBUS_MST_ID);
+					/* Retry once */
+					i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
+						PMBUS_CMD_BYTE_SIZE, regulator_data->data,
+						regulator_data->mask, regulator_data->size);
+					if (i2c_error) {
+						LOG_ERR("Regulator init failed on cmd %#x "
+							"with error %#x",
+							regulator_data->cmd, i2c_error);
+						aggregate_i2c_errors |= i2c_error;
+					} else {
+						LOG_INF("Regulator init succeeded on cmd %#x",
+							regulator_data->cmd);
+					}
 				}
 			}
-		}
-
-		/* VCOREM */
-		static const uint8_t vcorem_b0_data[] = {
-			0x00, 0x00, 0x2b, 0x00,
-			0x00, 0x07, 0x00, 0x00,
-			0x09, 0x00, 0x09, 0x00,
-			0x00, 0x00, 0x00, 0x00};
-		static const uint8_t vcorem_b0_mask[] = {
-			0x00, 0x00, 0x3f, 0x00,
-			0x00, 0x1f, 0x00, 0x00,
-			0x1f, 0x00, 0x0f, 0x00,
-			0x00, 0x00, 0x00, 0x00};
-
-		BUILD_ASSERT(sizeof(vcorem_b0_data) == sizeof(vcorem_b0_mask));
-
-		static const uint8_t vcorem_38_data[] = {0x08, 0x00};
-		static const uint8_t vcorem_38_mask[] = {0xff, 0x07};
-
-		BUILD_ASSERT(sizeof(vcorem_38_data) == sizeof(vcorem_38_mask));
-
-		static const uint8_t vcorem_39_data[] = {0x0c, 0x00};
-		static const uint8_t vcorem_39_mask[] = {0xff, 0x07};
-
-		BUILD_ASSERT(sizeof(vcorem_39_data) == sizeof(vcorem_39_mask));
-
-		static const uint8_t vcorem_e7_data[] = {0x04};
-		static const uint8_t vcorem_e7_mask[] = {0x07};
-
-		BUILD_ASSERT(sizeof(vcorem_e7_data) == sizeof(vcorem_e7_mask));
-
-		static const RegulatorData vcorem_data[] = {
-			REGULATOR_DATA(vcorem, b0),
-			REGULATOR_DATA(vcorem, 38),
-			REGULATOR_DATA(vcorem, 39),
-			REGULATOR_DATA(vcorem, e7),
-		};
-
-		I2CInit(I2CMst, P0V8_VCOREM_ADDR, I2CFastMode, PMBUS_MST_ID);
-
-		ARRAY_FOR_EACH_PTR(vcorem_data, regulator_data) {
-			LOG_DBG("Vcorem regulator init on cmd %#x", regulator_data->cmd);
-			i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-				PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-				regulator_data->mask, regulator_data->size);
-
-			if (i2c_error) {
-				LOG_WRN("Vcorem regulator init retried on cmd %#x with error %#x",
-					regulator_data->cmd, i2c_error);
-				/* Retry once */
-				i2c_error = I2CRMWV(PMBUS_MST_ID, regulator_data->cmd,
-					PMBUS_CMD_BYTE_SIZE, regulator_data->data,
-					regulator_data->mask, regulator_data->size);
-				if (i2c_error) {
-					LOG_ERR("Vcorem regulator init failed on cmd %#x "
-						"with error %#x",
-						regulator_data->cmd, i2c_error);
-					aggregate_i2c_errors |= i2c_error;
-				} else {
-					LOG_INF("Vcorem regulator init succeeded on cmd %#x",
-						regulator_data->cmd);
-				}
-			}
-		}
-	}
-
-	/* GDDRIO */
-	if (board_type == PcbTypeUBB) {
-		static const uint8_t gddrio_addr[] = {GDDRIO_WEST_ADDR, GDDRIO_EAST_ADDR};
-		uint16_t vout_scale_loop = 444;
-		uint16_t vout_cmd = 675;
-
-		ARRAY_FOR_EACH_PTR(gddrio_addr, addr_ptr) {
-			I2CInit(I2CMst, *addr_ptr, I2CFastMode, PMBUS_MST_ID);
-			I2CWriteBytes(PMBUS_MST_ID, VOUT_SCALE_LOOP, PMBUS_CMD_BYTE_SIZE,
-				      (uint8_t *)&vout_scale_loop, VOUT_SCALE_LOOP_DATA_BYTE_SIZE);
-			I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE,
-				      (uint8_t *)&vout_cmd, VOUT_COMMAND_DATA_BYTE_SIZE);
-		}
-	}
-
-	if (board_type == PcbTypeP150 || board_type == PcbTypeP300 || board_type == PcbTypeUBB) {
-		static const uint8_t serdes_vr_addr[] = {SERDES_VDDL_ADDR, SERDES_VDD_ADDR,
-							 SERDES_VDDH_ADDR};
-		uint8_t mfr_ctrl_ops = 7;
-
-		ARRAY_FOR_EACH_PTR(serdes_vr_addr, addr_ptr) {
-			/* Skip serdes_vdd for p300 left chip */
-			if (tt_bh_fwtable_is_p300_left_chip() && *addr_ptr == SERDES_VDD_ADDR) {
-				continue;
-			}
-
-			I2CInit(I2CMst, *addr_ptr, I2CFastMode, PMBUS_MST_ID);
-			I2CWriteBytes(PMBUS_MST_ID, MFR_CTRL_OPS, PMBUS_CMD_BYTE_SIZE,
-				      &mfr_ctrl_ops, MFR_CTRL_OPS_DATA_BYTE_SIZE);
 		}
 	}
 	return aggregate_i2c_errors;
