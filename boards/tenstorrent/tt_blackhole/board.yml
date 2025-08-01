@@ -10,16 +10,9 @@ boards:
     - name: "p150a"
     - name: "p150b"
     - name: "p150c"
-    - name: "p300"
     - name: "p300a"
     - name: "p300b"
     - name: "p300c"
     - name: "galaxy"
-  socs:
-  - name: tt_blackhole
-
-- name: p300
-  full_name: Tenstorrent Blackhole p300 board
-  vendor: tenstorrent
   socs:
   - name: tt_blackhole
