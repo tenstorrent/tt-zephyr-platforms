@@ -460,10 +460,17 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 
 		clock_control_tt_bh_update(config, &pll_settings);
 	} else if (clock == CLOCK_CONTROL_TT_BH_CLOCK_AICLK) {
-		uint32_t target_fbdiv = ((uint32_t)rate * 2) / config->refclk_rate;
+		uint32_t target_fbdiv;
 		pll_cntl_1_reg pll_cntl_1;
+		pll_cntl_5_reg pll_cntl_5;
+		pll_use_postdiv_reg use_postdiv;
 
 		pll_cntl_1.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_1_OFFSET);
+		pll_cntl_5.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_5_OFFSET);
+		use_postdiv.val = clock_control_tt_bh_read_reg(config, PLL_USE_POSTDIV_OFFSET);
+		target_fbdiv =
+			clock_control_tt_bh_calculate_fbdiv(config->refclk_rate, (uint32_t)rate,
+							    pll_cntl_1, pll_cntl_5, use_postdiv, 0);
 
 		while (pll_cntl_1.f.fbdiv != target_fbdiv) {
 			if (target_fbdiv > pll_cntl_1.f.fbdiv) {
