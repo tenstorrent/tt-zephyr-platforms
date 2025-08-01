@@ -4,12 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <stdint.h>
 #include <string.h>
 
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(tt_boot_fs, CONFIG_TT_APP_LOG_LEVEL);
 
 tt_boot_fs boot_fs_data;
 static tt_boot_fs_fd boot_fs_cache[16];
@@ -174,4 +179,79 @@ int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_
 	}
 
 	return TT_BOOT_FS_OK;
+}
+
+int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, size_t offset)
+{
+	if (!dev || !device_is_ready(dev)) {
+		return -ENXIO;
+	}
+
+	int ret;
+	tt_boot_fs_fd temp_fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+
+	if (nfds == 0) {
+		return 0;
+	}
+
+	/* Skipping to offset, iterate through the whole fs, when fds is NULL, or at most nfds */
+	for (size_t i = 0, found = 0, addr = TT_BOOT_FS_FD_HEAD_ADDR;
+	     (fds == NULL) || (found < nfds); i++, found++, addr += sizeof(tt_boot_fs_fd)) {
+		/* use either a pointer to local storage, or a pointer to caller-provided storage */
+		tt_boot_fs_fd *current_fd = (fds == NULL) ? &temp_fds[i] : &fds[found];
+
+		/* start reading after offset */
+		if (i < offset) {
+			continue;
+		}
+
+		if (current_fd->flags.f.invalid) {
+			return found;
+		}
+
+		ret = calculate_and_compare_checksum((uint8_t *)current_fd,
+						     sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
+						     current_fd->fd_crc, false);
+
+		if (ret != TT_BOOT_FS_CHK_OK) {
+			/* a checksum is invalid - not a valid tt boot fs*/
+			return -ENXIO;
+		}
+		ret = flash_read(dev, addr, current_fd, sizeof(tt_boot_fs_fd));
+
+		if ((ret < 0) || (ret != sizeof(tt_boot_fs_fd))) {
+			/* read failed, or not enough data */
+			LOG_ERR("%s() failed: %d", "flash_read", ret);
+			return -EIO;
+		}
+	}
+
+	CODE_UNREACHABLE;
+}
+
+int tt_boot_fs_find_fd_by_tag(const struct device *flash_dev, const uint8_t *tag, tt_boot_fs_fd *fd)
+{
+	int ret;
+
+	tt_boot_fs_fd fds[CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX];
+
+	ret = tt_boot_fs_ls(flash_dev, fds, ARRAY_SIZE(fds), 0);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	ARRAY_FOR_EACH(fds, i) {
+		if (i >= ret) {
+			break;
+		}
+
+		if (strncmp(tag, fds[i].image_tag, sizeof(fds[i].image_tag)) == 0) {
+			if (fd != NULL) {
+				*fd = fds[i];
+			}
+			return 0;
+		}
+	}
+	return -ENOENT;
 }
