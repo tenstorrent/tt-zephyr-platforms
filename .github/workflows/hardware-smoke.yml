@@ -33,6 +33,15 @@ jobs:
           - board: p150a
             runs-on:
               - p150a-jtag
+          - board: p100
+            runs-on:
+              - self-hosted
+          - board: p100a
+            runs-on:
+              - self-hosted
+          - board: p150a
+            runs-on:
+              - self-hosted
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
@@ -167,6 +176,15 @@ jobs:
           - board: p150a
             runs-on:
               - p150a-jtag
+          - board: p100
+            runs-on:
+              - self-hosted
+          - board: p100a
+            runs-on:
+              - self-hosted
+          - board: p150a
+            runs-on:
+              - self-hosted
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
@@ -282,6 +300,15 @@ jobs:
           - board: p150a
             runs-on:
               - p150a-jtag
+          # - board: p100
+          #   runs-on:
+          #     - self-hosted
+          - board: p100a
+            runs-on:
+              - self-hosted
+          - board: p150a
+            runs-on:
+              - self-hosted
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.61.0-30-g3a3d9d704e
