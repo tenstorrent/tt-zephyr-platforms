@@ -168,7 +168,7 @@ jobs:
         run: |
           case "${{ matrix.board }}" in
             p150) BOARD=tt_blackhole@p150a/tt_blackhole/dmc;;
-            p300) BOARD=p300/tt_blackhole/dmc;;
+            p300) BOARD=tt_blackhole@p300a/tt_blackhole/dmc;;
 
             *) echo "Unknown board: ${{ matrix.board }}"; exit 1;;
           esac
