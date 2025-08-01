@@ -41,19 +41,29 @@ bool jtag_axiwait(const struct device *dev, uint32_t addr)
 	return !jtag_axi_read32(dev, addr, &value);
 }
 
-void jtag_bitbang_wait_for_id(const struct device *dev)
+static int jtag_bitbang_wait_for_id(const struct device *dev, uint32_t id, k_timeout_t timeout)
 {
-	uint32_t reset_id = 0;
+#if DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
+	/* No need to wait for id in simulation */
+	return 0;
+#endif
 
-	while (true) {
+	uint32_t reset_id = 0;
+	k_timepoint_t end = sys_timepoint_calc(timeout);
+
+	do {
+
 		jtag_reset(dev);
 		jtag_read_id(dev, &reset_id);
 
-		if (reset_id == 0x138A5) {
-			break;
+		if (reset_id == id) {
+			return 0;
 		}
 		k_yield();
-	}
+
+	} while (!sys_timepoint_expired(end));
+
+	return -ETIMEDOUT;
 }
 
 static const __maybe_unused struct gpio_dt_spec arc_rambus_jtag_mux_sel =
@@ -113,9 +123,11 @@ int jtag_bootrom_reset_asic(struct bh_chip *chip)
 
 	jtag_reset(chip->config.jtag);
 
-#if !DT_HAS_COMPAT_STATUS_OKAY(zephyr_gpio_emul)
-	jtag_bitbang_wait_for_id(chip->config.jtag);
-#endif
+	ret = jtag_bitbang_wait_for_id(chip->config.jtag, 0x138A5,
+				       K_MSEC(CONFIG_JTAG_BOOTROM_WAIT_FOR_ID_TIMEOUT_MS));
+	if (ret < 0) {
+		return ret;
+	}
 
 	jtag_reset(chip->config.jtag);
 
