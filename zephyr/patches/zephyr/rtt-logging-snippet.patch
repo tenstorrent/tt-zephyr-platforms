@@ -1,0 +1,45 @@
+diff --git a/snippets/rtt-logging/README.rst b/snippets/rtt-logging/README.rst
+new file mode 100644
+index 00000000000..546e3dcf0a0
+--- /dev/null
++++ b/snippets/rtt-logging/README.rst
+@@ -0,0 +1,20 @@
++.. _snippet-rtt-logging:
++
++SystemView RTT Logging Snippet (rtt-logging)
++############################################
++
++.. code-block:: console
++
++   west build -S rtt-logging [...]
++
++Overview
++********
++
++This snippet enables SEGGER SystemView RTT support with the logging subsystem.
++
++Requirements
++************
++
++Hardware support for:
++
++- :kconfig:option:`CONFIG_HAS_SEGGER_RTT`
+diff --git a/snippets/rtt-logging/rtt-logging.conf b/snippets/rtt-logging/rtt-logging.conf
+new file mode 100644
+index 00000000000..5a7c20ed6f7
+--- /dev/null
++++ b/snippets/rtt-logging/rtt-logging.conf
+@@ -0,0 +1,4 @@
++CONFIG_USE_SEGGER_RTT=y
++
++CONFIG_LOG=y
++CONFIG_LOG_BACKEND_RTT=y
+diff --git a/snippets/rtt-logging/snippet.yml b/snippets/rtt-logging/snippet.yml
+new file mode 100644
+index 00000000000..34b2d6ca977
+--- /dev/null
++++ b/snippets/rtt-logging/snippet.yml
+@@ -0,0 +1,3 @@
++name: rtt-logging
++append:
++  EXTRA_CONF_FILE: rtt-logging.conf
