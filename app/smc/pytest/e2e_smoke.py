@@ -36,6 +36,7 @@ ARC_START_TIME_REG_ADDR = 0x80030440
 # ARC messages
 ARC_MSG_TYPE_REINIT_TENSIX = 0x20
 ARC_MSG_TYPE_FORCE_AICLK = 0x33
+ARC_MSG_TYPE_GET_AICLK = 0x34
 ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
 ARC_MSG_TYPE_PING_DM = 0xC0
@@ -404,3 +405,19 @@ def test_tensix_reset(arc_chip):
         )
 
         logger.info(f"Tensix reset test iteration {i} passed")
+
+
+def test_aiclk(arc_chip):
+    TARGET_AICLKS = [
+        1350,  # Max value we rise to with GO_BUSY
+        800,  # Value we settle to with GO_IDLE_LONG
+        200,  # Minimum AICLK
+    ]
+
+    for clk in TARGET_AICLKS:
+        arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, True, False, clk, 0, 1000)
+        # Delay to allow AICLK to settle
+        time.sleep(0.1)
+        aiclk = arc_chip.arc_msg(ARC_MSG_TYPE_GET_AICLK)[0]
+        assert aiclk == clk, f"Failed to set clock to {clk} MHz"
+        logger.info(f"AICLK set to {aiclk} MHz successfully")
