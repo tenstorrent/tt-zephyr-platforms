@@ -39,7 +39,7 @@ config TT_SRST_ASSIST_ADDR
 config TT_SRST_ASSIST_SET
 	hex "Value to write to set SRST pin(s)"
 	# GPIOB pins 0 and 1
-	default 0x30000 if BOARD_P300
+	default 0x30000 if BOARD_REVISION = "p300a" || BOARD_REVISION = "p300b" || BOARD_REVISION = "p300c"
 	# GPIOB pin 0
 	default 0x10000
 	help
@@ -48,7 +48,7 @@ config TT_SRST_ASSIST_SET
 config TT_SRST_ASSIST_CLR
 	hex "Value to write to set SRST pin(s)"
 	# GPIOB pins 0 and 1
-	default 0x3 if BOARD_P300
+	default 0x3 if BOARD_REVISION = "p300a" || BOARD_REVISION = "p300b" || BOARD_REVISION = "p300c"
 	# GPIOB pin 0
 	default 0x1
 	help
