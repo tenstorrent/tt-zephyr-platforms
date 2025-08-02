@@ -34,6 +34,12 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 
+	/* Used to set the ARC_JTAG mux gpio, which is used by the debugger */
+	arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
+	       compatible = "zephyr,gpio-line";
+	       gpios = <&gpiod 13 GPIO_ACTIVE_LOW>;
+	};
+
 	chip1: chip1 {
 		compatible = "tenstorrent,bh-chip";
 
