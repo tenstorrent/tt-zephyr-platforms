@@ -10,17 +10,18 @@ from pathlib import Path
 TT_PCIE_VID = "0x1e52"
 
 
-def find_tt_bus():
+def find_tt_devs():
     """
-    Finds PCIe path for device to power off
+    Finds PCIe paths for devices to power off
     """
+    devs = []
     for root, dirs, _ in os.walk("/sys/bus/pci/devices"):
         for d in dirs:
             with open(os.path.join(root, d, "vendor"), "r") as f:
                 vid = f.read()
                 if vid.strip() == TT_PCIE_VID:
-                    return os.path.join(root, d)
-    return None
+                    devs.append(os.path.join(root, d))
+    return devs
 
 
 def rescan_pcie():
@@ -28,8 +29,8 @@ def rescan_pcie():
     Helper to rescan PCIe bus
     """
     # First, we must find the PCIe card to power it off
-    dev = find_tt_bus()
-    if dev is not None:
+    devs = find_tt_devs()
+    for dev in devs:
         print(f"Powering off device at {dev}")
         remove_path = Path(dev) / "remove"
         try:

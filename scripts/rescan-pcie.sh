@@ -25,7 +25,6 @@ pciremove() {
     if [ "$(cat $d/vendor)" = "0x${TT_PCI_VID}" ]; then
       echo "Removing PCI device $d with vendor id ${TT_PCI_VID}"
       echo 1 | stee $d/remove
-      break
     fi
   done
 }
