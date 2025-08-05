@@ -164,7 +164,13 @@ static int loop(struct console *const cons)
 
 		ret = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
 		if (ret < 0) {
-			E("select: %s", strerror(errno));
+			if (errno == EINTR) {
+				/* Interrupted by a signal- no need to log error */
+				D(2, "select interrupted by signal");
+				ret = 0; /* Don't exit with error */
+			} else {
+				E("select: %s", strerror(errno));
+			}
 			break;
 		}
 		if (ret == 0) {
