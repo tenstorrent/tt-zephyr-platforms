@@ -1,0 +1,47 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# A list of blackhole board identifiers to be used for recovery.
+# each board needs the following:
+# - dmc_fw: a hex file with the MCUBoot and DMC firmware, to be flashed to the DMC
+# - smc_fw: a hex file with a stable copy of the CMFW and DMFW, to be loaded to the eeprom
+# - board_id_data: a hex file that will program a default board ID into the eeprom
+# - upi: UPI prefix for the board, part of serial number
+# - flm_fw: a flash loader elf, used by pyocd to interface with SPI eeprom
+# - pyocd_config: a pyocd configuration file, used to set up the board for flashing
+# - dmc_dfp: a device family pack for the DMC, used by pyocd to interface with the DMC
+p100:
+  dmc_fw: "data/p100/dmc_fw.hex"
+  smc_fw: "data/p100/smc_fw.hex"
+  board_id_data: "data/p100/board_id.hex"
+  upi: 0x36
+  pyocd_config: "data/bh_flm/pyocd_config.py"
+  dmc_dfp: "data/bh_flm/Keil.STM32G0xx_DFP.2.0.0.pack"
+p100a:
+  dmc_fw: "data/p100a/dmc_fw.hex"
+  smc_fw: "data/p100a/smc_fw.hex"
+  board_id_data: "data/p100a/board_id.hex"
+  upi: 0x43
+  pyocd_config: "data/bh_flm/pyocd_config.py"
+  dmc_dfp: "data/bh_flm/Keil.STM32G0xx_DFP.2.0.0.pack"
+p150a:
+  dmc_fw: "data/p150a/dmc_fw.hex"
+  smc_fw: "data/p150a/smc_fw.hex"
+  board_id_data: "data/p150a/board_id.hex"
+  upi: 0x40
+  pyocd_config: "data/bh_flm/pyocd_config.py"
+  dmc_dfp: "data/bh_flm/Keil.STM32G0xx_DFP.2.0.0.pack"
+p150b:
+  dmc_fw: "data/p150b/dmc_fw.hex"
+  smc_fw: "data/p150b/smc_fw.hex"
+  board_id_data: "data/p150b/board_id.hex"
+  upi: 0x41
+  pyocd_config: "data/bh_flm/pyocd_config.py"
+  dmc_dfp: "data/bh_flm/Keil.STM32G0xx_DFP.2.0.0.pack"
+p150c:
+  dmc_fw: "data/p150c/dmc_fw.hex"
+  smc_fw: "data/p150c/smc_fw.hex"
+  board_id_data: "data/p150c/board_id.hex"
+  upi: 0x42
+  pyocd_config: "data/bh_flm/pyocd_config.py"
+  dmc_dfp: "data/bh_flm/Keil.STM32G0xx_DFP.2.0.0.pack"
