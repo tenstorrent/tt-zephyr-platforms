@@ -22,22 +22,37 @@ except ImportError:
 BR_BASE = Path(__file__).parent.absolute()
 DEFAULT_CONFIG_YAML = BR_BASE / "config.yaml"
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Recover a blackhole PCIe card.",
-                                     allow_abbrev=False)
-    parser.add_argument("board", type=str,
-            help="Product name of the blackhole card (e.g., 'p100a', 'p150a').")
-    parser.add_argument("--pci-idx", type=int, default=0,
-            help="PCI index of the card (default: 0).")
-    parser.add_argument("--adapter-id", type=str,
-            help="Adapter id for the ST-Link device used in recovery")
-    parser.add_argument("--config", type=Path, default=f"{DEFAULT_CONFIG_YAML}",
-            help="Path to recovery configuration file (default: 'config.yaml').")
+    parser = argparse.ArgumentParser(
+        description="Recover a blackhole PCIe card.", allow_abbrev=False
+    )
+    parser.add_argument(
+        "board",
+        type=str,
+        help="Product name of the blackhole card (e.g., 'p100a', 'p150a').",
+    )
+    parser.add_argument(
+        "--pci-idx", type=int, default=0, help="PCI index of the card (default: 0)."
+    )
+    parser.add_argument(
+        "--adapter-id",
+        type=str,
+        help="Adapter id for the ST-Link device used in recovery",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=f"{DEFAULT_CONFIG_YAML}",
+        help="Path to recovery configuration file (default: 'config.yaml').",
+    )
     return parser.parse_args()
+
 
 TT_PCIE_VID = "0x1e52"
 ARC_PING_MSG = 0x90
 DMC_PING_MSG = 0xC0
+
 
 def find_tt_bus():
     """
@@ -66,7 +81,9 @@ def rescan_pcie():
                 f.write("1")
         except PermissionError:
             try:
-                subprocess.call(f"echo 1 | sudo tee {remove_path} > /dev/null", shell=True)
+                subprocess.call(
+                    f"echo 1 | sudo tee {remove_path} > /dev/null", shell=True
+                )
             except Exception as e:
                 print("Error, this script must be run with elevated permissions")
                 raise e
@@ -84,6 +101,7 @@ def rescan_pcie():
         except Exception as e:
             print("Error, this script must be run with elevated permissions")
             raise e
+
 
 def check_card_status(pci_idx, config):
     """Check if the card is in a good state"""
@@ -103,13 +121,14 @@ def check_card_status(pci_idx, config):
             # ping dmc message failed
             return False
         # Check telemetry data to see if the UPI looks right
-        if card.get_telemetry().board_id >> 36 != config['upi']:
+        if card.get_telemetry().board_id >> 36 != config["upi"]:
             return False
     except BaseException:
         return False
     return True
 
-def reset_dmc(target, pci_idx, delay = 1):
+
+def reset_dmc(target, pci_idx, delay=1):
     """Helper to reset the DMC and rescan PCI"""
     target.reset_and_halt()
     target.resume()
@@ -120,11 +139,12 @@ def reset_dmc(target, pci_idx, delay = 1):
         time.sleep(1)
         rescan_pcie()
 
+
 def main():
     args = parse_args()
     if not args.config.is_file():
         raise FileNotFoundError(f"Configuration file '{args.config}' not found.")
-    with open(args.config, 'r') as config_file:
+    with open(args.config, "r") as config_file:
         config = yaml.safe_load(config_file)
     if args.board not in config:
         print(f"Board '{args.board}' not found in configuration.")
@@ -132,12 +152,16 @@ def main():
         return os.EX_USAGE
     board_config = config[args.board]
 
-    for key in ['dmc_fw', 'smc_fw', 'board_id_data', 'pyocd_config', 'dmc_dfp']:
+    for key in ["dmc_fw", "smc_fw", "board_id_data", "pyocd_config", "dmc_dfp"]:
         if key not in board_config:
-            print(f"Missing required key '{key}' in configuration for board '{args.board}'.")
+            print(
+                f"Missing required key '{key}' in configuration for board '{args.board}'."
+            )
             return os.EX_CONFIG
         if not isinstance(board_config[key], str):
-            print(f"Configuration value for '{key}' must be a string, got {type(board_config[key])}.")
+            print(
+                f"Configuration value for '{key}' must be a string, got {type(board_config[key])}."
+            )
             return os.EX_CONFIG
         if not Path(board_config[key]).is_absolute():
             board_config[key] = str(BR_BASE / board_config[key])
@@ -156,27 +180,27 @@ def main():
     print("Phase 2: Programming DMC firmware")
     session_options = {
         "target_override": "STM32G0B1CEUx",
-        "user_script": board_config['pyocd_config'],
-        "pack": [board_config['dmc_dfp']],
+        "user_script": board_config["pyocd_config"],
+        "pack": [board_config["dmc_dfp"]],
     }
     if args.adapter_id is None:
         print("No adapter ID provided, please select the ST-Link device if prompted")
         session = ConnectHelper.session_with_chosen_probe(
-            target_override=session_options['target_override'],
-            user_script=session_options['user_script'],
-            pack=session_options['pack'],
+            target_override=session_options["target_override"],
+            user_script=session_options["user_script"],
+            pack=session_options["pack"],
         )
     else:
         session = ConnectHelper.session_with_chosen_probe(
-            target_override=session_options['target_override'],
-            user_script=session_options['user_script'],
-            pack=session_options['pack'],
+            target_override=session_options["target_override"],
+            user_script=session_options["user_script"],
+            pack=session_options["pack"],
             unique_id=args.adapter_id,
         )
     session.open()
     target = session.board.target
     # Program the DMC firmware
-    FileProgrammer(session).program(board_config['dmc_fw'])
+    FileProgrammer(session).program(board_config["dmc_fw"])
     reset_dmc(target, args.pci_idx)
     if check_card_status(args.pci_idx, board_config):
         print("Card appears functional after DMC firmware programming, exiting")
@@ -184,7 +208,7 @@ def main():
         return os.EX_OK
 
     print("Phase 3: Rewriting EEPROM with SMC and DMC firmware")
-    FileProgrammer(session).program(board_config['smc_fw'])
+    FileProgrammer(session).program(board_config["smc_fw"])
     reset_dmc(target, args.pci_idx)
     if check_card_status(args.pci_idx, board_config):
         print("Card appears functional after SMC firmware programming, exiting")
@@ -202,16 +226,19 @@ def main():
         return os.EX_OK
 
     print("Phase 5: Writing EEPROM with default UPI configuration")
-    FileProgrammer(session).program(board_config['board_id_data'])
+    FileProgrammer(session).program(board_config["board_id_data"])
     reset_dmc(target, args.pci_idx, delay=5)
     if check_card_status(args.pci_idx, board_config):
-        print("Card appears functional, but your UPI was rewritten. Please contact support for assistance.")
+        print(
+            "Card appears functional, but your UPI was rewritten. Please contact support for assistance."
+        )
         session.close()
         return os.EX_OK
 
     session.close()
     print("All recovery phases failed- please contact support")
     return os.EX_SOFTWARE
+
 
 if __name__ == "__main__":
     sys.exit(main())
