@@ -155,32 +155,34 @@ int32_t BlockWriteTest(const uint8_t *data, uint8_t size)
 static SmbusData smbus_data = {
 	.state = kSmbusStateIdle,
 };
+
+/* clang-format off */
 static SmbusConfig smbus_config = {
 	.cmd_defs = {
 		[CMFW_SMBUS_REQ] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockRead,
-			  .expected_blocksize = 6,
-			  .handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}},
+				    .trans_type = kSmbusTransBlockRead,
+				    .expected_blocksize = 6,
+				    .handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}},
 		[CMFW_SMBUS_ACK] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
+				    .trans_type = kSmbusTransWriteWord,
+				    .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
 		[CMFW_SMBUS_DM_STATIC_INFO] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockWrite,
-			  .expected_blocksize = sizeof(dmStaticInfo),
-			  .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
+					       .trans_type = kSmbusTransBlockWrite,
+					       .expected_blocksize = sizeof(dmStaticInfo),
+					       .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
 		[CMFW_SMBUS_PING] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmPingHandler}},
+				     .trans_type = kSmbusTransWriteWord,
+				     .handler = {.rcv_handler = &Dm2CmPingHandler}},
 		[CMFW_SMBUS_FAN_RPM] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}},
+					.trans_type = kSmbusTransWriteWord,
+					.handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}},
 #ifndef CONFIG_TT_SMC_RECOVERY
 		[CMFW_SMBUS_POWER_LIMIT] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}},
+					    .trans_type = kSmbusTransWriteWord,
+					    .handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}},
 		[CMFW_SMBUS_POWER_INSTANT] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmSendPowerHandler}},
+					      .trans_type = kSmbusTransWriteWord,
+					      .handler = {.rcv_handler = &Dm2CmSendPowerHandler}},
 		[0x26] = {.valid = 1,
 			  .trans_type = kSmbusTransWriteByte,
 			  .handler = {.rcv_handler = &SMBusTelemRegHandler}},
@@ -189,30 +191,31 @@ static SmbusConfig smbus_config = {
 			  .expected_blocksize = sizeof(uint32_t),
 			  .handler = {.send_handler = &SMBusTelemDataHandler}},
 		[CMFW_SMBUS_THERM_TRIP_COUNT] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}},
+			 .trans_type = kSmbusTransWriteWord,
+			 .handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}},
 #endif
 		[CMFW_SMBUS_TEST_READ] = {.valid = 1,
-			  .trans_type = kSmbusTransReadByte,
-			  .handler = {.send_handler = &ReadByteTest}},
+					  .trans_type = kSmbusTransReadByte,
+					  .handler = {.send_handler = &ReadByteTest}},
 		[CMFW_SMBUS_TEST_WRITE] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteByte,
-			  .handler = {.rcv_handler = &WriteByteTest}},
+					   .trans_type = kSmbusTransWriteByte,
+					   .handler = {.rcv_handler = &WriteByteTest}},
 		[CMFW_SMBUS_TEST_READ_WORD] = {.valid = 1,
-			  .trans_type = kSmbusTransReadWord,
-			  .handler = {.send_handler = &ReadWordTest}},
+					       .trans_type = kSmbusTransReadWord,
+					       .handler = {.send_handler = &ReadWordTest}},
 		[CMFW_SMBUS_TEST_WRITE_WORD] = {.valid = 1,
-			  .trans_type = kSmbusTransWriteWord,
-			  .handler = {.rcv_handler = &WriteWordTest}},
+						.trans_type = kSmbusTransWriteWord,
+						.handler = {.rcv_handler = &WriteWordTest}},
 		[CMFW_SMBUS_TEST_READ_BLOCK] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockRead,
-			  .expected_blocksize = 4,
-			  .handler = {.send_handler = &BlockReadTest}},
+						.trans_type = kSmbusTransBlockRead,
+						.expected_blocksize = 4,
+						.handler = {.send_handler = &BlockReadTest}},
 		[CMFW_SMBUS_TEST_WRITE_BLOCK] = {.valid = 1,
-			  .trans_type = kSmbusTransBlockWrite,
-			  .expected_blocksize = 4,
-			  .handler = {.rcv_handler = &BlockWriteTest}},
+						 .trans_type = kSmbusTransBlockWrite,
+						 .expected_blocksize = 4,
+						 .handler = {.rcv_handler = &BlockWriteTest}},
 	}};
+/* clang-format on */
 
 static SmbusCmdDef *GetCmdDef(uint8_t cmd)
 {
@@ -411,10 +414,21 @@ static int I2CStopHandler(struct i2c_target_config *config)
 	/* Don't erase data buffers for efficiency */
 	return 0;
 }
+#if CONFIG_BOARD_NATIVE_SIM
+static int I2CWriteRequested(struct i2c_target_config *config)
+{
+	(void)config;
+	return 0;
+}
+#endif
 
 const struct i2c_target_callbacks i2c_target_cb_impl = {
 	.write_received = &I2CWriteHandler,
 	.read_requested = &I2CReadHandler,
+#if CONFIG_BOARD_NATIVE_SIM
+	.write_requested = &I2CWriteRequested,
+	.read_processed = &I2CReadHandler,
+#endif
 	.stop = &I2CStopHandler,
 };
 
@@ -427,11 +441,10 @@ static int InitSmbusTarget(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPB);
 
-	if (!IS_ENABLED(CONFIG_ARC)) {
-		return 0;
+	if (IS_ENABLED(CONFIG_ARC)) {
+		I2CInitGPIO(CM_I2C_DM_TARGET_INST);
 	}
 
-	I2CInitGPIO(CM_I2C_DM_TARGET_INST);
 	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
 	return 0;
 }
