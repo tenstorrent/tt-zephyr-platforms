@@ -24,38 +24,47 @@ def read_flash_memory(address, size) -> Sequence[int]:
     """
     ap = next(iter(target.aps.values()))  # noqa: F821
     if address < spiflash_base or address + size > spiflash_base + spiflash_size:
-       # Use the target's memory read function
-       return ap.read_memory_original(address, size)
+        # Use the target's memory read function
+        return ap.read_memory_original(address, size)
     # Call the custom read function within the FLM
     region = target.memory_map.get_region_for_address(address)  # noqa: F821
     if not region.flash._is_api_valid("pc_read"):
-        raise RuntimeError(f"Flash read function not available for region at address {address:#x} with size {size:#x}.")
+        raise RuntimeError(
+            f"Flash read function not available for region at address {address:#x} with size {size:#x}."
+        )
     pc_read = region.flash.flash_algo["pc_read"]
     region.flash.init(region.flash.Operation.VERIFY)
     # Read into device side ram buffer
-    result = region.flash._call_function_and_wait(pc_read, r0=address,
-            r1=size, r2=region.flash.begin_data, timeout=5.0)
+    result = region.flash._call_function_and_wait(
+        pc_read, r0=address, r1=size, r2=region.flash.begin_data, timeout=5.0
+    )
     if result != 0:
-        raise RuntimeError(f"Failed to read flash memory at address {address:#x} with size {size:#x}. Error code: {result}")
+        raise RuntimeError(
+            f"Failed to read flash memory at address {address:#x} with size {size:#x}. Error code: {result}"
+        )
     # Copy from device RAM to sequence
     data = ap.read_memory_original(region.flash.begin_data, size)
     region.flash.cleanup()
     return data
+
 
 class SPIPackFlashAlgo(PackFlashAlgo):
     """
     A custom subclass of the PackFlashAlgo class that is used to
     add a custom flash read function to the FLM
     """
+
     REQUIRED_SYMBOLS = {
         "Init",
         "UnInit",
         "EraseSector",
         "ProgramPage",
         "Read",
-        }
+    }
 
-    def get_pyocd_flash_algo(self, blocksize: int, ram_region: RamRegion) -> Dict[str, Any]:
+    def get_pyocd_flash_algo(
+        self, blocksize: int, ram_region: RamRegion
+    ) -> Dict[str, Any]:
         """
         Returns the flash algorithm as a dictionary.
         """
@@ -75,13 +84,13 @@ def will_connect():
 
     # Define a fake flash region for the SPI NOR flash.
     spiflash = FlashRegion(
-                name="External SPI EEPROM",
-                start=spiflash_base,
-                length=spiflash_size,
-                blocksize=0x1000,
-                page_size=0x100,
-                flm=flash_algo,
-                )
+        name="External SPI EEPROM",
+        start=spiflash_base,
+        length=spiflash_size,
+        blocksize=0x1000,
+        page_size=0x100,
+        flm=flash_algo,
+    )
 
     # Add the spi flash region to the memory map.
     target.memory_map.add_region(spiflash)  # noqa: F821
@@ -94,6 +103,7 @@ def will_connect():
     target.read_memory_original = target.read_memory_block8  # noqa: F821
     # Manually override the memory read function to read from the SPI NOR flash.
     target.read_memory_block8 = read_flash_memory  # noqa: F821
+
 
 def did_connect():
     # Go ahead and replace the AP read function too- we need this one overridden
