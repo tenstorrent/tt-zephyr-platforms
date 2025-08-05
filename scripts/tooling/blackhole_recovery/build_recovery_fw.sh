@@ -21,19 +21,33 @@ build_recovery_fw() {
 
     echo "Building DMC recovery firmware for board: $BOARD"
     west build -p always -b tt_blackhole@$BOARD/tt_blackhole/dmc --sysbuild app/dmc/
-    srec_cat build/mcuboot/zephyr/zephyr.hex -intel build/dmc/zephyr/zephyr.signed.hex -intel -o $OUTPUT_DIR/$BOARD/dmc_fw.hex -intel
+    srec_cat build/mcuboot/zephyr/zephyr.hex -intel build/dmc/zephyr/zephyr.signed.hex -intel \
+      -o $OUTPUT_DIR/$BOARD/dmc_fw.hex -intel
     echo "DMC recovery firmware built and saved to $OUTPUT_DIR/dmc_fw.hex"
 
     echo "Building SMC recovery firmware for board: $BOARD"
     west build -p always -b tt_blackhole@$BOARD/tt_blackhole/smc --sysbuild app/smc/
-    ./scripts/tt_boot_fs.py mkfs --build-dir build --hex boards/tenstorrent/tt_blackhole/bootfs/$BOARD-bootfs.yaml build/smc_fw.hex
+    ./scripts/tt_boot_fs.py mkfs --build-dir build \
+      --hex boards/tenstorrent/tt_blackhole/bootfs/$BOARD-bootfs.yaml build/smc_fw.hex
     # Drop section programming the read only data (including board ID)
     objcopy --remove-section .sec18 build/smc_fw.hex $OUTPUT_DIR/$BOARD/smc_fw.hex
     # Copy only the section that contains the read only data
     objcopy --only-section .sec18 build/smc_fw.hex $OUTPUT_DIR/$BOARD/board_id.hex
 
-    echo $(git describe) > $OUTPUT_DIR/$BOARD/VERSION
-    echo "NOTE: a patch was applied to this tag to support generating the board ID within the readonly section" >> $OUTPUT_DIR/$BOARD/VERSION
+    DESCRIPTION="$(git describe)"
+    cat <<EOF > "$OUTPUT_DIR/$BOARD/VERSION"
+$DESCRIPTION
+NOTE: a patch was applied to this tag to support generating the board ID within the readonly
+section.
+EOF
+
+    cat <<EOF > "$OUTPUT_DIR/$BOARD/README.md"
+# $BOARD Recovery Firmware
+
+This directory contains P150a specific recovery files. These files are built from
+[tt-zephyr-platforms](https://github.com/tenstorrent/tt-zephyr-platforms), based on the git tag
+within the VERSION file.
+EOF
 }
 
 cd "$TT_ZEPHYR_PLATFORMS_DIR"
