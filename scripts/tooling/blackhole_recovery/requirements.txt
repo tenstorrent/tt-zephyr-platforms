@@ -1,3 +1,0 @@
-pyocd
-pyluwen @ git+https://github.com/tenstorrent/luwen.git@v0.6.5#subdirectory=crates/pyluwen
-pyyaml
