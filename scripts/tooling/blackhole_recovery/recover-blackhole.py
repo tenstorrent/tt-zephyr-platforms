@@ -23,7 +23,8 @@ BR_BASE = Path(__file__).parent.absolute()
 DEFAULT_CONFIG_YAML = BR_BASE / "config.yaml"
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Recover a blackhole PCIe card.")
+    parser = argparse.ArgumentParser(description="Recover a blackhole PCIe card.",
+                                     allow_abbrev=False)
     parser.add_argument("board", type=str,
             help="Product name of the blackhole card (e.g., 'p100a', 'p150a').")
     parser.add_argument("--pci-idx", type=int, default=0,
