@@ -6,6 +6,9 @@ if SOC_TT_BLACKHOLE_SMC
 config CPU_HS4X
 	default y
 
+config HAS_SEGGER_RTT
+	default y
+
 config NUM_IRQ_PRIO_LEVELS
 	# This processor supports 2 priority levels:
 	# 0 for Fast Interrupts (FIRQs) and 1 for Regular Interrupts (IRQs).
