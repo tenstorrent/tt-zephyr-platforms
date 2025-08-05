@@ -17,6 +17,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/sys/crc.h>
 
 /* DMFW to CMFW i2c interface is on I2C0 of tensix_sm */
 #define CM_I2C_DM_TARGET_INST 0
@@ -224,17 +225,7 @@ static SmbusCmdDef *GetCmdDef(uint8_t cmd)
 
 static uint8_t Crc8(uint8_t crc, uint8_t data)
 {
-	uint8_t i;
-
-	crc ^= data;
-	for (i = 0; i < 8; i++) {
-		if (crc & 0x80) {
-			crc = (crc << 1) ^ 0x07;
-		} else {
-			crc <<= 1;
-		}
-	}
-	return crc;
+	return crc8(&data, 1, 0x7, crc /* pec */, false);
 }
 
 static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
