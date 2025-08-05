@@ -277,3 +277,20 @@ jobs:
 
       - id: set_combined_fwbundle_output
         run: echo "combined_fwbundle_artifact=combined-fwbundle" >> $GITHUB_OUTPUT
+
+  build-bh-flm:
+    runs-on: ubuntu-24.04
+    name: Build Blackhole Flash Loader Module
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+      - name: Build Flash Loader Module
+        working-directory: ./tt-zephyr-platforms/scripts/tooling/blackhole-recovery/bh_flm
+        shell: bash
+        run: |
+          ./build-flm.sh
