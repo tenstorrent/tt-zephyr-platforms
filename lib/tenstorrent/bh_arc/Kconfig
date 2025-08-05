@@ -7,6 +7,7 @@ config TT_BH_ARC
 	select FLASH_PAGE_LAYOUT
 	select TT_BOOT_FS
 	select NANOPB
+	select CRC
 	help
 	  This option enables the Blackhole ARC firmware library.
 
