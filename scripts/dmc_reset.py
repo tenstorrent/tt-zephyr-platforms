@@ -69,7 +69,6 @@ def parse_args():
     parser.add_argument(
         "-i",
         "--jtag-id",
-        default="auto",
         help="Specify the JTAG ID / serial number for the debug adapter",
         metavar="ID",
     )
@@ -258,11 +257,7 @@ def main():
     if args.debug > 0:
         logging.basicConfig(level=logging.DEBUG)
 
-    if not args.hw_map.is_file():
-        logger.info("No hardware map provided, using first ST-Link")
-        args.jtag_id = None
-
-    if args.jtag_id == "auto" and args.hw_map.is_file():
+    if args.jtag_id is None and args.hw_map.is_file():
         logger.debug("Auto-detecting JTAG ID..")
 
         try:
