@@ -152,7 +152,7 @@ def main():
         return os.EX_USAGE
     board_config = config[args.board]
 
-    for key in ["dmc_fw", "smc_fw", "board_id_data", "pyocd_config", "dmc_dfp"]:
+    for key in ["dmc_fw", "smc_fw", "board_id_data", "pyocd_config"]:
         if key not in board_config:
             print(
                 f"Missing required key '{key}' in configuration for board '{args.board}'."
@@ -181,14 +181,12 @@ def main():
     session_options = {
         "target_override": "STM32G0B1CEUx",
         "user_script": board_config["pyocd_config"],
-        "pack": [board_config["dmc_dfp"]],
     }
     if args.adapter_id is None:
         print("No adapter ID provided, please select the ST-Link device if prompted")
         session = ConnectHelper.session_with_chosen_probe(
             target_override=session_options["target_override"],
             user_script=session_options["user_script"],
-            pack=session_options["pack"],
         )
     else:
         session = ConnectHelper.session_with_chosen_probe(
