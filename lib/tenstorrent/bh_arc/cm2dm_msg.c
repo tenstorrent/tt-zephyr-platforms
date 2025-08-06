@@ -15,6 +15,7 @@
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/drivers/watchdog.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/crc.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
@@ -40,6 +41,10 @@ static Cm2DmMsgState cm2dm_msg_state;
 K_SEM_DEFINE(dmfw_ping_sem, 0, 1);
 static uint16_t power;
 static uint16_t telemetry_reg;
+static struct {
+	uint8_t chip_reset_0_called: 1;
+	uint8_t chip_reset_3_called: 1;
+} chip_reset_state;
 
 void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data)
 {
@@ -118,7 +123,8 @@ int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size)
 void IssueChipReset(uint32_t reset_level)
 {
 	lock_down_for_reset();
-
+	chip_reset_state.chip_reset_0_called |= reset_level == 0U;
+	chip_reset_state.chip_reset_3_called |= reset_level == 3U;
 	/* Send a reset request to the DMFW */
 	PostCm2DmMsg(kCm2DmMsgIdResetReq, reset_level);
 }
@@ -207,8 +213,7 @@ static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 
 REGISTER_MESSAGE(MSG_TYPE_PING_DM, ping_dm_handler);
 
-static uint8_t set_watchdog_timeout(uint32_t msg_code,
-				    const struct request *request,
+static uint8_t set_watchdog_timeout(uint32_t msg_code, const struct request *request,
 				    struct response *response)
 {
 	const struct device *wdt_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
@@ -218,7 +223,6 @@ static uint8_t set_watchdog_timeout(uint32_t msg_code,
 	if (!device_is_ready(wdt_dev)) {
 		return ENODEV;
 	}
-
 
 	if (request->data[1] != 0) {
 		/* Deny a timeout lower than our feed interval */
@@ -348,5 +352,49 @@ int32_t Dm2CmSendThermTripCountHandler(const uint8_t *data, uint8_t size)
 	uint32_t therm_trip_count = sys_get_le16(data);
 
 	UpdateTelemetryThermTripCount(therm_trip_count);
+	return 0;
+}
+
+int32_t Dm2CmWriteTelemetry(const uint8_t *data, uint8_t size)
+{
+	if (size != 33) {
+		return -1;
+	}
+	/* nothing to do? Note this discards the PEC */
+	return 0;
+}
+
+int32_t Dm2CmReadControlData(uint8_t *data, uint8_t size)
+{
+	if (size != 20) {
+		return -1;
+	}
+	(void)memset(data, 0U, size);
+
+	struct {
+		uint32_t pcie_index: 8;
+		uint32_t trigger_asic_reset: 1;
+		uint32_t trigger_spi_copy_1_to_r: 1;
+		uint32_t arc_state_a3_req: 1;
+		uint32_t arc_state_a0_req: 1;
+		uint32_t trigger_asic_and_m3_reset: 1;
+		uint32_t clear_num_auto_reset: 1;
+		uint32_t spare: 18;
+	} ctl_data = {0};
+
+	ctl_data.trigger_asic_reset = chip_reset_state.chip_reset_0_called;
+	ctl_data.trigger_asic_and_m3_reset = chip_reset_state.chip_reset_3_called;
+
+	memcpy(&data[11], &ctl_data, sizeof(ctl_data));
+
+	/* This PEC is not SMBUS compliant. SMBUS requires the PEC be computed on the whole
+	 * message. Therefore it is calculated here in the command processor. It is kept
+	 * here for compatibility with WH products.
+	 */
+	uint8_t pec = 0U;
+
+	pec = crc8(&size, 1, 0x7, 0U, false);
+	pec = crc8(data, size - 1, 0x7, pec, false);
+	data[19] = pec;
 	return 0;
 }
