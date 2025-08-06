@@ -253,7 +253,7 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	int pass_val = 0xFEEDFACE;
 	uint8_t count;
 	uint8_t data[255]; /* Max size of SMBUS block read */
-
+	uint32_t app_version;
 	/* Test SMBUS telemetry by selecting TAG_DM_APP_FW_VERSION and reading it back */
 	ret = bharc_smbus_byte_data_write(&chip->config.arc, 0x26, 26);
 	if (ret < 0) {
@@ -265,11 +265,17 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 		LOG_ERR("Failed to read from SMBUS telemetry register");
 		return ret;
 	}
-	if (count != 4) {
+	if (count != 7) {
 		LOG_ERR("SMBUS telemetry read returned unexpected count: %d", count);
 		return -EIO;
 	}
-	if ((*(uint32_t *)data) != APPVERSION) {
+	if (data[0] != 1U) {
+		LOG_ERR("SMBUS telemetry read returned invalid telem idx");
+		return -EIO;
+	}
+	(void)memcpy(&app_version, &data[3], sizeof(app_version));
+
+	if (app_version != APPVERSION) {
 		LOG_ERR("SMBUS telemetry read returned unexpected value: %08x", *(uint32_t *)data);
 		return -EIO;
 	}
