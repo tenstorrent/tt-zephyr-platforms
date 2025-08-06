@@ -399,6 +399,7 @@ static int gddr_training(void)
 	}
 
 	if (!init_errors) {
+		/* this is needed to securely wipe DRAM */
 		if (CheckGddrHwTest() < 0) {
 			LOG_ERR("GDDR HW test failed");
 			return -EIO;
