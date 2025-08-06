@@ -987,7 +987,6 @@ def _generate_bootfs_yaml(
                 "name": label,
                 "binary": path,
                 "provisioning_only": True,
-                "source": "$END - 0x1000",
             }
         elif label == "failover":
             image_entry = {
@@ -1000,6 +999,10 @@ def _generate_bootfs_yaml(
                 "name": label,
                 "binary": path,
             }
+
+        if "source-address" in partition.props:
+            # If the source is specified, use it as the spi_addr
+            image_entry["source"] = partition.props["source-address"].val
 
         if label == "failover":
             partitions_yml["fail_over_image"] = image_entry
