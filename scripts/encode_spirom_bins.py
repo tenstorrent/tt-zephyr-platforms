@@ -55,6 +55,7 @@ def write_bin_to_file(in_folder, out_folder, bin_file_name, encoded_data):
 # Override is a set of key, value pairs used to override normal text fields...
 # Currently it just supports single level of setting
 def convert_proto_txt_to_bin_file(
+    board_cfg_path,
     in_folder,
     out_folder,
     message_name,
@@ -62,7 +63,7 @@ def convert_proto_txt_to_bin_file(
     prepend_checksum: bool,
     override: Optional[dict] = None,
 ):
-    proto_txt_table = f"{BOARD_TXT_CONFIG_PATH}/{in_folder}/{message_name}.txt"
+    proto_txt_table = f"{board_cfg_path}/{in_folder}/{message_name}.txt"
     with open(proto_txt_table, "r") as file:
         template = file.read()
 
@@ -146,6 +147,7 @@ def main():
         sys.exit(1)
     bundle_version_int = decode_bundle_version(args.bundle_version)
     convert_proto_txt_to_bin_file(
+        BOARD_TXT_CONFIG_PATH,
         args.board,
         args.output,
         "fw_table",
@@ -154,9 +156,15 @@ def main():
         override={"fw_bundle_version": bundle_version_int},
     )
     convert_proto_txt_to_bin_file(
-        args.board, args.output, "flash_info", flash_info_pb2.FlashInfoTable, False
+        BOARD_TXT_CONFIG_PATH,
+        args.board,
+        args.output,
+        "flash_info",
+        flash_info_pb2.FlashInfoTable,
+        False,
     )
     convert_proto_txt_to_bin_file(
+        BOARD_TXT_CONFIG_PATH,
         args.board,
         args.output,
         "read_only",
