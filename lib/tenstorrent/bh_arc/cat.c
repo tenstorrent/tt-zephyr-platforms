@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cat.h"
 #include "reg.h"
 #include "timer.h"
 #include "pvt.h"
@@ -21,7 +22,6 @@
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_DEFAULT 0x00000318
 
 #define CAT_EARLY_TRIP_TEMP 100
-#define T_J_SHUTDOWN        110 /* BH Prod Spec 7.3 */
 /* It would be more principled to use the nearly-worst-case 25C error
  * from the datasheet, but previously catmon was set to 100C.
  */

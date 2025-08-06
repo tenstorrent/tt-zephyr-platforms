@@ -24,7 +24,7 @@
 #define TAG_TDP                  7
 #define TAG_TDC                  8
 #define TAG_VDD_LIMITS           9
-#define TAG_THM_LIMITS           10
+#define TAG_THM_LIMIT_SHUTDOWN   10
 #define TAG_ASIC_TEMPERATURE     11
 #define TAG_VREG_TEMPERATURE     12
 #define TAG_BOARD_TEMPERATURE    13
@@ -69,11 +69,17 @@
 #define TAG_ASIC_LOCATION        52
 #define TAG_BOARD_POWER_LIMIT    53
 #define TAG_INPUT_POWER          54
+#define TAG_TDC_LIMIT_MAX        55
+#define TAG_THM_LIMIT_THROTTLE   56
+#define TAG_FW_BUILD_DATE        57
+#define TAG_TT_FLASH_VERSION     58
+#define TAG_ENABLED_TENSIX_ROW   59
 #define TAG_THERM_TRIP_COUNT     60
 #define TAG_ASIC_ID_HIGH         61
 #define TAG_ASIC_ID_LOW          62
-#define TAG_AICLK_MAX            63
-#define TAG_TDC_MAX              64
+#define TAG_AICLK_LIMIT_MAX      63
+#define TAG_TDP_LIMIT_MAX        64
+
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
  */

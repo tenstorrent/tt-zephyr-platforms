@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cat.h"
 #include "cm2dm_msg.h"
 #include "fan_ctrl.h"
 #include "functional_efuse.h"
@@ -62,7 +63,7 @@ static struct telemetry_table telemetry_table = {
 		[6] = {TAG_TDP, TELEM_OFFSET(TAG_TDP)},
 		[7] = {TAG_TDC, TELEM_OFFSET(TAG_TDC)},
 		[8] = {TAG_VDD_LIMITS, TELEM_OFFSET(TAG_VDD_LIMITS)},
-		[9] = {TAG_THM_LIMITS, TELEM_OFFSET(TAG_THM_LIMITS)},
+		[9] = {TAG_THM_LIMIT_SHUTDOWN, TELEM_OFFSET(TAG_THM_LIMIT_SHUTDOWN)},
 		[10] = {TAG_ASIC_TEMPERATURE, TELEM_OFFSET(TAG_ASIC_TEMPERATURE)},
 		[11] = {TAG_VREG_TEMPERATURE, TELEM_OFFSET(TAG_VREG_TEMPERATURE)},
 		[12] = {TAG_BOARD_TEMPERATURE, TELEM_OFFSET(TAG_BOARD_TEMPERATURE)},
@@ -109,8 +110,9 @@ static struct telemetry_table telemetry_table = {
 		[53] = {TAG_ASIC_ID_LOW, TELEM_OFFSET(TAG_ASIC_ID_LOW)},
 		[54] = {TAG_THERM_TRIP_COUNT, TELEM_OFFSET(TAG_THERM_TRIP_COUNT)},
 		[55] = {TAG_TELEM_ENUM_COUNT, TELEM_OFFSET(TAG_TELEM_ENUM_COUNT)},
-		[63] = {TAG_AICLK_MAX, TELEM_OFFSET(TAG_AICLK_MAX)},
-		[64] = {TAG_TDC_MAX, TELEM_OFFSET(TAG_TDC_MAX)},
+		[56] = {TAG_AICLK_LIMIT_MAX, TELEM_OFFSET(TAG_AICLK_LIMIT_MAX)},
+		[57] = {TAG_TDC_LIMIT_MAX, TELEM_OFFSET(TAG_TDC_LIMIT_MAX)},
+		[58] = {TAG_THM_LIMIT_THROTTLE, TELEM_OFFSET(TAG_THM_LIMIT_THROTTLE)},
 	},
 };
 /* clang-format on */
@@ -244,19 +246,14 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry_table.entry_count = TAG_COUNT;     /* Runtime count of telemetry entries */
 	telemetry[TAG_TELEM_ENUM_COUNT] = TAG_COUNT; /* Count of telemetry tags */
 
-#if DT_NODE_HAS_PROP(DT_NODELABEL(pll0), max_freqs)
-	uint16_t pll0_max_freqs[] = DT_PROP(DT_NODELABEL(pll0), max_freqs);
-#else
-	uint16_t pll0_max_freqs[4] = {};
-#endif
-
-	telemetry[TAG_AICLK_MAX] = pll0_max_freqs[0];
-
 	const FwTable *fw_table = tt_bh_fwtable_get_fw_table(fwtable_dev);
 
-	telemetry[TAG_VDD_LIMITS] = fw_table->chip_limits.vdd_max;
-	telemetry[TAG_THM_LIMITS] = fw_table->chip_limits.thm_limit;
-	telemetry[TAG_TDC_MAX] = fw_table->chip_limits.tdc_limit;
+	telemetry[TAG_AICLK_LIMIT_MAX] = fw_table->chip_limits.asic_fmax;
+	telemetry[TAG_VDD_LIMITS] =
+		((fw_table->chip_limits.vdd_max & 0xFFFF) << 16) | fw_table->chip_limits.vdd_min;
+	telemetry[TAG_THM_LIMIT_SHUTDOWN] = T_J_SHUTDOWN;
+	telemetry[TAG_THM_LIMIT_THROTTLE] = fw_table->chip_limits.thm_limit;
+	telemetry[TAG_TDC_LIMIT_MAX] = fw_table->chip_limits.tdc_limit;
 
 	/* Get the static values */
 	telemetry[TAG_BOARD_ID_HIGH] =
@@ -331,8 +328,6 @@ static void update_telemetry(void)
 	telemetry[TAG_TDC] =
 		telemetry_internal_data
 			.vcore_current;         /* reported in A, will be truncated to uint32_t */
-	telemetry[TAG_VDD_LIMITS] = 0x00000000; /* VDD limits - Not Available yet */
-	telemetry[TAG_THM_LIMITS] = 0x00000000; /* THM limits - Not Available yet */
 	telemetry[TAG_ASIC_TEMPERATURE] = ConvertFloatToTelemetry(
 		telemetry_internal_data.asic_temperature); /* ASIC temperature - reported in
 							    * signed int 16.16 format
