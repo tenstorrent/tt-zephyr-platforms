@@ -23,11 +23,13 @@ string(APPEND CMAKE_EXE_LINKER_FLAGS "-T ${CMAKE_CURRENT_LIST_DIR}/FlashAlgo.ld"
 project(flm LANGUAGES C)
 add_executable(spi.flm eeprom.c FlashDev.c FlashPrg.c stm32_spi_hal.c)
 
+set(WORKSPACE_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../../../..)
+
 # Include STM32 HAL
-set(STM32_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../../modules/hal/stm32)
+set(STM32_MODULE_DIR ${WORKSPACE_ROOT}/modules/hal/stm32)
 target_include_directories(spi.flm PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/soc)
 target_include_directories(spi.flm PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/drivers/include)
 
 # Include CMSIS HAL
-set(CMSIS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../../modules/hal/cmsis_6)
+set(CMSIS_MODULE_DIR ${WORKSPACE_ROOT}/modules/hal/cmsis_6)
 target_include_directories(spi.flm PRIVATE ${CMSIS_MODULE_DIR}/CMSIS/Core/Include)

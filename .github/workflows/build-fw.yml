@@ -290,7 +290,7 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
       - name: Build Flash Loader Module
-        working-directory: ./tt-zephyr-platforms/scripts/tooling/blackhole-recovery/bh_flm
+        working-directory: ./tt-zephyr-platforms/scripts/tooling/blackhole_recovery/data/bh_flm
         shell: bash
         run: |
           ./build-flm.sh
