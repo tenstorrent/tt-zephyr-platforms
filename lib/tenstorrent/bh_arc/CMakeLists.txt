@@ -16,6 +16,7 @@ zephyr_library_sources_ifndef(
   harvesting.c
   i2c_messages.c
   noc.c
+  noc_dma.c
   noc_init.c
   pcie_dma.c
   pcie_msi.c
