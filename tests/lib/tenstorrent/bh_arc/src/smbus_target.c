@@ -13,6 +13,7 @@
 #include "asic_state.h"
 #include "telemetry.h"
 #include "status_reg.h"
+#include "cm2dm_msg.h"
 
 static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c0));
 static const uint8_t tt_i2c_addr = 0xA;
@@ -212,6 +213,22 @@ ZTEST(smbus_target, test_telem_read)
 	zexpect_equal(7U, read_data[0]);
 	zexpect_equal(0U, read_data[1]);
 	/* bytes 2-3 are DC. Bytes 4-7 are telem data but currently aren't emulated */
+}
+
+ZTEST(smbus_target, test_telem_write_no_reset)
+{
+	uint8_t write_data[35] = {
+		[0] = CMFW_SMBUS_TELEMETRY_WRITE,
+		[1] = 33U};
+	uint8_t read_data[21];
+
+	zassert_equal(0, i2c_write_read(i2c0_dev, tt_i2c_addr, write_data, sizeof(write_data), read_data, sizeof(read_data)));
+	zexpect_equal(20U, read_data[0]);
+
+	uint32_t ctl = 0;
+
+	(void)memcpy(&ctl, &read_data[12], sizeof(ctl));
+	zexpect_equal(0U, ctl);
 }
 
 ZTEST_SUITE(smbus_target, NULL, NULL, NULL, tear_down_tc, NULL);
