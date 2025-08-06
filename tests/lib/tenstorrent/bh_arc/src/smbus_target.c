@@ -180,4 +180,20 @@ ZTEST(smbus_target, test_write_block_test)
 	zexpect_equal(1U, set_count);
 }
 
+ZTEST(smbus_target, test_update_arc_test_state_3)
+{
+	uint8_t write_data[] = {CMFW_SMBUS_UPDATE_ARC_STATE, 0x3, 0x3U, 0xDEU, 0xAFU};
+
+	zassert_equal(0, i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr));
+	zassert_equal(A3State, get_asic_state());
+}
+
+ZTEST(smbus_target, test_update_arc_test_state_0)
+{
+	uint8_t write_data[] = {CMFW_SMBUS_UPDATE_ARC_STATE, 0x3, 0x0U, 0xDEU, 0xAFU};
+
+	zassert_equal(0, i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr));
+	zassert_equal(A0State, get_asic_state());
+}
+
 ZTEST_SUITE(smbus_target, NULL, NULL, NULL, tear_down_tc, NULL);
