@@ -15,8 +15,6 @@ common:
       - "Hello World! (.*)"
 tests:
   sample.basic.helloworld.rtt:
-    filter: CONFIG_HAS_SEGGER_RTT
-    required_snippets:
-      - rtt-console
+    filter: CONFIG_USE_SEGGER_RTT
     tags:
       - rtt
