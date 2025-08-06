@@ -50,5 +50,19 @@ static uint8_t asic_state_handler(uint32_t msg_code, const struct request *reque
 	return 0;
 }
 
+void set_asic_state(AsicState state)
+{
+	if (state == A3State) {
+		enter_state3();
+	} else {
+		enter_state0();
+	}
+}
+
+AsicState get_asic_state(void)
+{
+	return asic_state;
+}
+
 REGISTER_MESSAGE(MSG_TYPE_ASIC_STATE0, asic_state_handler);
 REGISTER_MESSAGE(MSG_TYPE_ASIC_STATE3, asic_state_handler);

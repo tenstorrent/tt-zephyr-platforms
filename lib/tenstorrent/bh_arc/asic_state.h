@@ -12,5 +12,7 @@ typedef enum {
 } AsicState;
 
 void lock_down_for_reset(void);
+void set_asic_state(AsicState state);
+AsicState get_asic_state(void);
 
 #endif

@@ -9,6 +9,7 @@
 #include "dw_apb_i2c.h"
 #include "cm2dm_msg.h"
 #include "throttler.h"
+#include "asic_state.h"
 
 #include <stdint.h>
 
@@ -71,10 +72,12 @@ typedef union {
 } SmbusHandleData;
 
 typedef struct {
-	uint8_t valid;
+
 	SmbusTransType trans_type;
-	uint8_t expected_blocksize; /* Only used for block r/w commands */
 	SmbusHandleData handler;
+	uint8_t expected_blocksize; /* Only used for block r/w commands */
+	uint8_t valid: 1;
+	uint8_t pec: 1;
 } SmbusCmdDef;
 
 /* Index into cmd_defs array is the command byte */
@@ -157,61 +160,98 @@ static SmbusData smbus_data = {
 	.state = kSmbusStateIdle,
 };
 
+int32_t UpdateArcStateHandler(const uint8_t *data, uint8_t size)
+{
+	const uint8_t sig0 = 0xDE;
+	const uint8_t sig1 = 0xAF;
+
+	if (size != 3U || data[1] != sig0 || data[2] != sig1) {
+		return -1;
+	}
+
+	set_asic_state(data[0]);
+	return 0;
+}
+
 /* clang-format off */
 static SmbusConfig smbus_config = {
 	.cmd_defs = {
 		[CMFW_SMBUS_REQ] = {.valid = 1,
+				    .pec = 1U,
 				    .trans_type = kSmbusTransBlockRead,
 				    .expected_blocksize = 6,
 				    .handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}},
 		[CMFW_SMBUS_ACK] = {.valid = 1,
+				    .pec = 1U,
 				    .trans_type = kSmbusTransWriteWord,
 				    .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}},
+		[CMFW_SMBUS_UPDATE_ARC_STATE] = {.valid = 1,
+						 .pec = 0U,
+						 .trans_type = kSmbusTransBlockWrite,
+						 .expected_blocksize = 3,
+						 .handler = {.rcv_handler =
+								     &UpdateArcStateHandler}},
 		[CMFW_SMBUS_DM_STATIC_INFO] = {.valid = 1,
+					       .pec = 1U,
 					       .trans_type = kSmbusTransBlockWrite,
 					       .expected_blocksize = sizeof(dmStaticInfo),
 					       .handler = {.rcv_handler = &Dm2CmSendDataHandler}},
 		[CMFW_SMBUS_PING] = {.valid = 1,
+				     .pec = 1U,
 				     .trans_type = kSmbusTransWriteWord,
 				     .handler = {.rcv_handler = &Dm2CmPingHandler}},
 		[CMFW_SMBUS_FAN_RPM] = {.valid = 1,
+					.pec = 1U,
 					.trans_type = kSmbusTransWriteWord,
 					.handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}},
 #ifndef CONFIG_TT_SMC_RECOVERY
 		[CMFW_SMBUS_POWER_LIMIT] = {.valid = 1,
+					    .pec = 1U,
 					    .trans_type = kSmbusTransWriteWord,
 					    .handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}},
 		[CMFW_SMBUS_POWER_INSTANT] = {.valid = 1,
+					      .pec = 1U,
 					      .trans_type = kSmbusTransWriteWord,
 					      .handler = {.rcv_handler = &Dm2CmSendPowerHandler}},
 		[0x26] = {.valid = 1,
+			  .pec = 1U,
 			  .trans_type = kSmbusTransWriteByte,
 			  .handler = {.rcv_handler = &SMBusTelemRegHandler}},
 		[0x27] = {.valid = 1,
+			  .pec = 1U,
 			  .trans_type = kSmbusTransBlockRead,
 			  .expected_blocksize = sizeof(uint32_t),
 			  .handler = {.send_handler = &SMBusTelemDataHandler}},
-		[CMFW_SMBUS_THERM_TRIP_COUNT] = {.valid = 1,
-			 .trans_type = kSmbusTransWriteWord,
-			 .handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}},
+		[CMFW_SMBUS_THERM_TRIP_COUNT] = {
+				.valid = 1,
+				.pec = 1U,
+				.trans_type = kSmbusTransWriteWord,
+				.handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}},
 #endif
 		[CMFW_SMBUS_TEST_READ] = {.valid = 1,
+					  .pec = 1U,
 					  .trans_type = kSmbusTransReadByte,
 					  .handler = {.send_handler = &ReadByteTest}},
 		[CMFW_SMBUS_TEST_WRITE] = {.valid = 1,
+					   .pec = 1U,
 					   .trans_type = kSmbusTransWriteByte,
 					   .handler = {.rcv_handler = &WriteByteTest}},
 		[CMFW_SMBUS_TEST_READ_WORD] = {.valid = 1,
-					       .trans_type = kSmbusTransReadWord,
-					       .handler = {.send_handler = &ReadWordTest}},
+			 .pec =
+				 1U,
+			 .trans_type = kSmbusTransReadWord,
+			 .handler = {.send_handler = &ReadWordTest}},
 		[CMFW_SMBUS_TEST_WRITE_WORD] = {.valid = 1,
+						.pec = 1U,
 						.trans_type = kSmbusTransWriteWord,
 						.handler = {.rcv_handler = &WriteWordTest}},
 		[CMFW_SMBUS_TEST_READ_BLOCK] = {.valid = 1,
+						.pec = 1U,
 						.trans_type = kSmbusTransBlockRead,
 						.expected_blocksize = 4,
 						.handler = {.send_handler = &BlockReadTest}},
 		[CMFW_SMBUS_TEST_WRITE_BLOCK] = {.valid = 1,
+						 .pec = 1U,
 						 .trans_type = kSmbusTransBlockWrite,
 						 .expected_blocksize = 4,
 						 .handler = {.rcv_handler = &BlockWriteTest}},
@@ -256,7 +296,15 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		case kSmbusTransWriteByte:
 			smbus_data.blocksize = 1;
 			smbus_data.received_data[smbus_data.rcv_index++] = val;
-			smbus_data.state = kSmbusStateRcvPec;
+
+			if (1U == curr_cmd->pec) {
+				smbus_data.state = kSmbusStateRcvPec;
+			} else {
+				int32_t ret = curr_cmd->handler.rcv_handler(
+					smbus_data.received_data, smbus_data.blocksize);
+				smbus_data.state = kSmbusStateWaitIdle;
+				return ret;
+			}
 			break;
 		case kSmbusTransWriteWord:
 			smbus_data.blocksize = 2;
@@ -272,7 +320,14 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1050);
 		smbus_data.received_data[smbus_data.rcv_index++] = val;
 		if (smbus_data.rcv_index == smbus_data.blocksize) {
-			smbus_data.state = kSmbusStateRcvPec;
+			if (1U == curr_cmd->pec) {
+				smbus_data.state = kSmbusStateRcvPec;
+			} else {
+				int32_t ret = curr_cmd->handler.rcv_handler(
+					smbus_data.received_data, smbus_data.blocksize);
+				smbus_data.state = kSmbusStateWaitIdle;
+				return ret;
+			}
 		}
 	} else if (smbus_data.state == kSmbusStateRcvPec) {
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1060);
@@ -348,7 +403,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 			break;
 		case kSmbusTransReadByte:
 			*val = smbus_data.send_data[smbus_data.send_index++];
-			smbus_data.state = kSmbusStateSendPec;
+			smbus_data.state = curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
 			break;
 		case kSmbusTransReadWord:
 			*val = smbus_data.send_data[smbus_data.send_index++];
@@ -365,7 +420,7 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0050);
 		*val = smbus_data.send_data[smbus_data.send_index++];
 		if (smbus_data.send_index == smbus_data.blocksize) {
-			smbus_data.state = kSmbusStateSendPec;
+			smbus_data.state = curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
 		}
 	} else if (smbus_data.state == kSmbusStateSendPec) {
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0060);
