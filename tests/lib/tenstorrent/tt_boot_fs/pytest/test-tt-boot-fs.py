@@ -1,9 +1,11 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+import argparse
 import base64
 import logging
 import pykwalify.core
+import requests
 import sys
 import tarfile
 import yaml
@@ -13,10 +15,13 @@ from urllib.request import urlretrieve
 
 TEST_ROOT = Path(__file__).parent.resolve()
 MODULE_ROOT = TEST_ROOT.parents[4]
+WORKSPACE_ROOT = MODULE_ROOT.parent
+ZEPHYR_BASE = WORKSPACE_ROOT / "zephyr"
 
 TEST_ALIGNMENT = 0x1000
 
 sys.path.append(str(MODULE_ROOT / "scripts"))
+sys.path.append(str(ZEPHYR_BASE / "scripts" / "dts" / "python-devicetree" / "src"))
 
 import tt_boot_fs  # noqa: E402
 
@@ -215,25 +220,25 @@ def test_tt_boot_fs_mkfs():
     """
     Test the ability to make a tt_boot_fs.
     """
-    assert (
-        tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None
-    ), "tt_boot_fs.mkfs() failed"
+    assert tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None, (
+        "tt_boot_fs.mkfs() failed"
+    )
 
 
 def test_tt_boot_fs_fsck(tmp_path: Path):
     """
     Test the ability to check a tt_boot_fs.
     """
-    assert tt_boot_fs.fsck(
-        get_test_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() failed with valid image"
-    assert not tt_boot_fs.fsck(
-        get_corrupted_test_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() succeeded with invalid image"
+    assert tt_boot_fs.fsck(get_test_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() failed with valid image"
+    )
+    assert not tt_boot_fs.fsck(get_corrupted_test_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() succeeded with invalid image"
+    )
 
-    assert tt_boot_fs.fsck(
-        get_released_image_path(tmp_path)
-    ), "tt_boot_fs.fsck() failed with released image"
+    assert tt_boot_fs.fsck(get_released_image_path(tmp_path)), (
+        "tt_boot_fs.fsck() failed with released image"
+    )
 
 
 def test_tt_boot_fs_cksum():
@@ -379,6 +384,40 @@ def test_tt_boot_fs_ls(tmp_path: Path):
     )
     assert actual_fds == expected_fds, "tt_boot_fs.ls() failed with valid image"
 
-    assert not tt_boot_fs.ls(
-        get_corrupted_test_image_path(tmp_path)
-    ), "tt_boot_fs.ls() succeeded with invalid image"
+    assert not tt_boot_fs.ls(get_corrupted_test_image_path(tmp_path)), (
+        "tt_boot_fs.ls() succeeded with invalid image"
+    )
+
+
+def test_tt_boot_fs_gen_yaml(tmp_path: Path):
+    """
+    Compares boot filesystem YAML generated from a devicetree to the existing hardcoded YAML files.
+    Expects build/tt_boot_fs.yaml to already exist from sysbuild.
+    """
+
+    # Fetch expected YAML from v18.7 on GitHub
+    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/heads/v18.7-branch/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
+    response = requests.get(expected_yaml_raw)
+    response.raise_for_status()
+    expected_yaml = yaml.safe_load(response.text)
+
+    # Generate YAML from bootfs
+    tmp_path.mkdir(parents=True, exist_ok=True)
+
+    dtsi = TEST_ROOT / "p150a-fixed-partitions.dts"
+
+    args = argparse.Namespace(
+        board="p150a",
+        dts_file=dtsi,
+        bindings_dirs=[MODULE_ROOT / "dts/bindings/", ZEPHYR_BASE / "dts/bindings/"],
+        output_file=tmp_path / "tt_boot_fs.yaml",
+        build_dir="$BUILD_DIR",
+        blobs_dir="$ROOT/zephyr/blobs",
+        verbose=None,
+    )
+
+    tt_boot_fs.invoke_generate_bootfs_yaml(args)
+    with open(tmp_path / "tt_boot_fs.yaml", "r") as f:
+        generated_yaml = yaml.safe_load(f)
+
+    assert generated_yaml == expected_yaml, "Generated yaml differs from expected yaml"
