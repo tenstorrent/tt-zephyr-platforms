@@ -10,6 +10,8 @@
 #include "cm2dm_msg.h"
 #include "throttler.h"
 #include "asic_state.h"
+#include "smbus_target.h"
+#include "fan_ctrl.h"
 
 #include <stdint.h>
 
@@ -18,6 +20,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 
 /* DMFW to CMFW i2c interface is on I2C0 of tensix_sm */
@@ -88,6 +91,9 @@ typedef struct {
 /***Start of SMBus handlers***/
 
 static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c0));
+
+/* Forward declaration for new command handler */
+static int32_t Dm2CmSendFanSpeedHandler(const uint8_t *data, uint8_t size);
 
 int32_t ReadByteTest(uint8_t *data, uint8_t size)
 {
@@ -200,6 +206,10 @@ static SmbusConfig smbus_config = {
 				     .pec = 1U,
 				     .trans_type = kSmbusTransWriteWord,
 				     .handler = {.rcv_handler = &Dm2CmPingHandler}},
+		[CMFW_SMBUS_FAN_SPEED] = {.valid = 1,
+					.pec = 1U,
+					.trans_type = kSmbusTransWriteWord,
+					.handler = {.rcv_handler = &Dm2CmSendFanSpeedHandler}},
 		[CMFW_SMBUS_FAN_RPM] = {.valid = 1,
 					.pec = 1U,
 					.trans_type = kSmbusTransWriteWord,
@@ -266,6 +276,23 @@ static SmbusCmdDef *GetCmdDef(uint8_t cmd)
 static uint8_t Crc8(uint8_t crc, uint8_t data)
 {
 	return crc8(&data, 1, 0x7, crc /* pec */, false);
+}
+
+static int32_t Dm2CmSendFanSpeedHandler(const uint8_t *data, uint8_t size)
+{
+#ifndef CONFIG_TT_SMC_RECOVERY
+	if (size != 2) {
+		return -1;
+	}
+
+	uint16_t speed = sys_get_le16(data);
+	/* 0 => unforce */
+	FanCtrlApplyBoardForcedSpeed(speed);
+
+	return 0;
+#endif
+
+	return -1;
 }
 
 static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)

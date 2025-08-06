@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/drivers/watchdog.h>
 #include <zephyr/sys/byteorder.h>
 #include <tenstorrent/msg_type.h>
@@ -133,7 +134,16 @@ void ChipResetRequest(void *arg)
 
 void UpdateFanSpeedRequest(uint32_t fan_speed)
 {
-	PostCm2DmMsg(kCm2DmMsgIdFanSpeedUpdate, fan_speed);
+	uint32_t left_chip = tt_bh_fwtable_is_p300_left_chip();
+
+	PostCm2DmMsg(kCm2DmMsgIdFanSpeedUpdate, left_chip * BIT(31) + fan_speed);
+}
+
+void UpdateForcedFanSpeedRequest(uint32_t fan_speed)
+{
+	uint32_t left_chip = tt_bh_fwtable_is_p300_left_chip();
+
+	PostCm2DmMsg(kCm2DmMsgIdForcedFanSpeedUpdate, left_chip * BIT(31) + fan_speed);
 }
 
 void Dm2CmReadyRequest(void)
