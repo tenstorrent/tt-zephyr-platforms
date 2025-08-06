@@ -328,12 +328,14 @@ int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size)
 {
 	uint32_t telemetry_data;
 
-	if (size != sizeof(telemetry_data)) {
+	if (size != 7U) {
 		return -1;
 	}
-
+	data[0] = GetTelemetryTagValid(telemetry_reg) ? 0U : 1U;
+	data[1] = 0U;
+	data[2] = 0U;
 	telemetry_data = GetTelemetryTag(telemetry_reg);
-	memcpy(data, &telemetry_data, sizeof(telemetry_data));
+	memcpy(&data[3], &telemetry_data, sizeof(telemetry_data));
 	return 0;
 }
 
