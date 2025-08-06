@@ -24,6 +24,7 @@ boards:
 
 # Runner for tt-flash
 runners:
+  - file: scripts/tt_bootstrap.py
   - file: scripts/tt_flash_runner.py
 
 package-managers:
