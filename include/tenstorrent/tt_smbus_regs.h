@@ -14,6 +14,8 @@
  */
 
 enum CMFWSMBusReg {
+	/* RW, 8 bits in, 56 bits out. Get telemetry data */
+	CMFW_SMBUS_TELEMETRY_READ = 0x02,
 	/* W0, 24 bits. Update the Arc State */
 	CMFW_SMBUS_UPDATE_ARC_STATE = 0x04,
 	/* RO, 48 bits. Read cm2dmMessage struct describing request from CMFW */
