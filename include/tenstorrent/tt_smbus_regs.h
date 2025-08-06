@@ -14,6 +14,8 @@
  */
 
 enum CMFWSMBusReg {
+	/* W0, 24 bits. Update the Arc State */
+	CMFW_SMBUS_UPDATE_ARC_STATE = 0x04,
 	/* RO, 48 bits. Read cm2dmMessage struct describing request from CMFW */
 	CMFW_SMBUS_REQ = 0x10,
 	/* WO, 16 bits. Write with sequence number and message ID to ack cm2dmMessage */
