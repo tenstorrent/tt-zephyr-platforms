@@ -3,15 +3,13 @@
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any, Dict
+
 from pyocd.core.memory_map import FlashRegion, RamRegion
 from pyocd.target.pack.flash_algo import PackFlashAlgo
-from typing import Any, Dict
 
 spiflash_base = 0x0
 spiflash_size = 0x4000000  # 64 MB
-
-if "target" not in globals():
-    target = None
 
 
 def read_flash_memory(address, size) -> Sequence[int]:
@@ -22,12 +20,13 @@ def read_flash_memory(address, size) -> Sequence[int]:
     :param size: The number of bytes to read.
     :return: A bytearray containing the read data.
     """
-    ap = next(iter(target.aps.values()))  # noqa: F821
+    # Target variable is defined by pyocd module
+    ap = next(iter(target.aps.values()))  # pylint: disable=undefined-variable # noqa: F821
     if address < spiflash_base or address + size > spiflash_base + spiflash_size:
         # Use the target's memory read function
         return ap.read_memory_original(address, size)
     # Call the custom read function within the FLM
-    region = target.memory_map.get_region_for_address(address)  # noqa: F821
+    region = target.memory_map.get_region_for_address(address)  # pylint: disable=undefined-variable # noqa: F821
     if not region.flash._is_api_valid("pc_read"):
         raise RuntimeError(
             f"Flash read function not available for region at address {address:#x} with size {size:#x}."
@@ -63,7 +62,7 @@ class SPIPackFlashAlgo(PackFlashAlgo):
     }
 
     def get_pyocd_flash_algo(
-        self, blocksize: int, ram_region: RamRegion
+        self, blocksize: int, ram_region: "RamRegion"
     ) -> Dict[str, Any]:
         """
         Returns the flash algorithm as a dictionary.
@@ -78,7 +77,12 @@ def will_connect():
     """
     Called by pyocd at target connection time
     """
-    flm = Path(__file__).parent / "STM32G0Bx_SPI_EEPROM.FLM"
+
+    flm = Path(__file__).parent / "build" / "spi.flm"
+    if not flm.exists():
+        raise RuntimeError(
+            f"Flash algorithm file {flm} does not exist. Please build the flash algorithm first."
+        )
     with flm.open("rb") as f:
         flash_algo = SPIPackFlashAlgo(f)
 
@@ -93,21 +97,22 @@ def will_connect():
     )
 
     # Add the spi flash region to the memory map.
-    target.memory_map.add_region(spiflash)  # noqa: F821
+    # target is defined by pyocd module
+    target.memory_map.add_region(spiflash)  # pylint: disable=undefined-variable # noqa: F821
 
     # This is a bit of a hack. PYOCD assumes that all programmable flash is
     # memory mapped, so we need to override the memory read function to
     # read from the SPI NOR flash instead of the default memory read function.
 
     # Save the original memory read function so we can call it later.
-    target.read_memory_original = target.read_memory_block8  # noqa: F821
+    target.read_memory_original = target.read_memory_block8  # pylint: disable=undefined-variable # noqa: F821
     # Manually override the memory read function to read from the SPI NOR flash.
-    target.read_memory_block8 = read_flash_memory  # noqa: F821
+    target.read_memory_block8 = read_flash_memory  # pylint: disable=undefined-variable # noqa: F821
 
 
 def did_connect():
     # Go ahead and replace the AP read function too- we need this one overridden
     # as well, using the same hack as above
-    ap = next(iter(target.aps.values()))  # noqa: F821
+    ap = next(iter(target.aps.values()))  # pylint: disable=undefined-variable # noqa: F821
     ap.read_memory_original = ap.read_memory_block8
     ap.read_memory_block8 = read_flash_memory
