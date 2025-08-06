@@ -38,7 +38,9 @@ def rescan_pcie():
                 f.write("1")
         except PermissionError:
             try:
-                subprocess.call(f"echo 1 | sudo tee {remove_path}", shell=True)
+                subprocess.call(
+                    f"echo 1 | sudo tee {remove_path} > /dev/null", shell=True
+                )
             except Exception as e:
                 print("Error, this script must be run with elevated permissions")
                 raise e
@@ -51,7 +53,7 @@ def rescan_pcie():
             time.sleep(1)
     except PermissionError:
         try:
-            subprocess.call(f"echo 1 | sudo tee {rescan_path}", shell=True)
+            subprocess.call(f"echo 1 | sudo tee {rescan_path} > /dev/null", shell=True)
             time.sleep(1)
         except Exception as e:
             print("Error, this script must be run with elevated permissions")
