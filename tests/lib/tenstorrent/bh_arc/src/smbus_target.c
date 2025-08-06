@@ -196,4 +196,22 @@ ZTEST(smbus_target, test_update_arc_test_state_0)
 	zassert_equal(A0State, get_asic_state());
 }
 
+ZTEST(smbus_target, test_telem_read_bad_w_blocksize)
+{
+	uint8_t write_data[] = {CMFW_SMBUS_TELEMETRY_READ, 0x3};
+
+	zassert_equal(-1, i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr));
+}
+
+ZTEST(smbus_target, test_telem_read)
+{
+	uint8_t write_data[] = {CMFW_SMBUS_TELEMETRY_READ, 0x1U, TAG_AICLK};
+	uint8_t read_data[8];
+
+	zassert_equal(0, i2c_write_read(i2c0_dev, tt_i2c_addr, write_data, sizeof(write_data), read_data, sizeof(read_data)));
+	zexpect_equal(7U, read_data[0]);
+	zexpect_equal(0U, read_data[1]);
+	/* bytes 2-3 are DC. Bytes 4-7 are telem data but currently aren't emulated */
+}
+
 ZTEST_SUITE(smbus_target, NULL, NULL, NULL, tear_down_tc, NULL);
