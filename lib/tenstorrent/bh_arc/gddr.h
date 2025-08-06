@@ -13,7 +13,8 @@
 #define MIN_GDDR_SPEED             12000
 #define MAX_GDDR_SPEED             20000
 #define GDDR_SPEED_TO_MEMCLK_RATIO 16
-#define NUM_GDDR 8
+#define NUM_GDDR                   8
+#define NUM_MRISC_NOC2AXI_PORT     3
 
 /* MRISC FW telemetry base addr */
 #define GDDR_TELEMETRY_TABLE_ADDR 0x8000
