@@ -32,7 +32,7 @@ jobs:
               - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
@@ -166,7 +166,7 @@ jobs:
               - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
