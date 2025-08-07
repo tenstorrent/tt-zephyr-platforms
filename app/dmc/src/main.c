@@ -269,7 +269,7 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 		LOG_ERR("SMBUS telemetry read returned unexpected count: %d", count);
 		return -EIO;
 	}
-	if (data[0] != 1U) {
+	if (data[0] != 0U) {
 		LOG_ERR("SMBUS telemetry read returned invalid telem idx");
 		return -EIO;
 	}
