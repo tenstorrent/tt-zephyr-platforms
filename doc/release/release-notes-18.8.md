@@ -10,6 +10,15 @@ Major enhancements with this release include:
 [comment]: <> (H3 Performance Improvements, if applicable)
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+
+### Stability Improvements
+
+* Update Blackhole MRISC FW to v2.9
+    * Modified Tuning setting for BH Galaxy cards
+        * Pull in changes from P300 Learning: dram_ocd_pulldown_offset increased to “3”
+        * Adjust CA delay from “8” to “0” (Using the default values that are already used in other projects like P100, P150 and P300).
+        * Removed bottom DRAM to train CA bus (Using the default values that are already used in other projects like P100, P150 and P300).
+
 [comment]: <> (H3 Stability Improvements, if applicable)
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
