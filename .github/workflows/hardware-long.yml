@@ -28,7 +28,7 @@ jobs:
               - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
@@ -134,7 +134,7 @@ jobs:
               - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.61.0-30-g3a3d9d704e
