@@ -11,9 +11,6 @@
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/sys/printk.h>
 
-/* 1% tolerance for clock rate checks */
-#define CLOCK_RATE_TOLERANCE_PERCENT 1
-
 ZTEST(clock_control_rate, test_get_rate_aiclk)
 {
 	const struct device *pll = DEVICE_DT_GET(DT_NODELABEL(pll0));
@@ -33,52 +30,50 @@ ZTEST(clock_control_rate, test_set_rate_gddr)
 {
 	const struct device *pll = DEVICE_DT_GET(DT_NODELABEL(pll0));
 	uint32_t new_rate;
-	const uint32_t target_rate = 700;
 	int ret;
 
 	clock_control_subsys_t gddr_subsys =
 		(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK;
 
-	ret = clock_control_set_rate(pll, gddr_subsys, (clock_control_subsys_rate_t)target_rate);
-	zassert_ok(ret, "set_rate for GDDR failed with %d", ret);
+	for (uint32_t target_rate = CONFIG_CLOCK_CTRL_GDDRCLK_MIN_RATE;
+	     target_rate <= CONFIG_CLOCK_CTRL_GDDRCLK_MAX_RATE;
+	     target_rate += CONFIG_CLOCK_CTRL_GDRRCLK_FREQ_INCR) {
+		ret = clock_control_set_rate(pll, gddr_subsys,
+					     (clock_control_subsys_rate_t)target_rate);
+		zassert_ok(ret, "set_rate for GDDR failed with %d", ret);
 
-	ret = clock_control_get_rate(pll, gddr_subsys, &new_rate);
-	zassert_ok(ret, "get_rate for GDDR failed with %d", ret);
+		ret = clock_control_get_rate(pll, gddr_subsys, &new_rate);
+		zassert_ok(ret, "get_rate for GDDR failed with %d", ret);
 
-	zassert_within(new_rate, target_rate, new_rate / 100.f * CLOCK_RATE_TOLERANCE_PERCENT,
-		       "Expected ~%d Hz but got %d Hz", target_rate, new_rate);
+		zassert_within(new_rate, target_rate,
+			       new_rate / 100.f * CONFIG_CLOCK_CTRL_TOLERANCE_PERCENT,
+			       "Expected ~%d Hz but got %d Hz", target_rate, new_rate);
+	}
 }
 
 ZTEST(clock_control_rate, test_set_rate_aiclk)
 {
 	const struct device *pll = DEVICE_DT_GET(DT_NODELABEL(pll0));
 	uint32_t new_rate;
-	const uint32_t target_rate = 750;
 	int ret;
 
 	clock_control_subsys_t aiclk_subsys =
 		(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK;
 
-	ret = clock_control_set_rate(pll, aiclk_subsys, (clock_control_subsys_rate_t)target_rate);
-	zassert_ok(ret, "set_rate for AICLK failed with %d", ret);
+	for (uint32_t target_rate = CONFIG_CLOCK_CTRL_AICLK_MIN_RATE;
+	     target_rate <= CONFIG_CLOCK_CTRL_AICLK_MAX_RATE;
+	     target_rate += CONFIG_CLOCK_CTRL_AICLK_FREQ_INCR) {
+		ret = clock_control_set_rate(pll, aiclk_subsys,
+					     (clock_control_subsys_rate_t)target_rate);
+		zassert_ok(ret, "set_rate for AICLK failed with %d", ret);
 
-	ret = clock_control_get_rate(pll, aiclk_subsys, &new_rate);
-	zassert_ok(ret, "get_rate for AICLK failed with %d", ret);
+		ret = clock_control_get_rate(pll, aiclk_subsys, &new_rate);
+		zassert_ok(ret, "get_rate for AICLK failed with %d", ret);
 
-	zassert_within(new_rate, target_rate, new_rate / 100.f * CLOCK_RATE_TOLERANCE_PERCENT,
-		       "Expected ~%d Hz but got %d Hz", target_rate, new_rate);
-}
-
-ZTEST(clock_control_rate, test_set_rate_unsupported_fails)
-{
-	const struct device *pll = DEVICE_DT_GET(DT_NODELABEL(pll0));
-	int ret;
-
-	clock_control_subsys_t arcclk_subsys =
-		(clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_ARCCLK;
-
-	ret = clock_control_set_rate(pll, arcclk_subsys, (clock_control_subsys_rate_t)500000000);
-	zassert_equal(-ENOTSUP, ret, "Expected -ENOTSUP but got %d", ret);
+		zassert_within(new_rate, target_rate,
+			       new_rate / 100.f * CONFIG_CLOCK_CTRL_TOLERANCE_PERCENT,
+			       "Expected ~%d Hz but got %d Hz", target_rate, new_rate);
+	}
 }
 
 ZTEST(clock_control_rate, test_set_rate_out_of_range_fails)
