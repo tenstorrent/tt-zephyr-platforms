@@ -1,0 +1,36 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Clock control test options"
+
+config CLOCK_CTRL_TOLERANCE_PERCENT
+	int "Tolerance when asserting expected clock frequencies"
+	default 1
+
+config CLOCK_CTRL_GDDRCLK_MIN_RATE
+	int "Minimum rate to set GDDRCLK to"
+	default 750
+
+config CLOCK_CTRL_GDDRCLK_MAX_RATE
+	int "Maximum rate to set GDDRCLK to"
+	default 1000
+
+config CLOCK_CTRL_GDRRCLK_FREQ_INCR
+	int "Increment when changing frequencies for GDDRCLK"
+	default 50
+
+config CLOCK_CTRL_AICLK_MIN_RATE
+	int "Minimum rate to set AICLK to"
+	default 200
+
+config CLOCK_CTRL_AICLK_MAX_RATE
+	int "Maximum rate to set AICLK to"
+	default 1350
+
+config CLOCK_CTRL_AICLK_FREQ_INCR
+	int "Increment when changing frequencies for AICLK"
+	default 50
+
+endmenu
+
+source "Kconfig.zephyr"
