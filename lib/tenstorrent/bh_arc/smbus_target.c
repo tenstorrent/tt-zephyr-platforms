@@ -494,6 +494,9 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		pec = Crc8(pec, I2C_TARGET_ADDR << 1 | I2C_WRITE_BIT); /* start address byte */
 		pec = Crc8(pec, smbus_data.command);
 
+		if (curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
+			pec = Crc8(pec, curr_cmd->expected_blocksize_w);
+		}
 		/* any received data */
 		for (int i = 0; i < smbus_data.rcv_index; i++) {
 			pec = Crc8(pec, smbus_data.received_data[i]);
@@ -502,7 +505,8 @@ static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 		pec = Crc8(pec, I2C_TARGET_ADDR << 1 | I2C_READ_BIT); /* restart address byte */
 
 		/* sent data */
-		if (curr_cmd->trans_type == kSmbusTransBlockRead) {
+		if (curr_cmd->trans_type == kSmbusTransBlockRead ||
+		    curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
 			pec = Crc8(pec, smbus_data.blocksize);
 		}
 		for (int i = 0; i < smbus_data.blocksize; i++) {
