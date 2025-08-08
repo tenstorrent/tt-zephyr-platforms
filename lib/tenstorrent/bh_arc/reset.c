@@ -43,7 +43,6 @@ static const struct device *const pll_devs[] = {DT_INST_FOREACH_STATUS_OKAY(PLL_
 LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 STATUS_ERROR_STATUS0_reg_u error_status0;
 
 /* Assert soft reset for all RISC-V cores */
