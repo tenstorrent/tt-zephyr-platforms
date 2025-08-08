@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <dirent.h>
+#define _XOPEN_SOURCE 500
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -14,7 +15,10 @@
 #include <stddef.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <ftw.h>
+#include <limits.h>
 
 #include "logging.h"
 
@@ -47,6 +51,14 @@ struct tenstorrent_reset_device_out {
 struct tenstorrent_reset_device {
 	struct tenstorrent_reset_device_inp in;
 	struct tenstorrent_reset_device_out out;
+};
+
+struct pcie_walk_data {
+	uint16_t match_vid;
+	uint16_t match_pid;
+	int (*cb)(char *path, size_t path_size, void *data);
+	void *user_data;
+	unsigned int counter;
 };
 
 static int pcie_read_unsigned_long_from_file(char *path, size_t path_size, unsigned long *value)
@@ -85,75 +97,83 @@ out:
 	return ret;
 }
 
+static struct pcie_walk_data *g_walk_data;
+
+static int pcie_nftw_callback(const char *fpath, const struct stat *sb, int typeflag,
+			      struct FTW *ftwbuf)
+{
+	int ret;
+	unsigned long pid, vid;
+	char vendor_path[PATH_MAX];
+	char device_path[PATH_MAX];
+	char device_path_copy[PATH_MAX];
+	(void)sb;
+	(void)ftwbuf;
+
+	/* Only process symbolic links (PCIe devices) */
+	if (typeflag != FTW_SL) {
+		return 0;
+	}
+
+	if (strstr("/sys/bus/pci/devices/", fpath) != fpath) {
+		return 0;
+	}
+
+	/* Build vendor file path */
+	snprintf(vendor_path, sizeof(vendor_path), "%s/vendor", fpath);
+	ret = pcie_read_unsigned_long_from_file(vendor_path, sizeof(vendor_path), &vid);
+	if (ret != 0) {
+		return 0;
+	}
+
+	/* Build device file path */
+	snprintf(device_path, sizeof(device_path), "%s/device", fpath);
+	ret = pcie_read_unsigned_long_from_file(device_path, sizeof(device_path), &pid);
+	if (ret != 0) {
+		return 0;
+	}
+
+	/* Check if vendor/product IDs match */
+	if (((vid == g_walk_data->match_vid) || (g_walk_data->match_vid == 0xffff)) &&
+	    ((pid == g_walk_data->match_pid) || (g_walk_data->match_pid == 0xffff))) {
+
+		D(1, "Found %s with vendor id %04lx and product id %04lx", fpath, vid, pid);
+
+		strncpy(device_path_copy, fpath, sizeof(device_path_copy));
+		device_path_copy[sizeof(device_path_copy) - 1] = '\0';
+
+		ret = g_walk_data->cb(device_path_copy, sizeof(device_path_copy),
+				      g_walk_data->user_data);
+		if (ret < 0) {
+			return -1; /* Stop walking on error */
+		}
+		g_walk_data->counter += ret;
+	}
+
+	return 0;
+}
+
 static int pcie_walk_sysfs(uint16_t match_vid, uint16_t match_pid,
 			   int (*cb)(char *path, size_t path_size, void *data), void *data)
 {
-	int ret;
-	DIR *dir;
-	unsigned long pid;
-	unsigned long vid;
-	struct dirent *dent;
-	static char path[PATH_MAX];
-	unsigned int counter = 0;
+	struct pcie_walk_data walk_data = {.match_vid = match_vid,
+					   .match_pid = match_pid,
+					   .cb = cb,
+					   .user_data = data,
+					   .counter = 0};
 
-	_Static_assert(PATH_MAX >= 1024, "PATH_MAX is too small");
+	g_walk_data = &walk_data;
 
-	ret = MIN(sizeof(path) - 1, strlen(PCI_DEVICES_PATH));
-	strncpy(path, PCI_DEVICES_PATH, (size_t)ret);
-	path[ret] = '\0';
+	int ret = nftw(PCI_DEVICES_PATH, pcie_nftw_callback, 20, FTW_PHYS);
 
-	dir = opendir(path);
-	if (dir == NULL) {
-		E("Failed to open %s: %s", PCI_DEVICES_PATH, strerror(errno));
+	g_walk_data = NULL;
+
+	if (ret != 0) {
+		E("Failed to walk %s: %s", PCI_DEVICES_PATH, strerror(errno));
 		return -errno;
 	}
 
-	for (dent = readdir(dir); dent != NULL; dent = readdir(dir)) {
-
-#ifndef DT_LNK
-#define DT_LNK 10
-#endif
-
-		D(3, "Found %s/%s with d_type %d", PCI_DEVICES_PATH, dent->d_name, dent->d_type);
-
-		if (dent->d_type == DT_LNK) {
-			snprintf(path, sizeof(path), "%s/%s/vendor", PCI_DEVICES_PATH,
-				 dent->d_name);
-			ret = pcie_read_unsigned_long_from_file(path, sizeof(path), &vid);
-			if (ret != 0) {
-				continue;
-			}
-			snprintf(path, sizeof(path), "%s/%s/device", PCI_DEVICES_PATH,
-				 dent->d_name);
-			ret = pcie_read_unsigned_long_from_file(path, sizeof(path), &pid);
-			if (ret != 0) {
-				continue;
-			}
-
-			if (((vid == match_vid) || (match_vid == 0xffff)) &&
-			    ((pid == match_pid) || (match_pid == 0xffff))) {
-
-				D(1, "Found %s/%s with vendor id %04lx and product id %04lx",
-				  PCI_DEVICES_PATH, dent->d_name, vid, pid);
-
-				snprintf(path, sizeof(path), "%s/%s", PCI_DEVICES_PATH,
-					 dent->d_name);
-
-				ret = cb(path, sizeof(path), data);
-				if (ret < 0) {
-					goto out;
-				}
-				counter += ret;
-			}
-		}
-	}
-
-	ret = counter;
-
-out:
-	closedir(dir);
-
-	return ret;
+	return walk_data.counter;
 }
 
 static int pcie_remove_cb(char *path, size_t path_size, void *data)
