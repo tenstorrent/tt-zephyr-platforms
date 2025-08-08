@@ -96,6 +96,7 @@
 			reg = < 0x53000 0x1000 >;
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
 			read-only;
+			source-address = "$END - 0x1000";
 		};
 
 		failover@10000000 {

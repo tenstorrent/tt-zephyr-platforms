@@ -4,7 +4,7 @@ index d7eb670022e..b816be6567b 100755
 +++ b/scripts/ci/check_compliance.py
 @@ -291,7 +291,7 @@ class CheckPatch(ComplianceTest):
              cmd = [checkpatch]
- 
+
          cmd.extend(['--mailback', '--no-tree', '-'])
 -        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE),
 +        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE, '--', ':!*.diff', ':!*.patch'),
@@ -12,12 +12,12 @@ index d7eb670022e..b816be6567b 100755
                                  cwd=GIT_TOP)
          try:
 @@ -900,7 +900,7 @@ Found disallowed Kconfig symbol in SoC Kconfig files: {sym_name:35}
- 
+
          # Grep samples/ and tests/ for symbol definitions
          grep_stdout = git("grep", "-I", "-h", "--perl-regexp", regex, "--",
 -                          ":samples", ":tests", cwd=ZEPHYR_BASE)
 +                          ":samples", ":tests", cwd=Path(GIT_TOP))
- 
+
          # Generate combined list of configs and choices from the main Kconfig tree.
          kconf_syms = kconf.unique_defined_syms + kconf.unique_choices
 @@ -1185,6 +1185,7 @@ flagged.
@@ -28,18 +28,19 @@ index d7eb670022e..b816be6567b 100755
          "ERR",
          "ESP_DIF_LIBRARY",  # Referenced in CMake comment
          "EXPERIMENTAL",
-@@ -1330,6 +1332,7 @@ class SysbuildKconfigCheck(KconfigCheck):
+@@ -1330,6 +1332,8 @@ class SysbuildKconfigCheck(KconfigCheck):
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
          # zephyr-keep-sorted-start re(^\s+")
 +        "DMC_BOARD",
++        "USE_MCUBOOT",
          "FOO",
          "MY_IMAGE", # Used in sysbuild documentation as example
          "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example
 @@ -1856,6 +1859,11 @@ class KeepSorted(ComplianceTest):
          if not mime_type.startswith("text/"):
              return
- 
+
 +        skip_exts = {".patch", ".diff"}
 +        _, ext = os.path.splitext(file)
 +        if ext in skip_exts:
@@ -47,7 +48,7 @@ index d7eb670022e..b816be6567b 100755
 +
          block_data = ""
          in_block = False
- 
+
 diff --git a/dts/bindings/vendor-prefixes.txt b/dts/bindings/vendor-prefixes.txt
 index c6874ab32de..0ec86e8807b 100644
 --- a/dts/bindings/vendor-prefixes.txt

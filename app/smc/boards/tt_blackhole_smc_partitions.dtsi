@@ -1,0 +1,212 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This file defines divisions of the CSM SRAM for the Blackhole SMC board,
+ * as well as partitions used by mcuboot and tt-boot-fs.
+ * It should be included by the MCUBoot image as well as the application image.
+ */
+
+/ {
+	chosen {
+		zephyr,bootloader-info = &boot_info0;
+	};
+
+	csm_bootloader: memory@10000000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-MCUBOOT";
+		device_type = "memory";
+		reg = <0x10000000 0x10000>; /* 64  KiB for MCUBoot */
+	};
+
+	csm_app: memory@10010000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-APP";
+		device_type = "memory";
+		reg = <0x10010000 0x6f000>; /* 444 KiB for application */
+	};
+
+	csm_shared: memory@1007f000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-SHARED";
+		device_type = "memory";
+		reg = <0x1007f000 0x1000>; /* 4 KiB for shared memory */
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			boot_info0: boot_info@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+			};
+		};
+	};
+};
+
+/* Define the partitions used for mcuboot and tt-boot-fs */
+&spi_flash {
+	partitions {
+		compatible = "tenstorrent,tt-boot-fs", "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		flash-device-size = <DT_SIZE_M(16)>;
+		flash-block-size = <DT_SIZE_K(4)>;
+
+		cmfwcfg@14000 {
+			label = "cmfwcfg";
+			reg = <0x14000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+			read-only;
+		};
+
+		origcfg@15000 {
+			label = "origcfg";
+			reg = <0x15000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+			read-only;
+		};
+
+		ethfwcfg@30000 {
+			label = "ethfwcfg";
+			reg = <0x30000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+			read-only;
+		};
+
+		ethfw@31000 {
+			label = "ethfw";
+			reg = <0x31000 DT_SIZE_K(36)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
+			read-only;
+		};
+
+		memfwcfg@3a000 {
+			label = "memfwcfg";
+			reg = <0x3a000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+			read-only;
+		};
+
+		memfw@3b000 {
+			label = "memfw";
+			reg = <0x3b000 DT_SIZE_K(16)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
+			read-only;
+		};
+
+		ethsdreg@3f000 {
+			label = "ethsdreg";
+			reg = <0x3f000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
+			read-only;
+		};
+
+		ethsdfw@40000 {
+			label = "ethsdfw";
+			reg = <0x40000 DT_SIZE_K(20)>;
+			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
+			read-only;
+		};
+
+		bmfw@45000 {
+			label = "bmfw";
+			reg = <0x45000 DT_SIZE_K(52)>;
+			binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
+			read-only;
+		};
+
+		flshinfo@52000 {
+			label = "flshinfo";
+			reg = <0x52000 DT_SIZE_K(4)>;
+			binary-path =
+				"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
+			read-only;
+		};
+
+		boardcfg@53000 {
+			label = "boardcfg";
+			reg = <0x53000 DT_SIZE_K(4)>;
+			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+			read-only;
+			source-address = "$END-0x1000";
+		};
+
+		/*
+		 * This partition is used for the primary firmware image.
+		 * it is loaded by MCUBoot. It is tagged as
+		 * mainimg in tt-boot-fs, but isn't used by the bootrom.
+		 */
+		slot0_partition: partition@15000 {
+			label = "mainimg";
+			reg = <0x15000 DT_SIZE_K(512)>;
+			binary-path = "$BUILD_DIR/smc/zephyr/zephyr.signed.bin";
+			source-address = "0x15000";
+		};
+
+		/*
+		 * This partition defines a binary blob that indicates the
+		 * main image should be booted in test mode by mcuboot.
+		 */
+		main_test: partition@0x94000 {
+			label = "maintail";
+			reg = <0x94000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/mcuboot_magic_test.bin";
+			source-address = "0x94000";
+		};
+
+		/*
+		 * This partition contains the recovery image. It will be
+		 * loaded by MCUBoot if the primary image fails to validate.
+		 * This binary is not used by the bootrom.
+		 */
+		slot1_partition: partition@95000 {
+			label = "safeimg";
+			reg = <0x95000 DT_SIZE_K(512)>;
+			binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.signed.bin";
+			source-address = "0x95000";
+		};
+
+		/*
+		 * This partition defines a binary blob that indicates the
+		 * recovery image is valid and bootable to mcuboot.
+		 */
+		recovery_valid: partition@114000 {
+			label = "safetail";
+			reg = <0x114000 DT_SIZE_K(4)>;
+			binary-path = "$BLOBS_DIR/mcuboot_magic_confirmed.bin";
+			source-address = "0x114000";
+		};
+
+		/*
+		 * MCUBoot partition- will be loaded by bootrom.
+		 * tagged as fail_over_image in tt-boot-fs,
+		 * but we actually use it as the primary image.
+		 */
+		boot_partition: partition@115000 {
+			label = "failover";
+			reg = <0x10000000 DT_SIZE_K(128)>;
+			binary-path = "$BUILD_DIR/mcuboot/zephyr/zephyr.bin";
+			source-address = "0x115000";
+		};
+
+		/*
+		 * Install MCUBoot as the cmfw tag as well. Otherwise the
+		 * bootrom may fail to load, as it expects a cmfw tag to be
+		 * present.
+		 */
+		partition@135000 {
+			label = "cmfw";
+			reg = <0x10000000 DT_SIZE_K(128)>;
+			binary-path = "$BUILD_DIR/mcuboot/zephyr/zephyr.bin";
+			source-address = "0x135000";
+		};
+	};
+};

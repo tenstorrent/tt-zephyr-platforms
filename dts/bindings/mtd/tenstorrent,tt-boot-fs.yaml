@@ -20,3 +20,9 @@ child-binding:
     binary-path:
       type: string
       required: true
+    source-address:
+      type: string
+      description: |
+        The source address for the binary, used to set where the binary is
+        placed within the boot-fs. Encoded as a string so that special formats
+        like "$END-0xADDR" can be used.

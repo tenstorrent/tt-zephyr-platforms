@@ -6,6 +6,9 @@ if SOC_TT_BLACKHOLE_SMC
 config CPU_HS4X
 	default y
 
+config HAS_SEGGER_RTT
+	default y
+
 config NUM_IRQ_PRIO_LEVELS
 	# This processor supports 2 priority levels:
 	# 0 for Fast Interrupts (FIRQs) and 1 for Regular Interrupts (IRQs).
@@ -71,6 +74,10 @@ config 2ND_LVL_INTR_03_OFFSET
 	default 36
 
 config GPIO
+	default y
+
+# Needed for MCUBoot- ARC arc doesn't enable this by default
+config HAS_FLASH_LOAD_OFFSET
 	default y
 
 # Needed for octal SPI. WH doesn't actually have this but BH will.

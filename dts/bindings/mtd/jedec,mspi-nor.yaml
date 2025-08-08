@@ -5,7 +5,7 @@ description: Generic NOR flash on MSPI bus
 
 compatible: "jedec,mspi-nor"
 
-include: [mspi-device.yaml, "jedec,spi-nor-common.yaml"]
+include: [mspi-device.yaml, "jedec,spi-nor-common.yaml", soc-nv-flash.yaml]
 
 properties:
   reset-gpios:
