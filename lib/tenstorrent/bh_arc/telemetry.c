@@ -446,6 +446,11 @@ void UpdateTelemetryThermTripCount(uint16_t therm_trip_count)
 	telemetry[TAG_THERM_TRIP_COUNT] = therm_trip_count;
 }
 
+bool GetTelemetryTagValid(uint16_t tag)
+{
+	return tag < TAG_COUNT;
+}
+
 uint32_t GetTelemetryTag(uint16_t tag)
 {
 	if (tag >= TAG_COUNT) {
