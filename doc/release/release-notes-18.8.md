@@ -14,18 +14,32 @@ Major enhancements with this release include:
 ### Stability Improvements
 
 * Update Blackhole MRISC FW to v2.9
-    * Modified Tuning setting for BH Galaxy cards
-        * Pull in changes from P300 Learning: dram_ocd_pulldown_offset increased to “3”
-        * Adjust CA delay from “8” to “0” (Using the default values that are already used in other projects like P100, P150 and P300).
-        * Removed bottom DRAM to train CA bus (Using the default values that are already used in other projects like P100, P150 and P300).
-
-[comment]: <> (H3 Stability Improvements, if applicable)
+  * Modified Tuning setting for BH Galaxy cards
+    * Pull in changes from P300 Learning: dram_ocd_pulldown_offset increased to “3”
+    * Adjust CA delay from “8” to “0” (Using the default values that are already used in other projects like P100, P150 and P300).
+    * Removed bottom DRAM to train CA bus (Using the default values that are already used in other projects like P100, P150 and P300).
+* The `tenstorrent,bh-clock-control` driver has seen some improvements
+  * Driver is used by default and initialized via Zephyr's init system, like all other devices in the driver model
+  * Fixed a bug where the AICLK frequency was set to 1/4 of the expected value by correctly accounting for postdiv
+  * Read AICLK limits from fwtable instead of devicetree
+* The `tenstorrent,bh-fwtable` driver now deterministically loads tables on initialization
+* Telemetry now displays `AICLK_MAX`, `VDD_LIMIT`, `THM_LIMIT` and `TDC_LIMIT` via `tt-smi`.
+* Added regulator config values for p300 and galaxy
+* `tt-console`
+  * Support rescan via `ioctl()`
+  * Fixed a bug to account for rescanning from within a container returning `-ENXIO` instead of the expected `-ENOENT`
+  * Do not return with an error if interrupted by a signal (`SIGINT` / `Ctrl+C`)
+* Added SMBus command to update ARC state, along with `native_sim`-based testsuite
+* P300
+  * Normalize `p300a`, `p300b`, and `p300c` to be like regular board variants
+  * Add a GPIO spec to Devicetree to for the P300 JTAG mux
+  * Fix fan control for p300
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
 [comment]: <> (H2 API Changes, if applicable)
 
-[comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
+### New APIs
 
 [comment]: <> (UL PCIe)
 [comment]: <> (UL DDR)
@@ -33,7 +47,21 @@ Major enhancements with this release include:
 [comment]: <> (UL Telemetry)
 [comment]: <> (UL Debug / Developer Features)
 [comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+
+### Removed APIs
+
+#### Drivers
+
+* Removed the forked stm32 i2c driver
+* Removed the forked stm32 smbus driver
+
+#### Libraries
+
+* TT Boot FS
+  * Two new API calls; `ls` to list files in the filesystem, and a second to read an individual file descriptor by tag
+  * list files on a filesystem on `dev`: `int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, size_t offset);`
+  * look up a single file on `dev`: `int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, size_t offset);`
+  * The filesystem is now fully specified via devicetree, removing the need for several redundant YAML files
 
 [comment]: <> (H2 New Samples, if applicable)
 
@@ -54,10 +82,6 @@ Major enhancements with this release include:
 [comment]: <> (UL Debug / Developer Features)
 [comment]: <> (UL Drivers)
 [comment]: <> (UL Libraries)
-
-* Expose firmware telemetry values `AICLK_MAX`, `VDD_LIMIT`, `THM_LIMIT` and `TDC_LIMIT` in the telemetry table for `tt-smi`.
-
-[comment]: <> (H2 New Boards, if applicable)
 
 ## Migration guide
 
