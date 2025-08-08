@@ -18,8 +18,12 @@ Major enhancements with this release include:
         * Pull in changes from P300 Learning: dram_ocd_pulldown_offset increased to “3”
         * Adjust CA delay from “8” to “0” (Using the default values that are already used in other projects like P100, P150 and P300).
         * Removed bottom DRAM to train CA bus (Using the default values that are already used in other projects like P100, P150 and P300).
-
-[comment]: <> (H3 Stability Improvements, if applicable)
+* Update Blackhole ERISC FW to v1.5.0
+  * Updated some eth training sequencing to help with Galaxy UBB products
+  * Added CALL_ACK postcode in eth msg mailboxes to show message has been read and is being processed
+  * Added fence instructions in eth msg mailboxes to invalidate L1 cache when polling
+  * Changed default training mode to AUTO mode from ANLT, will result in manual eq on Galaxy QSFP ports
+  * ETH msg FEATURE_ENABLE: allows for enable/disablement of eth fw features
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
