@@ -88,10 +88,3 @@ runs:
       shell: bash
       run: |
         west -v patch apply
-
-    - name: Patch pyluwen version
-      shell: bash
-      run: |
-        # Needed as a workaround until the tt-flash/tt-smi dependency chain is
-        # updated to pull in the latest pyluwen
-        pip install pyluwen@git+https://github.com/tenstorrent/luwen.git@d20b8d6f64c0#subdirectory=crates/pyluwen
