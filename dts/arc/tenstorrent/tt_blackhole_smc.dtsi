@@ -128,7 +128,7 @@
 		#clock-cells = <0>;
 
 		refdiv = <2>;
-		postdiv = <0>;
+		postdiv = <1>;
 		fbdiv = <128>;
 		ctrl_bus1 = <0x18>;
 		ctrl_bus5 = <1>;
@@ -145,7 +145,7 @@
 		#clock-cells = <0>;
 
 		refdiv = <2>;
-		postdiv = <0>;
+		postdiv = <1>;
 		fbdiv = <192>;
 		ctrl_bus1 = <0x18>;
 		ctrl_bus5 = <1>;
@@ -162,7 +162,7 @@
 		#clock-cells = <0>;
 
 		refdiv = <2>;
-		postdiv = <0>;
+		postdiv = <1>;
 		fbdiv = <68>;
 		ctrl_bus1 = <0x18>;
 		ctrl_bus5 = <1>;
@@ -179,7 +179,7 @@
 		#clock-cells = <0>;
 
 		refdiv = <2>;
-		postdiv = <0>;
+		postdiv = <1>;
 		fbdiv = <120>;
 		ctrl_bus1 = <0x18>;
 		ctrl_bus5 = <1>;
@@ -196,7 +196,7 @@
 		#clock-cells = <0>;
 
 		refdiv = <2>;
-		postdiv = <0>;
+		postdiv = <1>;
 		fbdiv = <64>;
 		ctrl_bus1 = <0x18>;
 		ctrl_bus5 = <1>;
