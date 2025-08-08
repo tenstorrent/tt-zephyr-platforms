@@ -5,6 +5,8 @@ protobuf
 west
 # zephyr-keep-sorted-stop
 
-# tenstorrent utilities (note: pyluwen is a dependency)
-tt-flash @ git+https://github.com/tenstorrent/tt-flash@v3.3.5
-tt-smi @ git+https://github.com/tenstorrent/tt-smi@v3.0.23
+# zephyr-keep-sorted-start
+pyluwen>=0.7.11
+tt-flash>=3.4.2
+tt-smi>=3.0.23
+# zephyr-keep-sorted-stop
