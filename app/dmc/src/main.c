@@ -166,8 +166,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 			if (chip->data.auto_reset_timeout != 0) {
 				/* Start auto-reset timer */
 				k_timer_start(&chip->auto_reset_timer,
-					      K_MSEC(chip->data.auto_reset_timeout),
-					      K_NO_WAIT);
+					      K_MSEC(chip->data.auto_reset_timeout), K_NO_WAIT);
 			} else {
 				/* Stop auto-reset timer */
 				k_timer_stop(&chip->auto_reset_timer);
@@ -254,6 +253,7 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	uint8_t count;
 	uint8_t data[255]; /* Max size of SMBUS block read */
 	uint32_t app_version;
+
 	/* Test SMBUS telemetry by selecting TAG_DM_APP_FW_VERSION and reading it back */
 	ret = bharc_smbus_byte_data_write(&chip->config.arc, 0x26, 26);
 	if (ret < 0) {
