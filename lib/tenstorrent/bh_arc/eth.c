@@ -14,6 +14,7 @@
 #include "serdes_eth.h"
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/kernel.h>
@@ -39,9 +40,8 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 #define ETH_SD_REG_TAG "ethsdreg"
 #define ETH_SD_FW_TAG  "ethsdfw"
 
-extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
-
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
 typedef struct {
 	uint32_t sd_mode_sel_0: 1;
@@ -196,7 +196,8 @@ void ReleaseEthReset(uint32_t eth_inst, uint32_t ring)
 	*soft_reset_0 &= ~(1 << 11); /* Clear bit for RISC0 reset, leave RISC1 in reset still */
 }
 
-int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_size)
+int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *buf, size_t buf_size, size_t spi_address,
+	      size_t image_size)
 {
 	/* The shifting is to align the address to the lowest 16 bytes */
 	/* uint32_t fw_load_addr = ((ETH_PARAM_ADDR - fw_size) >> 2) << 2; */
@@ -205,9 +206,8 @@ int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_s
 	SetupEthTlb(eth_inst, ring, fw_load_addr);
 	volatile uint32_t *eth_tlb = GetTlbWindowAddr(ring, ETH_SETUP_TLB, fw_load_addr);
 
-	bool dma_pass = ArcDmaTransfer(fw_image, (void *)eth_tlb, fw_size);
-
-	if (!dma_pass) {
+	if (spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
+					 (uint8_t *)eth_tlb)) {
 		return -1;
 	}
 
@@ -227,10 +227,18 @@ int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_s
  * @param fw_cfg_size Size of the FW config data
  * @return int 0 on success, -1 on failure
  */
-int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled,
-	uint8_t *fw_cfg_image, uint32_t fw_cfg_size)
+int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *buf, uint32_t eth_enabled,
+		 size_t spi_address, size_t image_size)
 {
-	uint32_t *fw_cfg_32b = (uint32_t *)fw_cfg_image;
+	int rc;
+
+	rc = flash_read(flash, spi_address, buf, image_size);
+	if (rc < 0) {
+		LOG_ERR("%s() failed: %d", "flash_read", rc);
+		return rc;
+	}
+
+	uint32_t *fw_cfg_32b = (uint32_t *)buf;
 
 	/* Pass in eth_sel based on harvesting info and PCIe configuration */
 	fw_cfg_32b[0] = GetEthSel(eth_enabled);
@@ -255,7 +263,7 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled,
 	SetupEthTlb(eth_inst, ring, ETH_PARAM_ADDR);
 	volatile uint32_t *eth_tlb = GetTlbWindowAddr(ring, ETH_SETUP_TLB, ETH_PARAM_ADDR);
 
-	bool dma_pass = ArcDmaTransfer(fw_cfg_image, (void *)eth_tlb, fw_cfg_size);
+	bool dma_pass = ArcDmaTransfer(buf, (void *)eth_tlb, image_size);
 
 	if (!dma_pass) {
 		return -1;
@@ -267,6 +275,10 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint32_t eth_enabled,
 static void SerdesEthInit(void)
 {
 	uint32_t ring = 0;
+	int rc;
+	tt_boot_fs_fd tag_fd;
+	size_t image_size;
+	size_t spi_address;
 
 	SetupEthSerdesMux(tile_enable.eth_enabled);
 
@@ -287,34 +299,36 @@ static void SerdesEthInit(void)
 		load_serdes |= BIT(4);
 	}
 
-	/* Load fw regs */
-	uint32_t reg_table_size = 0;
+	uint8_t buf[SCRATCHPAD_SIZE] __aligned(4);
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
-		return;
+	rc = tt_boot_fs_find_fd_by_tag(flash, ETH_SD_REG_TAG, &tag_fd);
+	if (rc < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_SD_REG_TAG, rc);
 	}
+	image_size = tag_fd.flags.f.image_size;
+	spi_address = tag_fd.spi_addr;
 
+	/* Load fw regs */
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthRegs(serdes_inst, ring, (SerdesRegData *)large_sram_buffer,
-					  reg_table_size / sizeof(SerdesRegData));
+			LoadSerdesEthRegs(serdes_inst, ring, buf, SCRATCHPAD_SIZE, spi_address,
+					  image_size);
 		}
 	}
 
-	/* Load fw */
-	size_t fw_size = 0;
-
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
+	rc = tt_boot_fs_find_fd_by_tag(flash, ETH_SD_FW_TAG, &tag_fd);
+	if (rc < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_SD_FW_TAG, rc);
 		return;
 	}
+	image_size = tag_fd.flags.f.image_size;
+	spi_address = tag_fd.spi_addr;
 
+	/* Load fw */
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthFw(serdes_inst, ring, large_sram_buffer, fw_size);
+			LoadSerdesEthFw(serdes_inst, ring, buf, SCRATCHPAD_SIZE, spi_address,
+					image_size);
 		}
 	}
 }
@@ -322,38 +336,51 @@ static void SerdesEthInit(void)
 static void EthInit(void)
 {
 	uint32_t ring = 0;
+	int rc;
+	tt_boot_fs_fd tag_fd;
+	size_t image_size;
+	size_t spi_address;
 
 	/* Early exit if no ETH tiles enabled */
 	if (tile_enable.eth_enabled == 0) {
 		return;
 	}
 
-	/* Load fw */
-	size_t fw_size = 0;
+	uint8_t buf[SCRATCHPAD_SIZE] __aligned(4);
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
+	rc = tt_boot_fs_find_fd_by_tag(flash, ETH_FW_TAG, &tag_fd);
+	if (rc < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_FW_TAG, rc);
 		return;
 	}
+	image_size = tag_fd.flags.f.image_size;
+	spi_address = tag_fd.spi_addr;
 
+	/* Load fw */
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFw(eth_inst, ring, large_sram_buffer, fw_size);
+			LoadEthFw(eth_inst, ring, buf, SCRATCHPAD_SIZE, spi_address, image_size);
 		}
 	}
 
-	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
+	rc = tt_boot_fs_find_fd_by_tag(flash, ETH_FW_CFG_TAG, &tag_fd);
+	if (rc < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_find_fd_by_tag", ETH_FW_CFG_TAG, rc);
 		return;
 	}
+	image_size = tag_fd.flags.f.image_size;
+	spi_address = tag_fd.spi_addr;
 
+	/* Loading ETH FW configuration data requires the whole data to be loaded into buffer */
+	__ASSERT(SCRATCHPAD_SIZE >= image_size,
+		 "spi buffer size %zu must be larger than image size %zu", SCRATCHPAD_SIZE,
+		 image_size);
+
+	/* Load param table */
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
-			LoadEthFwCfg(eth_inst, ring, tile_enable.eth_enabled, large_sram_buffer,
-				     fw_size);
+			LoadEthFwCfg(eth_inst, ring, buf, tile_enable.eth_enabled, spi_address,
+				     image_size);
 			ReleaseEthReset(eth_inst, ring);
 		}
 	}
