@@ -13,6 +13,7 @@
 
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/sys/util.h>
@@ -189,7 +190,7 @@ static int InitAiclkPPM(void)
 
 	return 0;
 }
-SYS_INIT(InitAiclkPPM, APPLICATION, 12);
+SYS_INIT_APP(InitAiclkPPM);
 
 uint8_t ForceAiclk(uint32_t freq)
 {

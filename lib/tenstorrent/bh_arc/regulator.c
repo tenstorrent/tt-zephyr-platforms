@@ -18,6 +18,7 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -353,4 +354,4 @@ static int regulator_init(void)
 
 	return 0;
 }
-SYS_INIT(regulator_init, APPLICATION, 16);
+SYS_INIT_APP(regulator_init);

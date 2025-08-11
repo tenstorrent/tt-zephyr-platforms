@@ -13,6 +13,7 @@
 #include "reg.h"
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
@@ -305,7 +306,7 @@ static int InitMrisc(void)
 
 	return 0;
 }
-SYS_INIT(InitMrisc, APPLICATION, 14);
+SYS_INIT_APP(InitMrisc);
 
 static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 {
@@ -408,4 +409,4 @@ static int gddr_training(void)
 
 	return 0;
 }
-SYS_INIT(gddr_training, APPLICATION, 20);
+SYS_INIT_APP(gddr_training);

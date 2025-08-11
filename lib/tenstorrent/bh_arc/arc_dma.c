@@ -8,6 +8,7 @@
 #include "arc.h"
 #include "timer.h"
 
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 
 void ArcDmaConfig(void)
@@ -99,4 +100,4 @@ static int arc_dma_init(void)
 	ArcDmaInitCh(0, 0, 15);
 	return 0;
 }
-SYS_INIT(arc_dma_init, APPLICATION, 1);
+SYS_INIT_APP(arc_dma_init);

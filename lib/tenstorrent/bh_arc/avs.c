@@ -7,6 +7,7 @@
 #include "avs.h"
 #include "regulator.h"
 
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/device.h>
@@ -312,4 +313,4 @@ static int avs_init(void)
 
 	return 0;
 }
-SYS_INIT(avs_init, APPLICATION, 17);
+SYS_INIT_APP(avs_init);

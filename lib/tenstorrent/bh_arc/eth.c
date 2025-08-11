@@ -14,6 +14,7 @@
 #include "serdes_eth.h"
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -371,4 +372,4 @@ static int eth_init(void)
 
 	return 0;
 }
-SYS_INIT(eth_init, APPLICATION, 15);
+SYS_INIT_APP(eth_init);

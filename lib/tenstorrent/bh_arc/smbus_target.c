@@ -16,6 +16,7 @@
 #include <stdint.h>
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_smbus_regs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
@@ -532,7 +533,7 @@ static int InitSmbusTarget(void)
 	i2c_target_register(i2c0_dev, &i2c_target_config_impl);
 	return 0;
 }
-SYS_INIT(InitSmbusTarget, APPLICATION, 16);
+SYS_INIT_APP(InitSmbusTarget);
 
 void PollSmbusTarget(void)
 {

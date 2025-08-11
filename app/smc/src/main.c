@@ -18,6 +18,7 @@
 #include <app_version.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -118,7 +119,7 @@ static int bh_arc_init_start(void)
 
 	return 0;
 }
-SYS_INIT(bh_arc_init_start, APPLICATION, 3);
+SYS_INIT_APP(bh_arc_init_start);
 
 int tt_init_status;
 
@@ -140,4 +141,4 @@ static int bh_arc_init_end(void)
 
 	return 0;
 }
-SYS_INIT(bh_arc_init_end, APPLICATION, 22);
+SYS_INIT_APP(bh_arc_init_end);
