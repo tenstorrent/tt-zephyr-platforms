@@ -10,3 +10,10 @@ This document lists recommended and required changes for those migrating from th
   * `luwen` >= 0.7.2
   * `tt-smi` >= v3.0.22
   * `tt-flash` >= v3.3.4
+* For P300a boards, running `./scripts/rescan-pcie.sh` will crash the kernel. To restore PCIe enumeration:
+  1. Power cycle the board
+  2. Run `west flash`
+  3. Run `sudo reboot`
+* For P300c boards, if PCIe enumeration does not work after flashing DMC:
+  1. Use bootstrap + JTAG to flash the fwbundle for each chip
+  2. Power cycle the board
