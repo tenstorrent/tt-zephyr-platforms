@@ -24,7 +24,7 @@
 #   ci setup: https://tenstorrent.atlassian.net/wiki/spaces/syseng/pages/978518169/GitHub+CI+Setup
 
 - name: CI Local Setup
-  hosts: localhost
+  hosts: all
   gather_facts: true
   vars:
     tenstorrent_venv: "/opt/tenstorrent/.venv"
@@ -35,6 +35,51 @@
 
   tasks:
     # Find board type using tt-smi
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+      become: true
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+      become: true
+
+    - name: Add Docker’s official GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      become: true
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      become: true
+
+    - name: Install dependencies
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - cmake
+          - libtool
+          - autoconf
+          - automake
+          - pkg-config
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: true
+      become: true
 
     - name: Install Rust
       ansible.builtin.shell:
@@ -47,12 +92,21 @@
       ansible.builtin.git:
         repo: https://github.com/tenstorrent/tt-smi.git
         dest: "$HOME/tt-smi"
-        clone: true
 
     - name: Create Zephyr venv
       ansible.builtin.shell:
-        cmd: python3 -m venv {{ tenstorrent_venv }}
-        creates: "{{ tenstorrent_venv }}"
+        cmd: |
+          python3 -m venv {{ tenstorrent_venv }}
+        creates: "{{ tenstorrent_venv }}/bin/pip"
+      become: true
+
+    - name: Ensure the application directory is owned by the correct user
+      ansible.builtin.file:
+        path: /opt/tenstorrent
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        recurse: true
       become: true
 
     - name: Install tt-smi
@@ -62,7 +116,6 @@
           {{ tenstorrent_venv }}/bin/pip install .
         chdir: "$HOME/tt-smi"
         creates: "{{ tenstorrent_venv }}/bin/tt-smi"
-      become: true
 
     - name: Get board ID from tt-smi
       ansible.builtin.shell:
@@ -82,15 +135,15 @@
     - name: Determine board type
       ansible.builtin.set_fact:
         board_type: >-
-          {% set board_id_int = (board_id | regex_replace('^0x', '') | int(base=16)) // (2**36) %}
+          {% set board_id_int = (board_id | regex_replace('^0x', '') | int(base=16)) // (2**36) -%}
           {% if board_id_int == 61 %}p100
-          {% elif board_id_int == 67 %}p100a
-          {% elif board_id_int == 64 %}p150a
-          {% elif board_id_int == 65 %}p150b
-          {% elif board_id_int == 66 %}p150c
-          {% elif board_id_int == 68 %}p300a
-          {% elif board_id_int == 69 %}p300c
-          {% else %}{{ board_id_int }} unknown{% endif %}
+          {%- elif board_id_int == 67 %}p100a
+          {%- elif board_id_int == 64 %}p150a
+          {%- elif board_id_int == 65 %}p150b
+          {%- elif board_id_int == 66 %}p150c
+          {%- elif board_id_int == 68 %}p300a
+          {%- elif board_id_int == 69 %}p300c
+          {%- else %}{{ board_id_int }} unknown{% endif %}
 
     - name: Debug board type
       ansible.builtin.debug:
@@ -112,21 +165,19 @@
 
     - name: Parse JLink ID
       ansible.builtin.set_fact:
-        jlink_id: "{{ jlink_info.stdout | regex_search('ID_SERIAL_SHORT=(\\w+)', '\\1') | \
-          default('NOT_FOUND') }}"
+        jlink_id: "{{ (jlink_info.stdout | regex_search('ID_SERIAL_SHORT=(\\w+)', '\\1'))[0] }}"
 
     - name: Find STLink info
       ansible.builtin.shell: |
         for dev in {{ usb_devices.stdout_lines | join(' ') }}; do
           udevadm info --name=$dev 2>/dev/null | grep -q "ID_VENDOR=STMicroelectronics" && \
-          udevadm info --name=$dev | grep "ID_SERIAL_SHORT" && break
+          udevadm info --name=$dev | grep "ID_SERIAL" && break
         done
       register: stlink_info
 
     - name: Parse STLink ID
       ansible.builtin.set_fact:
-        stlink_id: "{{ stlink_info.stdout | regex_search('ID_SERIAL_SHORT=(\\w+)', '\\1') | \
-          default('NOT_FOUND') }}"
+        stlink_id: "{{ (stlink_info.stdout | regex_search('ID_SERIAL=(\\w+)', '\\1'))[0] }}"
 
     - name: Debug JLink and STLink IDs
       ansible.builtin.debug:
@@ -148,14 +199,14 @@
         content: |
           - connected: true
             id: "{{ stlink_id }}"
-            platform: tt_blackhole@{{ board_id }}/tt_blackhole/dmc
+            platform: tt_blackhole@{{ board_type }}/tt_blackhole/dmc
             runner: openocd
             serial_pty: "rtt"
             flash_before: true
             product: ST-Link
           - connected: true
             id: "{{ jlink_id }}"
-            platform: tt_blackhole@{{ board_id }}/tt_blackhole/smc
+            platform: tt_blackhole@{{ board_type }}/tt_blackhole/smc
             runner: openocd
             runner_params:
               - "--openocd=/opt/tenstorrent/bin/openocd-rtt"
@@ -164,7 +215,6 @@
             flash_before: true
             product: J-Link
       become: true
-
 
     # # Setup Zephyr Environment
 
@@ -263,26 +313,27 @@
     #     . .venv/bin/activate
     #     pip install -r requirements.txt
 
-    # - name: udev rules
-    #   ansible.builtin.shell: |
-    #     wget -O 60-openocd.rules https://sf.net/p/openocd/code/ci/master/tree/contrib/ \
-    #       60-openocd.rules?format=raw
-    #     sudo cp 60-openocd.rules /etc/udev/rules.d
-    #     sudo udevadm control --reload
-    #     sudo udevadm trigger
+    - name: udev rules
+      ansible.builtin.shell:
+        cmd: |
+          wget -O 60-openocd.rules "https://sf.net/p/openocd/code/ci/master/tree/contrib/"\
+            "60-openocd.rules?format=raw"
+          sudo cp 60-openocd.rules /etc/udev/rules.d
+          sudo udevadm control --reload
+          sudo udevadm trigger
+        creates: $HOME/60-openocd.rules
 
     # Zephyr
 
     - name: Setup Zephyr SDK
       ansible.builtin.shell:
         cmd: |
-          wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.2/ \
-            zephyr-sdk-0.17.2_linux-x86_64.tar.xz
-          wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.2/ \
-            sha256.sum | shasum --check --ignore-missing
+          "wget "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.2/\
+          zephyr-sdk-0.17.2_linux-x86_64.tar.xz"
+          wget -O - "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/\
+          v0.17.2/sha256.sum" | shasum --check --ignore-missing
           tar xvf zephyr-sdk-0.17.2_linux-x86_64.tar.xz
-          cd zeph
-          yr-sdk-0.17.2
+          cd zephyr-sdk-0.17.2
           ./setup.sh -t all -h -c
         creates: /opt/zephyr-sdk-0.17.2
         chdir: /opt/
@@ -296,13 +347,14 @@
         dest: "$HOME/openocd"
         clone: true
         version: riscv-and-arc-rtt
+        force: true
 
     - name: Create OpenOCD directory
       ansible.builtin.file:
         path: /opt/tenstorrent/bin
         state: directory
 
-    - name: Install Open OCD
+    - name: Install OpenOCD
       ansible.builtin.shell:
         cmd: |
           ./bootstrap
@@ -319,8 +371,8 @@
       ansible.builtin.shell:
         cmd: |
           mkdir $HOME/actions-runner && cd $HOME/actions-runner
-          curl -o actions-runner-linux-x64-2.327.1.tar.gz -L https://github.com/actions/runner/ \
-            releases/download/v2.327.1/actions-runner-linux-x64-2.327.1.tar.gz
+          curl -o actions-runner-linux-x64-2.327.1.tar.gz -L "https://github.com/actions/runner/\
+          releases/download/v2.327.1/actions-runner-linux-x64-2.327.1.tar.gz"
           tar xzf ./actions-runner-linux-x64-2.327.1.tar.gz
           ./config.sh --url {{ tt_zephyr_platforms }} --token {{ github_runner_token }} --unattended
         creates: $HOME/actions-runner
@@ -331,6 +383,13 @@
       environment:
         GITHUB_ENV: "{{ lookup('env', 'GITHUB_ENV') }}"
       when: lookup('env', 'GITHUB_ENV') != ''
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+      become: true
 
     - name: Run GitHub runner
       ansible.builtin.shell:
