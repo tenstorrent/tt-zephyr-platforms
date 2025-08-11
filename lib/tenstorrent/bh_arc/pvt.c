@@ -11,11 +11,12 @@
 
 #include <float.h> /* for FLT_MAX */
 
-#include <zephyr/init.h>
-#include <zephyr/kernel.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
@@ -449,7 +450,7 @@ static int PVTInit(void)
 
 	return 0;
 }
-SYS_INIT(PVTInit, APPLICATION, 8);
+SYS_INIT_APP(PVTInit);
 
 static uint32_t get_pvt_addr(PvtType type, uint32_t id, uint32_t base_addr)
 {

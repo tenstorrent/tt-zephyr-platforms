@@ -13,6 +13,7 @@
 
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/mspi.h>
 #include <zephyr/drivers/flash.h>
@@ -217,4 +218,4 @@ static int InitSpiFS(void)
 	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
 	return 0;
 }
-SYS_INIT(InitSpiFS, APPLICATION, 2);
+SYS_INIT_APP(InitSpiFS);

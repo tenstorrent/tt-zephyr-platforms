@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 
@@ -78,4 +79,4 @@ static int tensix_cg_init(void)
 
 	return 0;
 }
-SYS_INIT(tensix_cg_init, APPLICATION, 18);
+SYS_INIT_APP(tensix_cg_init);

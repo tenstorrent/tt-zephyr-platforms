@@ -17,6 +17,7 @@
 
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
@@ -222,7 +223,7 @@ int NocInit(void)
 
 	return 0;
 }
-SYS_INIT(NocInit, APPLICATION, 9);
+SYS_INIT_APP(NocInit);
 
 #define PRE_TRANSLATION_SIZE 32
 
@@ -594,7 +595,7 @@ int InitNocTranslationFromHarvesting(void)
 
 	return 0;
 }
-SYS_INIT(InitNocTranslationFromHarvesting, APPLICATION, 19);
+SYS_INIT_APP(InitNocTranslationFromHarvesting);
 
 static void DisableArcNocTranslation(void)
 {

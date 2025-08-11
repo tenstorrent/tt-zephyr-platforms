@@ -12,8 +12,9 @@
 #include <zephyr/kernel.h>
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/post_code.h>
 #include <tenstorrent/msg_type.h>
+#include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include "status_reg.h"
 #include "reg.h"
 #include "irqnum.h"
@@ -374,7 +375,7 @@ static int register_interrupt_handlers(void)
 	return 0;
 }
 
-SYS_INIT(register_interrupt_handlers, APPLICATION, 0);
+SYS_INIT_APP(register_interrupt_handlers);
 #endif
 
 #ifdef CONFIG_BOARD_TT_BLACKHOLE

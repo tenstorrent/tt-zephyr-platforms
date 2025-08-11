@@ -22,6 +22,7 @@
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
@@ -96,7 +97,7 @@ static int AssertSoftResets(void)
 
 	return 0;
 }
-SYS_INIT(AssertSoftResets, APPLICATION, 10);
+SYS_INIT_APP(AssertSoftResets);
 
 /* Deassert RISC reset from reset_unit for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -139,7 +140,7 @@ static int DeassertRiscvResets(void)
 
 	return 0;
 }
-SYS_INIT(DeassertRiscvResets, APPLICATION, 11);
+SYS_INIT_APP(DeassertRiscvResets);
 
 static __maybe_unused uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req,
 						struct response *rsp)
@@ -237,4 +238,4 @@ static int DeassertTileResets(void)
 
 	return 0;
 }
-SYS_INIT(DeassertTileResets, APPLICATION, 6);
+SYS_INIT_APP(DeassertTileResets);

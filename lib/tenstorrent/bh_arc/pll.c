@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
 #include <zephyr/sys/util.h>
 
@@ -408,7 +409,7 @@ int PLLInit(void)
 
 	return 0;
 }
-SYS_INIT(PLLInit, APPLICATION, 7);
+SYS_INIT_APP(PLLInit);
 
 uint32_t GetExtPostdiv(uint8_t postdiv_index, PLL_CNTL_PLL_CNTL_5_reg_u pll_cntl_5,
 		       PLL_CNTL_USE_POSTDIV_reg_u use_postdiv)

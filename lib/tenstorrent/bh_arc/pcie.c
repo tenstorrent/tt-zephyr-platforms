@@ -17,6 +17,7 @@
 #include <stdbool.h>
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
@@ -412,4 +413,4 @@ static int pcie_init(void)
 
 	return 0;
 }
-SYS_INIT(pcie_init, APPLICATION, 13);
+SYS_INIT_APP(pcie_init);

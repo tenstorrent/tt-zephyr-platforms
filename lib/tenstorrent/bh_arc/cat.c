@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/init.h>
@@ -107,7 +108,7 @@ static int CATEarlyInit(void)
 	EnableCAT(TempToTrimCode(CAT_EARLY_TRIP_TEMP), true);
 	return 0;
 }
-SYS_INIT(CATEarlyInit, APPLICATION, 4);
+SYS_INIT_APP(CATEarlyInit);
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 /* Calibrate catmon against thermal sensors by looping over the
@@ -167,5 +168,5 @@ static int CATInit(void)
 	EnableCAT(TempToTrimCode(T_J_SHUTDOWN + catmon_error), true);
 	return 0;
 }
-SYS_INIT(CATInit, APPLICATION, 20);
+SYS_INIT_APP(CATInit);
 #endif

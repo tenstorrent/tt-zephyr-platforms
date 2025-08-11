@@ -8,6 +8,7 @@
 #include "harvesting.h"
 #include "noc.h"
 
+#include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 #include <zephyr/sys/util.h>
@@ -262,4 +263,4 @@ static int CalculateHarvesting(void)
 
 	return 0;
 }
-SYS_INIT(CalculateHarvesting, APPLICATION, 5);
+SYS_INIT_APP(CalculateHarvesting);
