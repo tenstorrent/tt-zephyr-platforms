@@ -87,7 +87,7 @@ typedef struct {
 /* Index into cmd_defs array is the command byte */
 /* clang-format off */
 typedef struct {
-	SmbusCmdDef * cmd_defs[256];
+	const SmbusCmdDef * cmd_defs[256];
 } SmbusConfig;
 /* clang-format on */
 
@@ -182,103 +182,103 @@ int32_t UpdateArcStateHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-static SmbusCmdDef smbus_req_cmd_def = {
+static const SmbusCmdDef smbus_req_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockRead,
 	.expected_blocksize_r = 6,
 	.handler = {.send_handler = &Cm2DmMsgReqSmbusHandler}};
 
-static SmbusCmdDef smbus_ack_cmd_def = {.pec = 1U,
+static const SmbusCmdDef smbus_ack_cmd_def = {.pec = 1U,
 					      .trans_type = kSmbusTransWriteWord,
 					      .handler = {.rcv_handler = &Cm2DmMsgAckSmbusHandler}};
 
-static SmbusCmdDef smbus_update_arc_state_cmd_def = {
+static const SmbusCmdDef smbus_update_arc_state_cmd_def = {
 	.pec = 0U,
 	.trans_type = kSmbusTransBlockWrite,
 	.expected_blocksize_w = 3,
 	.handler = {.rcv_handler = &UpdateArcStateHandler}};
 
-static SmbusCmdDef smbus_dm_static_info_cmd_def = {
+static const SmbusCmdDef smbus_dm_static_info_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockWrite,
 	.expected_blocksize_w = sizeof(dmStaticInfo),
 	.handler = {.rcv_handler = &Dm2CmSendDataHandler}};
 
-static SmbusCmdDef smbus_ping_cmd_def = {.pec = 1U,
+static const SmbusCmdDef smbus_ping_cmd_def = {.pec = 1U,
 					       .trans_type = kSmbusTransWriteWord,
 					       .handler = {.rcv_handler = &Dm2CmPingHandler}};
 
-static SmbusCmdDef smbus_fan_speed_cmd_def = {
+static const SmbusCmdDef smbus_fan_speed_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSendFanSpeedHandler}};
 
-static SmbusCmdDef smbus_fan_rpm_cmd_def = {
+static const SmbusCmdDef smbus_fan_rpm_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSendFanRPMHandler}};
 
 #ifndef CONFIG_TT_SMC_RECOVERY
-static SmbusCmdDef smbus_telem_read_cmd_def = {
+static const SmbusCmdDef smbus_telem_read_cmd_def = {
 	.pec = 0U,
 	.trans_type = kSmbusTransBlockWriteBlockRead,
 	.expected_blocksize_w = 1,
 	.expected_blocksize_r = 7,
 	.handler = {.rcv_handler = SMBusTelemRegHandler, .send_handler = SMBusTelemDataHandler}};
 
-static SmbusCmdDef smbus_telem_write_cmd_def = {
+static const SmbusCmdDef smbus_telem_write_cmd_def = {
 	.pec = 0U,
 	.trans_type = kSmbusTransBlockWriteBlockRead,
 	.expected_blocksize_w = 33,
 	.expected_blocksize_r = 20,
 	.handler = {.rcv_handler = Dm2CmWriteTelemetry, .send_handler = Dm2CmReadControlData}};
 
-static SmbusCmdDef smbus_power_limit_cmd_def = {
+static const SmbusCmdDef smbus_power_limit_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSetBoardPowerLimit}};
 
-static SmbusCmdDef smbus_power_instant_cmd_def = {
+static const SmbusCmdDef smbus_power_instant_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSendPowerHandler}};
 
-static SmbusCmdDef smbus_telem_reg_cmd_def = {
+static const SmbusCmdDef smbus_telem_reg_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteByte,
 	.handler = {.rcv_handler = &SMBusTelemRegHandler}};
 
-static SmbusCmdDef smbus_telem_data_cmd_def = {
+static const SmbusCmdDef smbus_telem_data_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockRead,
 	.expected_blocksize_r = 7U,
 	.handler = {.send_handler = &SMBusTelemDataHandler}};
 
-static SmbusCmdDef smbus_therm_trip_count_cmd_def = {
+static const SmbusCmdDef smbus_therm_trip_count_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}};
 #endif /*CONFIG_TT_SMC_RECOVERY*/
 
-static SmbusCmdDef smbus_test_read_byte_cmd_def = {
+static const SmbusCmdDef smbus_test_read_byte_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransReadByte, .handler = {.send_handler = &ReadByteTest}};
 
-static SmbusCmdDef smbus_test_write_byte_cmd_def = {
+static const SmbusCmdDef smbus_test_write_byte_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteByte, .handler = {.rcv_handler = &WriteByteTest}};
 
-static SmbusCmdDef smbus_test_read_word_cmd_def = {
+static const SmbusCmdDef smbus_test_read_word_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransReadWord, .handler = {.send_handler = &ReadWordTest}};
 
-static SmbusCmdDef smbus_test_write_word_cmd_def = {
+static const SmbusCmdDef smbus_test_write_word_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .handler = {.rcv_handler = &WriteWordTest}};
 
-static SmbusCmdDef smbus_test_read_block_cmd_def = {
+static const SmbusCmdDef smbus_test_read_block_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockRead,
 	.expected_blocksize_r = 4,
 	.handler = {.send_handler = &BlockReadTest}};
 
-static SmbusCmdDef smbus_test_write_block_cmd_def = {
+static const SmbusCmdDef smbus_test_write_block_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockWrite,
 	.expected_blocksize_w = 4,
@@ -311,7 +311,7 @@ static const SmbusConfig smbus_config = {
 	}};
 /* clang-format on */
 
-static SmbusCmdDef *GetCmdDef(uint8_t cmd)
+static const SmbusCmdDef *GetCmdDef(uint8_t cmd)
 {
 	return smbus_config.cmd_defs[cmd];
 }
@@ -340,7 +340,7 @@ static int32_t Dm2CmSendFanSpeedHandler(const uint8_t *data, uint8_t size)
 
 static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 {
-	SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
+	const SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
 
 	if (smbus_data.state == kSmbusStateIdle) {
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1030);
@@ -450,7 +450,7 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 
 static int I2CReadHandler(struct i2c_target_config *config, uint8_t *val)
 {
-	SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
+	const SmbusCmdDef *curr_cmd = GetCmdDef(smbus_data.command);
 
 	if (smbus_data.state == kSmbusStateCmd) {
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0010);
