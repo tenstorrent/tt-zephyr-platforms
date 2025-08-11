@@ -6,7 +6,7 @@ This document lists recommended and required changes for those migrating from th
 
 [comment]: <> (UL by area, indented as necessary)
 
-* Update `luwen`, `tt-smi` and `tt-flash` to support more firmware telemetry values being added.
-  * `luwen` >= 0.7.2
+* Update `pyluwen`, `tt-smi` and `tt-flash` to support more firmware telemetry values being added.
+  * `pyluwen` >= 0.7.11
   * `tt-smi` >= v3.0.22
   * `tt-flash` >= v3.3.4
