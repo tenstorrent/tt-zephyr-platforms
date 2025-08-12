@@ -12,6 +12,7 @@ toolchain:
   - arcmwdt
 supported:
   - smp
+  - bh_1x
 testing:
   ignore_tags:
     - net
