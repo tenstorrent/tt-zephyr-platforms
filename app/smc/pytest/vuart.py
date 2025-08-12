@@ -26,19 +26,19 @@ def tt_console(tmp_path_factory: Path):
 
 
 @pytest.fixture(scope="session")
-def arc_chip(unlaunched_dut: DeviceAdapter):
-    return get_arc_chip(unlaunched_dut)
+def arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
+    return get_arc_chip(unlaunched_dut, asic_id)
 
 
 def test_compile_tt_console(tt_console: Path):
     assert os.access(tt_console, os.X_OK)
 
 
-def test_boot_banner(tt_console: Path, arc_chip):
+def test_boot_banner(tt_console: Path, arc_chip, asic_id):
     arc_chip.axi_read32(ARC_STATUS)
 
     # run 'tt-console' in quiet mode, and timeout after 3 s
-    cmd = f"{tt_console} -q -w 3000"
+    cmd = f"{tt_console} -d /dev/tenstorrent/{asic_id} -q -w 3000"
     proc = subprocess.run(cmd.split(), capture_output=True, check=True)
 
     out = proc.stdout.decode("utf-8")

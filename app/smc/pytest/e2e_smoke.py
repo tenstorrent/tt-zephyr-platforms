@@ -43,11 +43,12 @@ ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
 
 
-def get_arc_chip(unlaunched_dut: DeviceAdapter):
+def get_arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
     """
     Validates the ARC firmware is alive and booted, since this required
     for any test to run
     """
+    logger.info(f"Getting ASIC ID {asic_id}")
     # This is a hack- the RTT terminal doesn't work in pytest, so
     # we directly call this internal API to flash the DUT.
     unlaunched_dut.generate_command()
@@ -66,14 +67,14 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter):
             chips = pyluwen.detect_chips()
         except Exception:
             print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
-        if len(chips) > 0:
+        if len(chips) > asic_id:
             logger.info("Detected ARC chip")
             break
         time.sleep(0.5)
         if time.time() - start > timeout:
             raise RuntimeError("Did not detect ARC chip within timeout period")
         rescan_pcie()
-    chip = chips[0]
+    chip = chips[asic_id]
     try:
         status = chip.axi_read32(ARC_STATUS)
     except Exception:
@@ -87,8 +88,8 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter):
 
 
 @pytest.fixture(scope="session")
-def arc_chip(unlaunched_dut: DeviceAdapter):
-    return get_arc_chip(unlaunched_dut)
+def arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
+    return get_arc_chip(unlaunched_dut, asic_id)
 
 
 def test_arc_msg(arc_chip):
