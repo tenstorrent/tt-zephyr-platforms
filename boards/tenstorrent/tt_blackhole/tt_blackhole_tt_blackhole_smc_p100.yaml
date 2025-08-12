@@ -13,6 +13,7 @@ toolchain:
 supported:
   - smp
   - gpio
+  - bh_1x
 testing:
   ignore_tags:
     - net
