@@ -7,7 +7,10 @@
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 Performance Improvements, if applicable)
+### Performance Improvements
+
+* Load spi flash images using temporary buffer rather than large statically allocated SRAM buffer
+
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
 
