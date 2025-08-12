@@ -287,3 +287,7 @@
 &smbus1 {
 	status = "okay";
 };
+
+&flash1 {
+	#include "tt_blackhole_fixed_partitions.dtsi"
+};
