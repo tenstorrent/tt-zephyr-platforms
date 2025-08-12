@@ -32,7 +32,7 @@ static void before(void *arg)
 	ARG_UNUSED(arg);
 
 	/* discarded if no zephyr,gpio-emul exists or if CONFIG_JTAG_VERIFY_WRITE=n */
-	__aligned(sizeof(uint32_t)) uint8_t *sram = malloc(get_bootcode_len() * sizeof(uint8_t));
+	__aligned(sizeof(uint32_t)) uint8_t *sram = malloc(get_bootcode_len() * sizeof(uint32_t));
 	const size_t patch_len = get_bootcode_len();
 
 	zassert_ok(jtag_bootrom_init(&test_chip));
