@@ -33,30 +33,26 @@ static uint8_t spi_page_buf[SPI_BUFFER_SIZE];
 /* Global buffer for SPI programming */
 static uint8_t spi_global_buffer[SPI_BUFFER_SIZE];
 static struct flash_pages_info page_info;
+static bool initialized;
 
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
-void EepromSetup(void)
+static void EepromSetup(void)
 {
-	/* Setup SPI buffer address */
-	WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(10),
-		 ((uint32_t)LOG2(SPI_BUFFER_SIZE) << 24) |
-			 ((uint32_t)spi_global_buffer & 0xFFFFFF));
-	/* Get flash device page size */
-	flash_get_page_info_by_offs(flash, 0, &page_info);
-}
+	if (!initialized) {
+		/* Setup SPI buffer address */
+		WriteReg(RESET_UNIT_SCRATCH_RAM_REG_ADDR(10),
+			 ((uint32_t)LOG2(SPI_BUFFER_SIZE) << 24) |
+				 ((uint32_t)spi_global_buffer & 0xFFFFFF));
+		/* Get flash device page size */
+		flash_get_page_info_by_offs(flash, 0, &page_info);
 
-int SpiBlockRead(uint32_t spi_address, uint32_t num_bytes, uint8_t *dest)
-{
-	if (!device_is_ready(flash)) {
-		/* Flash init failed */
-		return -ENODEV;
+		initialized = true;
 	}
-	return flash_read(flash, spi_address, dest, num_bytes);
 }
 
 /* automatically erases sectors and merges incoming data with existing data as needed */
-int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_bytes)
+static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_bytes)
 {
 	uint32_t sector_size = page_info.size;
 	uint32_t addr = ROUND_DOWN(address, sector_size);
@@ -139,7 +135,7 @@ int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_bytes)
 
 /* If we are using the spi buffer memory type, */
 /* then make sure the passed in address and length is actually within the spi_buffer bounds. */
-bool check_csm_region(uint32_t addr, uint32_t num_bytes)
+static bool check_csm_region(uint32_t addr, uint32_t num_bytes)
 {
 	return addr < (uint32_t)spi_global_buffer ||
 	       (addr + num_bytes) > ((uint32_t)spi_global_buffer + sizeof(spi_global_buffer));
@@ -152,6 +148,8 @@ static uint8_t read_eeprom_handler(uint32_t msg_code, const struct request *requ
 	uint32_t spi_address = request->data[1];
 	uint32_t num_bytes = request->data[2];
 	uint8_t *csm_addr = (uint8_t *)request->data[3];
+
+	EepromSetup();
 
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
@@ -167,7 +165,7 @@ static uint8_t read_eeprom_handler(uint32_t msg_code, const struct request *requ
 		return 1;
 	}
 
-	return SpiBlockRead(spi_address, num_bytes, csm_addr);
+	return flash_read(flash, spi_address, csm_addr, num_bytes);
 }
 
 
@@ -178,6 +176,8 @@ static uint8_t write_eeprom_handler(uint32_t msg_code, const struct request *req
 	uint32_t spi_address = request->data[1];
 	uint32_t num_bytes = request->data[2];
 	uint8_t *csm_addr = (uint8_t *)request->data[3];
+
+	EepromSetup();
 
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
@@ -198,23 +198,3 @@ static uint8_t write_eeprom_handler(uint32_t msg_code, const struct request *req
 
 REGISTER_MESSAGE(MSG_TYPE_READ_EEPROM, read_eeprom_handler);
 REGISTER_MESSAGE(MSG_TYPE_WRITE_EEPROM, write_eeprom_handler);
-
-static int SpiReadWrap(uint32_t addr, uint32_t size, uint8_t *dst)
-{
-	if (SpiBlockRead(addr, size, dst) != 0) {
-		return TT_BOOT_FS_ERR;
-	}
-	return TT_BOOT_FS_OK;
-}
-
-static int InitSpiFS(void)
-{
-	if (!IS_ENABLED(CONFIG_ARC)) {
-		return 0;
-	}
-
-	EepromSetup();
-	tt_boot_fs_mount(&boot_fs_data, SpiReadWrap, NULL, NULL);
-	return 0;
-}
-SYS_INIT(InitSpiFS, APPLICATION, 2);
