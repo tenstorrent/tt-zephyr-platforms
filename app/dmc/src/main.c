@@ -21,6 +21,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/storage/flash_map.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
 
@@ -33,6 +34,8 @@
 #define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
+
+BUILD_ASSERT(FIXED_PARTITION_EXISTS(bmfw), "bmfw fixed-partition does not exist");
 
 struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), chips, INIT_CHIP)};
 
