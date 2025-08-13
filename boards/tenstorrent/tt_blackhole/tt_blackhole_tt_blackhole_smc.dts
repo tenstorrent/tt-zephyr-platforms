@@ -45,6 +45,12 @@
 
 &i2c0 {
 	status = "okay";
+	
+	smbus_target0: smbus@0A {
+		status = "okay";
+		compatible = "intel,smbus_target";
+		reg = <0x0A>;
+	};
 };
 
 &i2c1 {
