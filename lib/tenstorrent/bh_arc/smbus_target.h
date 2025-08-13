@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef SMBUS_TARGET_H
-#define SMBUS_TARGET_H
+#ifndef TT_SMBUS_TARGET_H
+#define TT_SMBUS_TARGET_H
 void PollSmbusTarget(void);
 #endif
