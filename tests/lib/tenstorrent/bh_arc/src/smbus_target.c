@@ -19,10 +19,17 @@ static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(
 static const uint8_t tt_i2c_addr = 0xA;
 static void tear_down_tc(void *fixture)
 {
-	(void)fixture;
-	extern struct i2c_target_config i2c_target_config_impl;
 
-	i2c_target_config_impl.callbacks->stop(&i2c_target_config_impl);
+	(void)fixture;
+
+	static const struct device *const smbus_target_dev =
+		DEVICE_DT_GET_OR_NULL(DT_NODELABEL(smbus_target0));
+
+	/*Whiteboxing this isn't great */
+	struct i2c_target_config *smbus_target_cfg =
+		(struct i2c_target_config *)smbus_target_dev->data;
+
+	smbus_target_cfg->callbacks->stop(smbus_target_cfg);
 }
 
 ZTEST(smbus_target, test_write_received_bad_cmd_0)

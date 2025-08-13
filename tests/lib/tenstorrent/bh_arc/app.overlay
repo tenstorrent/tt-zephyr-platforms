@@ -7,3 +7,11 @@ fwtable: fwtable
 		flash-dev = <&flashcontroller0>;
 	};
 };
+
+&i2c0 {
+	smbus_target0: smbus@0a {
+		status = "okay";
+		compatible = "zephyr,smbus_target";
+		reg = <0x0a>;
+	};
+};
