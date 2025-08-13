@@ -247,6 +247,7 @@ jobs:
             --tag e2e-flash -T ../tt-zephyr-platforms/app \
             --west-flash="--force" \
             --west-runner tt_flash \
+            --device-flash-timeout 120 \
             --device-testing -c \
             --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
             --flash-before \
