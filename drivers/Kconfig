@@ -17,6 +17,7 @@ rsource "reset/Kconfig"
 rsource "sensor/Kconfig"
 rsource "serial/Kconfig"
 rsource "watchdog/Kconfig"
+rsource "smbus_target/Kconfig"
 # zephyr-keep-sorted-stop
 
 endmenu

@@ -1,0 +1,14 @@
+#  Copyright (c) 2025 Tenstorrent AI ULC
+#  SPDX-License-Identifier: Apache-2.0
+
+if I2C_TARGET
+
+menu "SMBUS target driver"
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.smbus_target"
+# zephyr-keep-sorted-stop
+
+endmenu
+
+endif #I2C_TARGET
