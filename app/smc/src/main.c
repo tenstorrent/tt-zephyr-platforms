@@ -24,11 +24,14 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/watchdog.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/storage/flash_map.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const wdt0 = DEVICE_DT_GET(DT_NODELABEL(wdt0));
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
+BUILD_ASSERT(FIXED_PARTITION_EXISTS(cmfw), "cmfw fixed-partition does not exist");
 
 int main(void)
 {
