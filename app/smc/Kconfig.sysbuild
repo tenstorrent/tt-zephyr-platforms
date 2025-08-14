@@ -6,7 +6,11 @@ source "share/sysbuild/Kconfig"
 
 config DMC_BOARD
 	string "DMC Board"
-	default "tt_blackhole@p150a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p150a" || $(BOARD_REVISION) = "p150b" || $(BOARD_REVISION) = "p150c"
+	default "tt_blackhole@p150a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p150a"
+	default "tt_blackhole@p150b/tt_blackhole/dmc" if $(BOARD_REVISION) = "p150b"
+	default "tt_blackhole@p150c/tt_blackhole/dmc" if $(BOARD_REVISION) = "p150c"
 	default "tt_blackhole@p100a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p100a"
 	default "tt_blackhole@p100/tt_blackhole/dmc" if $(BOARD_REVISION) = "p100"
-	default "tt_blackhole@p300a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300a" || $(BOARD_REVISION) = "p300b" || $(BOARD_REVISION) = "p300c"
+	default "tt_blackhole@p300a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300a"
+	default "tt_blackhole@p300b/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300b"
+	default "tt_blackhole@p300c/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300c"
