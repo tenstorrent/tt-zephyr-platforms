@@ -5,7 +5,6 @@ config TT_BH_ARC
 	bool "Blackhole ARC firmware library"
 	select FLASH
 	select FLASH_PAGE_LAYOUT
-	select TT_BOOT_FS
 	select NANOPB
 	select CRC
 	help
