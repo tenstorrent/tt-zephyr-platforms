@@ -273,6 +273,13 @@ static const SmbusCmdDef smbus_test_read_word_cmd_def = {
 static const SmbusCmdDef smbus_test_write_word_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .handler = {.rcv_handler = &WriteWordTest}};
 
+static const SmbusCmdDef smbus_block_write_block_read_test = {
+	.pec = 1U,
+	.trans_type = kSmbusTransBlockWriteBlockRead,
+	.expected_blocksize_r = 4,
+	.expected_blocksize_w = 4,
+	.handler = {.rcv_handler = &BlockWriteTest, .send_handler = BlockReadTest}};
+
 static const SmbusCmdDef smbus_test_read_block_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockRead,
@@ -286,31 +293,30 @@ static const SmbusCmdDef smbus_test_write_block_cmd_def = {
 	.handler = {.rcv_handler = &BlockWriteTest}};
 
 static const SmbusConfig smbus_config = {
-	.cmd_defs = {
-		[CMFW_SMBUS_REQ] = &smbus_req_cmd_def,
-		[CMFW_SMBUS_ACK] = &smbus_ack_cmd_def,
-		[CMFW_SMBUS_UPDATE_ARC_STATE] = &smbus_update_arc_state_cmd_def,
-		[CMFW_SMBUS_DM_STATIC_INFO] = &smbus_dm_static_info_cmd_def,
-		[CMFW_SMBUS_PING] = &smbus_ping_cmd_def,
-		[CMFW_SMBUS_FAN_SPEED] = &smbus_fan_speed_cmd_def,
-		[CMFW_SMBUS_FAN_RPM] = &smbus_fan_rpm_cmd_def,
+	.cmd_defs = {[CMFW_SMBUS_REQ] = &smbus_req_cmd_def,
+		     [CMFW_SMBUS_ACK] = &smbus_ack_cmd_def,
+		     [CMFW_SMBUS_UPDATE_ARC_STATE] = &smbus_update_arc_state_cmd_def,
+		     [CMFW_SMBUS_DM_STATIC_INFO] = &smbus_dm_static_info_cmd_def,
+		     [CMFW_SMBUS_PING] = &smbus_ping_cmd_def,
+		     [CMFW_SMBUS_FAN_SPEED] = &smbus_fan_speed_cmd_def,
+		     [CMFW_SMBUS_FAN_RPM] = &smbus_fan_rpm_cmd_def,
 #ifndef CONFIG_TT_SMC_RECOVERY
-		[CMFW_SMBUS_TELEMETRY_READ] = &smbus_telem_read_cmd_def,
-		[CMFW_SMBUS_TELEMETRY_WRITE] = &smbus_telem_write_cmd_def,
-		[CMFW_SMBUS_POWER_LIMIT] = &smbus_power_limit_cmd_def,
-		[CMFW_SMBUS_POWER_INSTANT] = &smbus_power_instant_cmd_def,
-		[0x26] = &smbus_telem_reg_cmd_def,
-		[0x27] = &smbus_telem_data_cmd_def,
-		[CMFW_SMBUS_THERM_TRIP_COUNT] = &smbus_therm_trip_count_cmd_def,
+		     [CMFW_SMBUS_TELEMETRY_READ] = &smbus_telem_read_cmd_def,
+		     [CMFW_SMBUS_TELEMETRY_WRITE] = &smbus_telem_write_cmd_def,
+		     [CMFW_SMBUS_POWER_LIMIT] = &smbus_power_limit_cmd_def,
+		     [CMFW_SMBUS_POWER_INSTANT] = &smbus_power_instant_cmd_def,
+		     [0x26] = &smbus_telem_reg_cmd_def,
+		     [0x27] = &smbus_telem_data_cmd_def,
+		     [CMFW_SMBUS_THERM_TRIP_COUNT] = &smbus_therm_trip_count_cmd_def,
 #endif
-		[CMFW_SMBUS_TEST_READ] = &smbus_test_read_byte_cmd_def,
-		[CMFW_SMBUS_TEST_WRITE] = &smbus_test_write_byte_cmd_def,
-		[CMFW_SMBUS_TEST_READ_WORD] = &smbus_test_read_word_cmd_def,
-		[CMFW_SMBUS_TEST_WRITE_WORD] = &smbus_test_write_word_cmd_def,
-		[CMFW_SMBUS_TEST_READ_BLOCK] = &smbus_test_read_block_cmd_def,
-		[CMFW_SMBUS_TEST_WRITE_BLOCK] = &smbus_test_write_block_cmd_def,
-	}};
-/* clang-format on */
+		     [CMFW_SMBUS_TEST_READ] = &smbus_test_read_byte_cmd_def,
+		     [CMFW_SMBUS_TEST_WRITE] = &smbus_test_write_byte_cmd_def,
+		     [CMFW_SMBUS_TEST_READ_WORD] = &smbus_test_read_word_cmd_def,
+		     [CMFW_SMBUS_TEST_WRITE_WORD] = &smbus_test_write_word_cmd_def,
+		     [CMFW_SMBUS_TEST_READ_BLOCK] = &smbus_test_read_block_cmd_def,
+		     [CMFW_SMBUS_TEST_WRITE_BLOCK] = &smbus_test_write_block_cmd_def,
+		     [CMFW_SMBUS_TEST_WRITE_BLOCK_READ_BLOCK] =
+			     &smbus_block_write_block_read_test}};
 
 static const SmbusCmdDef *GetCmdDef(uint8_t cmd)
 {
@@ -397,7 +403,8 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1050);
 		smbus_data.received_data[smbus_data.rcv_index++] = val;
 		if (smbus_data.rcv_index == smbus_data.blocksize) {
-			if (1U == curr_cmd->pec) {
+			if (1U == curr_cmd->pec &&
+			    (curr_cmd->trans_type != kSmbusTransBlockWriteBlockRead)) {
 				smbus_data.state = kSmbusStateRcvPec;
 			} else {
 				int32_t ret = curr_cmd->handler.rcv_handler(
