@@ -55,6 +55,8 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_TEST_READ_BLOCK = 0xDC,
 	/* WO, 32 bits. Write to CMFW scratch register */
 	CMFW_SMBUS_TEST_WRITE_BLOCK = 0xDD,
+	/* WR, 32 bits I/O. Write to CMFW scratch register and read it back. */
+	CMFW_SMBUS_TEST_WRITE_BLOCK_READ_BLOCK = 0xDE,
 	CMFW_SMBUS_MSG_MAX,
 };
 

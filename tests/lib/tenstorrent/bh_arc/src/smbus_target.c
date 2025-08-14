@@ -231,4 +231,14 @@ ZTEST(smbus_target, test_telem_write_no_reset)
 	zexpect_equal(0U, ctl);
 }
 
+ZTEST(smbus_target, test_block_write_block_read_with_pec)
+{
+	uint8_t write_data[] = {0xDE, 4, 0xde, 0xad, 0xbe, 0xef};
+	uint8_t read_data[6];
+
+	zassert_equal(0, i2c_write_read(i2c0_dev, tt_i2c_addr, write_data, sizeof(write_data),
+					read_data, sizeof(read_data)));
+	zexpect_equal(4, read_data[0]);
+}
+
 ZTEST_SUITE(smbus_target, NULL, NULL, NULL, tear_down_tc, NULL);
