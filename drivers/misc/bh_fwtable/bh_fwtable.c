@@ -9,13 +9,14 @@
 #include <stddef.h>
 
 #include <pb_decode.h>
-#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/storage/flash_map.h>
 
 #define BOARDTYPE_ORION 0x37
 #define BOARDTYPE_P100  0x36
@@ -153,17 +154,18 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 #define BH_FWTABLE_LOADCFG(_enum, _tag, _field, _msgtype)                                          \
 	[BH_FWTABLE_##_enum] = {                                                                   \
 		.tag = #_tag,                                                                      \
+		.spi_addr = FIXED_PARTITION_OFFSET(_tag),                                          \
 		.offs = offsetof(struct bh_fwtable_data, _field),                                  \
 		.size = sizeof(((struct bh_fwtable_data *)0)->_field),                             \
 		.msg = &_msgtype##_msg,                                                            \
 	}
 
 	uint8_t buffer[96];
-	size_t bytes_read = 0;
 	struct bh_fwtable_data *data = dev->data;
 	const struct bh_fwtable_config *config = dev->config;
 	static const struct loadcfg {
 		const char *tag;
+		size_t spi_addr;
 		size_t offs;             /* field offset within the bh_fwtable_data struct */
 		size_t size;             /* field size within the bh_fwtable_data struct */
 		const pb_msgdesc_t *msg; /* pointer to protobuf message */
@@ -175,19 +177,9 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 	__ASSERT_NO_MSG(table < ARRAY_SIZE(loadcfg));
 
-	tt_boot_fs_fd fd_data;
-	int result =
-		tt_boot_fs_find_fd_by_tag(config->flash, (uint8_t *)loadcfg[table].tag, &fd_data);
-	if (result != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed with error code %d", loadcfg[table].tag, result);
-		return -EIO;
-	}
-
-	bytes_read = fd_data.flags.f.image_size;
-
-	flash_read(config->flash, fd_data.spi_addr, buffer, bytes_read);
+	flash_read(config->flash, loadcfg[table].spi_addr, buffer, sizeof(buffer));
 	/* Convert the binary data to a pb_istream_t that is expected by decode */
-	pb_istream_t stream = pb_istream_from_buffer(buffer, bytes_read);
+	pb_istream_t stream = pb_istream_from_buffer(buffer, sizeof(buffer));
 	/* PB_DECODE_NULLTERMINATED: Expect the message to be terminated with zero tag */
 	if (!pb_decode_ex(&stream, loadcfg[table].msg, (uint8_t *)data + loadcfg[table].offs,
 			  PB_DECODE_NULLTERMINATED)) {
