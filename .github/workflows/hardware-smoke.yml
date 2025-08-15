@@ -24,18 +24,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - board: p100
-            runs-on:
-              - p100-jtag
-          - board: p100a
-            runs-on:
-              - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
-          - board: p300a
-            runs-on:
-              - p300a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
@@ -81,7 +72,7 @@ jobs:
           ./scripts/twister -i \
             -p $DMC_BOARD --device-testing \
             --west-flash \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/dmc_rtt.py -dd" \
             --flash-before \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
@@ -116,7 +107,7 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/dmc_rtt.py -dd" \
             --west-flash \
             --flash-before \
             -T ../tt-zephyr-platforms/app \
@@ -167,18 +158,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - board: p100
-            runs-on:
-              - p100-jtag
-          - board: p100a
-            runs-on:
-              - p100a-jtag
           - board: p150a
             runs-on:
-              - p150a-jtag
-          - board: p300a
-            runs-on:
-              - p300a-jtag
+              - tt-lab-runners-syseng-p150a
     runs-on: ${{ matrix.config.runs-on }}
     env:
       "ZEPHYR_SDK_INSTALL_DIR": /opt/toolchains
@@ -198,8 +180,8 @@ jobs:
           app-path: tt-zephyr-platforms
 
       - name: Generate board names
-        working-directory: tt-zephyr-platforms
         shell: bash
+        working-directory: tt-zephyr-platforms
         run: |
           SMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" smc)"
           echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
@@ -207,7 +189,7 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
-          if [ ${{matrix.board}} = 'p300a' ]; then
+          if [ ${{ matrix.config.board }} = 'p300a' ]; then
             echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
           else
             echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
@@ -223,7 +205,7 @@ jobs:
           ./scripts/twister -i \
             --tag e2e \
             -p $DMC_BOARD --device-testing \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/dmc_rtt.py -dd" \
             --flash-before \
             --west-flash \
             -T ../tt-zephyr-platforms/app \
@@ -250,7 +232,7 @@ jobs:
             --device-testing -c \
             --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
             --flash-before \
-            --outdir twister-e2e-flash
+            --outdir twister-e2e-flash -ll DEBUG
 
       - name: Upload E2E Test results
         if: ${{ always() }}
@@ -276,6 +258,6 @@ jobs:
         working-directory: tt-zephyr-platforms
         run: |
           echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
+          python3 ./scripts/dmc_rtt.py -n -dd
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n -dd --openocd /opt/tenstorrent/bin/openocd-rtt
