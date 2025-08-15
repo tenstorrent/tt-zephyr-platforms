@@ -963,9 +963,16 @@ def _generate_bootfs_yaml(
             "binary": path,
         }
         # Build image entry based on which fields the partition actually had
-        for prop in ["offset", "padto", "source", "executable", "provisioning-only"]:
+        for prop in ["offset", "padto", "executable", "provisioning-only"]:
             if prop in partition.props and partition.props[prop].val is not False:
                 image_entry[prop.replace("-", "_")] = partition.props[prop].val
+        if "source" in partition.props:
+            # Special case, skip adding source property if set to AUTO
+            if partition.props["source"].val != "$AUTO":
+                image_entry["source"] = partition.props["source"].val
+        else:
+            # Use register address to set source
+            image_entry["source"] = str(partition.props["reg"].val[0])
 
         if label == "failover":
             partitions_yml["fail_over_image"] = image_entry
