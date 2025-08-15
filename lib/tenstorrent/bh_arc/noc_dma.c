@@ -106,9 +106,20 @@ static uint32_t get_expected_acks(uint32_t noc_cmd, uint64_t size)
 /* wrap around aware comparison for half-range rule */
 static inline bool is_behind(uint32_t current, uint32_t target)
 {
-	uint32_t diff = current - target;
-
-	return diff > DIV_ROUND_UP(UINT32_MAX, 2);
+	/*
+	 * "target" and "current" are NOC transaction counters, and may wrap around, so we must
+	 * consider the case where target and current have wrapped a different number of times.
+	 * There's no way to know how many times they have wrapped, instead we assume that they are
+	 * within 2**31 of each other as that gives an unambiguous ordering.
+	 *
+	 * We deal with this by considering
+	 * target - 2**31 <  current < target         MOD 2**32 as before target and
+	 * target         <= current < target + 2**31 MOD 2**32 as after target.
+	 *
+	 * We can't just check target == current because just one spurious NOC transaction could
+	 * result in the loop hanging with current = target+1.
+	 */
+	return (int32_t)(current - target) < 0;
 }
 
 static bool wait_noc_dma_done(uint32_t noc_cmd, uint32_t expected_acks)
