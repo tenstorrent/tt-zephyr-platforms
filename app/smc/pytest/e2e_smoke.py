@@ -270,16 +270,14 @@ def test_arc_watchdog(arc_chip):
     Validates that the DMC firmware watchdog for the ARC will correctly
     reset the chip
     """
-    assert arc_watchdog_test(arc_chip) == True, "ARC watchdog test failed"
+    assert arc_watchdog_test(arc_chip), "ARC watchdog test failed"
 
 
-@pytest.mark.flash
-def test_pcie_fw_load_time(arc_chip):
+def pcie_fw_load_time_test(arc_chip):
     """
-    Checks PCIe firmware load time is within 40ms.
-    This test needs to be run after production reset.
+    Helper to run PCIe FW load time test. Returns True if passed, False if failed
     """
-
+    duration_deadline = 40  # 40 ms.
     pcie_init_cpl_time = arc_chip.axi_read32(PCIE_INIT_CPL_TIME_REG_ADDR)
     cmfw_start_time = arc_chip.axi_read32(CMFW_START_TIME_REG_ADDR)
     arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
@@ -292,7 +290,22 @@ def test_pcie_fw_load_time(arc_chip):
         f"PCIe init completion timestamp: {pcie_init_cpl_time}."
     )
 
-    assert duration_in_ms < 40, f"duration {duration_in_ms:.4f}ms, exceeds 40ms"
+    if duration_in_ms > duration_deadline:
+        logger.warning(
+            f"PCIe firmware load time exceeded {duration_deadline}ms: {duration_in_ms:.4f}ms"
+        )
+        return False
+
+    return True
+
+
+@pytest.mark.flash
+def test_pcie_fw_load_time(arc_chip):
+    """
+    Checks PCIe firmware load time is within 40ms.
+    This test needs to be run after production reset.
+    """
+    assert pcie_fw_load_time_test(arc_chip), "PCIe firmware load time test failed"
 
 
 @pytest.mark.flash
@@ -309,38 +322,43 @@ def test_fw_bundle_version(arc_chip):
     logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
 
 
+def smi_reset_test():
+    """
+    Helper to run tt-smi reset test. Returns True if test passed, False otherwise
+    """
+    smi_reset_cmd = "tt-smi -r"
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    ).returncode
+    logger.info(f"'tt-smi -r' returncode:{smi_reset_result}")
+
+    return smi_reset_result == 0
+
+
 @pytest.mark.flash
 def test_smi_reset():
     """
     Checks that tt-smi resets are working successfully
     """
-    smi_reset_cmd = "tt-smi -r"
     total_tries = 10
     fail_count = 0
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        smi_reset_result = subprocess.run(
-            smi_reset_cmd.split(), capture_output=True, check=False
-        ).returncode
-        logger.info(f"'tt-smi -r' returncode:{smi_reset_result}")
+        result = smi_reset_test()
 
-        if smi_reset_result != 0:
+        if not result:
+            logger.warning(f"tt-smi reset failed on iteration {i}")
             fail_count += 1
 
     logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
 
 
-@pytest.mark.flash
-def test_dirty_reset():
+def dirty_reset_test():
     """
-    Checks that the SMC comes up correctly after a "dirty" reset, where the
-    DMC resets without the SMC requesting it. This is similar to the conditions
-    that might be encountered after a NOC hang
+    Helper to execute dirty reset test. Returns True if test passes, False otherwise
     """
-    total_tries = 10
     timeout = 60  # seconds to wait for SMC boot
-    fail_count = 0
 
     # Use dmc-reset script as a library to reset the DMC
     def args():
@@ -352,19 +370,37 @@ def test_dirty_reset():
     args.scripts = dmc_reset.DEFAULT_SCRIPTS_DIR
     args.jtag_id = None
     args.hexfile = None
+
+    ret = dmc_reset.reset_dmc(args)
+    if ret != os.EX_OK:
+        logger.warning("DMC reset failed on iteration")
+        return False
+    ret = dmc_reset.wait_for_smc_boot(timeout)
+    if ret != os.EX_OK:
+        logger.warning("SMC did not boot after dirty reset")
+        return False
+    return True
+
+
+@pytest.mark.flash
+def test_dirty_reset():
+    """
+    Checks that the SMC comes up correctly after a "dirty" reset, where the
+    DMC resets without the SMC requesting it. This is similar to the conditions
+    that might be encountered after a NOC hang
+    """
+    total_tries = 10
+    fail_count = 0
+
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        ret = dmc_reset.reset_dmc(args)
-        if ret != os.EX_OK:
-            logger.warning(f"DMC reset failed on iteration {i}")
+        result = dirty_reset_test()
+        if not result:
+            logger.warning(f"dirty reset failed on iteration {i}")
             fail_count += 1
-            continue
-        ret = dmc_reset.wait_for_smc_boot(timeout)
-        if ret != os.EX_OK:
-            logger.warning(f"SMC did not boot after dirty reset on iteration {i}")
-            fail_count += 1
-            continue
-        logger.info(f"Iteration {i} of dirty reset test passed")
+        else:
+            logger.info(f"dirty reset passed on iteration {i}")
+
     logger.info(f"dirty reset failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "dirty reset failed a non-zero number of times."
 
