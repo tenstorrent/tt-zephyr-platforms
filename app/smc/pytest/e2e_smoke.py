@@ -234,8 +234,8 @@ def arc_watchdog_test(arc_chip):
     # Make sure we can still detect ARC core after 500 ms
     time.sleep(0.5)
     arc_chip = pyluwen.detect_chips()[0]
-    # Delay 500 more ms. Make sure the ARC has been reset.
-    time.sleep(0.5)
+    # Delay 600 more ms. Make sure the ARC has been reset.
+    time.sleep(0.6)
     # Ideally we would catch a more narrow exception, but this is what pyluwen raises
     try:
         # This should fail, since the ARC should have been reset
