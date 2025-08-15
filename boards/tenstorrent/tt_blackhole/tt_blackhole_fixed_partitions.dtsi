@@ -26,84 +26,78 @@ partitions {
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
 	};
 
-	cmfw: partition@10000000 {
+	ethfwcfg: partition@16000 {
+		label = "ethfwcfg";
+		reg = <0x16000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+	};
+
+	ethfw: partition@17000 {
+		label = "ethfw";
+		reg = <0x17000 DT_SIZE_K(36)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
+	};
+
+	memfwcfg: partition@20000 {
+		label = "memfwcfg";
+		reg = <0x20000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$PROD_NAME.bin";
+	};
+
+	memfw: partition@21000 {
+		label = "memfw";
+		reg = <0x21000 DT_SIZE_K(16)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
+	};
+
+	ethsdreg: partition@25000 {
+		label = "ethsdreg";
+		reg = <0x25000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
+	};
+
+	ethsdfw: partition@26000 {
+		label = "ethsdfw";
+		reg = <0x26000 DT_SIZE_K(20)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
+	};
+
+	flshinfo: partition@2b000 {
+		label = "flshinfo";
+		reg = <0x2b000 DT_SIZE_K(4)>;
+		binary-path =
+			"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
+	};
+
+	cmfw: partition@2c000 {
 		label = "cmfw";
-		reg = <0x10000000 DT_SIZE_K(106)>;
+		reg = <0x2c000 DT_SIZE_K(512)>;
 		offset = <0x10000000>;
 		binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
 		executable;
 	};
 
-	ethfwcfg: partition@30000 {
-		label = "ethfwcfg";
-		reg = <0x30000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+	failover: failover_partition@ac000 {
+		label = "failover";
+		reg = <0xac000 DT_SIZE_K(512)>;
+		offset = <0x10000000>;
+		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 	};
 
-	ethfw: partition@31000 {
-		label = "ethfw";
-		reg = <0x31000 DT_SIZE_K(36)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
-	};
-
-	memfwcfg: partition@3a000 {
-		label = "memfwcfg";
-		reg = <0x3a000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$PROD_NAME.bin";
-	};
-
-	memfw: partition@3b000 {
-		label = "memfw";
-		reg = <0x3b000 DT_SIZE_K(16)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
-	};
-
-	ethsdreg: partition@3f000 {
-		label = "ethsdreg";
-		reg = <0x3f000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
-	};
-
-	ethsdfw: partition@40000 {
-		label = "ethsdfw";
-		reg = <0x40000 DT_SIZE_K(20)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
-	};
-
-	bmfw: partition@45000 {
+	bmfw: partition@12c000 {
 		label = "bmfw";
-		reg = <0x45000 DT_SIZE_K(52)>;
+		reg = <0x12c000 DT_SIZE_K(512)>;
 		padto = <DT_SIZE_K(52)>;
 		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 	};
 
-	flshinfo: partition@52000 {
-		label = "flshinfo";
-		reg = <0x52000 DT_SIZE_K(4)>;
-		binary-path =
-			"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
-	};
-
-	boardcfg: partition@53000 {
+	boardcfg: partition@3fff000 {
 		label = "boardcfg";
-		reg = <0x53000 DT_SIZE_K(4)>;
+		reg = <0x3fff000 DT_SIZE_K(4)>;
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+		/* Always placed 4KB from end of flash */
 		source = "$END - 0x1000";
 		provisioning-only;
 		read-only;
-	};
-
-	/*
-	 * FIXME: The address of this node triggers a warning that we should try to fix:
-	 * Warning (unique_unit_address_if_enabled):
-	 *  /soc/spi@80070000/eeprom@0/partitions/partition@10000000
-	 * duplicate unit-address (also used in node
-	 *   /soc/spi@80070000/eeprom@0/partitions/failover_partition@10000000)
-	 */
-	failover: failover_partition@10000000 {
-		label = "failover";
-		reg = <0x10000000 DT_SIZE_K(76)>;
-		offset = <0x10000000>;
-		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 	};
 };
