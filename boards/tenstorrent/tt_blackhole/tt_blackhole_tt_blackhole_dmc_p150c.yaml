@@ -1,0 +1,22 @@
+identifier: tt_blackhole@p150c/tt_blackhole/dmc
+name: Tenstorrent Blackhole P150C board (DMC)
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+sysbuild: true
+ram: 144
+flash: 512
+supported:
+  - gpio
+  - counter
+  - watchdog
+  - pwm
+  - adc
+  - i2c
+  - dma
+  - mfd
+  - sensor
+vendor: tenstorrent
