@@ -17,6 +17,7 @@
 		cmfwcfg@14000 {
 			label = "cmfwcfg";
 			reg = < 0x14000 0x1000 >;
+			source = "$AUTO";
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
 			read-only;
 		};
@@ -24,6 +25,7 @@
 		origcfg@15000 {
 			label = "origcfg";
 			reg = < 0x15000 0x1000 >;
+			source = "$AUTO";
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
 			read-only;
 		};
@@ -31,12 +33,16 @@
 		cmfw@10000000 {
 			label = "cmfw";
 			reg = < 0x10000000 0x1a800 >;
+			offset = <0x10000000>;
+			executable;
+			source = "$AUTO";
 			binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
 		};
 
 		ethfwcfg@30000 {
 			label = "ethfwcfg";
 			reg = < 0x30000 0x1000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
 			read-only;
 		};
@@ -44,6 +50,7 @@
 		ethfw@31000 {
 			label = "ethfw";
 			reg = < 0x31000 0x9000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
 			read-only;
 		};
@@ -51,6 +58,7 @@
 		memfwcfg@3a000 {
 			label = "memfwcfg";
 			reg = < 0x3a000 0x1000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
 			read-only;
 		};
@@ -58,6 +66,7 @@
 		memfw@3b000 {
 			label = "memfw";
 			reg = < 0x3b000 0x4000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
 			read-only;
 		};
@@ -65,6 +74,7 @@
 		ethsdreg@3f000 {
 			label = "ethsdreg";
 			reg = < 0x3f000 0x1000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
 			read-only;
 		};
@@ -72,6 +82,7 @@
 		ethsdfw@40000 {
 			label = "ethsdfw";
 			reg = < 0x40000 0x5000 >;
+			source = "$AUTO";
 			binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
 			read-only;
 		};
@@ -79,12 +90,15 @@
 		bmfw@45000 {
 			label = "bmfw";
 			reg = < 0x45000 0xd000 >;
+			source = "$AUTO";
+			padto = < 0xd000 >;
 			binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 			read-only;
 		};
 
 		flshinfo@52000 {
 			label = "flshinfo";
+			source = "$AUTO";
 			reg = < 0x52000 0x1000 >;
 			binary-path =
 				"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
@@ -94,13 +108,17 @@
 		boardcfg@53000 {
 			label = "boardcfg";
 			reg = < 0x53000 0x1000 >;
+			source = "$END - 0x1000";
 			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+			provisioning-only;
 			read-only;
 		};
 
 		failover@10000000 {
 			label = "failover";
 			reg = < 0x10000000 0x13000 >;
+			offset = <0x10000000>;
+			source = "$AUTO";
 			binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 			read-only;
 		};

@@ -135,7 +135,7 @@ partitions {
 	memfwcfg: partition@1f9000 {
 		label = "memfwcfg";
 		reg = <0x1f9000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$PROD_NAME.bin";
 		read-only;
 	};
 
