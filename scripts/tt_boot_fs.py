@@ -944,49 +944,23 @@ def _generate_bootfs_yaml(
             continue
 
         label = partition.label
-        offset, size = partition.props["reg"].val
+        if "binary-path" not in partition.props:
+            continue  # No tt-boot-fs entry for this partition
+
         path = partition.props["binary-path"].val
-        path = path.replace(
-            "$BOARD_REV",
-            gen_name if partition.label != "memfwcfg" else prod_name,
-        )
+        path = path.replace("$PROD_NAME", prod_name)
+        path = path.replace("$BOARD_REV", gen_name)
         path = path.replace("$BUILD_DIR", str(args.build_dir))
         path = path.replace("$BLOBS_DIR", str(args.blobs_dir))
-        read_only = partition.read_only
 
-        # Right now tt_boot_fs expects a very specific format, so that's why
-        # the YAML generation is done in a more manual way below.
-        if label == "cmfw":
-            image_entry = {
-                "name": label,
-                "offset": offset,
-                "binary": path,
-                "executable": not read_only,
-            }
-        elif label == "bmfw":
-            image_entry = {
-                "name": label,
-                "padto": size,
-                "binary": path,
-            }
-        elif label == "boardcfg":
-            image_entry = {
-                "name": label,
-                "binary": path,
-                "provisioning_only": True,
-                "source": "$END - 0x1000",
-            }
-        elif label == "failover":
-            image_entry = {
-                "name": label,
-                "offset": offset,
-                "binary": path,
-            }
-        else:
-            image_entry = {
-                "name": label,
-                "binary": path,
-            }
+        image_entry = {
+            "name": label,
+            "binary": path,
+        }
+        # Build image entry based on which fields the partition actually had
+        for prop in ["offset", "padto", "source", "executable", "provisioning-only"]:
+            if prop in partition.props and partition.props[prop].val is not False:
+                image_entry[prop.replace("-", "_")] = partition.props[prop].val
 
         if label == "failover":
             partitions_yml["fail_over_image"] = image_entry
