@@ -19,4 +19,29 @@ child-binding:
   properties:
     binary-path:
       type: string
-      required: true
+      description: |
+        Path to the binary file to be flashed into this partition. If absent,
+        the partition will not be allocated in the final image.
+    provisioning-only:
+      type: boolean
+      description: |
+        Set to indicate the partition is only provisioned during manufacturing
+    source:
+      type: string
+      description: |
+        Where to place the binary in flash memory. Can be an absolute address,
+        or relative to end of flash by referencing $END.
+    padto:
+      type: int
+      description: |
+        Pad the region the binary occupies to support fixed size tt_boot_fs entries.
+    executable:
+      type: boolean
+      description: |
+        Set to indicate the partition is executable. This is used to determine
+        whether the partition should be loaded into memory and executed by the
+        bootloader.
+    offset:
+      type: int
+      description: |
+        Address where the bootloader should load an executable binary within memory.
