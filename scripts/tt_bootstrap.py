@@ -37,7 +37,7 @@ try:
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
 except ImportError:
-    print("Required module 'intelhex' not found. Please run 'pip install intelhex'.")
+    print("Required module 'pyocd' not found. Please run 'pip install pyocd'.")
     sys.exit(1)
 
 PYOCD_TARGET = "STM32G0B1CEUx"
