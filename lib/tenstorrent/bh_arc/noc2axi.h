@@ -7,9 +7,18 @@
 #define NOC2AXI_H
 
 #include <stdint.h>
+#include <zephyr/sys/util.h>
 
+#ifdef CONFIG_BOARD_NATIVE_SIM
+/* Fake out both NOC address spaces (16 MB each) */
+static uint8_t fake_noc0_window[MB(16)];
+static uint8_t fake_noc1_window[MB(16)];
+#define ARC_NOC0_BASE_ADDR ((uintptr_t)fake_noc0_window)
+#define ARC_NOC1_BASE_ADDR ((uintptr_t)fake_noc1_window)
+#else
 #define ARC_NOC0_BASE_ADDR       0xC0000000
 #define ARC_NOC1_BASE_ADDR       0xE0000000
+#endif
 #define NOC_TLB_LOG_SIZE         24
 #define NOC_TLB_WINDOW_ADDR_MASK ((1 << NOC_TLB_LOG_SIZE) - 1)
 

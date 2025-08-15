@@ -7,8 +7,6 @@
 #include "noc.h"
 #include "noc2axi.h"
 
-#define NIU_0_A_REG_MAP_BASE_ADDR 0x80050000
-
 typedef struct {
 	uint32_t passthrough_bits: 24;
 	uint32_t lower_addr_bits: 8;
@@ -62,6 +60,15 @@ typedef union {
 #define NOC2AXI_NUM_TLB_PER_RING 16
 #define RING0_TLB_REG_OFFSET     0x1000
 #define AXI2NOC_RING_SEL_BIT     15
+
+#ifdef CONFIG_BOARD_NATIVE_SIM
+#define NIU0_A_REG_SPACE_SIZE 0x10000
+/* Running within simulation. Fake out TLB register space */
+static uint8_t fake_niu_reg_space[NIU0_A_REG_SPACE_SIZE];
+#define NIU_0_A_REG_MAP_BASE_ADDR ((uintptr_t)fake_niu_reg_space)
+#else
+#define NIU_0_A_REG_MAP_BASE_ADDR 0x80050000
+#endif
 
 static inline uint32_t volatile *GetTlbRegStartAddr(const uint8_t ring)
 {
