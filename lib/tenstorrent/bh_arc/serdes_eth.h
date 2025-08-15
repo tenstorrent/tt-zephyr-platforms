@@ -38,8 +38,9 @@ typedef struct {
 	uint32_t data;
 } SerdesRegData;
 
-void LoadSerdesEthRegs(uint32_t serdes_inst, uint32_t ring, const SerdesRegData *reg_table,
-		       uint32_t reg_count);
-int LoadSerdesEthFw(uint32_t serdes_inst, uint32_t ring, uint8_t *fw_image, uint32_t fw_size);
+void LoadSerdesEthRegs(uint32_t serdes_inst, uint32_t ring, uint8_t *buf, size_t buf_size,
+		       size_t spi_address, size_t image_size);
+int LoadSerdesEthFw(uint32_t serdes_inst, uint32_t ring, uint8_t *buf, size_t buf_size,
+		    size_t spi_address, size_t image_size);
 
 #endif

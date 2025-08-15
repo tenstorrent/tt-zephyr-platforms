@@ -21,8 +21,6 @@
 #define ARC_NOC0_X 8
 #define ARC_NOC0_Y 0
 
-extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
-
 /* use any arbitrary non-harvested tensix core as the source for wiping l1s */
 static const uint8_t tensix_x = 1;
 static const uint8_t tensix_y = 2;
@@ -34,9 +32,11 @@ static void wipe_tensix_l1(void)
 {
 	uint64_t addr = 0;
 
+	uint8_t sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
+
 	/* wipe SCRATCHPAD_SIZE of the chosen tensix */
-	memset(large_sram_buffer, 0, SCRATCHPAD_SIZE);
-	noc_dma_read(tensix_x, tensix_y, addr, ARC_NOC0_X, ARC_NOC0_Y, (uintptr_t)large_sram_buffer,
+	memset(sram_buffer, 0, SCRATCHPAD_SIZE);
+	noc_dma_read(tensix_x, tensix_y, addr, ARC_NOC0_X, ARC_NOC0_Y, (uintptr_t)sram_buffer,
 		     SCRATCHPAD_SIZE, true);
 
 	/* wipe entire L1 of the chosen tensix */

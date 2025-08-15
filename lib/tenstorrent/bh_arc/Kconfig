@@ -62,14 +62,10 @@ config TT_BH_ARC_WDT_FEED_INTERVAL
 
 config TT_BH_ARC_SCRATCHPAD_SIZE
 	hex "Size of scratchpad memory in bytes"
-	default 0x9000
+	default 512
 	help
 	  Size of scratchpad memory in bytes. This is mainly used as a temporary buffer for
-	  loading images from SPI flash. The size can be further reduced if we are able to
-	  load images in smaller chunks. The default size is 0x9000 bytes, which is enough to
-	  load the largest image (ERISC FW) in one go. If using a dynamically allocated
-	  buffer is possible, then we can remove the statically allocated buffer entirely.
-	  If not, the size would likely only be able to be reduced down to 1 page (4096 bytes).
+	  loading images from SPI flash.
 
 config TT_BH_ARC_DMFW_PING_TIMEOUT
 	int "Timeout for DMFW ping in milliseconds"

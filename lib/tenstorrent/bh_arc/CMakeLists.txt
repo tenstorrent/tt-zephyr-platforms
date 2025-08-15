@@ -48,6 +48,7 @@ zephyr_library_sources(
   reset.c
   smbus_target.c
   spi_eeprom.c
+  spi_flash_buf.c
   timer.c
 )
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
