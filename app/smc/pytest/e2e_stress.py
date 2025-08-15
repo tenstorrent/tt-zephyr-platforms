@@ -6,31 +6,25 @@
 import logging
 import os
 import subprocess
-import sys
-import time
 from pathlib import Path
 
 import pyluwen
 import pytest
 from twister_harness import DeviceAdapter
 
-sys.path.append(str(Path(__file__).parents[3] / "scripts"))
-from pcie_utils import rescan_pcie
-import dmc_reset
-from e2e_smoke import arc_watchdog_test, get_arc_chip
+from e2e_smoke import (
+    dirty_reset_test,
+    smi_reset_test,
+    arc_watchdog_test,
+    pcie_fw_load_time_test,
+    get_arc_chip,
+)
 
 logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 
-REFCLK_HZ = 50_000_000
-
 # Constant memory addresses we can read from SMC
-ARC_STATUS = 0x80030060
-ARC_MISC_CTRL = 0x80030100
-PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
-CMFW_START_TIME_REG_ADDR = 0x8003043C
-ARC_START_TIME_REG_ADDR = 0x80030440
 PING_DMFW_DURATION_REG_ADDR = 0x80030448
 
 # ARC messages
@@ -71,7 +65,6 @@ def test_arc_watchdog(arc_chip):
     Validates that the DMC firmware watchdog for the ARC will correctly
     reset the chip
     """
-    wdt_timeout = 1000
     total_tries = min(MAX_TEST_ITERATIONS, 100)
     fail_count = 0
     for i in range(total_tries):
@@ -101,27 +94,11 @@ def test_pcie_fw_load_time(arc_chip):
             logger.warning(f"tt-smi reset failed on iteration {i}")
             fail_count += 1
             continue
-        pcie_init_cpl_time = arc_chip.axi_read32(PCIE_INIT_CPL_TIME_REG_ADDR)
-        cmfw_start_time = arc_chip.axi_read32(CMFW_START_TIME_REG_ADDR)
-        arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
-        while arc_start_time == 0:
-            # Wait for the DMC to report the ARC start time
-            logger.info("Waiting for ARC start time to be set...")
-            time.sleep(0.1)
-            arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
-
-        duration_in_ms = (pcie_init_cpl_time - arc_start_time) / REFCLK_HZ * 1000
-
-        logger.info(
-            f"BOOTROM start timestamp: {arc_start_time}, "
-            f"CMFW start timestamp: {cmfw_start_time}, "
-            f"PCIe init completion timestamp: {pcie_init_cpl_time}."
-        )
-        if duration_in_ms > 40:
-            logger.warning(
-                f"PCIe firmware load time exceeded 40ms: {duration_in_ms:.4f}ms"
-            )
+        result = pcie_fw_load_time_test(arc_chip)
+        if not result:
+            logger.warning(f"PCIe firmware load time test failed on iteration {i}")
             fail_count += 1
+
     report_results("PCIe firmware load time test", fail_count, total_tries)
     assert fail_count == 0, (
         "PCIe firmware load time test failed a non-zero number of times."
@@ -133,19 +110,17 @@ def test_smi_reset():
     Checks that tt-smi resets are working successfully
     """
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
-    smi_reset_cmd = "tt-smi -r"
     fail_count = 0
     dmfw_ping_avg = 0
     dmfw_ping_max = 0
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        smi_reset_result = subprocess.run(
-            smi_reset_cmd.split(), capture_output=True, check=False
-        ).returncode
-        logger.info(f"'tt-smi -r' returncode:{smi_reset_result}")
+        result = smi_reset_test()
 
-        if smi_reset_result != 0:
+        if not result:
+            logger.warning(f"tt-smi reset failed on iteration {i}")
             fail_count += 1
+            continue
 
         arc_chip = pyluwen.detect_chips()[0]
         response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
@@ -172,32 +147,16 @@ def test_dirty_reset():
     that might be encountered after a NOC hang
     """
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
-    timeout = 60  # seconds to wait for SMC boot
     fail_count = 0
 
-    # Use dmc-reset script as a library to reset the DMC
-    def args():
-        return None
-
-    args.config = dmc_reset.DEFAULT_DMC_CFG
-    args.debug = 0
-    args.openocd = dmc_reset.DEFAULT_OPENOCD
-    args.scripts = dmc_reset.DEFAULT_SCRIPTS_DIR
-    args.jtag_id = None
-    args.hexfile = None
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        ret = dmc_reset.reset_dmc(args)
-        if ret != os.EX_OK:
-            logger.warning(f"DMC reset failed on iteration {i}")
+        result = dirty_reset_test()
+        if not result:
+            logger.warning(f"dirty reset failed on iteration {i}")
             fail_count += 1
-            continue
-        ret = dmc_reset.wait_for_smc_boot(timeout)
-        if ret != os.EX_OK:
-            logger.warning(f"SMC did not boot after dirty reset on iteration {i}")
-            fail_count += 1
-            continue
-        logger.info(f"Iteration {i} of dirty reset test passed")
+        else:
+            logger.info(f"dirty reset passed on iteration {i}")
 
     report_results("Dirty reset test", fail_count, total_tries)
     assert fail_count == 0, "Dirty reset failed a non-zero number of times."
