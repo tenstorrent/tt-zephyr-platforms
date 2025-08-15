@@ -101,9 +101,7 @@ static uint32_t get_expected_acks(uint32_t noc_cmd, uint64_t size)
 /* wrap around aware comparison for half-range rule */
 static inline bool is_behind(uint32_t current, uint32_t target)
 {
-	uint32_t diff = current - target;
-
-	return diff > DIV_ROUND_UP(UINT32_MAX, 2);
+	return (int32_t)(current - target) < 0;
 }
 
 static bool wait_noc_dma_done(uint32_t noc_cmd, uint32_t expected_acks)
