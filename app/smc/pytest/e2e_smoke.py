@@ -212,11 +212,10 @@ def get_int_version_from_file(filename) -> int:
     return version_int
 
 
-@pytest.mark.flash
-def test_arc_watchdog(arc_chip):
+def arc_watchdog_test(arc_chip):
     """
-    Validates that the DMC firmware watchdog for the ARC will correctly
-    reset the chip
+    Helper to run ARC watchdog test. Returns True on pass, or False on
+    failure
     """
     wdt_timeout = 1000
     # Setup ARC watchdog for a 1000ms timeout
@@ -224,8 +223,12 @@ def test_arc_watchdog(arc_chip):
     # Sleep 1500, make sure we can still ping arc
     time.sleep(1.5)
     response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 1, 0, 1000)
-    assert response[0] == 2, "SMC did not respond to test message"
-    assert response[1] == 0, "SMC response invalid"
+    if response[0] != 2:
+        logger.warning("SMC did not respond to test message")
+        return False
+    if response[1] != 0:
+        logger.warning("SMC response invalid")
+        return False
     # Halt the ARC cores.
     arc_chip.axi_write32(ARC_MISC_CTRL, 0xF0)
     # Make sure we can still detect ARC core after 500 ms
@@ -234,18 +237,40 @@ def test_arc_watchdog(arc_chip):
     # Delay 500 more ms. Make sure the ARC has been reset.
     time.sleep(0.5)
     # Ideally we would catch a more narrow exception, but this is what pyluwen raises
-    with pytest.raises(Exception):
+    try:
         # This should fail, since the ARC should have been reset
         arc_chip = pyluwen.detect_chips()[0]
+        logger.warning(
+            "SMC did not reset ARC core on iteration still able to detect ARC chip"
+        )
+        return False
+    except Exception:
+        # Expected behavior, since the ARC should have been reset.
+        # Unfortunately, pyluwen does not throw a specific exception
+        pass
     time.sleep(1.0)
     rescan_pcie()
     # ARC should now be back online
     arc_chip = pyluwen.detect_chips()[0]
     # Make sure ARC can still ping the DMC
     response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
-    assert response[0] == 1, "DMC did not respond to ping from SMC"
-    assert response[1] == 0, "SMC response invalid"
+    if response[0] != 1:
+        logger.warning("DMC did not respond to ping after reset")
+        return False
+    if response[1] != 0:
+        logger.warning("SMC response invalid after reset")
+        return False
     logger.info('DMC ping message response "%d"', response[0])
+    return True
+
+
+@pytest.mark.flash
+def test_arc_watchdog(arc_chip):
+    """
+    Validates that the DMC firmware watchdog for the ARC will correctly
+    reset the chip
+    """
+    assert arc_watchdog_test(arc_chip) == True, "ARC watchdog test failed"
 
 
 @pytest.mark.flash
