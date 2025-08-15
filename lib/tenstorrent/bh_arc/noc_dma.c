@@ -78,6 +78,10 @@ static inline uint32_t read_noc_dma_config(uint32_t addr)
 
 static bool noc_wait_cmd_ready(void)
 {
+#ifdef CONFIG_BOARD_NATIVE_SIM
+	/* Fake completion */
+	return true;
+#else
 	uint32_t cmd_ctrl;
 	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
 
@@ -86,6 +90,7 @@ static bool noc_wait_cmd_ready(void)
 	} while (cmd_ctrl != 0 && !sys_timepoint_expired(timeout));
 
 	return cmd_ctrl == 0;
+#endif
 }
 
 static uint32_t get_expected_acks(uint32_t noc_cmd, uint64_t size)
@@ -108,6 +113,10 @@ static inline bool is_behind(uint32_t current, uint32_t target)
 
 static bool wait_noc_dma_done(uint32_t noc_cmd, uint32_t expected_acks)
 {
+#ifdef CONFIG_BOARD_NATIVE_SIM
+	/* Fake NOC completion */
+	return true;
+#else
 	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
 	uint32_t ack_reg_addr =
 		(noc_cmd & NOC_CMD_WR) ? NIU_MST_WR_ACK_RECEIVED : NIU_MST_RD_RESP_RECEIVED;
@@ -120,6 +129,7 @@ static bool wait_noc_dma_done(uint32_t noc_cmd, uint32_t expected_acks)
 	} while (behind && !sys_timepoint_expired(timeout));
 
 	return !behind;
+#endif
 }
 
 static uint32_t noc_dma_format_coord(uint8_t x, uint8_t y)
