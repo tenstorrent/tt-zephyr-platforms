@@ -17,6 +17,7 @@ from twister_harness import DeviceAdapter
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
 from pcie_utils import rescan_pcie
 import dmc_reset
+from e2e_smoke import arc_watchdog_test, get_arc_chip
 
 logger = logging.getLogger(__name__)
 
@@ -41,49 +42,6 @@ ARC_MSG_TYPE_SET_WDT = 0xC1
 MAX_TEST_ITERATIONS = 1000
 
 
-def get_arc_chip(unlaunched_dut: DeviceAdapter):
-    """
-    Validates the ARC firmware is alive and booted, since this required
-    for any test to run
-    """
-    # This is a hack- the RTT terminal doesn't work in pytest, so
-    # we directly call this internal API to flash the DUT.
-    unlaunched_dut.generate_command()
-    if unlaunched_dut.device_config.extra_test_args:
-        unlaunched_dut.command.extend(
-            unlaunched_dut.device_config.extra_test_args.split()
-        )
-    unlaunched_dut._flash_and_run()
-    time.sleep(1)
-    start = time.time()
-    # Attempt to detect the ARC chip for 15 seconds
-    timeout = 15
-    chips = []
-    while True:
-        try:
-            chips = pyluwen.detect_chips()
-        except Exception:
-            print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
-        if len(chips) > 0:
-            logger.info("Detected ARC chip")
-            break
-        time.sleep(0.5)
-        if time.time() - start > timeout:
-            raise RuntimeError("Did not detect ARC chip within timeout period")
-        rescan_pcie()
-    chip = chips[0]
-    try:
-        status = chip.axi_read32(ARC_STATUS)
-    except Exception:
-        print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
-        rescan_pcie()
-        status = chip.axi_read32(ARC_STATUS)
-    assert (status & 0xFFFF0000) == 0xC0DE0000, "SMC firmware postcode is invalid"
-    # Check post code status of firmware
-    assert (status & 0xFFFF) >= 0x1D, "SMC firmware boot failed"
-    return chip
-
-
 def report_results(test_name, fail_count, total_tries):
     """
     Helper function to log the results of a test. This uses a
@@ -93,8 +51,8 @@ def report_results(test_name, fail_count, total_tries):
 
 
 @pytest.fixture(scope="session")
-def arc_chip(unlaunched_dut: DeviceAdapter):
-    return get_arc_chip(unlaunched_dut)
+def arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
+    return get_arc_chip(unlaunched_dut, asic_id)
 
 
 def tt_smi_reset():
@@ -118,55 +76,10 @@ def test_arc_watchdog(arc_chip):
     fail_count = 0
     for i in range(total_tries):
         logger.info(f"Starting ARC watchdog test iteration {i}/{total_tries}")
-        # Setup ARC watchdog for a 1000ms timeout
-        arc_chip.arc_msg(ARC_MSG_TYPE_SET_WDT, True, False, wdt_timeout, 0, 1000)
-        # Sleep 1500, make sure we can still ping arc
-        time.sleep(1.5)
-        response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 1, 0, 1000)
-        if response[0] != 2:
-            logger.warning(f"SMC did not respond to test message on iteration {i}")
+        result = arc_watchdog_test(arc_chip)
+        if not result:
+            logger.warning(f"ARC watchdog test failed on iteration {i}")
             fail_count += 1
-            continue
-        if response[1] != 0:
-            logger.warning(f"SMC response invalid on iteration {i}")
-            fail_count += 1
-            continue
-        # Halt the ARC cores.
-        arc_chip.axi_write32(ARC_MISC_CTRL, 0xF0)
-        # Make sure we can still detect ARC core after 500 ms
-        time.sleep(0.5)
-        arc_chip = pyluwen.detect_chips()[0]
-        # Delay 500 more ms. Make sure the ARC has been reset.
-        time.sleep(0.5)
-        # Ideally we would catch a more narrow exception, but this is what pyluwen raises
-        try:
-            # This should fail, since the ARC should have been reset
-            arc_chip = pyluwen.detect_chips()[0]
-            logger.warning(
-                f"SMC did not reset ARC core on iteration {i}, "
-                "still able to detect ARC chip"
-            )
-            fail_count += 1
-            continue
-        except Exception:
-            # Expected behavior, since the ARC should have been reset.
-            # Unfortunately, pyluwen does not throw a specific exception
-            pass
-        time.sleep(1.0)
-        rescan_pcie()
-        # ARC should now be back online
-        arc_chip = pyluwen.detect_chips()[0]
-        # Make sure ARC can still ping the DMC
-        response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
-        if response[0] != 1:
-            logger.warning(f"DMC did not respond to ping on iteration {i}")
-            fail_count += 1
-            continue
-        if response[1] != 0:
-            logger.warning(f"SMC response invalid on iteration {i}")
-            fail_count += 1
-            continue
-        logger.info('DMC ping message response "%d"', response[0])
 
     report_results("ARC watchdog test", fail_count, total_tries)
     assert fail_count == 0, "ARC watchdog test failed a non-zero number of times."
