@@ -28,7 +28,8 @@ child-binding:
       type: string
       description: |
         Where to place the binary in flash memory. Can be an absolute address,
-        or relative to end of flash by referencing $END.
+        or relative to end of flash by referencing $END. If absent, the register
+        address is used to determine where the binary is placed in flash.
     padto:
       type: int
       description: |
