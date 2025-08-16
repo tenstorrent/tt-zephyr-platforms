@@ -1,0 +1,9 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config MEMC_TT_BH_DDR
+	bool "Tenstorrent Blackhole DDR memory controller driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_DDR_MEMC
+	help
+	  Enable the Tenstorrent Blackhole DDR memory controller driver.
