@@ -281,6 +281,17 @@ def pcie_fw_load_time_test(arc_chip):
     pcie_init_cpl_time = arc_chip.axi_read32(PCIE_INIT_CPL_TIME_REG_ADDR)
     cmfw_start_time = arc_chip.axi_read32(CMFW_START_TIME_REG_ADDR)
     arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
+    # Wait up to 5 seconds for DMC to boot and sync with ARC
+    timeout = time.time() + 5
+    while arc_start_time == 0 and time.time() < timeout:
+        # Wait for the DMC to report the ARC start time
+        logger.info("Waiting for ARC start time to be set...")
+        time.sleep(0.1)
+        arc_start_time = arc_chip.axi_read32(ARC_START_TIME_REG_ADDR)
+
+    if arc_start_time == 0:
+        logger.warning("DMC never reported ARC start time")
+        return False
 
     duration_in_ms = (pcie_init_cpl_time - arc_start_time) / REFCLK_HZ * 1000
 
