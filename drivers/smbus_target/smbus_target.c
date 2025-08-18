@@ -333,13 +333,11 @@ static const struct i2c_target_driver_api api_funcs = {
 };
 
 const struct i2c_target_callbacks smbus_target_cb_impl = {
+	.write_requested = &smbus_write_requested,
 	.write_received = &smbus_write_handler,
 	.read_requested = &smbus_read_handler,
-	.write_requested = &smbus_write_requested,
-	.stop = &smbus_stop_handler,
-#if CONFIG_BOARD_NATIVE_SIM
 	.read_processed = &smbus_read_handler,
-#endif
+	.stop = &smbus_stop_handler,
 };
 
 static int32_t smbus_target_init(const struct device *dev)

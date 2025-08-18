@@ -205,3 +205,18 @@ patches:
     date: 2025-07-24
     comments: |
       SMBus controller PEC for smbus_stm32
+  - path: zephyr/i2c-dw-target-correction.patch
+    sha256sum: ff26f7e0c68759faf3b870a659e06f9b6cd1d4693b2bb714bf62082e368d7f3e
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-08-18
+    comments: |
+      Corrections for the i2c_dw implementation for target operation.
+
+      read_requested should only be called on the first byte, and should
+      send the data fetched in the CB back on the wire.
+
+      read_processed should be called on every subsequent byte in the
+      transaction, and it should also send the data fetched in the CB
+      back on the wire.
