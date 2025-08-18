@@ -13,6 +13,6 @@ config SMBUS_MAX_MSG_SIZE
 	int "SMBUS maximum message size"
 	default 64
 	help
-	  The maximum SMBUS transaction size. This is used 
+	  The maximum SMBUS transaction size. This is used
 	  to size internal buffers storing the transaction input/output.
 endif #SMBUS_TARGET

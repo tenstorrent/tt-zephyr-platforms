@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2024 Tenstorrent AI ULC
  *
@@ -18,7 +17,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(i2c_target);
 
-
 typedef enum {
 	kSmbusStateIdle,
 	kSmbusStateCmd,
@@ -31,9 +29,9 @@ typedef enum {
 
 struct smbus_target_data {
 	struct i2c_target_config config;
-/* clang-format off */
+	/* clang-format off */
 	const SmbusCmdDef * cmd_defs[256];
-/* clang-format on */
+	/* clang-format on */
 	SmbusState state;
 	uint8_t command;
 	uint8_t blocksize;
@@ -75,9 +73,8 @@ static int32_t smbus_target_unregister(const struct device *dev)
 
 static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 {
-	struct smbus_target_data *smbus_data = CONTAINER_OF(config,
-						struct smbus_target_data,
-						config);
+	struct smbus_target_data *smbus_data =
+		CONTAINER_OF(config, struct smbus_target_data, config);
 	const SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
 
 	if (smbus_data->state == kSmbusStateIdle) {
@@ -109,8 +106,8 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 			if (1U == curr_cmd->pec) {
 				smbus_data->state = kSmbusStateRcvPec;
 			} else {
-				int32_t ret = curr_cmd->rcv_handler(
-					smbus_data->received_data, smbus_data->blocksize);
+				int32_t ret = curr_cmd->rcv_handler(smbus_data->received_data,
+								    smbus_data->blocksize);
 
 				smbus_data->state = kSmbusStateWaitIdle;
 				return ret;
@@ -130,11 +127,12 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 		/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1050); */
 		smbus_data->received_data[smbus_data->rcv_index++] = val;
 		if (smbus_data->rcv_index == smbus_data->blocksize) {
-			if (1U == curr_cmd->pec && (curr_cmd->trans_type != kSmbusTransBlockWriteBlockRead)) {
+			if (1U == curr_cmd->pec &&
+			    (curr_cmd->trans_type != kSmbusTransBlockWriteBlockRead)) {
 				smbus_data->state = kSmbusStateRcvPec;
 			} else {
-				int32_t ret = curr_cmd->rcv_handler(
-					smbus_data->received_data, smbus_data->blocksize);
+				int32_t ret = curr_cmd->rcv_handler(smbus_data->received_data,
+								    smbus_data->blocksize);
 				if (ret == 0 &&
 				    curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
 					smbus_data->state = kSmbusStateCmd;
@@ -151,7 +149,8 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 		/* Calculate the PEC */
 		uint8_t pec = 0;
 
-		pec = pec_crc_8(pec, smbus_data->config.address << 1 | I2C_MSG_WRITE); /* start address byte */
+		pec = pec_crc_8(pec, smbus_data->config.address << 1 |
+					     I2C_MSG_WRITE); /* start address byte */
 		pec = pec_crc_8(pec, smbus_data->command);
 		if (curr_cmd->trans_type == kSmbusTransBlockWrite) {
 			pec = pec_crc_8(pec, smbus_data->blocksize);
@@ -164,8 +163,8 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 			smbus_data->blocksize = kSmbusStateWaitIdle;
 			return -1;
 		}
-		int32_t ret = curr_cmd->rcv_handler(smbus_data->received_data,
-							    smbus_data->blocksize);
+		int32_t ret =
+			curr_cmd->rcv_handler(smbus_data->received_data, smbus_data->blocksize);
 
 		if (ret == 0 && curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
 			smbus_data->state = kSmbusStateCmd;
@@ -185,9 +184,8 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 
 static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val)
 {
-	struct smbus_target_data *smbus_data = CONTAINER_OF(config,
-						struct smbus_target_data,
-						config);
+	struct smbus_target_data *smbus_data =
+		CONTAINER_OF(config, struct smbus_target_data, config);
 
 	const SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
 
@@ -214,7 +212,9 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		}
 		/* Call the send handler to get the data */
 		if (curr_cmd->send_handler(smbus_data->send_data, smbus_data->blocksize)) {
-			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0020);*/
+			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+			 * 0xc0de0020);
+			 */
 			/* Send handler returned error */
 			smbus_data->state = kSmbusStateWaitIdle;
 			*val = 0xFF;
@@ -224,20 +224,25 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockWriteBlockRead:
 		case kSmbusTransBlockRead:
-			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0030);*/
+			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+			 * 0xc0de0030);
+			 */
 			*val = smbus_data->blocksize;
 			smbus_data->state = kSmbusStateSendData;
 			break;
 		case kSmbusTransReadByte:
 			*val = smbus_data->send_data[smbus_data->send_index++];
-			smbus_data->state = curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
+			smbus_data->state =
+				curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
 			break;
 		case kSmbusTransReadWord:
 			*val = smbus_data->send_data[smbus_data->send_index++];
 			smbus_data->state = kSmbusStateSendData;
 			break;
 		default:
-			/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0040); */
+			/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
+			 * 0xc0de0040);
+			 */
 			/* Error, invalid command for read */
 			smbus_data->state = kSmbusStateWaitIdle;
 			*val = 0xFF;
@@ -247,7 +252,8 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0050); */
 		*val = smbus_data->send_data[smbus_data->send_index++];
 		if (smbus_data->send_index == smbus_data->blocksize) {
-			smbus_data->state = curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
+			smbus_data->state =
+				curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
 		}
 	} else if (smbus_data->state == kSmbusStateSendPec) {
 		/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0060);*/
@@ -257,7 +263,8 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 
 		uint8_t pec = 0;
 
-		pec = pec_crc_8(pec, smbus_data->config.address << 1 | I2C_MSG_WRITE); /* start address byte */
+		pec = pec_crc_8(pec, smbus_data->config.address << 1 |
+					     I2C_MSG_WRITE); /* start address byte */
 		pec = pec_crc_8(pec, smbus_data->command);
 
 		if (curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
@@ -268,7 +275,8 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 			pec = pec_crc_8(pec, smbus_data->received_data[i]);
 		}
 
-		pec = pec_crc_8(pec, smbus_data->config.address << 1 | I2C_MSG_READ); /* restart address byte */
+		pec = pec_crc_8(pec, smbus_data->config.address << 1 |
+					     I2C_MSG_READ); /* restart address byte */
 
 		/* sent data */
 		if (curr_cmd->trans_type == kSmbusTransBlockRead ||
@@ -294,9 +302,8 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 
 static int32_t smbus_stop_handler(struct i2c_target_config *config)
 {
-	struct smbus_target_data *smbus_data = CONTAINER_OF(config,
-						struct smbus_target_data,
-						config);
+	struct smbus_target_data *smbus_data =
+		CONTAINER_OF(config, struct smbus_target_data, config);
 
 	smbus_data->state = kSmbusStateIdle;
 	smbus_data->command = 0;
@@ -307,7 +314,6 @@ static int32_t smbus_stop_handler(struct i2c_target_config *config)
 	/* Log something like */
 	/* WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, */
 	/* 0xc3de0000 | ReadReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR)); */
-
 
 	/* Don't erase data buffers for efficiency */
 	return 0;
@@ -322,7 +328,6 @@ static int32_t smbus_write_requested(struct i2c_target_config *config)
 	(void)config;
 	return 0;
 }
-
 
 static const struct i2c_target_driver_api api_funcs = {
 	.driver_register = smbus_target_register,
@@ -353,7 +358,8 @@ static int32_t smbus_target_init(const struct device *dev)
 	return 0;
 }
 
-int32_t smbus_target_register_cmd(const struct device *dev, uint8_t cmd_id, const SmbusCmdDef *smbus_cmd)
+int32_t smbus_target_register_cmd(const struct device *dev, uint8_t cmd_id,
+				  const SmbusCmdDef *smbus_cmd)
 {
 	struct smbus_target_data *data = dev->data;
 
