@@ -15,11 +15,12 @@
 
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
-#include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/init.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/storage/flash_map.h>
 
 LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -41,6 +42,8 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
 extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
 
+/* Note: FIXED_PARTITION_DEVICE(ethfw) is preferable but not exist for e.g native_sim */
+static const struct device *const flash_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 typedef struct {
@@ -290,31 +293,37 @@ static void SerdesEthInit(void)
 	/* Load fw regs */
 	uint32_t reg_table_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_REG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&reg_table_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_REG_TAG, -EIO);
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(ethsdreg), large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "flash_read", ETH_SD_REG_TAG, -EIO);
 		return;
+	}
+
+	for (size_t i = 0; i < SCRATCHPAD_SIZE / sizeof(SerdesRegData); ++i, ++reg_table_size) {
+		SerdesRegData *reg_data = (SerdesRegData *)&large_sram_buffer[i];
+
+		if (reg_data->addr == -1) {
+			break;
+		}
 	}
 
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
 			LoadSerdesEthRegs(serdes_inst, ring, (SerdesRegData *)large_sram_buffer,
-					  reg_table_size / sizeof(SerdesRegData));
+					  reg_table_size);
 		}
 	}
 
 	/* Load fw */
-	size_t fw_size = 0;
-
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_SD_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_SD_FW_TAG, -EIO);
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(ethsdfw), large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "flash_read", ETH_SD_FW_TAG, -EIO);
 		return;
 	}
 
 	for (uint8_t serdes_inst = 0; serdes_inst < 6; serdes_inst++) {
 		if (load_serdes & (1 << serdes_inst)) {
-			LoadSerdesEthFw(serdes_inst, ring, large_sram_buffer, fw_size);
+			LoadSerdesEthFw(serdes_inst, ring, large_sram_buffer, SCRATCHPAD_SIZE);
 		}
 	}
 }
@@ -331,9 +340,9 @@ static void EthInit(void)
 	/* Load fw */
 	size_t fw_size = 0;
 
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_TAG, -EIO);
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(ethfw), large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "flash_read", ETH_FW_TAG, -EIO);
 		return;
 	}
 
@@ -344,9 +353,9 @@ static void EthInit(void)
 	}
 
 	/* Load param table */
-	if (tt_boot_fs_get_file(&boot_fs_data, ETH_FW_CFG_TAG, large_sram_buffer, SCRATCHPAD_SIZE,
-				&fw_size) != TT_BOOT_FS_OK) {
-		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", ETH_FW_CFG_TAG, -EIO);
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(ethfwcfg), large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "flash_read", ETH_FW_CFG_TAG, -EIO);
 		return;
 	}
 
