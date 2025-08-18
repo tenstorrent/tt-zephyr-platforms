@@ -240,9 +240,14 @@ def arc_watchdog_test(arc_chip):
     try:
         # This should fail, since the ARC should have been reset
         arc_chip = pyluwen.detect_chips()[0]
-        logger.warning(
-            "SMC did not reset ARC core on iteration still able to detect ARC chip"
-        )
+        logger.warning("DMC did not reset ARC core. Still able to detect ARC chip")
+        # tt-kmd sets its own 10000ms timer, which sometimes can race our own
+        # timer and override it. To handle this case, delay 10 more seconds
+        # to allow the ARC to reset
+        logger.warning("Waiting 10 additional seconds to see if ARC core resets")
+        time.sleep(10)
+        arc_chip = pyluwen.detect_chips()[0]
+        logger.error("ARC core was not reset after 10 seconds")
         return False
     except Exception:
         # Expected behavior, since the ARC should have been reset.
