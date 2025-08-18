@@ -4,6 +4,14 @@
 
 from runners.core import RunnerCaps, ZephyrBinaryRunner
 from pathlib import Path
+import sys
+from pcie_utils import rescan_pcie
+
+try:
+    import pyluwen
+except ImportError:
+    print("Error, required modules missing. Please run 'pip install pyluwen'")
+    sys.exit(1)
 
 
 class TTFlashRunner(ZephyrBinaryRunner):
@@ -38,6 +46,17 @@ class TTFlashRunner(ZephyrBinaryRunner):
         return cls(cfg, force=args.force, tt_flash=args.tt_flash)
 
     def do_run(self, command, **kwargs):
+        # Prior to flashing, check to make sure that device is present and we can
+        # interface with it
+        try:
+            chips = pyluwen.detect_chips()
+            if len(chips) == 0:
+                # This will be caught in the same except block
+                raise RuntimeError("No chips detected")
+        except Exception as e:
+            self.logger.warning(f"Failed to detect chips, rescanning PCIe bus: {e}")
+            rescan_pcie()
+
         self.tt_flash = self.require(self.tt_flash)
         if not self.file.exists():
             raise RuntimeError(f"File {self.file} does not exist")
