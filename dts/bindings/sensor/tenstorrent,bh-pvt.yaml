@@ -1,0 +1,23 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrent Blackhole PVT
+
+compatible: "tenstorrent,bh-pvt"
+
+include: [sensor-device.yaml, base.yaml]
+
+properties:
+  reg:
+    type: array
+    required: true
+
+  num_pd:
+    type: int
+    required: true
+  num_vm:
+    type: int
+    required: true
+  num_ts:
+    type: int
+    required: true
