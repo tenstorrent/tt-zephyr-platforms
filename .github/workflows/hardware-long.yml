@@ -122,15 +122,17 @@ jobs:
           # - board: p100
           #  runs-on:
           #    - p100-jtag
+          # disabled until #https://github.com/tenstorrent/tt-metal/issues/19837
+          # is resolved- P300 support for metal is currently WIP
+          # - board: p300a
+          #   runs-on:
+          #     - p300a-jtag
           - board: p100a
             runs-on:
               - p100a-jtag
           - board: p150a
             runs-on:
               - p150a-jtag
-          - board: p300a
-            runs-on:
-              - p300a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.61.0-30-g3a3d9d704e
