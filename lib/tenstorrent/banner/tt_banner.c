@@ -55,6 +55,9 @@ static int tt_boot_banner(void)
 	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_SDK_VERSION)) {
 		printk("*** SDK_VERSION " ZEPHYR_SDK_VERSION " ***\n");
 	}
+	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_FINGERPRINT)) {
+		printk("*** BUILD_FINGERPRINT " BUILD_FINGERPRINT " ***\n");
+	}
 
 	return 0;
 }

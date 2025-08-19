@@ -23,4 +23,13 @@ config TT_BOOT_BANNER_SDK_VERSION
 	help
 	  Print the SDK revision used when displaying the boot banner
 
+config TT_BOOT_BANNER_FINGERPRINT
+	bool "Print this build's fingerprint identifier within the boot banner"
+	default y
+	help
+	  Print the build's footprint when displaying the boot banner. The
+	  fingerprint value is regenerated every time CMake is run, and
+	  written to the build output directory. It can be used to identify
+	  a specific build of the firmware
+
 endif
