@@ -74,4 +74,12 @@ config TT_BH_ARC_DMFW_PING_TIMEOUT
 	  Timeout for DMFW ping in milliseconds. If the DMFW does not respond within this time,
 	  the ping will be considered failed.
 
+config TT_BH_ARC_SPIROM_SUFFIX
+	string "Suffix to use when searching for SPIROM data tables"
+	help
+	  When set, this suffix will be appended to the spirom data table names
+	  used for this board, to enable building custom SPIROM data tables.
+	  For example, fw_table_<CONFIG_TT_BH_ARC_SPIROM_SUFFIX>.txt would be
+	  used over fwtable.txt
+
 endif
