@@ -244,6 +244,29 @@ jobs:
           name: assembly-test-${{ matrix.board }}-${{ steps.sanitize.outputs.sanitized_ref_name }}
           path: assembly-test-preflash/**
 
+  build-preflash:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+          ref: ${{ github.ref }}
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+
+      - name: Build preflash firmware
+        shell: bash
+        run: |
+          ./tt-zephyr-platforms/scripts/build-preflash.sh
+
+      - name: Upload preflash
+        uses: actions/upload-artifact@v4
+        with:
+          name: preflash-fw
+          path: |
+            preflash*.ihex
+
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
     needs: build
