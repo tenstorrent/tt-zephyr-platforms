@@ -70,20 +70,8 @@ jobs:
       - name: run-e2e-stress-test
         working-directory: zephyr
         run: |
-          # TODO: ideally we would use one twister command to build and
-          # flash DMC and SMC firmware, but since each chip uses a separate
-          # debug adapter this doesn't work. For now, just flash DMC
-          # then run twister with SMC firmware
-          ./scripts/twister -i \
-            --tag e2e \
-            -p $DMC_BOARD --device-testing \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
-            --flash-before \
-            --west-flash \
-            -T ../tt-zephyr-platforms/app \
-            --outdir twister-dmc-e2e
-          # Rescan PCIe before we run tt-flash
-          sudo ../tt-zephyr-platforms/scripts/rescan-pcie.sh
+          # Reset the card first. If this fails tt-flash won't work either
+          tt-smi -r
           # Run a full stress test, using tt-flash as the runner
           ./scripts/twister -i -p $SMC_BOARD \
             --tag e2e-stress -T ../tt-zephyr-platforms/app \

@@ -85,6 +85,8 @@ tests:
     tags: e2e-stress
     harness: pytest
     sysbuild: true
+    extra_args:
+      - dmc_CONFIG_DMC_RUN_SMBUS_TESTS=y
     harness_config:
       pytest_root:
         - pytest/e2e_stress.py
