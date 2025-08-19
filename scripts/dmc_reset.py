@@ -216,6 +216,8 @@ def wait_for_smc_boot(timeout):
             chips = pyluwen.detect_chips()
             print("SMC init complete")
             chip = chips[0]
+            # Wait for chip to populate telemetry
+            telemetry = chip.get_telemetry()
             break
         except Exception:
             # Just decrement timeout, which we do below
@@ -227,7 +229,7 @@ def wait_for_smc_boot(timeout):
             print(f"Card did not reappear after {timeout} seconds)")
             return os.EX_UNAVAILABLE
     # Check if the SMC ping will work
-    if chip.get_telemetry().m3_app_fw_version < 0x40000:
+    if telemetry.m3_app_fw_version < 0x40000:
         print("Warning: DMC firmware is too old, no support for SMC ping")
         return os.EX_OK
     # Try to verify that the SMC can ping the DMC
