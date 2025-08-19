@@ -90,6 +90,7 @@ jobs:
             --west-flash="--force" \
             --west-runner tt_flash \
             --device-testing -c \
+            --device-flash-timeout 120 \
             --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
             --flash-before \
             --outdir twister-e2e-stress
