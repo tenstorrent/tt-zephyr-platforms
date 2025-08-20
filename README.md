@@ -16,14 +16,22 @@ This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com
 For those completely new to Zephyr, please refer to the
 [Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html).
 
-The remainder of these instructions assume that system requirements, a Python virtual environment,
-all Python dependencies, and the Zephyr SDK are already installed and activated.
+The remainder of these instructions assume that
+[system requirements](https://docs.zephyrproject.org/latest/develop/getting_started/index.html#install-dependencies)
+have already been installed.
 
-### Check-out Sources
+### Check-out Sources and Install Dependencies
 
 ```shell
-# Create a west workspace
+# Create virtual environment
+python3 -m venv ~/tt-zephyr-platforms-work/.venv
+source ~/tt-zephyr-platforms-work/.venv/bin/activate
+pip install west
+
+# Initialize a west workspace
 west init -m https://github.com/tenstorrent/tt-zephyr-platforms ~/tt-zephyr-platforms-work
+
+# Move to repo directory
 cd ~/tt-zephyr-platforms-work
 
 # Fetch Zephyr modules
@@ -32,17 +40,14 @@ west update
 # Install Python packages
 west packages pip --install
 
+# Install Zephyr SDK
+west sdk install
+
 # Verify binary blobs
 west blobs fetch
 
 # Apply local patches
 west patch apply
-
-# Set up Zephyr environment
-source zephyr/zephyr-env.sh
-
-# Enter the module
-cd tt-zephyr-platforms
 ```
 
 ### Build & Flash SMC FW
