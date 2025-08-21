@@ -72,6 +72,12 @@ class OpenOCDServer:
             "-c",
             "init",
             "-c",
+            "halt",
+            "-c",
+            "reg pc",
+            "-c",
+            "resume",
+            "-c",
             f'rtt setup {search_base} {search_range} "SEGGER RTT"',
             "-c",
             "rtt start",
@@ -88,6 +94,9 @@ class OpenOCDServer:
             while self._proc.poll() is None:
                 line = self._proc.stderr.readline().decode().strip()
                 logger.debug("Openocd Output: %s", line)
+                if "pc (/32)" in line:
+                    # Print openocd's read of the program counter
+                    print(f"System PC:{line.split(':')[1]}")
                 if f"Listening on port {rtt_port} for rtt connections" in line:
                     break
         except subprocess.CalledProcessError as e:
