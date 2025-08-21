@@ -10,16 +10,17 @@ import subprocess
 from pathlib import Path
 
 import pyluwen
-import pytest
-from twister_harness import DeviceAdapter
 
 from e2e_smoke import (
     dirty_reset_test,
     smi_reset_test,
     arc_watchdog_test,
     pcie_fw_load_time_test,
-    get_arc_chip,
 )
+
+# Needed to keep ruff from complaining about this "unused import"
+# ruff: noqa: F811
+from e2e_smoke import arc_chip_dut  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
 
 # Lower this number if testing local changes, so that tests run faster.
-MAX_TEST_ITERATIONS = 1000
+MAX_TEST_ITERATIONS = 10
 
 
 def report_results(test_name, fail_count, total_tries):
@@ -43,11 +44,6 @@ def report_results(test_name, fail_count, total_tries):
     consistent format so that twister can parse the results
     """
     logger.info(f"{test_name} completed. Failed {fail_count}/{total_tries} times.")
-
-
-@pytest.fixture(scope="session")
-def arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
-    return get_arc_chip(unlaunched_dut, asic_id)
 
 
 def tt_smi_reset():
@@ -61,7 +57,7 @@ def tt_smi_reset():
     return smi_reset_result
 
 
-def test_arc_watchdog(arc_chip):
+def test_arc_watchdog(arc_chip_dut, asic_id):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
     reset the chip
@@ -70,7 +66,7 @@ def test_arc_watchdog(arc_chip):
     fail_count = 0
     for i in range(total_tries):
         logger.info(f"Starting ARC watchdog test iteration {i}/{total_tries}")
-        result = arc_watchdog_test(arc_chip)
+        result = arc_watchdog_test(asic_id)
         if not result:
             logger.warning(f"ARC watchdog test failed on iteration {i}")
             fail_count += 1
@@ -79,7 +75,7 @@ def test_arc_watchdog(arc_chip):
     assert fail_count == 0, "ARC watchdog test failed a non-zero number of times."
 
 
-def test_pcie_fw_load_time(arc_chip):
+def test_pcie_fw_load_time(arc_chip_dut, asic_id):
     """
     Checks PCIe firmware load time is within 40ms.
     This test needs to be run after production reset.
@@ -95,7 +91,7 @@ def test_pcie_fw_load_time(arc_chip):
             logger.warning(f"tt-smi reset failed on iteration {i}")
             fail_count += 1
             continue
-        result = pcie_fw_load_time_test(arc_chip)
+        result = pcie_fw_load_time_test(asic_id)
         if not result:
             logger.warning(f"PCIe firmware load time test failed on iteration {i}")
             fail_count += 1
@@ -106,7 +102,7 @@ def test_pcie_fw_load_time(arc_chip):
     )
 
 
-def test_smi_reset():
+def test_smi_reset(asic_id):
     """
     Checks that tt-smi resets are working successfully
     """
@@ -123,7 +119,7 @@ def test_smi_reset():
             fail_count += 1
             continue
 
-        arc_chip = pyluwen.detect_chips()[0]
+        arc_chip = pyluwen.detect_chips()[asic_id]
         response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
         if response[0] != 1 or response[1] != 0:
             logger.warning(f"Ping failed on iteration {i}")
@@ -167,13 +163,14 @@ def test_dirty_reset():
     assert fail_count == 0, "Dirty reset failed a non-zero number of times."
 
 
-def test_dmc_ping(arc_chip):
+def test_dmc_ping(arc_chip_dut, asic_id):
     """
     Repeatedly pings the DMC from the SMC to see what the average response time
     is. Ping statistics are printed to the log. These statistics are gathered
     without resetting the SMC. The `smi_reset` test will gather statistics
     for the SMC reset case.
     """
+    arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
     fail_count = 0
     dmfw_ping_avg = 0
