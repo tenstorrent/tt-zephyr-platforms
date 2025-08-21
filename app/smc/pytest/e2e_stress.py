@@ -5,6 +5,7 @@
 
 import logging
 import os
+import time
 import subprocess
 from pathlib import Path
 
@@ -157,6 +158,10 @@ def test_dirty_reset():
             fail_count += 1
         else:
             logger.info(f"dirty reset passed on iteration {i}")
+            # Delay a moment before next run. Without this, tests seem to fail
+            # TODO- would be best to determine why rapidly resetting like this
+            # breaks enumeration.
+            time.sleep(0.5)
 
     report_results("Dirty reset test", fail_count, total_tries)
     assert fail_count == 0, "Dirty reset failed a non-zero number of times."
