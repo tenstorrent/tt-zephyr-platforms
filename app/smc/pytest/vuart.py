@@ -1,15 +1,9 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from e2e_smoke import get_arc_chip
-from twister_harness import DeviceAdapter
-import pytest
-
-
-@pytest.fixture(scope="session")
-def arc_chip_dut(unlaunched_dut: DeviceAdapter, asic_id):
-    get_arc_chip(unlaunched_dut, asic_id)
-    return unlaunched_dut
+# Needed to keep ruff from complaining about this "unused import"
+# ruff: noqa: F811
+from e2e_smoke import arc_chip_dut, launched_arc_dut  # noqa: F401
 
 
 def test_boot_banner(arc_chip_dut):
