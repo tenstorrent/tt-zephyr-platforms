@@ -82,6 +82,13 @@ if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 	message(FATAL_ERROR "No support for board ${BOARD}")
 	endif()
 
+  if(CONFIG_TT_BH_ARC_SPIROM_SUFFIX)
+    message(STATUS "Using rom configuration suffix ${CONFIG_TT_BH_ARC_SPIROM_SUFFIX}")
+    set(SPIROM_SUFFIX "${CONFIG_TT_BH_ARC_SPIROM_SUFFIX}")
+  else()
+    set(SPIROM_SUFFIX "\'\'")
+  endif()
+
 	message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
 
 	include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
@@ -93,12 +100,14 @@ if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME}_L --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
 		  --bundle-version ${BUNDLE_VERSION_STRING}
+		  --message-suffix ${SPIROM_SUFFIX}
 	)
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
 		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME}_R --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
 		  --bundle-version ${BUNDLE_VERSION_STRING}
+		  --message-suffix ${SPIROM_SUFFIX}
 	)
 	else()
 	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
@@ -106,6 +115,7 @@ if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
 		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
 		  --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
 		  --bundle-version ${BUNDLE_VERSION_STRING}
+		  --message-suffix ${SPIROM_SUFFIX}
 	)
 	endif()
 endif()
