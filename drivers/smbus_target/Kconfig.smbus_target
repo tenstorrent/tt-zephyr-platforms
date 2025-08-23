@@ -1,0 +1,18 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config SMBUS_TARGET
+	bool "SMBUS target driver"
+	depends on CRC
+	help
+	  Enable the SMBUS target driver
+
+if SMBUS_TARGET
+
+config SMBUS_MAX_MSG_SIZE
+	int "SMBUS maximum message size"
+	default 64
+	help
+	  The maximum SMBUS transaction size. This is used
+	  to size internal buffers storing the transaction input/output.
+endif #SMBUS_TARGET
