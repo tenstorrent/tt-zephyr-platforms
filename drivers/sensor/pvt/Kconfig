@@ -3,12 +3,10 @@
 
 if SENSOR
 
-menu "Sensor Drivers"
+menu "PVT drivers"
 
 # zephyr-keep-sorted-start
-rsource "maxim/Kconfig"
-rsource "pvt/Kconfig"
-rsource "ti/Kconfig"
+rsource "Kconfig.tt_bh"
 # zephyr-keep-sorted-stop
 
 endmenu
