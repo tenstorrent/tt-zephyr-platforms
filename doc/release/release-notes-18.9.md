@@ -1,9 +1,6 @@
 # TT-Zephyr-Platforms v18.9.0
 
-> [!NOTE]
-> This is a working draft for the up-coming v18.9.0 release.
-
-[comment]: <> (We are pleased to announce the release of TT Zephyr Platforms firmware version 18.9.0 🥳🎉.)
+We are pleased to announce the release of TT Zephyr Platforms firmware version 18.9.0 🥳🎉.
 
 Major enhancements with this release include:
 
