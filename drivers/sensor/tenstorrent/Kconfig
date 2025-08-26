@@ -3,12 +3,10 @@
 
 if SENSOR
 
-menu "Sensor Drivers"
+menu "Tenstorrent sensor drivers"
 
 # zephyr-keep-sorted-start
-rsource "maxim/Kconfig"
-rsource "tenstorrent/Kconfig"
-rsource "ti/Kconfig"
+rsource "Kconfig.bh_pvt"
 # zephyr-keep-sorted-stop
 
 endmenu
