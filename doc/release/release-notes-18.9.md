@@ -32,6 +32,9 @@ Major enhancements with this release include:
 [comment]: <> (UL Telemetry)
 [comment]: <> (UL Debug / Developer Features)
 [comment]: <> (UL Drivers)
+
+* Added Tenstorrent Blackhole PVT driver based on Zephyr's sensor API.
+
 [comment]: <> (UL Libraries)
 
 [comment]: <> (H2 New Samples, if applicable)
