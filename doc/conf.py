@@ -10,10 +10,14 @@ project = "TT Zephyr Platforms"
 copyright = "2025, Tenstorrent AI ULC"
 author = "Tenstorrent AI ULC"
 release = "1.0.0"
-extensions = ["sphinx.ext.intersphinx"]
+extensions = [
+    "sphinx.ext.intersphinx",
+    "sphinx_rtd_theme",
+    "sphinx_tabs.tabs",
+]
 templates_path = ["_templates"]
 exclude_patterns = ["_build_sphinx", "Thumbs.db", ".DS_Store"]
-html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 external_content_contents = [
     (TTZP / "doc", "[!_]*"),
     (TTZP, "boards/**/*.rst"),
