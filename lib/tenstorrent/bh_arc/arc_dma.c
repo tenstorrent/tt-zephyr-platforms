@@ -10,9 +10,6 @@
 
 #include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
-#include <zephyr/drivers/dma.h>
-#include <zephyr/irq.h>
-#include <zephyr/sys/util.h>
 
 void ArcDmaConfig(void)
 {
