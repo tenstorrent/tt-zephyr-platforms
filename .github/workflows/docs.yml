@@ -3,7 +3,10 @@
 
 name: Documentation
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request: {}
 
 env:
   DOXYGEN_VERSION: 1.9.6
@@ -34,7 +37,6 @@ jobs:
           mkdir deploy
           mv _build_doxygen/html deploy/doxygen
           mv _build_sphinx/html/* deploy
-          mv deploy/genindex.html deploy/index.html
           rm -rf _build_doxygen _build_sphinx
 
       - name: Setup pages
@@ -53,13 +55,17 @@ jobs:
         with:
           path: doc/deploy
 
-#   deploy:
-#     runs-on: ubuntu-22.04
-#     needs: build
-#     if: github.event_name != 'pull_request'
-#     permissions:
-#       pages: write
-#       id-token: write
-#     steps:
-#       - name: Deploy to GitHub Pages
-#         uses: actions/deploy-pages@v4
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: build
+    if: github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
