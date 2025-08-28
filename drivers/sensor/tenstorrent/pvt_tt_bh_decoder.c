@@ -15,7 +15,7 @@ LOG_MODULE_DECLARE(pvt_tt_bh);
 
 float pvt_tt_bh_raw_to_temp(uint16_t raw)
 {
-	float eqbs = raw / 4096.0 - 0.5;
+	float eqbs = raw / 4096.0f - 0.5f;
 	/* TODO: slope and offset need to be replaced with fused values */
 	return 83.09f + 262.5f * eqbs;
 }
