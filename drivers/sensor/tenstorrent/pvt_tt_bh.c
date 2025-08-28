@@ -294,7 +294,7 @@ static inline void pvt_tt_bh_clock_config(void)
 	pvt_cntl_clk_synth_reg_u clk_synt;
 
 	clk_synt.val = PVT_CNTL_CLK_SYNTH_REG_DEFAULT;
-	uint32_t synth = (apb_clk * 0.2 - 2) * 0.5;
+	uint32_t synth = (apb_clk * 0.2f - 2.f) * 0.5f;
 
 	clk_synt.f.clk_synth_lo = synth;
 	clk_synt.f.clk_synth_hi = synth;
