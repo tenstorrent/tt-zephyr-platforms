@@ -1,0 +1,25 @@
+p100:
+  - upi: 0x36
+    name: "P100-1"
+    protobuf-name: "P100"
+    pyocd-config: "pyocd_config.py"
+p100a:
+  - upi: 0x43
+    name: "P100A-1"
+    protobuf-name: "P100A"
+    pyocd-config: "pyocd_config.py"
+p150a:
+  - upi: 0x40
+    name: "P150A-1"
+    protobuf-name: "P150A"
+    pyocd-config: "pyocd_config.py"
+p150b:
+  - upi: 0x41
+    name: "P150B-1"
+    protobuf-name: "P150B"
+    pyocd-config: "pyocd_config.py"
+p150c:
+  - upi: 0x42
+    name: "P150C-1"
+    protobuf-name: "P150C"
+    pyocd-config: "pyocd_config.py"
