@@ -20,8 +20,14 @@ import tempfile
 import os
 import base64
 import logging
+import yaml
 from collections import namedtuple
 from runners.core import RunnerCaps, ZephyrBinaryRunner
+
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 
 # Import scripts from the current directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,48 +47,8 @@ except ImportError:
     sys.exit(1)
 
 PYOCD_TARGET = "STM32G0B1CEUx"
-BOARD_ID_MAP = {
-    "p100": [
-        {
-            "upi": 0x36,
-            "name": "P100-1",
-            "protobuf_name": "P100",
-            "pyocd_config": "pyocd_config.py",
-        },
-    ],
-    "p100a": [
-        {
-            "upi": 0x43,
-            "name": "P100A-1",
-            "protobuf_name": "P100A",
-            "pyocd_config": "pyocd_config.py",
-        },
-    ],
-    "p150a": [
-        {
-            "upi": 0x40,
-            "name": "P150A-1",
-            "protobuf_name": "P150A",
-            "pyocd_config": "pyocd_config.py",
-        },
-    ],
-    "p150b": [
-        {
-            "upi": 0x41,
-            "name": "P150B-1",
-            "protobuf_name": "P150B",
-            "pyocd_config": "pyocd_config.py",
-        },
-    ],
-    "p150c": [
-        {
-            "upi": 0x42,
-            "name": "P150C-1",
-            "protobuf_name": "P150C",
-            "pyocd_config": "pyocd_config.py",
-        },
-    ],
-}
+with open(Path(__file__).parent / "board_metadata.yaml") as f:
+    BOARD_ID_MAP = yaml.load(f.read(), Loader=SafeLoader)
 
 FlashOperation = namedtuple("FlashOperation", ["data", "pyocd_config"])
 
