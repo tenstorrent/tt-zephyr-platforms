@@ -142,6 +142,7 @@ static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 	switch (msg_data) {
 	case 0x0:
 		chip->data.last_cm2dm_seq_num_valid = false;
+		chip->data.cm2dm_suspicion = 0;
 		bh_chip_reset_chip(chip, true);
 		break;
 
@@ -239,6 +240,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 
 		if (msg.ret != 0) {
 			/* error already logged by bh_chip_get_cm2dm_message */
+			chip->data.cm2dm_suspicion++;
 			break;
 		}
 
@@ -251,6 +253,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 		    chip->data.last_cm2dm_seq_num == msg.msg.seq_num) {
 			/* repeat sequence number, indicates ack failure, try again */
 			LOG_WRN("Received duplicate CM2DM message.");
+			chip->data.cm2dm_suspicion++;
 			continue;
 		}
 
@@ -258,9 +261,22 @@ void process_cm2dm_message(struct bh_chip *chip)
 		chip->data.last_cm2dm_seq_num = msg.msg.seq_num;
 
 		if (msg.msg.msg_id < ARRAY_SIZE(msg_processors) && msg_processors[msg.msg.msg_id]) {
+			chip->data.cm2dm_suspicion = 0;
 			if (msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data)) {
 				break;
 			}
+		} else {
+			LOG_WRN("Received unknown CM2DM message ID: %d", msg.msg.msg_id);
+			chip->data.cm2dm_suspicion++;
+		}
+
+		/* kCm2DmMsgNull is not a valid message so there can never be more than
+		 * kCm2DmMsgCount - 2 pending messages. It's possible that more messages are posted
+		 * while this loop runs, so this is not solid proof of failure. But it is
+		 * suspicious.
+		 */
+		if (i > kCm2DmMsgCount - 2) {
+			chip->data.cm2dm_suspicion++;
 		}
 	}
 }
@@ -498,6 +514,7 @@ int main(void)
 			if (chip->data.therm_trip_triggered) {
 				chip->data.therm_trip_triggered = false;
 				chip->data.last_cm2dm_seq_num_valid = false;
+				chip->data.cm2dm_suspicion = 0;
 
 				if (board_fault_led.port != NULL) {
 					gpio_pin_set_dt(&board_fault_led, 1);
@@ -541,6 +558,7 @@ int main(void)
 			if (chip->data.arc_wdog_triggered) {
 				chip->data.arc_wdog_triggered = false;
 				chip->data.last_cm2dm_seq_num_valid = false;
+				chip->data.cm2dm_suspicion = 0;
 
 				/* Read PC from ARC and record it */
 				jtag_setup(chip->config.jtag);
@@ -573,6 +591,7 @@ int main(void)
 			if (atomic_set(&chip->data.trigger_reset, false)) {
 				chip->data.performing_reset = true;
 				chip->data.last_cm2dm_seq_num_valid = false;
+				chip->data.cm2dm_suspicion = 0;
 
 				/*
 				 * Set the bus cancel following the logic of (reset_triggered &&
