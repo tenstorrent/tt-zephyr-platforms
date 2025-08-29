@@ -15,15 +15,21 @@ PCIe AI accelerator card that is also a
 
 Own your Silicon Future.
 
-Supported Boards
-****************
+Product Family
+**************
 
-Boards in the Blackhole product family that are officially supported by this repository include:
+The Blackhole product family officially supported by this repository include the following
+revisions:
 
 * Blackhole P100 (aka "Scrappy" - an internal development board)
 * Blackhole P100A
 * Blackhole P150A
 * Blackhole P150B
+* Blackhole P150C
+* Blackhole P300A
+* Blackhole P300B
+* Blackhole P300C
+* Blackhole Galaxy
 
 Additional boards in the Blackhole product family may be added in the future as they are
 announced.
