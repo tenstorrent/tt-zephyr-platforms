@@ -28,6 +28,12 @@ jobs:
       - name: Build
         run: |
           cd doc
+
+          # IMPORTANT: symlink directories here that are needed during the sphinx build
+          # There may be a better way to do this, but this seems to be simplest at the moment.
+          # It's required because symlinks trip check_compliance.py.
+          ln -sf ../boards .
+
           rm -f zephyr.tag
           wget https://docs.zephyrproject.org/latest/doxygen/html/zephyr.tag -O /tmp/zephyr.tag
           doxygen
