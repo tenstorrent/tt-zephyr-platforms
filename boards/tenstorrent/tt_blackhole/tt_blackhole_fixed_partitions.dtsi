@@ -43,57 +43,57 @@ partitions {
 
 	ethfw: partition@31000 {
 		label = "ethfw";
-		reg = <0x31000 DT_SIZE_K(36)>;
+		reg = <0x31000 DT_SIZE_K(64)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
 		read-only;
 	};
 
-	memfwcfg: partition@3a000 {
+	memfwcfg: partition@41000 {
 		label = "memfwcfg";
-		reg = <0x3a000 DT_SIZE_K(4)>;
+		reg = <0x41000 DT_SIZE_K(4)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
 		read-only;
 	};
 
-	memfw: partition@3b000 {
+	memfw: partition@42000 {
 		label = "memfw";
-		reg = <0x3b000 DT_SIZE_K(16)>;
+		reg = <0x42000 DT_SIZE_K(16)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
 		read-only;
 	};
 
-	ethsdreg: partition@3f000 {
+	ethsdreg: partition@46000 {
 		label = "ethsdreg";
-		reg = <0x3f000 DT_SIZE_K(4)>;
+		reg = <0x46000 DT_SIZE_K(4)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
 		read-only;
 	};
 
-	ethsdfw: partition@40000 {
+	ethsdfw: partition@47000 {
 		label = "ethsdfw";
-		reg = <0x40000 DT_SIZE_K(20)>;
+		reg = <0x47000 DT_SIZE_K(20)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
 		read-only;
 	};
 
-	bmfw: partition@45000 {
+	bmfw: partition@4c000 {
 		label = "bmfw";
-		reg = <0x45000 DT_SIZE_K(52)>;
+		reg = <0x4c000 DT_SIZE_K(52)>;
 		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 		read-only;
 	};
 
-	flshinfo: partition@52000 {
+	flshinfo: partition@59000 {
 		label = "flshinfo";
-		reg = <0x52000 DT_SIZE_K(4)>;
+		reg = <0x59000 DT_SIZE_K(4)>;
 		binary-path =
 			"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
 		read-only;
 	};
 
-	boardcfg: partition@53000 {
+	boardcfg: partition@5a000 {
 		label = "boardcfg";
-		reg = <0x53000 DT_SIZE_K(4)>;
+		reg = <0x5a000 DT_SIZE_K(4)>;
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
 		read-only;
 	};
