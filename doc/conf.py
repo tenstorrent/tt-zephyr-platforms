@@ -5,7 +5,6 @@ from pathlib import Path
 
 TTZP = Path(__file__).parent.parent
 
-root_doc = "index"
 project = "TT Zephyr Platforms"
 copyright = "2025, Tenstorrent AI ULC"
 author = "Tenstorrent AI ULC"
