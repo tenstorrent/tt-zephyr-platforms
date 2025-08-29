@@ -8,21 +8,20 @@ usually made via a debug board and an ST-Link probe.
 
 Usage:
 ```
-./recover-blackhole.py p100a --adapter-id  B55B5A1A000000005833EF01
-Phase 1: Rescanning PCIe bus
+# Download a recovery bundle or build one using prepare-recovery-bundle.py
+python3 ./prepare-recovery-bundle.py <bundle_file> # Or download a bundle
+python3 ./recover-blackhole.py <bundle_file> p100a --adapter-id B55B5A1A000000005833EF01 \
+	--card-serial 0x431xxxxxxxx
+Checking proto_txt_table for read_only...
+read_only proto_txt_table is valid
+read_only table has been written to a binary file /tmp/tmphamimip3/p100a/generated_proto_bins/P100A/read_only.bin
+
+Flashing /tmp/tmphamimip3/p100a/tt_boot_fs_recovery.hex to ASIC 0...
+[==================================================] 100%
 Powering off device at /sys/bus/pci/devices/0000:01:00.0
-Phase 2: Programming DMC firmware
-[==================================================] 100%
-Phase 3: Rewriting EEPROM with SMC and DMC firmware
-[==================================================] 100%
-Phase 4: Resetting DMC and waiting for firmware update
-Waiting 60 seconds for the DMC in case it triggers a firmware update
-Phase 5: Writing EEPROM with default UPI configuration
-[==================================================] 100%
-Card appears functional, but your UPI was rewritten. Please contact support for assistance.
+Successfully flashed tt_boot_fs
 ```
 
-The script will exit once the card is recovered, and only attempt each
-(more invasive) phase if the prior recovery attempt fails.
+The script will exit once the card is recovered.
 
 The script currently should support `p100`, `p100a`, `p150a`, `p150b`, and `p150c` cards.
