@@ -201,7 +201,7 @@ int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *buf, size_t buf_size, s
 {
 	/* The shifting is to align the address to the lowest 16 bytes */
 	/* uint32_t fw_load_addr = ((ETH_PARAM_ADDR - fw_size) >> 2) << 2; */
-	uint32_t fw_load_addr = 0x00072000;
+	uint32_t fw_load_addr = 0x00070000;
 
 	SetupEthTlb(eth_inst, ring, fw_load_addr);
 	volatile uint32_t *eth_tlb = GetTlbWindowAddr(ring, ETH_SETUP_TLB, fw_load_addr);
