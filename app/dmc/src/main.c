@@ -137,70 +137,99 @@ void update_fan_speed(bool notify_smcs)
 	}
 }
 
+static void process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	switch (msg_data) {
+	case 0x0:
+		jtag_bootrom_reset_sequence(chip, true);
+		break;
+
+	case 0x3:
+		/* Trigger reboot; will reset asic and reload dmfw */
+		if (IS_ENABLED(CONFIG_REBOOT)) {
+			sys_reboot(SYS_REBOOT_COLD);
+		}
+		break;
+	}
+}
+
+static void process_ping(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	/* Respond to ping request from CMFW */
+	bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
+}
+
+static void process_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+		chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), msg_data);
+		chip->data.fan_speed_forced = false;
+		update_fan_speed(true);
+	}
+}
+
+static void process_forced_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+		chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), message.data);
+		chip->data.fan_speed_forced = true;
+		update_fan_speed(true);
+	}
+}
+
+static void process_id_ready(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	chip->data.arc_needs_init_msg = true;
+}
+
+static void process_auto_reset_timeout_update(struct bh_chip *chip, uint8_t msg_id
+					      uint32_t msg_data)
+{
+	/* Set auto reset timeout */
+	chip->data.auto_reset_timeout = msg_data;
+	if (chip->data.auto_reset_timeout != 0) {
+		/* Start auto-reset timer */
+		k_timer_start(&chip->auto_reset_timer, K_MSEC(chip->data.auto_reset_timeout),
+			      K_NO_WAIT);
+	} else {
+		/* Stop auto-reset timer */
+		k_timer_stop(&chip->auto_reset_timer);
+	}
+}
+
+static void process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	/* Update telemetry heartbeat */
+	if (chip->data.telemetry_heartbeat != msg_data) {
+		/* Telemetry heartbeat is moving */
+		chip->data.telemetry_heartbeat = msg_data;
+		if (chip->data.auto_reset_timeout != 0) {
+			/* Restart auto reset timer */
+			k_timer_start(&chip->auto_reset_timer,
+				      K_MSEC(chip->data.auto_reset_timeout), K_NO_WAIT);
+		}
+	}
+}
+
 void process_cm2dm_message(struct bh_chip *chip)
 {
+	typedef void (*msg_processor_t)(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data);
+
+	static const msg_processor_t msg_processors[] = {
+		[kCm2DmMsgIdResetReq] = process_reset_req,
+		[kCm2DmMsgIdPing] = process_ping,
+		[kCm2DmMsgIdFanSpeedUpdate] = process_fan_speed_update,
+		[kCm2DmMsgIdForcedFanSpeedUpdate] = process_forced_fan_speed_update,
+		[kCm2DmMsgIdReady] = process_id_ready,
+		[kCm2DmMsgIdAutoResetTimeoutUpdate] = process_auto_reset_timeout_update,
+		[kCm2DmMsgTelemHeartbeatUpdate] = process_heartbeat_update,
+	};
+
 	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
 
 	if (msg.ret == 0) {
-		cm2dmMessage message = msg.msg;
-
-		switch (message.msg_id) {
-		case kCm2DmMsgIdResetReq:
-			switch (message.data) {
-			case 0x0:
-				jtag_bootrom_reset_sequence(chip, true);
-				break;
-			case 0x3:
-				/* Trigger reboot; will reset asic and reload dmfw
-				 */
-				if (IS_ENABLED(CONFIG_REBOOT)) {
-					sys_reboot(SYS_REBOOT_COLD);
-				}
-				break;
-			}
-			break;
-		case kCm2DmMsgIdPing:
-			/* Respond to ping request from CMFW */
-			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
-			break;
-		case kCm2DmMsgIdFanSpeedUpdate:
-			chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), message.data);
-			chip->data.fan_speed_forced = false;
-			update_fan_speed(true);
-			break;
-		case kCm2DmMsgIdForcedFanSpeedUpdate:
-			chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), message.data);
-			chip->data.fan_speed_forced = true;
-			update_fan_speed(true);
-			break;
-		case kCm2DmMsgIdReady:
-			chip->data.arc_needs_init_msg = true;
-			break;
-		case kCm2DmMsgIdAutoResetTimeoutUpdate:
-			/* Set auto reset timeout */
-			chip->data.auto_reset_timeout = message.data;
-			if (chip->data.auto_reset_timeout != 0) {
-				/* Start auto-reset timer */
-				k_timer_start(&chip->auto_reset_timer,
-					      K_MSEC(chip->data.auto_reset_timeout), K_NO_WAIT);
-			} else {
-				/* Stop auto-reset timer */
-				k_timer_stop(&chip->auto_reset_timer);
-			}
-			break;
-		case kCm2DmMsgTelemHeartbeatUpdate:
-			/* Update telemetry heartbeat */
-			if (chip->data.telemetry_heartbeat != message.data) {
-				/* Telemetry heartbeat is moving */
-				chip->data.telemetry_heartbeat = message.data;
-				if (chip->data.auto_reset_timeout != 0) {
-					/* Restart auto reset timer */
-					k_timer_start(&chip->auto_reset_timer,
-						      K_MSEC(chip->data.auto_reset_timeout),
-						      K_NO_WAIT);
-				}
-			}
-			break;
+		if (msg.msg.msg_id < ARRAY_SIZE(msg_processors) && msg_processors[msg.msg.msg_id]) {
+			msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data);
 		}
 	}
 }
