@@ -83,6 +83,7 @@ message FwTable {
   message EthPropertyTable {
     uint32 eth_disable_mask = 1;
     bool eth_disable_mask_en = 2;
+    uint32 eth_speed_override = 3;
   }
 
   message ProductSpecHarvesting {
