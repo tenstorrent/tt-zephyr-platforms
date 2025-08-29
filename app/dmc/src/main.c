@@ -138,7 +138,7 @@ void update_fan_speed(bool notify_smcs)
 	}
 }
 
-static void process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	switch (msg_data) {
 	case 0x0:
@@ -154,34 +154,42 @@ static void process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 		}
 		break;
 	}
+
+	return true;
 }
 
-static void process_ping(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_ping(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	/* Respond to ping request from CMFW */
 	bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
+	return false;
 }
 
-static void process_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), msg_data);
 	chip->data.fan_speed_forced = false;
 	update_fan_speed(true);
+
+	return false;
 }
 
-static void process_forced_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_forced_fan_speed_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), msg_data);
 	chip->data.fan_speed_forced = true;
 	update_fan_speed(true);
+
+	return false;
 }
 
-static void process_id_ready(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_id_ready(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	chip->data.arc_needs_init_msg = true;
+	return false;
 }
 
-static void process_auto_reset_timeout_update(struct bh_chip *chip, uint8_t msg_id,
+static bool process_auto_reset_timeout_update(struct bh_chip *chip, uint8_t msg_id,
 					      uint32_t msg_data)
 {
 	/* Set auto reset timeout */
@@ -194,9 +202,10 @@ static void process_auto_reset_timeout_update(struct bh_chip *chip, uint8_t msg_
 		/* Stop auto-reset timer */
 		k_timer_stop(&chip->auto_reset_timer);
 	}
+	return false;
 }
 
-static void process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+static bool process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	/* Update telemetry heartbeat */
 	if (chip->data.telemetry_heartbeat != msg_data) {
@@ -208,11 +217,12 @@ static void process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint3
 				      K_MSEC(chip->data.auto_reset_timeout), K_NO_WAIT);
 		}
 	}
+	return false;
 }
 
 void process_cm2dm_message(struct bh_chip *chip)
 {
-	typedef void (*msg_processor_t)(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data);
+	typedef bool (*msg_processor_t)(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data);
 
 	static const msg_processor_t msg_processors[] = {
 		[kCm2DmMsgIdResetReq] = process_reset_req,
@@ -224,27 +234,38 @@ void process_cm2dm_message(struct bh_chip *chip)
 		[kCm2DmMsgTelemHeartbeatUpdate] = process_heartbeat_update,
 	};
 
-	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
+	for (uint32_t i = 0U; i < kCm2DmMsgCount; i++) {
+		cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
 
-	if (msg.ret == 0 && msg.msg.msg_id != kCm2DmMsgIdNull) {
+		if (msg.ret != 0) {
+			/* error already logged by bh_chip_get_cm2dm_message */
+			break;
+		}
+
+		if (msg.msg.msg_id == kCm2DmMsgIdNull) {
+			/* no messages pending, note that seq_num is not valid */
+			break;
+		}
 
 		if (chip->data.last_cm2dm_seq_num_valid &&
 		    chip->data.last_cm2dm_seq_num == msg.msg.seq_num) {
 			static uint16_t last_warned_seq_num = UINT16_MAX;
 
-			/* repeat sequence number, indicates ack failure */
+			/* repeat sequence number, indicates ack failure, try again */
 			if (msg.msg.seq_num != last_warned_seq_num) {
 				LOG_WRN("Received duplicate CM2DM message.");
 				last_warned_seq_num = msg.msg.seq_num;
 			}
-			return;
+			continue;
 		}
 
 		chip->data.last_cm2dm_seq_num_valid = true;
 		chip->data.last_cm2dm_seq_num = msg.msg.seq_num;
 
 		if (msg.msg.msg_id < ARRAY_SIZE(msg_processors) && msg_processors[msg.msg.msg_id]) {
-			msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data);
+			if (msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data)) {
+				break;
+			}
 		}
 	}
 }
