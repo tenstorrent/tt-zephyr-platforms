@@ -5,7 +5,7 @@ Welcome to TT Zephyr Platforms!
    :maxdepth: 2
    :caption: Contents
 
-   ../boards/index.rst
+   boards/index
    zephyr
 
 Indices and tables
