@@ -113,7 +113,7 @@ static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 	switch (msg_data) {
 	case 0x0:
 		chip->data.last_cm2dm_seq_num_valid = false;
-		jtag_bootrom_reset_sequence(chip, true);
+		bh_chip_reset_chip(chip, true);
 		break;
 
 	case 0x3:
