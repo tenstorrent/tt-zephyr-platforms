@@ -115,7 +115,7 @@ static void process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 	switch (msg_data) {
 	case 0x0:
 		LOG_INF("Received ARC reset request");
-		jtag_bootrom_reset_sequence(chip, true);
+		bh_chip_reset_chip(chip, true);
 		break;
 
 	case 0x3:
