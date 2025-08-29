@@ -243,6 +243,16 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *buf, uint32_t eth_en
 	/* Pass in eth_sel based on harvesting info and PCIe configuration */
 	fw_cfg_32b[0] = GetEthSel(eth_enabled);
 
+	/* Check if speed overrides exist, */
+	/* apply them if they are a valid speed setting (40G, 100G, 200G, 400G) */
+	uint32_t speed_override =
+		tt_bh_fwtable_get_fw_table(fwtable_dev)->eth_property_table.eth_speed_override;
+
+	if (speed_override == 40 || speed_override == 100 || speed_override == 200 ||
+	    speed_override == 400) {
+		fw_cfg_32b[1] = speed_override;
+	}
+
 	/* Pass in some board/chip specific data for ETH to use */
 	/* InitHW -> InitEth -> LoadEthFwCfg comes before init_telemtry, so cannot simply call for
 	 * telemetry data here

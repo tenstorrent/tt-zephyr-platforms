@@ -66,6 +66,7 @@ pci1_property_table {
 eth_property_table {
   eth_disable_mask: 0
   eth_disable_mask_en: false
+  eth_speed_override: 200
 }
 
 product_spec_harvesting {
