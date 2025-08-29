@@ -10,7 +10,18 @@ Major enhancements with this release include:
 [comment]: <> (H3 Performance Improvements, if applicable)
 [comment]: <> (H3 New and Experimental Features, if applicable)
 [comment]: <> (H3 External Project Collaboration Efforts, if applicable)
-[comment]: <> (H3 Stability Improvements, if applicable)
+
+### Stability Improvements
+
+* Update Blackhole ERISC FW to v1.6.0
+  * Added eth_flush_icache to flush instruction cache for SYS-1944 - function is 2048 NOP instructions unrolled
+  * New function pointer in eth_api_table: eth_flush_icache_ptr for aforementioned eth_flush_icache
+  * Increased eth code size allocation by 8KB, code now starts at 0x70000
+  * Enhanced training flow and retrain logic, links should now more reliably train up
+  * Enabled interrupts in erisc fw: now snapshots and clears
+  * Added live retraining when check_link_status() detects link down
+  * ETH msg LINK_UP_CHECK: fast check to only update rx_link_up field of eth_live_status
+* Setup FW table to lower ETH train speeds for Galaxy products to 200G, other products stay 400G
 
 [comment]: <> (H1 Security vulnerabilities fixed?)
 
