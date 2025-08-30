@@ -162,6 +162,8 @@ void bh_chip_deassert_spi_reset(const struct bh_chip *chip)
 
 int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 {
+	chip->data.last_cm2dm_seq_num_valid = false;
+
 	return jtag_bootrom_reset_sequence(chip, force_reset);
 }
 

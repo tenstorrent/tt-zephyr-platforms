@@ -226,7 +226,23 @@ void process_cm2dm_message(struct bh_chip *chip)
 
 	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
 
-	if (msg.ret == 0) {
+	if (msg.ret == 0 && msg.msg.msg_id != kCm2DmMsgIdNull) {
+
+		if (chip->data.last_cm2dm_seq_num_valid &&
+		    chip->data.last_cm2dm_seq_num == msg.msg.seq_num) {
+			static uint16_t last_warned_seq_num = UINT16_MAX;
+
+			/* repeat sequence number, indicates ack failure */
+			if (msg.msg.seq_num != last_warned_seq_num) {
+				LOG_WRN("Received duplicate CM2DM message.");
+				last_warned_seq_num = msg.msg.seq_num;
+			}
+			return;
+		}
+
+		chip->data.last_cm2dm_seq_num_valid = true;
+		chip->data.last_cm2dm_seq_num = msg.msg.seq_num;
+
 		if (msg.msg.msg_id < ARRAY_SIZE(msg_processors) && msg_processors[msg.msg.msg_id]) {
 			msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data);
 		}
@@ -553,6 +569,8 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (atomic_set(&chip->data.trigger_reset, false)) {
 				chip->data.performing_reset = true;
+				chip->data.last_cm2dm_seq_num_valid = false;
+
 				/*
 				 * Set the bus cancel following the logic of (reset_triggered &&
 				 * !performing_reset)
