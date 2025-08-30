@@ -51,6 +51,12 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 							     CMFW_SMBUS_ACK, wire_ack.val);
 	}
 
+	if (output.ret != 0 || output.ack_ret != 0) {
+		/* note that ack_ret is invalid if output.ret != 0 */
+		LOG_ERR("CM2DM SMBus communication failed. req: %d ack: %d", output.ret,
+			output.ack_ret);
+	}
+
 	return output;
 }
 
