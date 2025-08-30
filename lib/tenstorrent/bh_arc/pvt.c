@@ -254,7 +254,7 @@ static uint32_t selected_pd_delay_chain;
 /* return TS temperature in C */
 static float DoutToTemp(uint16_t dout)
 {
-	float Eqbs = dout / 4096.0 - 0.5;
+	float Eqbs = dout / 4096.0f - 0.5f;
 	/* TODO: slope and offset need to be replaced with fused values */
 	return 83.09f + 262.5f * Eqbs;
 }
@@ -360,7 +360,7 @@ static inline void PVTClkConfig(void)
 	PVT_CNTL_CLK_SYNTH_reg_u clk_synt;
 
 	clk_synt.val = PVT_CNTL_CLK_SYNTH_REG_DEFAULT;
-	uint32_t synth = (apb_clk * 0.2 - 2) * 0.5;
+	uint32_t synth = (apb_clk * 0.2f - 2.f) * 0.5f;
 
 	clk_synt.f.clk_synth_lo = synth;
 	clk_synt.f.clk_synth_hi = synth;

@@ -38,6 +38,8 @@ int main(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
 
+	k_float_enable(k_current_get(), 0);
+
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.aiclk_ppm_en) {
 			STATUS_ERROR_STATUS0_reg_u error_status0 = {
@@ -145,3 +147,25 @@ static int bh_arc_init_end(void)
 	return 0;
 }
 SYS_INIT_APP(bh_arc_init_end);
+
+#ifdef CONFIG_FPU_SHARING
+
+static void enable_float_on_current(struct k_work *work)
+{
+	k_float_enable(k_current_get(), 0);
+}
+
+static K_WORK_DEFINE(enable_float_work, enable_float_on_current);
+
+static int enable_float_sys_work_q(void)
+{
+	k_work_submit(&enable_float_work);
+	return 0;
+}
+
+/* The system workqueue is created at POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT.
+ * We must enable FPU saving after that, but before any work items that might use the FPU.
+ */
+SYS_INIT(enable_float_sys_work_q, POST_KERNEL, UTIL_INC(CONFIG_KERNEL_INIT_PRIORITY_DEFAULT));
+
+#endif
