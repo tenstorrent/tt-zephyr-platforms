@@ -83,6 +83,9 @@ struct bh_chip_data {
 	uint8_t fan_speed;
 	/* Is that a forced or automatic fan speed? */
 	bool fan_speed_forced;
+
+	uint8_t last_cm2dm_seq_num;
+	bool last_cm2dm_seq_num_valid;
 };
 
 struct bh_chip {

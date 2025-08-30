@@ -141,6 +141,7 @@ static void process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 {
 	switch (msg_data) {
 	case 0x0:
+		chip->data.last_cm2dm_seq_num_valid = false;
 		jtag_bootrom_reset_sequence(chip, true);
 		break;
 
@@ -227,7 +228,18 @@ void process_cm2dm_message(struct bh_chip *chip)
 
 	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
 
-	if (msg.ret == 0) {
+	if (msg.ret == 0 && msg.msg.msg_id != kCm2DmMsgIdNull) {
+
+		if (chip->data.last_cm2dm_seq_num_valid &&
+		    chip->data.last_cm2dm_seq_num == msg.msg.seq_num) {
+			/* repeat sequence number, indicates ack failure */
+			LOG_WRN("Received duplicate CM2DM message.");
+			return;
+		}
+
+		chip->data.last_cm2dm_seq_num_valid = true;
+		chip->data.last_cm2dm_seq_num = msg.msg.seq_num;
+
 		if (msg.msg.msg_id < ARRAY_SIZE(msg_processors) && msg_processors[msg.msg.msg_id]) {
 			msg_processors[msg.msg.msg_id](chip, msg.msg.msg_id, msg.msg.data);
 		}
@@ -466,6 +478,7 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.therm_trip_triggered) {
 				chip->data.therm_trip_triggered = false;
+				chip->data.last_cm2dm_seq_num_valid = false;
 
 				if (board_fault_led.port != NULL) {
 					gpio_pin_set_dt(&board_fault_led, 1);
@@ -508,6 +521,8 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (chip->data.arc_wdog_triggered) {
 				chip->data.arc_wdog_triggered = false;
+				chip->data.last_cm2dm_seq_num_valid = false;
+
 				/* Read PC from ARC and record it */
 				jtag_setup(chip->config.jtag);
 				jtag_reset(chip->config.jtag);
@@ -538,6 +553,8 @@ int main(void)
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			if (atomic_set(&chip->data.trigger_reset, false)) {
 				chip->data.performing_reset = true;
+				chip->data.last_cm2dm_seq_num_valid = false;
+
 				/*
 				 * Set the bus cancel following the logic of (reset_triggered &&
 				 * !performing_reset)
