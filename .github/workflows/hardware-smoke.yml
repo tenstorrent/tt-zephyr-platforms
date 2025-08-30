@@ -209,11 +209,17 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
-          if [ ${{matrix.board}} = 'p300a' ]; then
+          if [ ${{ matrix.config.board }} = 'p300a' ]; then
             echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
           else
             echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
           fi
+
+      - name: build-tt-smc_console
+        working-directory: tt-zephyr-platforms/scripts/tooling
+        run: |
+          # Build tt-console
+          make
 
       - name: run-e2e-tests
         working-directory: zephyr
