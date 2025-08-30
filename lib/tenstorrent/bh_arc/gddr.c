@@ -15,18 +15,16 @@
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
-#include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
-#include <zephyr/init.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/clock_control.h>
-
-static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
-static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+#include <zephyr/drivers/flash.h>
+#include <zephyr/init.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/storage/flash_map.h>
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -40,7 +38,12 @@ static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash
 
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
+extern uint8_t large_sram_buffer[SCRATCHPAD_SIZE] __aligned(4);
+
+/* Note: FIXED_PARTITION_DEVICE(memfw) is preferable but not exist for e.g native_sim */
+static const struct device *const flash_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 
 volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
 {
@@ -256,6 +259,11 @@ static int InitMrisc(void)
 		}
 	}
 
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(memfw), (uint8_t *)large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_TAG, -EIO);
+		return -EIO;
+	}
 	uint32_t dram_mask = GetDramMask();
 
 	int rc;
@@ -275,30 +283,17 @@ static int InitMrisc(void)
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFw(gddr_inst, buf, SCRATCHPAD_SIZE, spi_address, image_size)) {
+			if (LoadMriscFw(gddr_inst, (uint8_t *)large_sram_buffer, SCRATCHPAD_SIZE)) {
 				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
 				return -EIO;
 			}
 		}
 	}
 
-	rc = tt_boot_fs_find_fd_by_tag(flash, MRISC_FW_CFG_TAG, &tag_fd);
-	if (rc < 0) {
-		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_CFG_TAG, rc);
-		return rc;
-	}
-	image_size = tag_fd.flags.f.image_size;
-	spi_address = tag_fd.spi_addr;
-
-	/* Loading ETH FW configuration data requires the whole data to be loaded into buffer */
-	__ASSERT(SCRATCHPAD_SIZE >= image_size,
-		 "spi buffer size %zu must be larger than image size %zu", SCRATCHPAD_SIZE,
-		 image_size);
-
-	rc = flash_read(flash, spi_address, buf, image_size);
-	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "flash_read", rc);
-		return rc;
+	if (flash_read(flash_dev, FIXED_PARTITION_OFFSET(memfwcfg), (uint8_t *)large_sram_buffer,
+		       SCRATCHPAD_SIZE) < 0) {
+		LOG_ERR("%s(%s) failed: %d", "tt_boot_fs_get_file", MRISC_FW_CFG_TAG, -EIO);
+		return -EIO;
 	}
 
 	uint32_t gddr_speed = GetGddrSpeedFromCfg(buf);
@@ -317,8 +312,8 @@ static int InitMrisc(void)
 
 	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFwCfg(gddr_inst, buf, SCRATCHPAD_SIZE, spi_address,
-					   image_size)) {
+			if (LoadMriscFwCfg(gddr_inst, (uint8_t *)large_sram_buffer,
+					   SCRATCHPAD_SIZE)) {
 				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
 				return -EIO;
 			}
