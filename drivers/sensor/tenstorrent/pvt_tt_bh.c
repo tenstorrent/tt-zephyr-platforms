@@ -22,16 +22,10 @@
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/tenstorrent/pvt_tt_bh.h>
-#include <zephyr/rtio/rtio.h>
-#include <zephyr/rtio/work.h>
-#include <zephyr/rtio/work.h>
 
 LOG_MODULE_REGISTER(pvt_tt_bh, LOG_LEVEL_DBG);
 
 static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
-
-#define SDIF_DONE_TIMEOUT_MS 10
-#define MIN_BUFFER_SIZE      sizeof(uint32_t)
 
 #define PVT_CNTL_IRQ_EN_REG_ADDR             0x80080040
 #define PVT_CNTL_TS_00_IRQ_ENABLE_REG_ADDR   0x800800C0
@@ -63,8 +57,6 @@ static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 #define GET_PD_REG_ADDR(ID, REG_NAME) (ID * TS_PD_OFFSET + PVT_CNTL_PD_00_##REG_NAME##_REG_ADDR)
 #define GET_VM_REG_ADDR(ID, REG_NAME) (ID * VM_OFFSET + PVT_CNTL_VM_00_##REG_NAME##_REG_ADDR)
 
-#define VM_VREF 1.2207
-
 /* SDIF address */
 #define IP_CNTL_ADDR    0x0
 #define IP_CFG0_ADDR    0x1
@@ -86,26 +78,6 @@ static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 #define NUM_TS 8
 #define NUM_VM 8
 #define NUM_PD 16
-
-typedef enum {
-	TS = 0,
-	PD = 1,
-	VM = 2,
-} PvtType;
-
-typedef struct {
-	uint32_t ip_dat: 16;
-	uint32_t ip_type: 1;
-	uint32_t ip_fault: 1;
-	uint32_t ip_done: 1;
-	uint32_t reserved: 1;
-	uint32_t ip_ch: 4;
-} ip_data_reg_t;
-
-typedef union {
-	uint32_t val;
-	ip_data_reg_t f;
-} ip_data_reg_u;
 
 typedef struct {
 	uint32_t run_mode: 4;
@@ -134,11 +106,6 @@ typedef union {
 	uint8_t val;
 	ts_ip_cfg0_t f;
 } ts_ip_cfg0_u;
-
-typedef enum {
-	ValidData = 0,
-	AnalogueAccess = 1,
-} SampleType;
 
 typedef struct {
 	uint32_t tmr_irq_enable: 1;
@@ -247,55 +214,7 @@ typedef union {
 
 #define PVT_CNTL_SDIF_REG_DEFAULT (0x00000000)
 
-typedef struct {
-	uint32_t sample_data: 16;
-	uint32_t sample_type: 1;
-	uint32_t sample_fault: 1;
-} pvt_cntl_ts_pd_sdif_data_reg_t;
-
-typedef union {
-	uint32_t val;
-	pvt_cntl_ts_pd_sdif_data_reg_t f;
-} pvt_cntl_ts_pd_sdif_data_reg_u;
-
-struct pvt_tt_bh_config {
-	uint8_t num_pd;
-	uint8_t num_vm;
-	uint8_t num_ts;
-};
-
-struct pvt_tt_bh_data {
-};
-
-/* return TS temperature in C */
-static float dout_to_temp(uint16_t dout)
-{
-	float Eqbs = dout / 4096.0 - 0.5;
-	/* TODO: slope and offset need to be replaced with fused values */
-	return 83.09f + 262.5f * Eqbs;
-}
-
-/* return VM voltage in V */
-static float dout_to_volt(uint16_t dout)
-{
-	float k1 = VM_VREF * 6 / (5 * 16384);
-	float offset = VM_VREF / 5 * (3 / 256 + 1);
-
-	return k1 * dout - offset;
-}
-
-/* return PD frequency in MHz */
-static float dout_to_freq(uint16_t dout)
-{
-	float A = 4.0;
-	float B = 1.0;
-	float W = 255.0;
-	float fclk = 5.0;
-
-	return dout * A * B * fclk / W;
-}
-
-static uint16_t TempToDout(float temp)
+static uint16_t temp_to_dout(float temp)
 {
 	return (uint16_t)(((temp - 83.09f) / 262.5f + 0.5f) * 4096);
 }
@@ -347,8 +266,8 @@ static inline void pvt_tt_bh_interrupt_config(void)
 	pvt_cntl_vm_alarma_cfg_reg_u pvt_alarma_cfg;
 
 	pvt_alarma_cfg.val = PVT_CNTL_VM_ALARMA_CFG_REG_DEFAULT;
-	pvt_alarma_cfg.f.hyst_thresh = TempToDout(ALARM_A_THERM_TRIP_TEMP - TS_HYSTERESIS_DELTA);
-	pvt_alarma_cfg.f.alarm_thresh = TempToDout(ALARM_A_THERM_TRIP_TEMP);
+	pvt_alarma_cfg.f.hyst_thresh = temp_to_dout(ALARM_A_THERM_TRIP_TEMP - TS_HYSTERESIS_DELTA);
+	pvt_alarma_cfg.f.alarm_thresh = temp_to_dout(ALARM_A_THERM_TRIP_TEMP);
 	for (uint32_t i = 0; i < NUM_TS; i++) {
 		sys_write32(pvt_alarma_cfg.val, GET_TS_REG_ADDR(i, ALARMA_CFG));
 	}
@@ -357,8 +276,8 @@ static inline void pvt_tt_bh_interrupt_config(void)
 	pvt_cntl_vm_alarmb_cfg_reg_u pvt_alarmb_cfg;
 
 	pvt_alarmb_cfg.val = PVT_CNTL_VM_ALARMB_CFG_REG_DEFAULT;
-	pvt_alarmb_cfg.f.hyst_thresh = TempToDout(ALARM_B_THERM_TRIP_TEMP - TS_HYSTERESIS_DELTA);
-	pvt_alarmb_cfg.f.alarm_thresh = TempToDout(ALARM_B_THERM_TRIP_TEMP);
+	pvt_alarmb_cfg.f.hyst_thresh = temp_to_dout(ALARM_B_THERM_TRIP_TEMP - TS_HYSTERESIS_DELTA);
+	pvt_alarmb_cfg.f.alarm_thresh = temp_to_dout(ALARM_B_THERM_TRIP_TEMP);
 	for (uint32_t i = 0; i < NUM_TS; i++) {
 		sys_write32(pvt_alarmb_cfg.val, GET_TS_REG_ADDR(i, ALARMB_CFG));
 	}
@@ -417,86 +336,6 @@ static void enable_aging_meas(void)
 	ip_cfg0.f.oscillator_enable = ALL_AGING_OSC;
 	sdif_write(PVT_CNTL_PD_CMN_SDIF_STATUS_REG_ADDR, PVT_CNTL_PD_CMN_SDIF_REG_ADDR,
 		   IP_CFG0_ADDR, ip_cfg0.val);
-}
-
-static uint32_t get_pvt_addr(PvtType type, uint32_t id, uint32_t base_addr)
-{
-	uint32_t offset;
-
-	if (type == VM) {
-		offset = VM_OFFSET;
-	} else {
-		offset = TS_PD_OFFSET;
-	}
-	return id * offset + base_addr;
-}
-
-static ReadStatus read_pvt_auto_mode(PvtType type, uint32_t id, uint16_t *data,
-				     uint32_t sdif_done_base_addr, uint32_t sdif_data_base_addr)
-{
-	if (!data) {
-		return SampleFault;
-	}
-
-	uint32_t sdif_done;
-	uint64_t deadline = k_uptime_get() + SDIF_DONE_TIMEOUT_MS;
-	bool timeout = false;
-
-	do {
-		sdif_done = sys_read32(get_pvt_addr(type, id, sdif_done_base_addr));
-		timeout = k_uptime_get() > deadline;
-	} while (!sdif_done && !timeout);
-
-	if (timeout) {
-		return SdifTimeout;
-	}
-
-	pvt_cntl_ts_pd_sdif_data_reg_u ts_sdif_data;
-
-	ts_sdif_data.val = sys_read32(get_pvt_addr(type, id, sdif_data_base_addr));
-
-	if (ts_sdif_data.f.sample_fault) {
-		return SampleFault;
-	}
-	if (ts_sdif_data.f.sample_type != ValidData) {
-		return IncorrectSampleType;
-	}
-	*data = ts_sdif_data.f.sample_data;
-	return ReadOk;
-}
-
-static ReadStatus read_ts(uint32_t id, uint16_t *data)
-{
-	return read_pvt_auto_mode(TS, id, data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
-				  PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
-}
-
-/* can not readback supply check in auto mode, use manual read instead */
-static ReadStatus read_vm(uint32_t id, uint16_t *data)
-{
-	if (!data) {
-		return SampleFault;
-	}
-
-	/* ignore ip_done in auto_mode */
-	ip_data_reg_u ip_data;
-
-	ip_data.val = sys_read32(GET_VM_REG_ADDR(id, SDIF_RDATA));
-
-	if (ip_data.f.ip_fault) {
-		return SampleFault;
-	}
-	if (ip_data.f.ip_type != ValidData) {
-		return IncorrectSampleType;
-	}
-	*data = ip_data.f.ip_dat;
-	return ReadOk;
-}
-
-static ReadStatus read_pd(uint32_t id, uint16_t *data)
-{
-	return read_pvt_auto_mode(PD, id, data, PVT_CNTL_PD_00_SDIF_DONE_REG_ADDR,
-				  PVT_CNTL_PD_00_SDIF_DATA_REG_ADDR);
 }
 
 /*
@@ -576,181 +415,6 @@ int pvt_tt_bh_attr_get(const struct device *dev, enum sensor_channel chan,
 	/* val2 is the fractional part, which is 0 for integers */
 	val->val2 = 0;
 
-	return 0;
-}
-
-static int pvt_tt_bh_decode_sample(const uint16_t *data, struct sensor_chan_spec chan_spec,
-				   uint32_t *fit, uint16_t max_count, void *data_out)
-{
-	struct sensor_value *out = data_out;
-
-	switch (chan_spec.chan_type) {
-	case SENSOR_CHAN_PVT_TT_BH_TS: {
-		float temp = dout_to_temp(*data);
-
-		out->val1 = (int32_t)temp;
-		out->val2 = (int32_t)((temp - out->val1) * 1000000);
-		break;
-	}
-	case SENSOR_CHAN_PVT_TT_BH_VM: {
-		float voltage = dout_to_volt(*data);
-
-		out->val1 = (int32_t)voltage;
-		out->val2 = (int32_t)((voltage - out->val1) * 1000000);
-		break;
-	}
-	case SENSOR_CHAN_PVT_TT_BH_PD: {
-		float freq = dout_to_freq(*data);
-
-		out->val1 = (int32_t)freq;
-		out->val2 = (int32_t)((freq - out->val1) * 1000000);
-		break;
-	}
-	default:
-		return -ENOTSUP;
-	}
-
-	return 0;
-}
-
-static int pvt_tt_bh_decoder_decode(const uint8_t *buffer, struct sensor_chan_spec chan_spec,
-				    uint32_t *fit, uint16_t max_count, void *data_out)
-{
-	const uint16_t *data = (const uint16_t *)buffer;
-
-	return pvt_tt_bh_decode_sample(data, chan_spec, fit, max_count, data_out);
-}
-
-static const struct sensor_decoder_api pvt_tt_bh_decoder_api = {
-	.decode = pvt_tt_bh_decoder_decode,
-};
-
-static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
-{
-	const struct sensor_read_config *cfg =
-		(const struct sensor_read_config *)iodev_sqe->sqe.iodev->data;
-	const struct device *dev = cfg->sensor;
-	const struct pvt_tt_bh_config *config = (const struct pvt_tt_bh_config *)dev->config;
-	uint32_t min_buffer_len = sizeof(uint8_t);
-	uint8_t *buffer;
-	uint32_t buffer_len;
-	int rc;
-
-	rc = rtio_sqe_rx_buf(iodev_sqe, min_buffer_len, min_buffer_len, &buffer, &buffer_len);
-	if (rc != 0) {
-		LOG_ERR("Failed to get a read buffer of size %u bytes", min_buffer_len);
-		rtio_iodev_sqe_err(iodev_sqe, rc);
-		return;
-	}
-
-	uint16_t *data = (uint16_t *)buffer;
-	ReadStatus status;
-
-	/* Only support single channel reads for now */
-	if (cfg->count != 1 || cfg->channels == NULL) {
-		LOG_ERR("Invalid channel configuration");
-		rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-		return;
-	}
-
-	const struct sensor_chan_spec *chan = &cfg->channels[0];
-
-	/* Validate channel index bounds and read data */
-	switch (chan->chan_type) {
-	case SENSOR_CHAN_PVT_TT_BH_PD:
-		if (chan->chan_idx >= config->num_pd) {
-			rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-			LOG_ERR("Invalid channel index %d out of %d sensors", chan->chan_idx,
-				config->num_pd);
-			return;
-		}
-		status = read_pd(chan->chan_idx, data);
-		break;
-	case SENSOR_CHAN_PVT_TT_BH_VM:
-		if (chan->chan_idx >= config->num_vm) {
-			rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-			LOG_ERR("Invalid channel index %d out of %d sensors", chan->chan_idx,
-				config->num_vm);
-			return;
-		}
-		status = read_vm(chan->chan_idx, data);
-		break;
-	case SENSOR_CHAN_PVT_TT_BH_TS:
-		if (chan->chan_idx >= config->num_ts) {
-			LOG_ERR("Invalid channel index %d out of %d sensors", chan->chan_idx,
-				config->num_ts);
-			rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-			return;
-		}
-		status = read_ts(chan->chan_idx, data);
-		break;
-	default:
-		LOG_ERR("Unsupported channel type: %d", chan->chan_type);
-		rtio_iodev_sqe_err(iodev_sqe, -ENOTSUP);
-		return;
-	}
-
-	if (status != ReadOk) {
-		LOG_ERR("Failed to read data %d", status);
-		rtio_iodev_sqe_err(iodev_sqe, status);
-		return;
-	}
-
-	rtio_iodev_sqe_ok(iodev_sqe, 0);
-}
-
-static void pvt_tt_bh_submit(const struct device *sensor, struct rtio_iodev_sqe *sqe)
-{
-	const struct rtio_sqe *event = &sqe->sqe;
-
-	if (!event->iodev) {
-		LOG_ERR("IO device is null");
-		rtio_iodev_sqe_err(sqe, -EINVAL);
-		return;
-	}
-
-	if (event->op != RTIO_OP_RX) {
-		LOG_ERR("Sensor submit expects the RX opcode");
-		rtio_iodev_sqe_err(sqe, -EINVAL);
-		return;
-	}
-
-	/* iodev->data is a void* that stores the config data */
-	if (!event->iodev->data) {
-		LOG_ERR("Config is null");
-		rtio_iodev_sqe_err(sqe, -EINVAL);
-		return;
-	}
-
-	/* All sensor reads are uint32, ensure buffer is large enough */
-	if (event->rx.buf_len < sizeof(uint32_t)) {
-		LOG_ERR("Buffer too small: %d bytes needed, %d available", (int)sizeof(uint32_t),
-			event->rx.buf_len);
-		rtio_iodev_sqe_err(sqe, -ENOMEM);
-		return;
-	}
-
-	struct sensor_read_config *cfg = (struct sensor_read_config *)event->iodev->data;
-
-	/*  Only support one read at a time */
-	if (cfg->count != 1 || cfg->channels == NULL) {
-		LOG_ERR("Invalid channel configuration");
-		rtio_iodev_sqe_err(sqe, -EINVAL);
-		return;
-	}
-
-	struct rtio_work_req *req = rtio_work_req_alloc();
-
-	rtio_work_req_submit(req, sqe, pvt_tt_bh_submit_sample);
-}
-
-static int pvt_tt_bh_get_decoder(const struct device *dev, const struct sensor_decoder_api **api)
-{
-	if (!dev || !api) {
-		return -EINVAL;
-	}
-
-	*api = &pvt_tt_bh_decoder_api;
 	return 0;
 }
 
