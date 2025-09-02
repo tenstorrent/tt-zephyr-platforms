@@ -371,44 +371,57 @@
 		status = "disabled";
 	};
 
-	memc0: bh_memc0 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+	ddr_memory_controllers {
+		#address-cells = <1>;
+		#size-cells = <0>;
 
-	sdram1: bh_memc1 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc0: bh_memc@0 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <0>;
+			status = "disabled";
+		};
 
-	memc2: bh_memc2 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc1: bh_memc@1 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <1>;
+			status = "disabled";
+		};
 
-	memc3: bh_memc3 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc2: bh_memc@2 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <2>;
+			status = "disabled";
+		};
 
-	memc4: bh_memc4 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc3: bh_memc@3 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <3>;
+			status = "disabled";
+		};
 
-	memc5: bh_memc5 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc4: bh_memc@4 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <4>;
+			status = "disabled";
+		};
 
-	memc6: bh_memc6 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
-	};
+		memc5: bh_memc@5 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <5>;
+			status = "disabled";
+		};
 
-	memc7: bh_memc7 {
-		compatible = "tenstorrent,bh-memc";
-		status = "disabled";
+		memc6: bh_memc@6 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <6>;
+			status = "disabled";
+		};
+
+		memc7: bh_memc@7 {
+			compatible = "tenstorrent,bh-memc";
+			reg = <7>;
+			status = "disabled";
+		};
 	};
 
 	noc0: bh_noc0 {

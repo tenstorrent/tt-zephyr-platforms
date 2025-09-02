@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include <arc/tenstorrent/tt_blackhole_smc.dtsi>
+#include <zephyr/dt-bindings/clock_control/clock_control_tt_bh.h>
 #include "tt_blackhole_smc-pinctrl.dtsi"
 
 #include <freq.h>
@@ -146,4 +147,76 @@
 
 &spi_flash {
 	#include "tt_blackhole_fixed_partitions.dtsi"
+};
+
+&memc0 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc1 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc2 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc3 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc4 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc5 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc6 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
+};
+
+&memc7 {
+	clocks = <&pll3>;
+	clock-channels = <CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK>;
+	clock-divs = <CLOCK_CONTROL_TT_BH_GDDR_SPEED_TO_MEMCLK_RATIO>;
+	flash = <&spi_flash>;
+	fwtable = <&fwtable>;
+	status = "okay";
 };

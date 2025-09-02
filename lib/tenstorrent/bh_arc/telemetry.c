@@ -15,7 +15,6 @@
 #include "status_reg.h"
 #include "telemetry.h"
 #include "telemetry_internal.h"
-#include "gddr.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>  /* for floor */
@@ -24,6 +23,7 @@
 
 #include <tenstorrent/post_code.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/memc/memc_tt_bh.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
@@ -38,6 +38,8 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
 static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
 static const struct device *const pll_dev_4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
+
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
 
 struct telemetry_entry {
 	uint16_t tag;
@@ -155,19 +157,20 @@ float ConvertTelemetryToFloat(int32_t value)
 static void UpdateGddrTelemetry(void)
 {
 	/* We pack multiple metrics into one field, so need to clear first. */
-	for (int i = 0; i < NUM_GDDR / 2; i++) {
-		telemetry[TAG_GDDR_0_1_TEMP + i] = 0;
-		telemetry[TAG_GDDR_0_1_CORR_ERRS + i] = 0;
-	}
+	memset(&telemetry[TAG_GDDR_0_1_TEMP], 0,
+	       (TAG_GDDR_6_7_CORR_ERRS - TAG_GDDR_0_1_TEMP + 1) * sizeof(*telemetry));
 
 	telemetry[TAG_GDDR_UNCORR_ERRS] = 0;
 	telemetry[TAG_GDDR_STATUS] = 0;
 
-	for (int i = 0; i < NUM_GDDR; i++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		int i = memc_tt_bh_inst_get(dev);
+
 		gddr_telemetry_table_t gddr_telemetry;
 		/* Harvested instances should read 0b00 for status. */
 		if (IS_BIT_SET(tile_enable.gddr_enabled, i)) {
-			if (read_gddr_telemetry_table(i, &gddr_telemetry) < 0) {
+			if (memc_tt_bh_telemetry_get(dev, &gddr_telemetry) < 0) {
 				LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
 					     "updating telemetry");
 				continue;
@@ -227,7 +230,9 @@ int GetMaxGDDRTemp(void)
 {
 	int max_gddr_temp = 0;
 
-	for (int i = 0; i < NUM_GDDR; i++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		int i = memc_tt_bh_inst_get(dev);
 		int shift_val = (i % 2) * 16;
 		int gddr_temp = telemetry[TAG_GDDR_0_1_TEMP + i / 2];
 
@@ -269,12 +274,10 @@ static void write_static_telemetry(uint32_t app_version)
 
 	/* TODO: Gather FW versions from FW themselves */
 	telemetry[TAG_ETH_FW_VERSION] = 0x00000000;
-	if (tile_enable.gddr_enabled != 0) {
+	if ((tile_enable.gddr_enabled != 0) && (ARRAY_SIZE(memc_devices) > 0)) {
 		gddr_telemetry_table_t gddr_telemetry;
-		/* Use first available instance. */
-		uint32_t gddr_inst = find_lsb_set(tile_enable.gddr_enabled) - 1;
 
-		if (read_gddr_telemetry_table(gddr_inst, &gddr_telemetry) < 0) {
+		if (memc_tt_bh_telemetry_get(memc_devices[0], &gddr_telemetry) < 0) {
 			LOG_WRN_ONCE("Failed to read GDDR telemetry table while "
 				     "writing static telemetry");
 		} else {
