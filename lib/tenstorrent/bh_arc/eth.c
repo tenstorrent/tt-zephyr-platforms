@@ -9,6 +9,7 @@
 #include "harvesting.h"
 #include "init.h"
 #include "noc.h"
+#include "noc_dma.h"
 #include "noc2axi.h"
 #include "reg.h"
 #include "serdes_eth.h"
@@ -26,6 +27,8 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
 #define ETH_SETUP_TLB  0
 #define ETH_PARAM_ADDR 0x7c000
+
+#define ERISC_L1_SIZE (512 * 1024)
 
 #define ETH_RESET_PC_0              0xFFB14000
 #define ETH_END_PC_0                0xFFB14004
@@ -343,6 +346,24 @@ static void SerdesEthInit(void)
 	}
 }
 
+/* This function assumes that tensix L1s have already been cleared */
+static void wipe_l1(void)
+{
+	uint8_t noc_id = 0;
+	uint64_t addr = 0;
+	uint8_t tensix_x = 1;
+	uint8_t tensix_y = 2;
+
+	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
+		if (tile_enable.eth_enabled & BIT(eth_inst)) {
+			uint8_t x, y;
+
+			GetEthNocCoords(eth_inst, noc_id, &x, &y);
+			noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, ERISC_L1_SIZE, true);
+		}
+	}
+}
+
 static void EthInit(void)
 {
 	uint32_t ring = 0;
@@ -355,6 +376,8 @@ static void EthInit(void)
 	if (tile_enable.eth_enabled == 0) {
 		return;
 	}
+
+	wipe_l1();
 
 	uint8_t buf[SCRATCHPAD_SIZE] __aligned(4);
 
