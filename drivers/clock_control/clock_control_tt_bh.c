@@ -416,7 +416,7 @@ static int clock_control_tt_bh_get_rate(const struct device *dev, clock_control_
 		return -EBUSY;
 	}
 
-	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
+	int clock = POINTER_TO_INT(sys);
 
 	switch (clock) {
 	case CLOCK_CONTROL_TT_BH_CLOCK_AICLK:
@@ -473,7 +473,7 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 		return -EBUSY;
 	}
 
-	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
+	int clock = POINTER_TO_INT(sys);
 
 	if (clock == CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK) {
 		struct tt_bh_pll_settings settings = data->settings;
