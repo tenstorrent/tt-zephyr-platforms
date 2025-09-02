@@ -39,3 +39,6 @@ CONFIG_CLOCK_CONTROL=y
 
 # Enabled ARC and NOC DMA
 CONFIG_DMA=y
+
+#enabale gddr
+CONFIG_MEMC=y

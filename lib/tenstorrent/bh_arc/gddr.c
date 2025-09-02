@@ -16,6 +16,7 @@
 #include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/memc/memc_tt_bh.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
@@ -32,6 +33,7 @@ static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 static const struct device *dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -49,22 +51,6 @@ static const struct device *dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-
-static uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
-{
-	/* GDDR speed is the second DWORD of the MRISC FW Config table */
-	uint32_t *fw_cfg_dw = (uint32_t *)fw_cfg_image;
-	return fw_cfg_dw[1];
-}
-
-static volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
-{
-	uint8_t x, y;
-
-	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
-	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
-	return GetTlbWindowAddr(0, MRISC_SETUP_TLB, MRISC_L1_ADDR);
-}
 
 static uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 {
@@ -217,12 +203,13 @@ static int wait_mrisc_not_busy(uint8_t gddr_inst, k_timepoint_t timeout, const c
 
 static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask)
 {
+	uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
 	uint32_t msg_args[3] = {addr_bits, start_addr, mask};
 
 	/* Only run if MRISC FW support it. Must be > 2.6 */
 	gddr_telemetry_table_t gddr_telemetry;
 
-	if (read_gddr_telemetry_table(gddr_inst, &gddr_telemetry) < 0) {
+	if (memc_tt_bh_telemetry_get(dev, &gddr_telemetry) < 0) {
 		LOG_WRN("Failed to read GDDR telemetry table while starting memtest");
 		return -ENOTSUP;
 	}
@@ -257,8 +244,10 @@ static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_
 	return 0;
 }
 
-static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
+static int CheckHwMemtestResult(const struct device *dev, k_timepoint_t timeout)
 {
+	uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 	/* This should only be called after StartHwMemtest() has already been called. */
 	int32_t ret = wait_mrisc_not_busy(gddr_inst, timeout, "memtest");
 
@@ -447,9 +436,12 @@ static int CheckGddrHwTest(void)
 	uint8_t test_started = 0; /* Bitmask of tests started */
 	int any_error = 0;
 
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
-			int error = StartHwMemtest(gddr_inst, 26, 0, 0);
+			int error = StartHwMemtest(dev, 26, 0, 0);
 
 			if (error == -ENOTSUP) {
 				/* Shouldn't be considered a test failure if MRISC FW is too old. */
@@ -466,9 +458,12 @@ static int CheckGddrHwTest(void)
 	}
 	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
 
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 		if (IS_BIT_SET(test_started, gddr_inst)) {
-			int error = CheckHwMemtestResult(gddr_inst, timeout);
+			int error = CheckHwMemtestResult(dev, timeout);
 
 			if (error < 0) {
 				any_error = -EIO;
