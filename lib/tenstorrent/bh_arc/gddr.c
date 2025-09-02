@@ -9,6 +9,7 @@
 #include "harvesting.h"
 #include "init.h"
 #include "noc.h"
+#include "noc_dma.h"
 #include "noc2axi.h"
 #include "reg.h"
 
@@ -34,6 +35,9 @@ static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash
 #define MRISC_L1_ADDR         (1ULL << 37)
 #define MRISC_REG_ADDR        (1ULL << 40)
 #define MRISC_FW_CFG_OFFSET   0x3C00
+#define ARC_NOC0_X            8
+#define ARC_NOC0_Y            0
+#define MRISC_L1_SIZE         (128 * 1024)
 
 #define MRISC_FW_TAG     "memfw"
 #define MRISC_FW_CFG_TAG "memfwcfg"
@@ -240,8 +244,34 @@ int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	return 0;
 }
 
+/* This function assumes that tensix L1s have already been cleared */
+static void wipe_l1(void)
+{
+	uint8_t noc_id = 0;
+	uint64_t addr = 0;
+	uint32_t dram_mask = GetDramMask();
+	uint8_t tensix_x = 1;
+	uint8_t tensix_y = 2;
+
+	for (uint32_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(dram_mask, gddr_inst)) {
+			for (uint32_t noc2axi_port = 0; noc2axi_port < NUM_MRISC_NOC2AXI_PORT;
+			     noc2axi_port++) {
+				uint8_t x, y;
+
+				GetGddrNocCoords(gddr_inst, noc2axi_port, noc_id, &x, &y);
+				/* AXI enable must not be set, using MRISC address 0 */
+				noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, MRISC_L1_SIZE,
+					      true);
+			}
+		}
+	}
+}
+
 static int InitMrisc(void)
 {
+	wipe_l1();
+
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
@@ -326,6 +356,7 @@ static int InitMrisc(void)
 			ReleaseMriscReset(gddr_inst);
 		}
 	}
+
 	return 0;
 }
 SYS_INIT_APP(InitMrisc);
