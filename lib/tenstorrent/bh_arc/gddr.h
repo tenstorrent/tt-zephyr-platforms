@@ -39,22 +39,5 @@
 #define MRISC_MSG_TYPE_RUN_MEMTEST 8
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
-void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable);
-int LoadMriscFw(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-		size_t image_size);
-int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-		   size_t image_size);
-void ReleaseMriscReset(uint8_t gddr_inst);
-static inline uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
-{
-	/* GDDR speed is the second DWORD of the MRISC FW Config table */
-	uint32_t *fw_cfg_dw = (uint32_t *)fw_cfg_image;
-	return fw_cfg_dw[1];
-}
-uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr);
-void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val);
-uint32_t GetDramMask(void);
-int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout);
-int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask);
 
 #endif

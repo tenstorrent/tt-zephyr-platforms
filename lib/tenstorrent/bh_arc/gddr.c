@@ -46,7 +46,14 @@ LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
-volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
+static uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
+{
+	/* GDDR speed is the second DWORD of the MRISC FW Config table */
+	uint32_t *fw_cfg_dw = (uint32_t *)fw_cfg_image;
+	return fw_cfg_dw[1];
+}
+
+static volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
 {
 	uint8_t x, y;
 
@@ -55,7 +62,7 @@ volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
 	return GetTlbWindowAddr(0, MRISC_SETUP_TLB, MRISC_L1_ADDR);
 }
 
-uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
+static uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 {
 	uint8_t x, y;
 
@@ -64,7 +71,7 @@ uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_L1_ADDR + addr);
 }
 
-void MriscL1Write32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
+static void MriscL1Write32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 {
 	uint8_t x, y;
 
@@ -73,7 +80,7 @@ void MriscL1Write32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_L1_ADDR + addr, val);
 }
 
-uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
+static uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
 {
 	uint8_t x, y;
 
@@ -82,7 +89,7 @@ uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
 	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr);
 }
 
-void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
+static void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 {
 	uint8_t x, y;
 
@@ -113,7 +120,7 @@ int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_te
 	return 0;
 }
 
-void ReleaseMriscReset(uint8_t gddr_inst)
+static void ReleaseMriscReset(uint8_t gddr_inst)
 {
 	const uint32_t kSoftReset0Addr = 0xFFB121B0;
 	uint8_t x, y;
@@ -125,7 +132,7 @@ void ReleaseMriscReset(uint8_t gddr_inst)
 	*soft_reset_0 &= ~(1 << 11); /* Clear bit corresponding to MRISC reset */
 }
 
-void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
+static void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
 {
 	const uint32_t kNiuCfg0Addr[NUM_NOCS] = {0xFFB20100, 0xFFB30100};
 	uint8_t x, y;
@@ -149,8 +156,8 @@ void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
 	}
 }
 
-int LoadMriscFw(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-		size_t image_size)
+static int LoadMriscFw(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
+		       size_t image_size)
 {
 	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 	int rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
@@ -158,8 +165,8 @@ int LoadMriscFw(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_add
 
 	return rc;
 }
-int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-		   size_t image_size)
+static int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
+			  size_t image_size)
 {
 	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 	int rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
@@ -168,7 +175,7 @@ int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_
 	return rc;
 }
 
-uint32_t GetDramMask(void)
+static uint32_t GetDramMask(void)
 {
 	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
 
@@ -179,7 +186,7 @@ uint32_t GetDramMask(void)
 	return dram_mask;
 }
 
-int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask)
+static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask)
 {
 	uint32_t msg_args[3] = {addr_bits, start_addr, mask};
 
@@ -222,7 +229,7 @@ int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, u
 	return 0;
 }
 
-int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
+static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 {
 	/* This should only be called after StartHwMemtest() has already been called. */
 	while (MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER) != 0) {
