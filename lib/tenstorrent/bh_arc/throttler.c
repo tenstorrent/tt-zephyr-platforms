@@ -147,7 +147,8 @@ static void SetThrottlerLimit(ThrottlerId id, float limit)
 	float clamped_limit =
 		CLAMP(limit, throttler_limit_ranges[id].min, throttler_limit_ranges[id].max);
 
-	LOG_INF("Throttler %d limit set to %d", id, (uint32_t)clamped_limit);
+	/* FIXME: switch to LOG_INF_RATELIMIT() after zephyr 4.3.0 bump */
+	LOG_DBG("Throttler %d limit set to %d", id, (uint32_t)clamped_limit);
 	throttler[id].limit = clamped_limit;
 }
 
@@ -213,7 +214,8 @@ int32_t Dm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 
 	uint32_t power_limit = sys_get_le16(data);
 
-	LOG_INF("Cable Power Limit: %u", power_limit);
+	/* FIXME: switch to LOG_INF_RATELIMIT() after zephyr 4.3.0 bump */
+	LOG_DBG("Cable Power Limit: %u", power_limit);
 	power_limit = MIN(power_limit,
 			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.board_power_limit);
 
