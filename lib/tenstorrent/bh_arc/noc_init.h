@@ -16,4 +16,9 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 int InitNocTranslationFromHarvesting(void);
 void ClearNocTranslation(void);
 
+/* Returns NOC 0 coordinates of an enabled, unharvested tensix core.
+ * It's guaranteed to be the same core until translation is enabled, disabled or modified.
+ */
+void GetEnabledTensix(uint8_t *x, uint8_t *y);
+
 #endif
