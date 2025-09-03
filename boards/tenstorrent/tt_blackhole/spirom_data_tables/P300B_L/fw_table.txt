@@ -7,21 +7,22 @@ chip_limits {
   vdd_max: 900
   vdd_min: 700
   voltage_margin: 50
-  tdp_limit: 150
-  tdc_limit: 200
+  tdp_limit: 500
+  tdc_limit: 500
   thm_limit: 90
-  tdc_fast_limit: 220
+  tdc_fast_limit: 320
   therm_trip_l1_limit: 0
   bus_peak_limit: 0
   frequency_margin: 0
   gddr_thm_limit: 85
+  board_power_limit: 450
 }
 
 feature_enable {
   cg_en: true
   noc_translation_en: true
   ddr_train_en: true
-  aiclk_ppm_en: false
+  aiclk_ppm_en: true
   watchdog_en: false
   smbus_en: false
   fan_ctrl_en: false
