@@ -34,6 +34,7 @@ static int fan_ctrl_update_interval = 1000;
 
 uint16_t fan_rpm;   /* Fan RPM from tach */
 uint32_t fan_speed; /* % */
+static uint32_t fan_speed_feedback; /* %, feedback from DMC for telemetry */
 float max_gddr_temp;
 float max_asic_temp;
 float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
@@ -100,7 +101,7 @@ void SetFanRPM(uint16_t rpm)
 
 uint32_t GetFanSpeed(void)
 {
-	return fan_speed;
+	return fan_speed_feedback ? fan_speed_feedback : fan_speed;
 }
 
 static void fan_ctrl_work_handler(struct k_work *work)
@@ -165,6 +166,8 @@ void FanCtrlApplyBoardForcedSpeed(uint32_t speed_percentage)
 		return;
 	}
 
+	fan_speed_feedback = speed_percentage;
+
 	if (speed_percentage == 0) {
 		/* Unforce – return to automatic control */
 		k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
@@ -172,6 +175,5 @@ void FanCtrlApplyBoardForcedSpeed(uint32_t speed_percentage)
 	} else {
 		/* Force – stop automatic updates and lock the speed */
 		k_timer_stop(&fan_ctrl_update_timer);
-		fan_speed = speed_percentage;
 	}
 }
