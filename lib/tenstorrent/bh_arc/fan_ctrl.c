@@ -32,8 +32,8 @@ static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
 static int fan_ctrl_update_interval = 1000;
 
-uint16_t fan_rpm; /* Fan RPM from tach */
-uint32_t fan_speed; /* In PWM for now */
+uint16_t fan_rpm;   /* Fan RPM from tach */
+uint32_t fan_speed; /* % */
 float max_gddr_temp;
 float max_asic_temp;
 float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
