@@ -6,6 +6,7 @@
 
 #include "noc2axi.h"
 #include "noc_dma.h"
+#include "noc_init.h"
 
 #include <stdint.h>
 
@@ -75,9 +76,10 @@ static void EnableTensixCG(void)
 static void wipe_l1(void)
 {
 	uint64_t addr = 0;
-	uint8_t tensix_x = 1;
-	uint8_t tensix_y = 2;
+	uint8_t tensix_x, tensix_y;
 	uint8_t sram_buffer[CONFIG_TT_BH_ARC_SCRATCHPAD_SIZE] __aligned(4);
+
+	GetEnabledTensix(&tensix_x, &tensix_y);
 
 	/* wipe SCRATCHPAD_SIZE of the chosen tensix */
 	memset(sram_buffer, 0, sizeof(sram_buffer));

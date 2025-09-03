@@ -10,6 +10,7 @@
 #include "init.h"
 #include "noc.h"
 #include "noc_dma.h"
+#include "noc_init.h"
 #include "noc2axi.h"
 #include "reg.h"
 
@@ -257,8 +258,9 @@ static void wipe_l1(void)
 	uint8_t noc_id = 0;
 	uint64_t addr = 0;
 	uint32_t dram_mask = GetDramMask();
-	uint8_t tensix_x = 1;
-	uint8_t tensix_y = 2;
+	uint8_t tensix_x, tensix_y;
+
+	GetEnabledTensix(&tensix_x, &tensix_y);
 
 	for (uint32_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
