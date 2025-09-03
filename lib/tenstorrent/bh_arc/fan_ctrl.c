@@ -34,7 +34,10 @@ static int fan_ctrl_update_interval = 1000;
 
 uint16_t fan_rpm;   /* Fan RPM from tach */
 uint32_t fan_speed; /* % */
+bool fan_speed_forced;
+
 static uint32_t fan_speed_feedback; /* %, feedback from DMC for telemetry */
+
 float max_gddr_temp;
 float max_asic_temp;
 float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
@@ -74,6 +77,9 @@ static void update_fan_speed(void)
 {
 	TelemetryInternalData telemetry_internal_data;
 
+	/* Telemetry & computations continue to run even when speed is forced so that they stay
+	 * up-to-date.
+	 */
 	ReadTelemetryInternal(1, &telemetry_internal_data);
 	max_asic_temp =
 		alpha * telemetry_internal_data.asic_temperature + (1 - alpha) * max_asic_temp;
@@ -84,9 +90,10 @@ static void update_fan_speed(void)
 		max_gddr_temp = 0;
 	}
 
-	fan_speed = fan_curve(max_asic_temp, max_gddr_temp);
-
-	UpdateFanSpeedRequest(fan_speed);
+	if (!fan_speed_forced) {
+		fan_speed = fan_curve(max_asic_temp, max_gddr_temp);
+		UpdateFanSpeedRequest(fan_speed);
+	}
 }
 
 uint16_t GetFanRPM(void)
@@ -138,42 +145,26 @@ static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 	}
 
 	uint32_t raw_speed = request->data[1];
-	uint32_t speed_percentage = (raw_speed == 0xFFFFFFFF) ? 0 : raw_speed;
 
-	/* Re-use common helper so behaviour stays identical. We ask it to notify the DMFW because
-	 * this path originated from a host command.
-	 */
-	FanCtrlApplyBoardForcedSpeed(speed_percentage);
-
-	/* The helper does NOT send the update back, so we do it here for the host path. */
-	if (speed_percentage == 0) {
-		UpdateForcedFanSpeedRequest(0);
+	if (raw_speed == UINT32_MAX) {
+		fan_speed_forced = false;
+		fan_speed = fan_curve(max_asic_temp, max_gddr_temp);
 	} else {
-		UpdateForcedFanSpeedRequest(speed_percentage);
+		fan_speed_forced = true;
+		fan_speed = CLAMP(raw_speed, 0, 100);
+	}
+
+	if (fan_speed_forced) {
+		UpdateForcedFanSpeedRequest(fan_speed);
+	} else {
+		UpdateFanSpeedRequest(fan_speed);
 	}
 
 	return 0;
 }
 REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
 
-/*
- * Board-level broadcast from the DMFW arrives via SMBus. We must update local state and telemetry
- * but MUST NOT send another ForcedFanSpeedUpdate back to the DMFW (would cause an echo).
- */
 void FanCtrlApplyBoardForcedSpeed(uint32_t speed_percentage)
 {
-	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
-		return;
-	}
-
 	fan_speed_feedback = speed_percentage;
-
-	if (speed_percentage == 0) {
-		/* Unforce – return to automatic control */
-		k_timer_start(&fan_ctrl_update_timer, K_MSEC(fan_ctrl_update_interval),
-			      K_MSEC(fan_ctrl_update_interval));
-	} else {
-		/* Force – stop automatic updates and lock the speed */
-		k_timer_stop(&fan_ctrl_update_timer);
-	}
 }
