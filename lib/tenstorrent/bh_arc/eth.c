@@ -10,6 +10,7 @@
 #include "init.h"
 #include "noc.h"
 #include "noc_dma.h"
+#include "noc_init.h"
 #include "noc2axi.h"
 #include "reg.h"
 #include "serdes_eth.h"
@@ -351,8 +352,9 @@ static void wipe_l1(void)
 {
 	uint8_t noc_id = 0;
 	uint64_t addr = 0;
-	uint8_t tensix_x = 1;
-	uint8_t tensix_y = 2;
+	uint8_t tensix_x, tensix_y;
+
+	GetEnabledTensix(&tensix_x, &tensix_y);
 
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
