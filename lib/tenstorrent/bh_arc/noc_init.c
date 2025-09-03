@@ -52,6 +52,8 @@ static const uint32_t kFirstCfgRegIndex = 0x100 / sizeof(uint32_t);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
+static bool noc_translation_enabled;
+
 static volatile void *SetupNiuTlbPhys(uint8_t tlb_index, uint8_t px, uint8_t py, uint8_t noc_id)
 {
 	uint64_t regs = NiuRegsBase(px, py, noc_id);
@@ -554,6 +556,8 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 	ProgramNocTranslation(&noc1, 1);
 
 	UpdateTelemetryNocTranslation(true);
+
+	noc_translation_enabled = true;
 }
 
 int InitNocTranslationFromHarvesting(void)
@@ -634,6 +638,8 @@ void ClearNocTranslation(void)
 	ProgramNocTranslation(&all_zeroes, 1);
 
 	UpdateTelemetryNocTranslation(false);
+
+	noc_translation_enabled = false;
 }
 
 static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct request *req,
@@ -669,3 +675,18 @@ static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct reques
 }
 
 REGISTER_MESSAGE(MSG_TYPE_DEBUG_NOC_TRANSLATION, DebugNocTranslationHandler);
+
+void GetEnabledTensix(uint8_t *x, uint8_t *y)
+{
+	if (noc_translation_enabled) {
+		/* There's always at least one enabled Tensix column, and when translation is
+		 * enabled, it's at X=1.
+		 */
+		*x = 1;
+	} else {
+		uint8_t physical_tensix_x = LOG2(LSB_GET(tile_enable.tensix_col_enabled));
+
+		*x = kTensixEthNoc0X[physical_tensix_x];
+	}
+	*y = 2;
+}
