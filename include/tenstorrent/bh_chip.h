@@ -78,6 +78,9 @@ struct bh_chip_data {
 	uint32_t arc_hang_pc;
 	/* Was ARC watchdog triggered? */
 	bool arc_wdog_triggered;
+
+	/* Requested fan speed in %. */
+	uint8_t fan_speed;
 };
 
 struct bh_chip {
