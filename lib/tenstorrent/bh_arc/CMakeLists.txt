@@ -26,7 +26,7 @@ zephyr_library_sources_ifndef(
   serdes_eth.c
   telemetry.c
   telemetry_internal.c
-  tensix_cg.c
+  tensix_init.c
   throttler.c
   vf_curve.c
   voltage.c

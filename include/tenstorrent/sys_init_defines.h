@@ -24,7 +24,7 @@
 #define DeassertRiscvResets_PRIO              11
 #define InitAiclkPPM_PRIO                     12
 #define pcie_init_PRIO                        13
-#define tensix_cg_init_PRIO                   14
+#define tensix_init_PRIO                      14
 #define InitMrisc_PRIO                        15
 #define eth_init_PRIO                         16
 #define InitSmbusTarget_PRIO                  17
