@@ -51,11 +51,6 @@ static const struct device *const max6639_pwm_dev =
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
 
-#if BH_CHIP_COUNT == 2
-static uint8_t auto_fan_speed[BH_CHIP_COUNT] = {35, 35}; /* per–chip */
-#else
-static uint8_t auto_fan_speed[BH_CHIP_COUNT] = {35}; /* per–chip */
-#endif
 static uint8_t forced_fan_speed; /* 0-100 % */
 
 int update_fw(void)
@@ -139,10 +134,9 @@ void process_cm2dm_message(struct bh_chip *chip)
 				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
 				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
 					fan_speed_percentage * UINT8_MAX, 100);
-				int chip_index = message.data >> 31;
 
 				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
-				auto_fan_speed[chip_index] = fan_speed;
+				chip->data.fan_speed = fan_speed;
 			}
 			break;
 		case kCm2DmMsgIdForcedFanSpeedUpdate:
@@ -317,6 +311,10 @@ int main(void)
 		} else {
 			LOG_DBG("Built-in self-test succeeded");
 		}
+	}
+
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		chip->data.fan_speed = 35;
 	}
 
 	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
@@ -551,11 +549,12 @@ int main(void)
 			if (forced_fan_speed != 0) {
 				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, forced_fan_speed, 0);
 			} else {
-				uint8_t max_fan_speed = auto_fan_speed[0];
+				uint8_t max_fan_speed = 0;
 
-				if (BH_CHIP_COUNT == 2) {
-					max_fan_speed = MAX(auto_fan_speed[0], auto_fan_speed[1]);
+				ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+					max_fan_speed = MAX(max_fan_speed, chip->data.fan_speed);
 				}
+
 				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, max_fan_speed, 0);
 			}
 		}
