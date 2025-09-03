@@ -15,7 +15,7 @@
 #include "noc2axi.h"
 #include "reg.h"
 #include "status_reg.h"
-#include "tensix_cg.h"
+#include "tensix_init.h"
 
 #include <stdint.h>
 
@@ -177,9 +177,7 @@ static __maybe_unused uint8_t ReinitTensix(uint32_t msg_code, const struct reque
 	 * but it's simpler to reuse the same functions to re-program all of it.
 	 */
 	NocInit();
-	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
-		EnableTensixCG();
-	}
+	TensixInit();
 	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
 		InitNocTranslationFromHarvesting();
 	}

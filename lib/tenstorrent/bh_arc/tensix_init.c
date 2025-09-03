@@ -43,7 +43,7 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 /* 15 - L1 Banks */
 /* 16 - Src B */
 
-void EnableTensixCG(void)
+static void EnableTensixCG(void)
 {
 	uint8_t ring = 0;
 	uint8_t noc_tlb = 0;
@@ -98,7 +98,16 @@ static void wipe_l1(void)
 	noc_dma_broadcast(tensix_x, tensix_y, addr, TENSIX_L1_SIZE);
 }
 
-static int tensix_cg_init(void)
+void TensixInit(void)
+{
+	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
+		EnableTensixCG();
+	}
+
+	/* wipe_l1() isn't here because it's only needed on boot & board reset. */
+}
+
+static int tensix_init(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
 
@@ -106,14 +115,10 @@ static int tensix_cg_init(void)
 		return 0;
 	}
 
+	TensixInit();
+
 	wipe_l1();
-
-	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
-		return 0;
-	}
-
-	EnableTensixCG();
 
 	return 0;
 }
-SYS_INIT_APP(tensix_cg_init);
+SYS_INIT_APP(tensix_init);
