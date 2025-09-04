@@ -431,8 +431,7 @@ int main(void)
 				}
 
 				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-					pwm_set_cycles(max6639_pwm_dev, 0, UINT32_MAX, UINT32_MAX,
-						       0);
+					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
 				}
 
 				/* Prioritize the system rebooting over the therm trip handler */
@@ -474,8 +473,7 @@ int main(void)
 				chip->data.auto_reset_timeout = 0;
 
 				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-					pwm_set_cycles(max6639_pwm_dev, 0, UINT32_MAX, UINT32_MAX,
-						       0);
+					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
 				}
 
 				chip->data.performing_reset = true;
