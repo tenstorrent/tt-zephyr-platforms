@@ -81,6 +81,8 @@ struct bh_chip_data {
 
 	/* Requested fan speed in %. */
 	uint8_t fan_speed;
+	/* Is that a forced or automatic fan speed? */
+	bool fan_speed_forced;
 };
 
 struct bh_chip {
