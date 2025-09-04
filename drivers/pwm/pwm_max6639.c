@@ -76,41 +76,20 @@ static int max6639_pwm_get_cycles_per_sec(const struct device *dev, uint32_t cha
 		return result;
 	}
 
-	switch (global_config >> MAX6639_REG_GLOBAL_CONFIG_PWM_FREQUENCY_SHIFT & 0x1) {
-	case 0:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_LOW_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_LOW_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_LOW_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_LOW_FREQ_11_FREQ;
-			break;
-		}
-		break;
+	static const uint16_t frequency_table[] = {
+		MAX6639_HIGH_FREQ_00_FREQ,
+		MAX6639_HIGH_FREQ_01_FREQ,
+		MAX6639_HIGH_FREQ_10_FREQ,
+		MAX6639_HIGH_FREQ_11_FREQ,
+	};
 
-	case 1:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_HIGH_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_HIGH_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_HIGH_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_HIGH_FREQ_11_FREQ;
-			break;
-		}
-		break;
+	uint32_t frequency = frequency_table[config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK];
+
+	if (!IS_BIT_SET(global_config, MAX6639_REG_GLOBAL_CONFIG_PWM_FREQUENCY_SHIFT)) {
+		frequency /= MAX6639_HIGH_LOW_FREQ_RATIO;
 	}
+
+	*cycles = frequency;
 
 	return 0;
 }
