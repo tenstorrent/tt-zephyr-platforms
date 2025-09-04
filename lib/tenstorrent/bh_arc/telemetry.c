@@ -9,7 +9,6 @@
 #include "fan_ctrl.h"
 #include "functional_efuse.h"
 #include "harvesting.h"
-#include "pvt.h"
 #include "reg.h"
 #include "regulator.h"
 #include "status_reg.h"
