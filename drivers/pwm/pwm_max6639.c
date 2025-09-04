@@ -21,164 +21,98 @@ struct max6639_pwm_config {
 	struct i2c_dt_spec i2c;
 };
 
-static int max6639_pwm_channel_1_set_cycles(const struct device *dev, uint32_t period_count,
-					    uint32_t pulse_count, pwm_flags_t flags)
-{
-	const struct max6639_pwm_config *config = dev->config;
-	uint8_t fan_speed = (uint32_t)pulse_count * MAX6639_PWM_PERIOD / period_count;
-	int result;
-
-	result = i2c_reg_write_byte_dt(&config->i2c, MAX6639_REG_CHANNEL_1_DUTY_CYCLE, fan_speed);
-	return result;
-}
-
-static int max6639_pwm_channel_2_set_cycles(const struct device *dev, uint32_t period_count,
-					    uint32_t pulse_count, pwm_flags_t flags)
-{
-	const struct max6639_pwm_config *config = dev->config;
-	uint8_t fan_speed = (uint32_t)pulse_count * MAX6639_PWM_PERIOD / period_count;
-	int result;
-
-	result = i2c_reg_write_byte_dt(&config->i2c, MAX6639_REG_CHANNEL_2_DUTY_CYCLE, fan_speed);
-	return result;
-}
-
 static int max6639_pwm_set_cycles(const struct device *dev, uint32_t channel, uint32_t period_count,
 				  uint32_t pulse_count, pwm_flags_t flags)
 {
+	uint8_t duty_cycle_reg_addr;
+
 	switch (channel) {
 	case 0:
-		return max6639_pwm_channel_1_set_cycles(dev, period_count, pulse_count, flags);
+		duty_cycle_reg_addr = MAX6639_REG_CHANNEL_1_DUTY_CYCLE;
+		break;
 	case 1:
-		return max6639_pwm_channel_2_set_cycles(dev, period_count, pulse_count, flags);
+		duty_cycle_reg_addr = MAX6639_REG_CHANNEL_2_DUTY_CYCLE;
+		break;
 	default:
 		return -EINVAL;
 	}
-}
 
-static int max6639_pwm_channel_1_get_cycles_per_sec(const struct device *dev, uint64_t *cycles)
-{
 	const struct max6639_pwm_config *config = dev->config;
-	uint8_t global_config;
-	uint8_t config_3;
-	int result;
+	uint8_t fan_speed = (uint32_t)pulse_count * MAX6639_PWM_PERIOD / period_count;
 
-	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_GLOBAL_CONFIG, &global_config);
-	if (result != 0) {
-		return result;
-	}
-
-	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_CHANNEL_1_CONFIG_3, &config_3);
-	if (result != 0) {
-		return result;
-	}
-
-	switch (global_config >> MAX6639_REG_GLOBAL_CONFIG_PWM_FREQUENCY_SHIFT & 0x1) {
-	case 0:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_LOW_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_LOW_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_LOW_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_LOW_FREQ_11_FREQ;
-			break;
-		}
-		break;
-
-	case 1:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_HIGH_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_HIGH_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_HIGH_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_HIGH_FREQ_11_FREQ;
-			break;
-		}
-		break;
-	}
-
-	return 0;
-}
-
-static int max6639_pwm_channel_2_get_cycles_per_sec(const struct device *dev, uint64_t *cycles)
-{
-	const struct max6639_pwm_config *config = dev->config;
-	uint8_t global_config;
-	uint8_t config_3;
-	int result;
-
-	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_GLOBAL_CONFIG, &global_config);
-	if (result != 0) {
-		return result;
-	}
-
-	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_CHANNEL_2_CONFIG_3, &config_3);
-	if (result != 0) {
-		return result;
-	}
-
-	switch (global_config >> MAX6639_REG_GLOBAL_CONFIG_PWM_FREQUENCY_SHIFT & 0x1) {
-	case 0:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_LOW_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_LOW_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_LOW_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_LOW_FREQ_11_FREQ;
-			break;
-		}
-		break;
-
-	case 1:
-		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
-		case 0b00:
-			*cycles = MAX6639_HIGH_FREQ_00_FREQ;
-			break;
-		case 0b01:
-			*cycles = MAX6639_HIGH_FREQ_01_FREQ;
-			break;
-		case 0b10:
-			*cycles = MAX6639_HIGH_FREQ_10_FREQ;
-			break;
-		case 0b11:
-			*cycles = MAX6639_HIGH_FREQ_11_FREQ;
-			break;
-		}
-		break;
-	}
-
-	return 0;
+	return i2c_reg_write_byte_dt(&config->i2c, duty_cycle_reg_addr, fan_speed);
 }
 
 static int max6639_pwm_get_cycles_per_sec(const struct device *dev, uint32_t channel,
 					  uint64_t *cycles)
 {
+	const struct max6639_pwm_config *config = dev->config;
+	int result;
+
+	uint8_t config_3_reg_addr;
+
 	switch (channel) {
 	case 0:
-		return max6639_pwm_channel_1_get_cycles_per_sec(dev, cycles);
+		config_3_reg_addr = MAX6639_REG_CHANNEL_1_CONFIG_3;
+		break;
 	case 1:
-		return max6639_pwm_channel_2_get_cycles_per_sec(dev, cycles);
+		config_3_reg_addr = MAX6639_REG_CHANNEL_2_CONFIG_3;
+		break;
 	default:
 		return -EINVAL;
 	}
+
+	uint8_t global_config;
+
+	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_GLOBAL_CONFIG, &global_config);
+	if (result != 0) {
+		return result;
+	}
+
+	uint8_t config_3;
+
+	result = i2c_reg_read_byte_dt(&config->i2c, config_3_reg_addr, &config_3);
+	if (result != 0) {
+		return result;
+	}
+
+	switch (global_config >> MAX6639_REG_GLOBAL_CONFIG_PWM_FREQUENCY_SHIFT & 0x1) {
+	case 0:
+		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
+		case 0b00:
+			*cycles = MAX6639_LOW_FREQ_00_FREQ;
+			break;
+		case 0b01:
+			*cycles = MAX6639_LOW_FREQ_01_FREQ;
+			break;
+		case 0b10:
+			*cycles = MAX6639_LOW_FREQ_10_FREQ;
+			break;
+		case 0b11:
+			*cycles = MAX6639_LOW_FREQ_11_FREQ;
+			break;
+		}
+		break;
+
+	case 1:
+		switch (config_3 & MAX6639_CONFIG_3_PWM_FREQUENCY_MASK) {
+		case 0b00:
+			*cycles = MAX6639_HIGH_FREQ_00_FREQ;
+			break;
+		case 0b01:
+			*cycles = MAX6639_HIGH_FREQ_01_FREQ;
+			break;
+		case 0b10:
+			*cycles = MAX6639_HIGH_FREQ_10_FREQ;
+			break;
+		case 0b11:
+			*cycles = MAX6639_HIGH_FREQ_11_FREQ;
+			break;
+		}
+		break;
+	}
+
+	return 0;
 }
 
 static int max6639_pwm_init(const struct device *dev)
