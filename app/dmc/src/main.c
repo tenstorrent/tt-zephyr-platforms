@@ -51,8 +51,6 @@ static const struct device *const max6639_pwm_dev =
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
 
-static uint8_t forced_fan_speed; /* 0-100 % */
-
 int update_fw(void)
 {
 	/* To get here we are already running known good fw */
@@ -103,6 +101,40 @@ int update_fw(void)
 	return ret;
 }
 
+/* FIXME: notify_smcs should be automatic, we should notify if the SMCs are ready, otherwise
+ * record a notification to be sent once they are. Also it's properly per-SMC state.
+ */
+void update_fan_speed(bool notify_smcs)
+{
+	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+		uint8_t fan_speed = 0;
+		uint8_t forced_fan_speed = 0;
+
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			fan_speed = MAX(fan_speed, chip->data.fan_speed);
+			forced_fan_speed =
+				MAX(forced_fan_speed,
+				    chip->data.fan_speed_forced ? chip->data.fan_speed : 0);
+		}
+
+		if (forced_fan_speed != 0) {
+			fan_speed = forced_fan_speed;
+		}
+
+		uint32_t fan_speed_pwm = DIV_ROUND_UP(fan_speed * UINT8_MAX, 100);
+
+		pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed_pwm, 0);
+
+		if (notify_smcs) {
+			/* Broadcast final speed to all SMCs for telemetry */
+			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+				bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_FAN_SPEED,
+							    fan_speed);
+			}
+		}
+	}
+}
+
 void process_cm2dm_message(struct bh_chip *chip)
 {
 	cm2dmMessageRet msg = bh_chip_get_cm2dm_message(chip);
@@ -130,29 +162,14 @@ void process_cm2dm_message(struct bh_chip *chip)
 			bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
 			break;
 		case kCm2DmMsgIdFanSpeedUpdate:
-			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
-				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
-					fan_speed_percentage * UINT8_MAX, 100);
-
-				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
-				chip->data.fan_speed = fan_speed;
-			}
+			chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), message.data);
+			chip->data.fan_speed_forced = false;
+			update_fan_speed(true);
 			break;
 		case kCm2DmMsgIdForcedFanSpeedUpdate:
-			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-				uint8_t fan_speed_percentage = (uint8_t)message.data & 0xFF;
-				uint8_t fan_speed = (uint8_t)DIV_ROUND_UP(
-					fan_speed_percentage * UINT8_MAX, 100);
-				forced_fan_speed = fan_speed;
-
-				/* Broadcast forced speed to all CMFWs for telemetry */
-				for (int i = 0; i < BH_CHIP_COUNT; i++) {
-					bharc_smbus_word_data_write(&BH_CHIPS[i].config.arc,
-								    CMFW_SMBUS_FAN_SPEED,
-								    fan_speed_percentage);
-				}
-			}
+			chip->data.fan_speed = FIELD_GET(GENMASK(7, 0), message.data);
+			chip->data.fan_speed_forced = true;
+			update_fan_speed(true);
 			break;
 		case kCm2DmMsgIdReady:
 			chip->data.arc_needs_init_msg = true;
@@ -317,12 +334,7 @@ int main(void)
 		chip->data.fan_speed = 35;
 	}
 
-	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-		uint8_t fan_speed =
-			(uint8_t)DIV_ROUND_UP(35 * UINT8_MAX, 100); /* Start fan speed at 35% */
-
-		pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, fan_speed, 0);
-	}
+	update_fan_speed(false);
 
 	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
 		if (!tt_fwupdate_is_confirmed()) {
@@ -428,6 +440,10 @@ int main(void)
 					gpio_pin_set_dt(&board_fault_led, 1);
 				}
 
+				/* hold fan at 100% until we hear otherwise from this chip */
+				chip->data.fan_speed = 100;
+				chip->data.fan_speed_forced = true;
+
 				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
 				}
@@ -469,6 +485,10 @@ int main(void)
 				jtag_teardown(chip->config.jtag);
 				/* Clear watchdog state */
 				chip->data.auto_reset_timeout = 0;
+
+				/* hold fan at 100% until we hear otherwise from this chip */
+				chip->data.fan_speed = 100;
+				chip->data.fan_speed_forced = true;
 
 				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
 					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
@@ -544,18 +564,6 @@ int main(void)
 
 			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 				bh_chip_set_fan_rpm(chip, rpm);
-			}
-
-			if (forced_fan_speed != 0) {
-				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, forced_fan_speed, 0);
-			} else {
-				uint8_t max_fan_speed = 0;
-
-				ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-					max_fan_speed = MAX(max_fan_speed, chip->data.fan_speed);
-				}
-
-				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, max_fan_speed, 0);
 			}
 		}
 
