@@ -1,3 +1,13 @@
+# TT-Zephyr-Platforms v18.9.1
+
+This point-release of TT Zephyr platforms version 18.9.1 includes bug-fixes to address the issues
+listed below.
+
+### Stability Improvements
+
+* Reduce scratchpad size on ARC that is used as a temporary buffer for loading ERISC firmware
+  * This fixes a bug that could result in loss of Ethernet functionality
+
 # TT-Zephyr-Platforms v18.9.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.9.0 🥳🎉.
