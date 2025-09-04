@@ -7,21 +7,18 @@
 #ifndef ZEPHYR_INCLUDE_DRIVERS_PLL_H_
 #define ZEPHYR_INCLUDE_DRIVERS_PLL_H_
 
-enum clock_control_tt_bh_clock {
-	CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
-	CLOCK_CONTROL_TT_BH_CLOCK_ARCCLK,
-	CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,
-	CLOCK_CONTROL_TT_BH_CLOCK_APBCLK,
-	CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0,
-	CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1,
-	CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2,
-	CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3,
-	CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK,
-	CLOCK_CONTROL_TT_BH_INIT_STATE
-};
+#include <zephyr/dt-bindings/clock_control/clock_control_tt_bh.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum clock_control_tt_bh_clock_config {
 	CLOCK_CONTROL_TT_BH_CONFIG_BYPASS
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ZEPHYR_INCLUDE_DRIVERS_PLL_H_ */

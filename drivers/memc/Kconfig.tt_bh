@@ -1,0 +1,29 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config MEMC_TT_BH
+	bool "Tenstorrent Blackhole DDR memory controller driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_BH_MEMC_ENABLED
+	help
+	  Enable the Tenstorrent Blackhole DDR memory controller driver.
+
+
+if MEMC_TT_BH
+
+config MEMC_TT_BH_INIT_PRIORITY
+	int "Initialization priority for Tenstorrent Blackhole DDR memory controller"
+	# this corresponds to POST_KERNEL+18
+	default 91
+	help
+	  Set the initialization priority for the Tenstorrent Blackhole DDR memory controller.
+
+config MEMC_TT_BH_BUF_SIZE
+	int "Buffer size for Tenstorrent Blackhole firmware and config data"
+	default 512
+	help
+	  Set the buffer size for Tenstorrent Blackhole firmware and configuration data.
+
+	  Warning: This buffer is stack-allocated!
+
+endif

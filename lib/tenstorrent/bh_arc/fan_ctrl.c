@@ -7,7 +7,6 @@
 #include "fan_ctrl.h"
 
 #include "cm2dm_msg.h"
-#include "gddr.h"
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "timer.h"

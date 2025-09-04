@@ -6,7 +6,6 @@
 
 #include "cm2dm_msg.h"
 #include "eth.h"
-#include "gddr.h"
 #include "harvesting.h"
 #include "init.h"
 #include "irqnum.h"
@@ -24,6 +23,7 @@
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/memc/memc_tt_bh.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
@@ -44,6 +44,8 @@ LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 STATUS_ERROR_STATUS0_reg_u error_status0;
+
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
 
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
@@ -80,7 +82,10 @@ static int AssertSoftResets(void)
 
 	/* Write to SOFT_RESET_0 of GDDR */
 	/* Note that there are 3 NOC nodes for each GDDR instance */
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		int gddr_inst = memc_tt_bh_inst_get(dev);
+
 		/* Skip harvested GDDR tiles */
 		if (tile_enable.gddr_enabled & BIT(gddr_inst)) {
 			for (uint8_t noc_node_inst = 0; noc_node_inst < 3; noc_node_inst++) {

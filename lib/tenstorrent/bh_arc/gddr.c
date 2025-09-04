@@ -17,6 +17,7 @@
 #include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
+#include <zephyr/drivers/memc/memc_tt_bh.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
@@ -26,8 +27,7 @@
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/clock_control.h>
 
-static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
-static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -45,22 +45,6 @@ static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash
 LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-
-static uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
-{
-	/* GDDR speed is the second DWORD of the MRISC FW Config table */
-	uint32_t *fw_cfg_dw = (uint32_t *)fw_cfg_image;
-	return fw_cfg_dw[1];
-}
-
-static volatile void *SetupMriscL1Tlb(uint8_t gddr_inst)
-{
-	uint8_t x, y;
-
-	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
-	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_L1_ADDR);
-	return GetTlbWindowAddr(0, MRISC_SETUP_TLB, MRISC_L1_ADDR);
-}
 
 static uint32_t MriscL1Read32(uint8_t gddr_inst, uint32_t addr)
 {
@@ -98,83 +82,6 @@ static void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr, val);
 }
 
-int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
-{
-	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	bool dma_pass = ArcDmaTransfer((const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-				       gddr_telemetry, sizeof(*gddr_telemetry));
-	if (!dma_pass) {
-		/* If DMA failed, can read 32b at a time via NOC2AXI */
-		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
-			((uint32_t *)gddr_telemetry)[i] =
-				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
-		}
-	}
-	/* Check that version matches expectation. */
-	if (gddr_telemetry->telemetry_table_version != GDDR_TELEMETRY_TABLE_T_VERSION) {
-		LOG_WRN_ONCE("GDDR telemetry table version mismatch: %d (expected %d)",
-			     gddr_telemetry->telemetry_table_version,
-			     GDDR_TELEMETRY_TABLE_T_VERSION);
-		return -ENOTSUP;
-	}
-	return 0;
-}
-
-static void ReleaseMriscReset(uint8_t gddr_inst)
-{
-	const uint32_t kSoftReset0Addr = 0xFFB121B0;
-	uint8_t x, y;
-
-	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
-	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, kSoftReset0Addr);
-
-	volatile uint32_t *soft_reset_0 = GetTlbWindowAddr(0, MRISC_SETUP_TLB, kSoftReset0Addr);
-	*soft_reset_0 &= ~(1 << 11); /* Clear bit corresponding to MRISC reset */
-}
-
-static void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
-{
-	const uint32_t kNiuCfg0Addr[NUM_NOCS] = {0xFFB20100, 0xFFB30100};
-	uint8_t x, y;
-	volatile uint32_t *niu_cfg_0[NUM_NOCS];
-
-	for (uint8_t i = 0; i < NUM_NOCS; i++) {
-		GetGddrNocCoords(gddr_inst, noc2axi_port, i, &x, &y);
-		/* Note this actually sets up two TLBs (one for each NOC) */
-		NOC2AXITlbSetup(i, MRISC_SETUP_TLB, x, y, kNiuCfg0Addr[i]);
-		niu_cfg_0[i] = GetTlbWindowAddr(i, MRISC_SETUP_TLB, kNiuCfg0Addr[i]);
-	}
-
-	if (axi_enable) {
-		for (uint8_t i = 0; i < NUM_NOCS; i++) {
-			*niu_cfg_0[i] |= (1 << NIU_CFG_0_AXI_SLAVE_ENABLE);
-		}
-	} else {
-		for (uint8_t i = 0; i < NUM_NOCS; i++) {
-			*niu_cfg_0[i] &= ~(1 << NIU_CFG_0_AXI_SLAVE_ENABLE);
-		}
-	}
-}
-
-static int LoadMriscFw(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-		       size_t image_size)
-{
-	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	int rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
-					      (uint8_t *)mrisc_l1);
-
-	return rc;
-}
-static int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size_t spi_address,
-			  size_t image_size)
-{
-	volatile uint32_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	int rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
-					      (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET);
-
-	return rc;
-}
-
 static uint32_t GetDramMask(void)
 {
 	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
@@ -186,14 +93,16 @@ static uint32_t GetDramMask(void)
 	return dram_mask;
 }
 
-static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask)
+static int StartHwMemtest(const struct device *dev, uint32_t addr_bits, uint32_t start_addr,
+			  uint32_t mask)
 {
+	uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
 	uint32_t msg_args[3] = {addr_bits, start_addr, mask};
 
 	/* Only run if MRISC FW support it. Must be > 2.6 */
 	gddr_telemetry_table_t gddr_telemetry;
 
-	if (read_gddr_telemetry_table(gddr_inst, &gddr_telemetry) < 0) {
+	if (memc_tt_bh_telemetry_get(dev, &gddr_telemetry) < 0) {
 		LOG_WRN("Failed to read GDDR telemetry table while starting memtest");
 		return -ENOTSUP;
 	}
@@ -229,8 +138,10 @@ static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_
 	return 0;
 }
 
-static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
+static int CheckHwMemtestResult(const struct device *dev, k_timepoint_t timeout)
 {
+	uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 	/* This should only be called after StartHwMemtest() has already been called. */
 	while (MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER) != 0) {
 		/* Wait for the message to be processed */
@@ -250,123 +161,6 @@ static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	LOG_DBG("GDDR %d memory test passed", gddr_inst);
 	return 0;
 }
-
-/* This function assumes that tensix L1s have already been cleared */
-static void wipe_l1(void)
-{
-	uint8_t noc_id = 0;
-	uint64_t addr = 0;
-	uint32_t dram_mask = GetDramMask();
-	uint8_t tensix_x = 1;
-	uint8_t tensix_y = 2;
-
-	for (uint32_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			for (uint32_t noc2axi_port = 0; noc2axi_port < NUM_MRISC_NOC2AXI_PORT;
-			     noc2axi_port++) {
-				uint8_t x, y;
-
-				GetGddrNocCoords(gddr_inst, noc2axi_port, noc_id, &x, &y);
-				/* AXI enable must not be set, using MRISC address 0 */
-				noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, MRISC_L1_SIZE,
-					      true);
-			}
-		}
-	}
-}
-
-static int InitMrisc(void)
-{
-	wipe_l1();
-
-	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
-
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
-		return 0;
-	}
-
-	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
-			SetAxiEnable(gddr_inst, noc2axi_port, true);
-		}
-	}
-
-	uint32_t dram_mask = GetDramMask();
-
-	int rc;
-	tt_boot_fs_fd tag_fd;
-	size_t image_size;
-	size_t spi_address;
-
-	uint8_t buf[SCRATCHPAD_SIZE] __aligned(4);
-
-	rc = tt_boot_fs_find_fd_by_tag(flash, MRISC_FW_TAG, &tag_fd);
-	if (rc < 0) {
-		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_TAG, rc);
-		return rc;
-	}
-	image_size = tag_fd.flags.f.image_size;
-	spi_address = tag_fd.spi_addr;
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFw(gddr_inst, buf, SCRATCHPAD_SIZE, spi_address, image_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFw", gddr_inst, -EIO);
-				return -EIO;
-			}
-		}
-	}
-
-	rc = tt_boot_fs_find_fd_by_tag(flash, MRISC_FW_CFG_TAG, &tag_fd);
-	if (rc < 0) {
-		LOG_ERR("%s (%s) failed: %d", "tt_boot_fs_find_fd_by_tag", MRISC_FW_CFG_TAG, rc);
-		return rc;
-	}
-	image_size = tag_fd.flags.f.image_size;
-	spi_address = tag_fd.spi_addr;
-
-	/* Loading ETH FW configuration data requires the whole data to be loaded into buffer */
-	__ASSERT(SCRATCHPAD_SIZE >= image_size,
-		 "spi buffer size %zu must be larger than image size %zu", SCRATCHPAD_SIZE,
-		 image_size);
-
-	rc = flash_read(flash, spi_address, buf, image_size);
-	if (rc < 0) {
-		LOG_ERR("%s() failed: %d", "flash_read", rc);
-		return rc;
-	}
-
-	uint32_t gddr_speed = GetGddrSpeedFromCfg(buf);
-
-	if (!IN_RANGE(gddr_speed, MIN_GDDR_SPEED, MAX_GDDR_SPEED)) {
-		LOG_WRN("%s() failed: %d", "GetGddrSpeedFromCfg", gddr_speed);
-		gddr_speed = MIN_GDDR_SPEED;
-	}
-
-	if (clock_control_set_rate(
-		    pll_dev_3, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK,
-		    (clock_control_subsys_rate_t)(gddr_speed / GDDR_SPEED_TO_MEMCLK_RATIO))) {
-		LOG_ERR("%s(%d) failed: %d", "SetGddrMemClk", gddr_speed, -EIO);
-		return -EIO;
-	}
-
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
-		if (IS_BIT_SET(dram_mask, gddr_inst)) {
-			if (LoadMriscFwCfg(gddr_inst, buf, SCRATCHPAD_SIZE, spi_address,
-					   image_size)) {
-				LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
-				return -EIO;
-			}
-			MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
-			ReleaseMriscReset(gddr_inst);
-		}
-	}
-
-	return 0;
-}
-SYS_INIT_APP(InitMrisc);
 
 static int CheckGddrTraining(uint8_t gddr_inst, k_timepoint_t timeout)
 {
@@ -397,9 +191,12 @@ static int CheckGddrHwTest(void)
 	uint8_t test_started = 0; /* Bitmask of tests started */
 	int any_error = 0;
 
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 		if (IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
-			int error = StartHwMemtest(gddr_inst, 26, 0, 0);
+			int error = StartHwMemtest(dev, 26, 0, 0);
 
 			if (error == -ENOTSUP) {
 				/* Shouldn't be considered a test failure if MRISC FW is too old. */
@@ -416,9 +213,12 @@ static int CheckGddrHwTest(void)
 	}
 	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
 
-	for (uint8_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
+	ARRAY_FOR_EACH_PTR(memc_devices, devp) {
+		const struct device *dev = *devp;
+		uint8_t gddr_inst = memc_tt_bh_inst_get(dev);
+
 		if (IS_BIT_SET(test_started, gddr_inst)) {
-			int error = CheckHwMemtestResult(gddr_inst, timeout);
+			int error = CheckHwMemtestResult(dev, timeout);
 
 			if (error < 0) {
 				any_error = -EIO;
