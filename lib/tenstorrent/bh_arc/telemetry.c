@@ -132,7 +132,7 @@ uint32_t ConvertFloatToTelemetry(float value)
 	}
 
 	float abs_value = fabsf(value);
-	uint16_t int_part = floor(abs_value);
+	uint16_t int_part = floorf(abs_value);
 	uint16_t frac_part = (abs_value - int_part) * 65536;
 	uint32_t ret_value = (int_part << 16) | frac_part;
 	/* Return the 2's complement if the original value was negative */
