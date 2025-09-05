@@ -1,10 +1,19 @@
 name: Hardware Long Tests
 
-# Run long tests once nightly, at 00:00
+# Run long tests per-pr
 on:
-  schedule:
-    - cron: "0 0 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - v*-branch
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -45,6 +54,12 @@ jobs:
         with:
           ref: ${{ github.ref }}
           path: tt-zephyr-platforms
+
+      - name: Early Exit
+        shell: bash
+        run: |
+          # Exit job with failure, no need to run everything else
+          exit 1
 
       - name: Prepare Container
         uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
@@ -122,11 +137,9 @@ jobs:
           # - board: p100
           #  runs-on:
           #    - p100-jtag
-          # disabled until #https://github.com/tenstorrent/tt-metal/issues/19837
-          # is resolved- P300 support for metal is currently WIP
-          # - board: p300a
-          #   runs-on:
-          #     - p300a-jtag
+          - board: p300a
+            runs-on:
+              - p300a-jtag
           - board: p100a
             runs-on:
               - p100a-jtag
@@ -135,7 +148,7 @@ jobs:
               - p150a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.61.0-30-g3a3d9d704e
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-rc33-102-g8d7b743bca
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
