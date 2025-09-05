@@ -336,8 +336,7 @@ static int32_t Dm2CmSendFanSpeedHandler(const uint8_t *data, uint8_t size)
 	}
 
 	uint16_t speed = sys_get_le16(data);
-	/* 0 => unforce */
-	FanCtrlApplyBoardForcedSpeed(speed);
+	DmcFanSpeedFeedback(speed);
 
 	return 0;
 #endif

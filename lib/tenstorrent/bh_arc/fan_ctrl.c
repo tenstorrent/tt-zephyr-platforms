@@ -32,15 +32,15 @@ static struct k_timer fan_ctrl_update_timer;
 static struct k_work fan_ctrl_update_worker;
 static int fan_ctrl_update_interval = 1000;
 
-uint16_t fan_rpm;   /* Fan RPM from tach */
-uint32_t fan_speed; /* % */
-bool fan_speed_forced;
+static uint16_t fan_rpm;   /* Fan RPM from tach */
+static uint32_t fan_speed; /* % */
+static bool fan_speed_forced;
 
 static uint32_t fan_speed_feedback; /* %, feedback from DMC for telemetry */
 
-float max_gddr_temp;
-float max_asic_temp;
-float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
+static float max_gddr_temp;
+static float max_asic_temp;
+static float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -164,7 +164,7 @@ static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
 }
 REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
 
-void FanCtrlApplyBoardForcedSpeed(uint32_t speed_percentage)
+void DmcFanSpeedFeedback(uint32_t speed_percentage)
 {
 	fan_speed_feedback = speed_percentage;
 }
