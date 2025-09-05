@@ -8,6 +8,9 @@ config TT_BH_ARC
 	select TT_BOOT_FS
 	select NANOPB
 	select CRC
+	select I2C
+	select I2C_TARGET
+	select SMBUS_TARGET
 	help
 	  This option enables the Blackhole ARC firmware library.
 
