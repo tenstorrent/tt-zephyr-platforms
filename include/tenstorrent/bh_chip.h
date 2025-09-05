@@ -78,6 +78,11 @@ struct bh_chip_data {
 	uint32_t arc_hang_pc;
 	/* Was ARC watchdog triggered? */
 	bool arc_wdog_triggered;
+
+	uint8_t last_cm2dm_seq_num;
+	bool last_cm2dm_seq_num_valid;
+
+	uint32_t cm2dm_suspicion;
 };
 
 struct bh_chip {
