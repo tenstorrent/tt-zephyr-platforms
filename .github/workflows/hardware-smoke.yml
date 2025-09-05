@@ -54,6 +54,16 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
 
+      - name: Test Recovery
+        working-directory: tt-zephyr-platforms
+        run: |
+          # Install pack
+          pip install cmsis-pack-manager==0.6.0
+          pyocd pack install STM32G0B1CEUx
+          # Build recovery bundle
+          python3 ./scripts/prepare-recovery-bundle.py recovery.tar.gz
+          python3 ./scripts/recover-blackhole.py recovery.tar.gz ${{ matrix.config.board }}
+
       - name: Generate board names
         shell: bash
         working-directory: tt-zephyr-platforms
