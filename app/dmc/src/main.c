@@ -33,6 +33,8 @@
 
 #define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
 
+#define INITIAL_FAN_SPEED 35
+
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 BUILD_ASSERT(FIXED_PARTITION_EXISTS(bmfw), "bmfw fixed-partition does not exist");
@@ -331,7 +333,7 @@ int main(void)
 	}
 
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-		chip->data.fan_speed = 35;
+		chip->data.fan_speed = INITIAL_FAN_SPEED;
 	}
 
 	update_fan_speed(false);
