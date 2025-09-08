@@ -102,6 +102,6 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
     ]
     unlaunched_dut._flash_and_run()
     time.sleep(1)
-    assert (
-        read_boot_status() & 0x78
-    ) == 0x0, "Recovery firmware should no longer be active"
+    assert (read_boot_status() & 0x78) == 0x0, (
+        "Recovery firmware should no longer be active"
+    )
