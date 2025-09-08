@@ -60,12 +60,9 @@ static void SystemClock_Config(void)
 		SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk; /* Enable the Systick Timer */
 }
 
-static void MX_GPIO_Init(void)
+#ifdef USE_SPI1
+static void SPI1_GPIO_INIT(void)
 {
-	/* USER CODE BEGIN MX_GPIO_Init_1 */
-
-	/* USER CODE END MX_GPIO_Init_1 */
-
 	/* GPIO Ports Clock Enable */
 	LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
 	LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
@@ -116,11 +113,75 @@ static void MX_GPIO_Init(void)
 	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_5, LL_GPIO_SPEED_FREQ_LOW);
 	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_5, LL_GPIO_OUTPUT_PUSHPULL);
 	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_5, LL_GPIO_PULL_NO);
-
-	/* USER CODE BEGIN MX_GPIO_Init_2 */
-
-	/* USER CODE END MX_GPIO_Init_2 */
 }
+#elif defined(USE_SPI_COMBO)
+
+static void SPI_COMBO_GPIO_INIT(void)
+{
+	/* GPIO Ports Clock Enable */
+	LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
+	LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
+	LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOC);
+
+	/**/
+	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
+
+	/**/
+	LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_6);
+
+	/* PB12- NSS */
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_12, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_12, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_12, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_12, LL_GPIO_PULL_UP);
+	LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_12, LL_GPIO_AF_0);
+
+	/* PC8- SPI RST */
+	LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_8, LL_GPIO_MODE_OUTPUT);
+	LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_8, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOC, LL_GPIO_PIN_8, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOC, LL_GPIO_PIN_8, LL_GPIO_PULL_NO);
+
+	/* PC2- MISO */
+	LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_2, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_2, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOC, LL_GPIO_PIN_2, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOC, LL_GPIO_PIN_2, LL_GPIO_PULL_DOWN);
+	LL_GPIO_SetAFPin_0_7(GPIOC, LL_GPIO_PIN_2, LL_GPIO_AF_1);
+
+	/* PC3- MOSI */
+	LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_3, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_3, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOC, LL_GPIO_PIN_3, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOC, LL_GPIO_PIN_3, LL_GPIO_PULL_DOWN);
+	LL_GPIO_SetAFPin_0_7(GPIOC, LL_GPIO_PIN_3, LL_GPIO_AF_1);
+
+	/*
+	 * PA5 is muxed to SPI1_SCLK due an issue with P300 board design.
+	 * We attempt to work around this by transferring on SPI1 and SPI2 at the
+	 * same time. This is sketchy from a timing perspective, but it works.
+	 */
+	/* PA5- SCK */
+	LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_5, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinSpeed(GPIOA, LL_GPIO_PIN_5, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOA, LL_GPIO_PIN_5, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_5, LL_GPIO_PULL_UP);
+	LL_GPIO_SetAFPin_0_7(GPIOA, LL_GPIO_PIN_5, LL_GPIO_AF_0);
+
+	/* PB10- not routed anywhere, we just mux SPI2_SCLK to make the peripheral work */
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_10, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_10, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_10, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_10, LL_GPIO_PULL_UP);
+	LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_10, LL_GPIO_AF_5);
+
+	/* PB6- SPI MUX */
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_6, LL_GPIO_MODE_OUTPUT);
+	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_6, LL_GPIO_SPEED_FREQ_LOW);
+	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_6, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_6, LL_GPIO_PULL_NO);
+}
+#endif
 
 /**
  * @brief  This function provides accurate delay (in milliseconds) based
@@ -151,6 +212,42 @@ void LL_mDelay(uint32_t Delay)
 	}
 }
 
+void stm32_spi_periph_init(SPI_TypeDef *spi)
+{
+	/*
+	 * System core clock (and PCLK) are running at 64 MHz.
+	 * Clock SPI at 8 MHz.
+	 */
+	LL_SPI_SetTransferDirection(spi, LL_SPI_FULL_DUPLEX);
+	LL_SPI_SetMode(spi, LL_SPI_MODE_MASTER);
+	LL_SPI_SetDataWidth(spi, LL_SPI_DATAWIDTH_8BIT);
+	LL_SPI_SetClockPolarity(spi, LL_SPI_POLARITY_HIGH);
+	LL_SPI_SetClockPhase(spi, LL_SPI_PHASE_2EDGE);
+	LL_SPI_SetNSSMode(spi, LL_SPI_NSS_HARD_OUTPUT);
+#ifdef USE_SPI_COMBO
+	/* Reduce frequency to 250 KHz, otherwise the combo workaround will fail.
+	 * 500 KHz also appears to work but we keep frequency low to be safe
+	 */
+	LL_SPI_SetBaudRatePrescaler(spi, LL_SPI_BAUDRATEPRESCALER_DIV256);
+#else
+	/* 8 MHz works fine for general use */
+	LL_SPI_SetBaudRatePrescaler(spi, LL_SPI_BAUDRATEPRESCALER_DIV16);
+#endif
+	LL_SPI_SetTransferBitOrder(spi, LL_SPI_MSB_FIRST);
+	LL_SPI_DisableCRC(spi);
+	LL_SPI_SetStandard(spi, LL_SPI_PROTOCOL_MOTOROLA);
+	LL_SPI_DisableNSSPulseMgt(spi);
+	/* Set RX FIFO level to 8 bits (1/4) */
+	LL_SPI_SetRxFIFOThreshold(spi, LL_SPI_RX_FIFO_TH_QUARTER);
+	/* Disable interrupts */
+	LL_SPI_DisableIT_ERR(spi);
+	LL_SPI_DisableIT_RXNE(spi);
+	LL_SPI_DisableIT_TXE(spi);
+	/* Disable DMA */
+	LL_SPI_DisableDMAReq_RX(spi);
+	LL_SPI_DisableDMAReq_TX(spi);
+}
+
 /*
  * Init the SPI peripheral, including setting up GPIOs and clocks.
  * @return 0 on success, -1 on failure.
@@ -160,42 +257,20 @@ int stm32_spi_init(void)
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-	LL_APB2_GRP1_ForceReset(LL_APB2_GRP1_PERIPH_SPI1);
-	LL_APB2_GRP1_ReleaseReset(LL_APB2_GRP1_PERIPH_SPI1);
 
 	/** Disable the internal Pull-Up in Dead Battery pins of UCPD peripheral */
 	LL_SYSCFG_DisableDBATT(LL_SYSCFG_UCPD1_STROBE | LL_SYSCFG_UCPD2_STROBE);
 	/* Setup system clock */
 	SystemClock_Config();
-	/* Initialize GPIOs */
-	MX_GPIO_Init();
 
 	/* Peripheral clock enable */
+#ifdef USE_SPI1
 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-	/*
-	 * System core clock (and PCLK) are running at 64 MHz.
-	 * Clock SPI at 8 MHz.
-	 */
-	LL_SPI_SetTransferDirection(SPI1, LL_SPI_FULL_DUPLEX);
-	LL_SPI_SetMode(SPI1, LL_SPI_MODE_MASTER);
-	LL_SPI_SetDataWidth(SPI1, LL_SPI_DATAWIDTH_8BIT);
-	LL_SPI_SetClockPolarity(SPI1, LL_SPI_POLARITY_HIGH);
-	LL_SPI_SetClockPhase(SPI1, LL_SPI_PHASE_2EDGE);
-	LL_SPI_SetNSSMode(SPI1, LL_SPI_NSS_HARD_OUTPUT);
-	LL_SPI_SetBaudRatePrescaler(SPI1, LL_SPI_BAUDRATEPRESCALER_DIV16);
-	LL_SPI_SetTransferBitOrder(SPI1, LL_SPI_MSB_FIRST);
-	LL_SPI_DisableCRC(SPI1);
-	LL_SPI_SetStandard(SPI1, LL_SPI_PROTOCOL_MOTOROLA);
-	LL_SPI_DisableNSSPulseMgt(SPI1);
-	/* Set RX FIFO level to 8 bits (1/4) */
-	LL_SPI_SetRxFIFOThreshold(SPI1, LL_SPI_RX_FIFO_TH_QUARTER);
-	/* Disable interrupts */
-	LL_SPI_DisableIT_ERR(SPI1);
-	LL_SPI_DisableIT_RXNE(SPI1);
-	LL_SPI_DisableIT_TXE(SPI1);
-	/* Disable DMA */
-	LL_SPI_DisableDMAReq_RX(SPI1);
-	LL_SPI_DisableDMAReq_TX(SPI1);
+	LL_APB2_GRP1_ForceReset(LL_APB2_GRP1_PERIPH_SPI1);
+	LL_APB2_GRP1_ReleaseReset(LL_APB2_GRP1_PERIPH_SPI1);
+	/* Initialize GPIOs */
+	SPI1_GPIO_INIT();
+	stm32_spi_periph_init(SPI1);
 
 	/* Set SPI MUX to high so we have control over the SPI pins */
 	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_5);
@@ -204,6 +279,31 @@ int stm32_spi_init(void)
 	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_7);
 	LL_mDelay(1); /* Wait for 1 ms */
 	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_7);
+#elif defined(USE_SPI_COMBO)
+	/* Because the board design connects SPI1_SCLK to the SPI, we need
+	 * to init both SPI1 and SPI2
+	 */
+	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
+	LL_APB2_GRP1_ForceReset(LL_APB2_GRP1_PERIPH_SPI1);
+	LL_APB2_GRP1_ReleaseReset(LL_APB2_GRP1_PERIPH_SPI1);
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_SPI2);
+	LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_SPI2);
+	LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_SPI2);
+	/* Initialize GPIOs- just need SPI2 GPIOs here, SPI1 SCLK will be muxed
+	 * in SPI_COMBO_GPIO_INIT()
+	 */
+	SPI_COMBO_GPIO_INIT();
+	stm32_spi_periph_init(SPI1);
+	stm32_spi_periph_init(SPI2);
+
+	/* Set SPI MUX to high so we have control over the SPI pins */
+	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
+
+	/* Pulse RST line to reset SPI */
+	LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
+	LL_mDelay(1); /* Wait for 1 ms */
+	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_8);
+#endif
 	return 0;
 }
 
@@ -213,12 +313,29 @@ int stm32_spi_init(void)
  */
 int stm32_spi_deinit(void)
 {
+#if defined(USE_SPI1)
 	/* Force reset of SPI clock */
 	LL_APB2_GRP1_ForceReset(LL_APB2_GRP1_PERIPH_SPI1);
 	/* Release reset of SPI clock */
 	LL_APB2_GRP1_ReleaseReset(LL_APB2_GRP1_PERIPH_SPI1);
+#elif defined(USE_SPI_COMBO)
+	/* Once again, we need to reset SPI1 and SPI2 because of the board issue */
+	LL_APB2_GRP1_ForceReset(LL_APB2_GRP1_PERIPH_SPI1);
+	/* Release reset of SPI clock */
+	LL_APB2_GRP1_ReleaseReset(LL_APB2_GRP1_PERIPH_SPI1);
+	/* Force reset of SPI clock */
+	LL_APB1_GRP1_ForceReset(LL_APB1_GRP1_PERIPH_SPI2);
+	/* Release reset of SPI clock */
+	LL_APB1_GRP1_ReleaseReset(LL_APB1_GRP1_PERIPH_SPI2);
+#endif
 	return 0;
 }
+
+#ifdef USE_SPI1
+#define SPI_DEV SPI1
+#elif defined(USE_SPI_COMBO)
+#define SPI_DEV SPI2
+#endif
 
 /*
  * Transfer data over SPI.
@@ -229,38 +346,60 @@ int stm32_spi_deinit(void)
 int stm32_spi_transfer(struct spi_buf *bufs, uint8_t cnt)
 {
 	uint32_t tx_off, rx_off;
-
-	LL_SPI_Enable(SPI1);
+	LL_SPI_Enable(SPI_DEV);
+#ifdef USE_SPI_COMBO
+	LL_SPI_Enable(SPI1); /* Enable SPI1 as well for the combo mode */
+#endif
 	/* Just use a polling transfer here */
 	for (uint8_t buf_idx = 0; buf_idx < cnt; buf_idx++) {
 		tx_off = 0, rx_off = 0;
 		while (tx_off < bufs[buf_idx].len || rx_off < bufs[buf_idx].len) {
-			if (LL_SPI_IsActiveFlag_TXE(SPI1) && tx_off < bufs[buf_idx].len) {
+			if (LL_SPI_IsActiveFlag_TXE(SPI_DEV) && tx_off < bufs[buf_idx].len) {
 				/* Write bytes to TX FIFO */
 				if (bufs[buf_idx].tx_buf) {
-					LL_SPI_TransmitData8(SPI1, bufs[buf_idx].tx_buf[tx_off]);
+					LL_SPI_TransmitData8(SPI_DEV, bufs[buf_idx].tx_buf[tx_off]);
 				} else {
-					LL_SPI_TransmitData8(SPI1,
+					LL_SPI_TransmitData8(SPI_DEV,
 							     0xFF); /* If no TX buffer, send 0xFF */
 				}
+#ifdef USE_SPI_COMBO
+				/*
+				 * This is the core of the hack for SPI_COMBO mode- the board
+				 * routes SPI1_SCLK with SPI2_MOSI/SPI2_MISO. To induce clocks
+				 * on SPI1 at *roughly* the same time as SPI2, we transmit 0xFF
+				 * on SPI1 while transmitting on SPI2.
+				 * This will definitely break at higher frequencies, but
+				 * it should work at 8 MHz.
+				 */
+				LL_SPI_TransmitData8(SPI1, 0xFF);
+#endif
 				tx_off++;
 			}
-			if (LL_SPI_IsActiveFlag_RXNE(SPI1) && rx_off < bufs[buf_idx].len) {
+			if (LL_SPI_IsActiveFlag_RXNE(SPI_DEV) && rx_off < bufs[buf_idx].len) {
 				/* Read bytes from RX FIFO */
 				if (bufs[buf_idx].rx_buf) {
-					bufs[buf_idx].rx_buf[rx_off] = LL_SPI_ReceiveData8(SPI1);
+					bufs[buf_idx].rx_buf[rx_off] = LL_SPI_ReceiveData8(SPI_DEV);
 				} else {
 					LL_SPI_ReceiveData8(
-						SPI1); /* If no RX buffer, discard data */
+						SPI_DEV); /* If no RX buffer, discard data */
 				}
 				rx_off++;
 			}
+#ifdef USE_SPI_COMBO
+			if (LL_SPI_IsActiveFlag_RXNE(SPI1)) {
+				/* Drain the SPI1 RX FIFO */
+				LL_SPI_ReceiveData8(SPI1);
+			}
+#endif
 		}
 	}
 
-	while (LL_SPI_IsActiveFlag_BSY(SPI1)) {
+	while (LL_SPI_IsActiveFlag_BSY(SPI_DEV)) {
 		/* Wait for BSY flag to clear, indicating transfer is done. */
 	}
-	LL_SPI_Disable(SPI1);
+	LL_SPI_Disable(SPI_DEV);
+#ifdef USE_SPI_COMBO
+	LL_SPI_Disable(SPI1); /* Disable SPI1 as well for the combo mode */
+#endif
 	return 0;
 }

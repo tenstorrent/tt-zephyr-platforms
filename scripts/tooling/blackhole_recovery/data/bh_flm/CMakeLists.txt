@@ -21,15 +21,27 @@ string(APPEND CMAKE_C_FLAGS "-DSTM32G0xx -DSTM32G0B1xx -DFLASH_DRV_VERS=0 -DUSE_
 string(APPEND CMAKE_EXE_LINKER_FLAGS "-T ${CMAKE_CURRENT_LIST_DIR}/FlashAlgo.ld")
 
 project(flm LANGUAGES C)
-add_executable(spi.flm eeprom.c FlashDev.c FlashPrg.c stm32_spi_hal.c)
+set(TARGETS spi1.flm spi_combo.flm)
+foreach(TARGET ${TARGETS})
+  add_executable(${TARGET} eeprom.c FlashDev.c FlashPrg.c stm32_spi_hal.c)
+endforeach()
+
+# Set compile definitions for each SPI FLM target
+target_compile_definitions(spi1.flm PRIVATE USE_SPI1)
+target_compile_definitions(spi_combo.flm PRIVATE USE_SPI_COMBO)
+
 
 set(WORKSPACE_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../../../..)
 
 # Include STM32 HAL
 set(STM32_MODULE_DIR ${WORKSPACE_ROOT}/modules/hal/stm32)
-target_include_directories(spi.flm PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/soc)
-target_include_directories(spi.flm PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/drivers/include)
+foreach(TARGET ${TARGETS})
+  target_include_directories(${TARGET} PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/soc)
+  target_include_directories(${TARGET} PRIVATE ${STM32_MODULE_DIR}/stm32cube/stm32g0xx/drivers/include)
+endforeach()
 
 # Include CMSIS HAL
 set(CMSIS_MODULE_DIR ${WORKSPACE_ROOT}/modules/hal/cmsis_6)
-target_include_directories(spi.flm PRIVATE ${CMSIS_MODULE_DIR}/CMSIS/Core/Include)
+foreach(TARGET ${TARGETS})
+  target_include_directories(${TARGET} PRIVATE ${CMSIS_MODULE_DIR}/CMSIS/Core/Include)
+endforeach()

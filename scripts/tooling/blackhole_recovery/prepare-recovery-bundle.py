@@ -154,30 +154,53 @@ def main():
         print(f"Building flash algorithms: {' '.join(cmd)}")
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         os.mkdir(Path(temp_dir) / "build")
-        shutil.copy(
-            Path(temp_dir) / "build-bh-flm" / "spi.flm",
-            Path(temp_dir) / "build" / "spi.flm",
-        )
-        # Copy pyocd config files
-        shutil.copy(
-            TT_Z_P_ROOT
-            / "scripts"
-            / "tooling"
-            / "blackhole_recovery"
-            / "data"
-            / "bh_flm"
-            / "pyocd_config.py",
-            Path(temp_dir) / "pyocd_config.py",
-        )
-        # Write board manifest file
-        shutil.copy(
-            TT_Z_P_ROOT
-            / "scripts"
-            / "tooling"
-            / "blackhole_recovery"
-            / "board_metadata.yaml",
-            Path(temp_dir) / "board_metadata.yaml",
-        )
+        # Array of files to copy
+        file_ops = [
+            (
+                Path(temp_dir) / "build-bh-flm" / "spi1.flm",
+                Path(temp_dir) / "build" / "spi1.flm",
+            ),
+            (
+                Path(temp_dir) / "build-bh-flm" / "spi_combo.flm",
+                Path(temp_dir) / "build" / "spi_combo.flm",
+            ),
+            (
+                TT_Z_P_ROOT
+                / "scripts"
+                / "tooling"
+                / "blackhole_recovery"
+                / "data"
+                / "bh_flm"
+                / "pyocd_config_spi1.py",
+                Path(temp_dir) / "pyocd_config_spi1.py",
+            ),
+            (
+                TT_Z_P_ROOT
+                / "scripts"
+                / "tooling"
+                / "blackhole_recovery"
+                / "data"
+                / "bh_flm"
+                / "pyocd_config_spi_combo.py",
+                Path(temp_dir) / "pyocd_config_spi_combo.py",
+            ),
+            (
+                TT_Z_P_ROOT
+                / "scripts"
+                / "tooling"
+                / "blackhole_recovery"
+                / "data"
+                / "bh_flm"
+                / "pyocd_shared.py",
+                Path(temp_dir) / "pyocd_shared.py",
+            ),
+            (
+                TT_Z_P_ROOT / "scripts" / "board_metadata.yaml",
+                Path(temp_dir) / "board_metadata.yaml",
+            ),
+        ]
+        for src, dst in file_ops:
+            shutil.copy(src, dst)
         # Drop the git revision into a text file
         git_rev = subprocess.run(
             ["git", "describe"], capture_output=True, universal_newlines=True
