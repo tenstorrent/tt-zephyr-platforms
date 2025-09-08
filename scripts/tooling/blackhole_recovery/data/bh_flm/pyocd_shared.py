@@ -1,18 +1,17 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
+#
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Sequence
-from pathlib import Path
-from typing import Any, Dict
-
-from pyocd.core.memory_map import FlashRegion, RamRegion
+from typing import Sequence, Dict, Any
+import types
 from pyocd.target.pack.flash_algo import PackFlashAlgo
+from pyocd.core.memory_map import FlashRegion
 
 spiflash_base = 0x0
 spiflash_size = 0x4000000  # 64 MB
 
 
-def read_flash_memory(address, size) -> Sequence[int]:
+def read_flash_memory(target, address, size) -> Sequence[int]:
     """
     Read a block of memory from the flash region.
 
@@ -20,21 +19,20 @@ def read_flash_memory(address, size) -> Sequence[int]:
     :param size: The number of bytes to read.
     :return: A bytearray containing the read data.
     """
-    # Target variable is defined by pyocd module
-    ap = next(iter(target.aps.values()))  # pylint: disable=undefined-variable # noqa: F821
+    ap = next(iter(target.aps.values()))
     if address < spiflash_base or address + size > spiflash_base + spiflash_size:
         # Use the target's memory read function
         return ap.read_memory_original(address, size)
     # Call the custom read function within the FLM
-    region = target.memory_map.get_region_for_address(address)  # pylint: disable=undefined-variable # noqa: F821
-    if not region.flash._is_api_valid("pc_read"):
+    region = target.memory_map.get_region_for_address(address)
+    if not region.flash._is_api_valid("pc_read"):  # pylint: disable=protected-access
         raise RuntimeError(
             f"Flash read function not available for region at address {address:#x} with size {size:#x}."
         )
     pc_read = region.flash.flash_algo["pc_read"]
     region.flash.init(region.flash.Operation.VERIFY)
     # Read into device side ram buffer
-    result = region.flash._call_function_and_wait(
+    result = region.flash._call_function_and_wait(  # pylint: disable=protected-access
         pc_read, r0=address, r1=size, r2=region.flash.begin_data, timeout=5.0
     )
     if result != 0:
@@ -62,7 +60,9 @@ class SPIPackFlashAlgo(PackFlashAlgo):
     }
 
     def get_pyocd_flash_algo(
-        self, blocksize: int, ram_region: "RamRegion"
+        self,
+        blocksize: int,
+        ram_region: "RamRegion",  # noqa: F821
     ) -> Dict[str, Any]:
         """
         Returns the flash algorithm as a dictionary.
@@ -73,16 +73,11 @@ class SPIPackFlashAlgo(PackFlashAlgo):
         return algo
 
 
-def will_connect():
+def will_connect(flm, target):
     """
-    Called by pyocd at target connection time
+    Wrapper function for when pyocd connects to the target.
+    Will add a new flash region with the FLM for the SPI NOR flash.
     """
-
-    flm = Path(__file__).parent / "build" / "spi.flm"
-    if not flm.exists():
-        raise RuntimeError(
-            f"Flash algorithm file {flm} does not exist. Please build the flash algorithm first."
-        )
     with flm.open("rb") as f:
         flash_algo = SPIPackFlashAlgo(f)
 
@@ -100,19 +95,14 @@ def will_connect():
     # target is defined by pyocd module
     target.memory_map.add_region(spiflash)  # pylint: disable=undefined-variable # noqa: F821
 
+
+def did_connect(target):
+    """
+    Wrapper function for after pyocd connects to the target.
+    """
     # This is a bit of a hack. PYOCD assumes that all programmable flash is
     # memory mapped, so we need to override the memory read function to
     # read from the SPI NOR flash instead of the default memory read function.
-
-    # Save the original memory read function so we can call it later.
-    target.read_memory_original = target.read_memory_block8  # pylint: disable=undefined-variable # noqa: F821
-    # Manually override the memory read function to read from the SPI NOR flash.
-    target.read_memory_block8 = read_flash_memory  # pylint: disable=undefined-variable # noqa: F821
-
-
-def did_connect():
-    # Go ahead and replace the AP read function too- we need this one overridden
-    # as well, using the same hack as above
     ap = next(iter(target.aps.values()))  # pylint: disable=undefined-variable # noqa: F821
     ap.read_memory_original = ap.read_memory_block8
-    ap.read_memory_block8 = read_flash_memory
+    ap.read_memory_block8 = types.MethodType(read_flash_memory, target)

@@ -3,28 +3,61 @@ p100:
     name: "P100-1"
     bootfs-name: "tt_boot_fs"
     protobuf-name: "P100"
-    pyocd-config: "pyocd_config.py"
+    pyocd-config: "pyocd_config_spi1.py"
 p100a:
   - upi: 0x43
     name: "P100A-1"
     bootfs-name: "tt_boot_fs"
     protobuf-name: "P100A"
-    pyocd-config: "pyocd_config.py"
+    pyocd-config: "pyocd_config_spi1.py"
 p150a:
   - upi: 0x40
     name: "P150A-1"
     bootfs-name: "tt_boot_fs"
     protobuf-name: "P150A"
-    pyocd-config: "pyocd_config.py"
+    pyocd-config: "pyocd_config_spi1.py"
 p150b:
   - upi: 0x41
     name: "P150B-1"
     bootfs-name: "tt_boot_fs"
     protobuf-name: "P150B"
-    pyocd-config: "pyocd_config.py"
+    pyocd-config: "pyocd_config_spi1.py"
 p150c:
   - upi: 0x42
     name: "P150C-1"
     bootfs-name: "tt_boot_fs"
     protobuf-name: "P150C"
-    pyocd-config: "pyocd_config.py"
+    pyocd-config: "pyocd_config_spi1.py"
+p300a:
+  - upi: 0x45
+    name: "P300A-1"
+    bootfs-name: "tt_boot_fs_right"
+    protobuf-name: "P300A_R"
+    pyocd-config: "pyocd_config_spi1.py"
+  - upi: 0x45
+    name: "P300A-1"
+    bootfs-name: "tt_boot_fs_left"
+    protobuf-name: "P300A_L"
+    pyocd-config: "pyocd_config_spi_combo.py"
+p300b:
+  - upi: 0x44
+    name: "P300B-1"
+    bootfs-name: "tt_boot_fs_right"
+    protobuf-name: "P300B_R"
+    pyocd-config: "pyocd_config_spi1.py"
+  - upi: 0x44
+    name: "P300B-1"
+    bootfs-name: "tt_boot_fs_left"
+    protobuf-name: "P300B_L"
+    pyocd-config: "pyocd_config_spi_combo.py"
+p300c:
+  - upi: 0x46
+    name: "P300C-1"
+    bootfs-name: "tt_boot_fs_right"
+    protobuf-name: "P300C_R"
+    pyocd-config: "pyocd_config_spi1.py"
+  - upi: 0x46
+    name: "P300C-1"
+    bootfs-name: "tt_boot_fs_left"
+    protobuf-name: "P300C_L"
+    pyocd-config: "pyocd_config_spi_combo.py"
