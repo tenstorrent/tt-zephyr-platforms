@@ -51,7 +51,10 @@ typedef struct {
 	float arbiter_min[kAiclkArbMinCount];
 } AiclkPPM;
 
-static AiclkPPM aiclk_ppm;
+static AiclkPPM aiclk_ppm = {
+	.fmax = AICLK_FMAX_MAX,
+	.fmin = AICLK_FMIN_MIN,
+};
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
