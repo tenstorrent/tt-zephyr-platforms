@@ -6,7 +6,7 @@ description: |
 
 compatible: "tenstorrent,bh-arc-dma"
 
-include: base.yaml
+include: dma-controller.yaml
 
 properties:
   reg:
