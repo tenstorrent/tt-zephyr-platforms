@@ -10,7 +10,7 @@ TOOLS = $(addprefix $(OUTDIR)/, tt-console tt-tracing)
 
 all: $(notdir $(TOOLS))
 
-CFLAGS += -O0 -g -Wall -Wextra -Werror -std=gnu11 -I ../../include
+CFLAGS += -O0 -g -static -Wall -Wextra -Werror -std=gnu11 -I ../../include
 
 tt-console: console.c vuart.c rescan.c
 	$(CC) $(CFLAGS) -o $(OUTDIR)/$@ $^
