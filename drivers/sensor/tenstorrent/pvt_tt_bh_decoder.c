@@ -13,14 +13,14 @@ LOG_MODULE_DECLARE(pvt_tt_bh);
 
 #define VM_VREF 1.2207f
 
-float raw_to_temp(uint16_t raw)
+float pvt_tt_bh_raw_to_temp(uint16_t raw)
 {
 	float eqbs = raw / 4096.0 - 0.5;
 	/* TODO: slope and offset need to be replaced with fused values */
 	return 83.09f + 262.5f * eqbs;
 }
 
-uint16_t temp_to_raw(const struct sensor_value *value)
+uint16_t pvt_tt_bh_temp_to_raw(const struct sensor_value *value)
 {
 	float temp = sensor_value_to_float(value);
 
@@ -39,7 +39,7 @@ uint16_t temp_to_raw(const struct sensor_value *value)
 	return (uint16_t)(raw_f + 0.5f);
 }
 
-float raw_to_volt(uint16_t raw)
+float pvt_tt_bh_raw_to_volt(uint16_t raw)
 {
 	float k1 = VM_VREF * 6 / (5 * 16384);
 	float offset = VM_VREF / 5 * (3 / 256 + 1);
@@ -47,7 +47,7 @@ float raw_to_volt(uint16_t raw)
 	return k1 * raw - offset;
 }
 
-uint16_t volt_to_raw(const struct sensor_value *value)
+uint16_t pvt_tt_bh_volt_to_raw(const struct sensor_value *value)
 {
 	float volt = sensor_value_to_float(value);
 
@@ -66,7 +66,7 @@ uint16_t volt_to_raw(const struct sensor_value *value)
 	return (uint16_t)(raw_f + 0.5f);
 }
 
-float raw_to_freq(uint16_t raw)
+float pvt_tt_bh_raw_to_freq(uint16_t raw)
 {
 	float a = 4.0;
 	float b = 1.0;
@@ -76,7 +76,7 @@ float raw_to_freq(uint16_t raw)
 	return raw * a * b * fclk / w;
 }
 
-uint16_t freq_to_raw(const struct sensor_value *value)
+uint16_t pvt_tt_bh_freq_to_raw(const struct sensor_value *value)
 {
 	float freq = sensor_value_to_float(value);
 
@@ -97,7 +97,7 @@ uint16_t freq_to_raw(const struct sensor_value *value)
 	return (uint16_t)(raw_f + 0.5f);
 }
 
-void float_to_sensor_value(float data, struct sensor_value *val)
+void pvt_tt_bh_float_to_sensor_value(float data, struct sensor_value *val)
 {
 	val->val1 = (int32_t)data;
 	val->val2 = (int32_t)roundf((data - (float)val->val1) * 1000000.0f);
@@ -128,16 +128,16 @@ static int pvt_tt_bh_decode_sample(const uint8_t *buf, struct sensor_chan_spec c
 
 		switch (chan_spec.chan_type) {
 		case SENSOR_CHAN_PVT_TT_BH_PD: {
-			data_converted = raw_to_freq(data->raw);
+			data_converted = pvt_tt_bh_raw_to_freq(data->raw);
 			break;
 		}
 		case SENSOR_CHAN_PVT_TT_BH_VM: {
-			data_converted = raw_to_volt(data->raw);
+			data_converted = pvt_tt_bh_raw_to_volt(data->raw);
 			break;
 		}
 		case SENSOR_CHAN_PVT_TT_BH_TS:
 		case SENSOR_CHAN_PVT_TT_BH_TS_AVG: {
-			data_converted = raw_to_temp(data->raw);
+			data_converted = pvt_tt_bh_raw_to_temp(data->raw);
 			break;
 		}
 		default:
@@ -147,7 +147,7 @@ static int pvt_tt_bh_decode_sample(const uint8_t *buf, struct sensor_chan_spec c
 		break;
 	}
 
-	float_to_sensor_value(data_converted, out);
+	pvt_tt_bh_float_to_sensor_value(data_converted, out);
 	return 0;
 }
 

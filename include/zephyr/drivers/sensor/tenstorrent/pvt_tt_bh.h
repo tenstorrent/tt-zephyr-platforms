@@ -54,37 +54,37 @@ struct pvt_tt_bh_rtio_data {
 /*
  * Convert raw temperature sensor data to celcius.
  */
-float raw_to_temp(uint16_t raw);
+float pvt_tt_bh_raw_to_temp(uint16_t raw);
 
 /*
  * Convert celcius into raw temperature sensor data.
  */
-uint16_t temp_to_raw(const struct sensor_value *value);
+uint16_t pvt_tt_bh_temp_to_raw(const struct sensor_value *value);
 
 /*
  * Convert raw voltage monitor data to volts.
  */
-float raw_to_volt(uint16_t raw);
+float pvt_tt_bh_raw_to_volt(uint16_t raw);
 
 /*
  * Convert voltage insto raw voltage monitor data;
  */
-uint16_t volt_to_raw(const struct sensor_value *value);
+uint16_t pvt_tt_bh_volt_to_raw(const struct sensor_value *value);
 
 /*
  * Convert raw process detector data to MHz.
  */
-float raw_to_freq(uint16_t raw);
+float pvt_tt_bh_raw_to_freq(uint16_t raw);
 
 /*
  * Convert frequency into raw process detector data.
  */
-uint16_t freq_to_raw(const struct sensor_value *value);
+uint16_t pvt_tt_bh_freq_to_raw(const struct sensor_value *value);
 
 /*
  * Represent float data as two integers in struct sensor_value.
  */
-void float_to_sensor_value(float data, struct sensor_value *val);
+void pvt_tt_bh_float_to_sensor_value(float data, struct sensor_value *val);
 
 int pvt_tt_bh_get_decoder(const struct device *dev, const struct sensor_decoder_api **api);
 
