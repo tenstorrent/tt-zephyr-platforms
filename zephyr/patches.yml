@@ -14,10 +14,13 @@ patches:
   - path: zephyr/multiple_icntl.patch
     sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
     module: zephyr
-    author: Samridhi Bansal
-    email: sbansal@tenstorrent.com
+    author: Aaron Fong
+    email: afong@tenstorrent.com
     date: 2025-02-07
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92268
+    merge-status: true
+    merge-date: 2025-08-12
     comments: |
       This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
       It also enhances the driver to support multiple instances on the same platform.
@@ -33,6 +36,7 @@ patches:
     merge-date: 2025-04-22
     comments: |
       Fix upstream check_compliance.py to be usable by other modules.
+      Update: This has a few extra changes so cannot be dropped yet.
   - path: zephyr/arc-multilvl-int.patch
     sha256sum: fe33bdd040c7f89b848d17193aca3777e1b2c2d71d21f909aa202fb68bf024da
     module: zephyr
@@ -40,6 +44,7 @@ patches:
     email: afong@tenstorrent.com
     date: 2025-02-07
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92269
     comments: |
       Add support for multilevel interrupts on the ARC architecture.
   - path: zephyr/i2c-dw-multi-ints.patch
@@ -59,9 +64,13 @@ patches:
     date: 2025-05-07
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
+    merge-status: true
+    merge-date: 2025-08-29
     comments: |
-      Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantome
-      events.
+      Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantom
+      events. Update: This was actually rejected initially, but then picked up by another
+      community member and finished off. The follow-up PR was
+      https://github.com/zephyrproject-rtos/zephyr/pull/94789
   - path: zephyr/gpio-pca-series-pin-get-config.patch
     sha256sum: 7c640a600a922e157cc3f3c0acd244b16eec5fdcaa63370b5b5e1918fcef9a54
     module: zephyr
@@ -73,6 +82,8 @@ patches:
     comments: |
       The gpio_pca_series driver did not have pin_get_config() implemented. This change adds
       that functionality, with the exception of reading drive strength.
+      Update: some minor changes requested on this PR that required ordering another part
+      that belongs to the same gpio expander product family. Should be merged before 4.3.0.
   - path: zephyr/pwm-api-tests-skip-zero-duty-cycle-config.patch
     sha256sum: aaee09fd61d034b6c9ee6eb522402c87843be6f0936558cdc7684c903df9c2be
     module: zephyr
@@ -83,6 +94,8 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92188
     comments: |
       Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
+      This change was rejected as-is. However, I think it can be reworked to be out-of-tree
+      only by making the upstream test more flexible via Kconfig.
   - path: zephyr/mspi-dw.patch
     sha256sum: 5e75f668d6b74773c766292020d86e7e4829cb4641044c571a6221404d06e9e8
     module: zephyr
@@ -90,6 +103,9 @@ patches:
     email: ddegrasse@tenstorrent.com
     date: 2025-04-16
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/88912
+    merge-status: true
+    merge-date: 2025-08-03
     comments: |
       Skip building the upstream mspi-dw and flash-mspi-nor drivers.
   - path: zephyr/pr-92709.patch
@@ -100,9 +116,13 @@ patches:
     date: 2025-07-14
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92709
-    merge-status: false
+    merge-status: true
+    merge-date: 2025-09-02
     comments: |
       Correct system-wide timekeeping utilities (used by multiple subsystems).
+      Update: this change was reworked by another member in the Zephyr community.
+      The follow-up PR was
+      https://github.com/zephyrproject-rtos/zephyr/pull/94087
   - path: zephyr/dirty-hack-for-tt-hwinit.patch
     sha256sum: 12f1b5793791e9eac256055f6a05bf491bb62b0b1b9bafa60969b36b984495be
     module: zephyr
@@ -121,6 +141,9 @@ patches:
     email: ddegrasse@tenstorrent.com
     date: 2025-07-16
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/93210
+    merge-status: true
+    merge-date: 2025-09-08
     comments: |
       Fix timestamp generation in CTF_EVENT()
   - path: zephyr/k-busy-wait-ns.patch
