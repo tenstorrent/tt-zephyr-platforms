@@ -200,7 +200,7 @@ patches:
 
       Implementations are included for STM32 I2C and SMBus.
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: 4e3f00df96e7e9536553f1230262ee4e28efea8e537b07885a7cb314427bd819
+    sha256sum: b4fe073932487fc5b4ca1502688e101624b98f9010e1273266c7dd8529988bfd
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
