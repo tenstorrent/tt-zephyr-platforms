@@ -29,6 +29,12 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
       - name: Run the script
-        working-directory: scripts/tooling
         run: |
-          make -j$(nproc)
+          make -j$(nproc) -C scripts/tooling OUTDIR=$PWD
+      - name: Upload tt-tooling artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tt-tooling
+          path: |
+            tt-console
+            tt-tracing
