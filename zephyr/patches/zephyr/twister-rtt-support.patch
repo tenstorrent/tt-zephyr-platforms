@@ -1,100 +1,22 @@
-diff --git a/scripts/pylib/twister/twisterlib/environment.py b/scripts/pylib/twister/twisterlib/environment.py
-index cbc36e12ff8..db410b4e4a0 100644
---- a/scripts/pylib/twister/twisterlib/environment.py
-+++ b/scripts/pylib/twister/twisterlib/environment.py
-@@ -891,6 +891,18 @@ def parse_arguments(
-         logger.error("west-flash requires device-testing to be enabled")
-         sys.exit(1)
- 
-+    if options.device_serial_pty and options.device_serial_pty == "rtt":
-+        if options.west_flash is None:
-+            logger.error("--device-serial-pty rtt requires --west-flash")
-+            sys.exit(1)
-+
-+        # add the following options
-+        options.extra_args += ['CONFIG_USE_SEGGER_RTT=y',
-+                               'CONFIG_RTT_CONSOLE=y', 'CONFIG_CONSOLE=y',
-+                               # This option is needed to ensure the uart console is not selected
-+                               # when CONFIG_RTT_CONSOLE is enabled due to #81798
-+                               'CONFIG_UART_CONSOLE=n']
-+
-     if not options.testsuite_root:
-         # if we specify a test scenario which is part of a suite directly, do
-         # not set testsuite root to default, just point to the test directory
 diff --git a/scripts/pylib/twister/twisterlib/handlers.py b/scripts/pylib/twister/twisterlib/handlers.py
-index dc1ff258935..37eaaef1676 100755
+index dc1ff258935..9572790d834 100755
 --- a/scripts/pylib/twister/twisterlib/handlers.py
 +++ b/scripts/pylib/twister/twisterlib/handlers.py
-@@ -16,6 +16,7 @@ import re
- import select
- import shlex
- import signal
-+import stat
- import subprocess
- import sys
- import threading
-@@ -544,9 +545,9 @@ class DeviceHandler(Handler):
-                 proc.communicate()
-                 logger.error(f"{script} timed out")
- 
--    def _create_command(self, runner, hardware):
-+    def _create_command(self, base_command, runner, hardware):
-         if (self.options.west_flash is not None) or runner:
--            command = ["west", "flash", "--skip-rebuild", "-d", self.build_dir]
-+            command = base_command
-             command_extra_args = []
- 
-             # There are three ways this option is used.
-@@ -705,6 +706,27 @@ class DeviceHandler(Handler):
- 
-         return serial_device, ser_pty_process
- 
-+    def _create_serial_pty_script(self, runner, hardware):
-+        serial_pty = self.build_dir + '/rtt.sh'
-+
-+        rtt_cmd = ["west", "-qqqqq", "rtt", "-d", self.build_dir, "--skip-rebuild", "--rtt-quiet"]
-+        rtt_cmd = self._create_command(rtt_cmd, runner, hardware)
-+
-+        with open(serial_pty, 'w') as f:
-+            f.write("#!/bin/sh\n");
-+            for cmd in rtt_cmd:
-+                if " " in cmd:
-+                    f.write(f"'{cmd}' ")
-+                else:
-+                    f.write(f"{cmd} ")
-+
-+        st = os.stat(serial_pty)
-+        os.chmod(serial_pty, st.st_mode | stat.S_IEXEC)
-+
-+        logger.debug(f'RTT command is "{rtt_cmd}"')
-+
-+        return serial_pty
-+
-     def handle(self, harness):
-         runner = None
-         hardware = self.get_hardware()
-@@ -716,11 +738,17 @@ class DeviceHandler(Handler):
+@@ -716,9 +716,10 @@ class DeviceHandler(Handler):
          runner = hardware.runner or self.options.west_runner
          serial_pty = hardware.serial_pty
  
 -        serial_device, ser_pty_process = self._get_serial_device(serial_pty, hardware.serial)
-+        if serial_pty == 'rtt':
-+            serial_pty = self._create_serial_pty_script(runner, hardware)
-+            logger.debug(f'Created RTT script {serial_pty}')
- 
+-
 -        logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
 +        if not hardware.flash_before:
 +            serial_device, ser_pty_process = self._get_serial_device(
 +                serial_pty, hardware.serial)
 +            logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
  
--        command = self._create_command(runner, hardware)
-+        base_command = ["west", "flash", "--skip-rebuild", "-d", self.build_dir]
-+        command = self._create_command(base_command, runner, hardware)
+         command = self._create_command(runner, hardware)
  
-         pre_script = hardware.pre_script
-         post_flash_script = hardware.post_flash_script
-@@ -737,28 +765,27 @@ class DeviceHandler(Handler):
+@@ -737,28 +738,27 @@ class DeviceHandler(Handler):
          if hardware.flash_with_test:
              flash_timeout += self.get_test_timeout()
  
@@ -136,13 +58,13 @@ index dc1ff258935..37eaaef1676 100755
 -        start_time = time.time()
 -        t.start()
 +            t = threading.Thread(target=self.monitor_serial, daemon=True,
-+                                 args=(ser, halt_monitor_evt, harness))
++                                args=(ser, halt_monitor_evt, harness))
 +            start_time = time.time()
 +            t.start()
  
          d_log = f"{self.instance.build_dir}/device.log"
          logger.debug(f'Flash command: {command}', )
-@@ -777,7 +804,8 @@ class DeviceHandler(Handler):
+@@ -777,7 +777,8 @@ class DeviceHandler(Handler):
                          flash_error = True
                          with open(d_log, "w") as dlog_fp:
                              dlog_fp.write(stderr.decode())
@@ -152,7 +74,7 @@ index dc1ff258935..37eaaef1676 100755
                  except subprocess.TimeoutExpired:
                      logger.warning("Flash operation timed out.")
                      self.terminate(proc)
-@@ -790,7 +818,8 @@ class DeviceHandler(Handler):
+@@ -790,7 +791,8 @@ class DeviceHandler(Handler):
                  dlog_fp.write(stderr.decode())
  
          except subprocess.CalledProcessError:
@@ -162,7 +84,7 @@ index dc1ff258935..37eaaef1676 100755
              self.instance.status = TwisterStatus.ERROR
              self.instance.reason = "Device issue (Flash error)"
              flash_error = True
-@@ -801,26 +830,43 @@ class DeviceHandler(Handler):
+@@ -801,26 +803,44 @@ class DeviceHandler(Handler):
                  timeout = script_param.get("post_flash_timeout", timeout)
              self.run_custom_script(post_flash_script, timeout)
  
@@ -173,7 +95,7 @@ index dc1ff258935..37eaaef1676 100755
 +            logger.debug(f"Using serial device {serial_device} @ {hardware.baud} baud")
 +
              try:
--                logger.debug(f"Attach serial device {serial_device} @ {hardware.baud} baud")
+                 logger.debug(f"Attach serial device {serial_device} @ {hardware.baud} baud")
 -                ser.port = serial_device
 -                ser.open()
 +                ser = self._create_serial_connection(
@@ -212,187 +134,3 @@ index dc1ff258935..37eaaef1676 100755
  
          if t.is_alive():
              logger.debug(
-diff --git a/scripts/west_commands/runners/jlink.py b/scripts/west_commands/runners/jlink.py
-index 7e1e01b3e50..bb9cd2338bd 100644
---- a/scripts/west_commands/runners/jlink.py
-+++ b/scripts/west_commands/runners/jlink.py
-@@ -59,6 +59,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-                  gdb_host='',
-                  gdb_port=DEFAULT_JLINK_GDB_PORT,
-                  rtt_port=DEFAULT_JLINK_RTT_PORT,
-+                 rtt_quiet=False,
-                  tui=False, tool_opt=None):
-         super().__init__(cfg)
-         self.file = cfg.file
-@@ -84,6 +85,7 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-         self.tui_arg = ['-tui'] if tui else []
-         self.loader = loader
-         self.rtt_port = rtt_port
-+        self.rtt_quiet = rtt_quiet
- 
-         self.tool_opt = []
-         if tool_opt is not None:
-@@ -174,6 +176,8 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-                             help='RTT client, default is JLinkRTTClient')
-         parser.add_argument('--rtt-port', default=DEFAULT_JLINK_RTT_PORT,
-                             help=f'jlink rtt port, defaults to {DEFAULT_JLINK_RTT_PORT}')
-+        parser.add_argument('--rtt-quiet', action='store_true',
-+                            help='only output rtt to stdout, not that of subprocesses')
-         parser.add_argument('--flash-sram', default=False, action='store_true',
-                             help='if given, flashing the image to SRAM and '
-                             'modify PC register to be SRAM base address')
-@@ -196,9 +200,13 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-                                  gdb_host=args.gdb_host,
-                                  gdb_port=args.gdb_port,
-                                  rtt_port=args.rtt_port,
-+                                 rtt_quiet=args.rtt_quiet,
-                                  tui=args.tui, tool_opt=args.tool_opt)
- 
-     def print_gdbserver_message(self):
-+        if self.rtt_quiet:
-+            return
-+
-         if not self.thread_info_enabled:
-             thread_msg = '; no thread info available'
-         elif self.supports_thread_info:
-@@ -209,6 +217,9 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-                          f'{self.gdb_port}{thread_msg}')
- 
-     def print_rttserver_message(self):
-+        if self.rtt_quiet:
-+            return
-+
-         self.logger.info(f'J-Link RTT server running on port {self.rtt_port}')
- 
-     @property
-@@ -322,10 +333,14 @@ class JLinkBinaryRunner(ZephyrBinaryRunner):
-             self.print_gdbserver_message()
-             self.check_call(server_cmd)
-         elif command == 'rtt':
-+            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
-+                                'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
-+
-             self.print_gdbserver_message()
-             self.print_rttserver_message()
-             server_cmd += ['-nohalt']
--            server_proc = self.popen_ignore_int(server_cmd)
-+            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
-+            time.sleep(1)
-             try:
-                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                 # wait for the port to be open
-diff --git a/scripts/west_commands/runners/openocd.py b/scripts/west_commands/runners/openocd.py
-index e4c02fdf12c..fb96cfe798f 100644
---- a/scripts/west_commands/runners/openocd.py
-+++ b/scripts/west_commands/runners/openocd.py
-@@ -59,7 +59,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-                  gdb_client_port=DEFAULT_OPENOCD_GDB_PORT,
-                  gdb_init=None, no_load=False,
-                  target_handle=DEFAULT_OPENOCD_TARGET_HANDLE,
--                 rtt_port=DEFAULT_OPENOCD_RTT_PORT, rtt_server=False):
-+                 rtt_port=DEFAULT_OPENOCD_RTT_PORT, rtt_server=False,
-+                 rtt_quiet=False, rtt_no_reset=False):
-         super().__init__(cfg)
- 
-         if not path.exists(cfg.board_dir):
-@@ -121,6 +122,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-         self.target_handle = target_handle
-         self.rtt_port = rtt_port
-         self.rtt_server = rtt_server
-+        self.rtt_quiet = rtt_quiet
-+        self.rtt_no_reset = rtt_no_reset
- 
-     @classmethod
-     def name(cls):
-@@ -195,6 +198,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-                             ''')
-         parser.add_argument('--rtt-port', default=DEFAULT_OPENOCD_RTT_PORT,
-                             help='openocd rtt port, defaults to 5555')
-+        parser.add_argument('--rtt-quiet', action='store_true',
-+                            help='only output rtt to stdout, not that of subprocesses')
-+        parser.add_argument('--rtt-no-reset', action='store_true',
-+                            help='skip reset when configuring rtt')
-         parser.add_argument('--rtt-server', default=False, action='store_true',
-                             help='''start the RTT server while debugging.
-                             To view the RTT log, connect to the rtt port using
-@@ -215,7 +222,8 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-             telnet_port=args.telnet_port, gdb_port=args.gdb_port,
-             gdb_client_port=args.gdb_client_port, gdb_init=args.gdb_init,
-             no_load=args.no_load, target_handle=args.target_handle,
--            rtt_port=args.rtt_port, rtt_server=args.rtt_server)
-+            rtt_port=args.rtt_port, rtt_server=args.rtt_server,
-+            rtt_no_reset=args.rtt_no_reset)
- 
-     def print_gdbserver_message(self):
-         if not self.thread_info_enabled:
-@@ -228,6 +236,9 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-                          f'{self.gdb_port}{thread_msg}')
- 
-     def print_rttserver_message(self):
-+        if self.rtt_quiet:
-+            return
-+
-         self.logger.info(f'OpenOCD RTT server running on port {self.rtt_port}')
- 
-     def read_version(self):
-@@ -426,7 +437,10 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-             # start the internal openocd rtt service via gdb monitor commands
-             gdb_cmd.extend(
-                 ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])
--            gdb_cmd.extend(['-ex', 'monitor reset run'])
-+            if self.rtt_no_reset:
-+                gdb_cmd.extend(['-ex', 'monitor resume'])
-+            else:
-+                gdb_cmd.extend(['-ex', 'monitor reset run'])
-             gdb_cmd.extend(['-ex', 'monitor rtt start'])
-             gdb_cmd.extend(
-                 ['-ex', f'monitor rtt server start {self.rtt_port} 0'])
-@@ -444,8 +458,11 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
-                 server_proc.terminate()
-                 server_proc.wait()
-         elif command == 'rtt':
-+            rtt_quiet_kwargs = {'stdout': subprocess.DEVNULL,
-+                                'stderr': subprocess.DEVNULL} if self.rtt_quiet else {}
-+
-             self.print_rttserver_message()
--            server_proc = self.popen_ignore_int(server_cmd)
-+            server_proc = self.popen_ignore_int(server_cmd, **rtt_quiet_kwargs)
- 
-             if os_name != 'nt':
-                 # Save the terminal settings
-@@ -462,7 +479,7 @@ class OpenOcdBinaryRunner(ZephyrBinaryRunner):
- 
-             try:
-                 # run the binary with gdb, set up the rtt server (runs to completion)
--                subprocess.run(gdb_cmd)
-+                subprocess.run(gdb_cmd, **rtt_quiet_kwargs)
-                 # run the rtt client in the foreground
-                 self.run_telnet_client('localhost', self.rtt_port)
-             finally:
-diff --git a/scripts/west_commands/runners/openocd.py b/scripts/west_commands/runners/openocd.py
-index e4c02fdf12cb..b59edc9bf147 100644
---- a/scripts/west_commands/runners/openocd.py
-+++ b/scripts/west_commands/runners/openocd.py
-@@ -407,7 +407,12 @@ def do_attach_debug_rtt(self, command, **kwargs):
-                 + ['-c', f'rtt server start {self.rtt_port} 0']
-             )
- 
--        gdb_cmd = (self.gdb_cmd + self.tui_arg +
-+        if command == 'rtt':
-+            # Run GDB in batch mode. This will disable pagination automatically
-+            gdb_args = ['--batch']
-+        else:
-+            gdb_args = []
-+        gdb_cmd = (self.gdb_cmd + gdb_args + self.tui_arg +
-                    ['-ex', f'target extended-remote :{self.gdb_client_port}',
-                     self.elf_name])
-         if command == 'debug':
-@@ -421,8 +426,6 @@ def do_attach_debug_rtt(self, command, **kwargs):
-             if rtt_address is None:
-                 raise ValueError("RTT Control block not found")
- 
--            # cannot prompt the user to press return for automation purposes
--            gdb_cmd.extend(['-ex', 'set pagination off'])
-             # start the internal openocd rtt service via gdb monitor commands
-             gdb_cmd.extend(
-                 ['-ex', f'monitor rtt setup 0x{rtt_address:x} 0x10 "SEGGER RTT"'])

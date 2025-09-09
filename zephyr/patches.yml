@@ -1,16 +1,14 @@
 patches:
   - path: zephyr/twister-rtt-support.patch
-    sha256sum: ff7bc0d7efdd2696f4900c60756f370e78bae2a7ed455c2f256b805c2f3f4650
+    sha256sum: 2bd73942e827989cd513ce8aa971674ad9d9a928fe9bd21964488d051bb81807
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
     date: 2024-11-24
-    upstreamable: false
+    upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/81837
     comments: |
-      This works. It might go through a few more rounds of review though. No sense in delaying.
-      The PR was rejected by the testing maintainer because he wants rtt support to be delegated
-      to a separate binary.
+      Minor fixes to ensure that twister works reliably with the --flash-before option.
   - path: zephyr/multiple_icntl.patch
     sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
     module: zephyr
