@@ -14,6 +14,10 @@
 #define VOLTAGE_MARGIN_MAX 150.0F
 #define VOLTAGE_MARGIN_MIN -150.0F
 
+static const float vf_quadratic_coeff = 0.00031395F;
+static const float vf_linear_coeff = -0.43953F;
+static const float vf_constant = 828.83F;
+
 static float freq_margin_mhz;
 static float voltage_margin_mv;
 
@@ -38,8 +42,8 @@ void InitVFCurve(void)
 float VFCurve(float freq_mhz)
 {
 	float freq_with_margin_mhz = freq_mhz + freq_margin_mhz;
-	float voltage_mv = 0.00031395F * freq_with_margin_mhz * freq_with_margin_mhz -
-			   0.43953F * freq_with_margin_mhz + 828.83F;
+	float voltage_mv = vf_quadratic_coeff * freq_with_margin_mhz * freq_with_margin_mhz +
+			   vf_linear_coeff * freq_with_margin_mhz + vf_constant;
 
 	return voltage_mv + voltage_margin_mv;
 }
