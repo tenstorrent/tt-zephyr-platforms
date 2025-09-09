@@ -87,9 +87,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_pd)
 	for (int i = 0; i < NUM_READS; i++) {
 		const struct pvt_tt_bh_rtio_data *raw_freq =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_freq = raw_to_freq(raw_freq->raw);
+		float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
-		float_to_sensor_value(converted_freq, &freq_from_manual);
+		pvt_tt_bh_float_to_sensor_value(converted_freq, &freq_from_manual);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, i},
@@ -135,9 +135,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_vm)
 	for (int i = 0; i < NUM_READS; i++) {
 		const struct pvt_tt_bh_rtio_data *raw_volt =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_volt = raw_to_volt(raw_volt->raw);
+		float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
-		float_to_sensor_value(converted_volt, &volt_from_manual);
+		pvt_tt_bh_float_to_sensor_value(converted_volt, &volt_from_manual);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, i},
@@ -182,9 +182,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts)
 
 		const struct pvt_tt_bh_rtio_data *raw_temp =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_temp = raw_to_temp(raw_temp->raw);
+		float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
-		float_to_sensor_value(converted_temp, &celcius_from_manual);
+		pvt_tt_bh_float_to_sensor_value(converted_temp, &celcius_from_manual);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, i},
@@ -232,7 +232,7 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
 	}
 
 	avg_tmp /= 8;
-	float_to_sensor_value(avg_tmp, &celcius_from_manual_avg);
+	pvt_tt_bh_float_to_sensor_value(avg_tmp, &celcius_from_manual_avg);
 
 	/* Get celcius value from average channel decoder */
 	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0}, NULL,
@@ -271,9 +271,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_all)
 	/* Test PD (Process Detector) - index 0 */
 	const struct pvt_tt_bh_rtio_data *raw_freq =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[0]);
-	float converted_freq = raw_to_freq(raw_freq->raw);
+	float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
-	float_to_sensor_value(converted_freq, &from_manual);
+	pvt_tt_bh_float_to_sensor_value(converted_freq, &from_manual);
 	LOG_DBG("PD freq from manual: %d.%d", from_manual.val1, from_manual.val2);
 
 	/* Get frequency value from decoder */
@@ -295,9 +295,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_all)
 	/* Test VM (Voltage Monitor) - index 1 */
 	const struct pvt_tt_bh_rtio_data *raw_volt =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[1]);
-	float converted_volt = raw_to_volt(raw_volt->raw);
+	float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
-	float_to_sensor_value(converted_volt, &from_manual);
+	pvt_tt_bh_float_to_sensor_value(converted_volt, &from_manual);
 	LOG_DBG("VM volt from manual: %d.%d", from_manual.val1, from_manual.val2);
 
 	/* Get voltage value from decoder */
@@ -319,9 +319,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_all)
 	/* Test TS (Temperature Sensor) - index 2 */
 	const struct pvt_tt_bh_rtio_data *raw_temp =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[2]);
-	float converted_temp = raw_to_temp(raw_temp->raw);
+	float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
-	float_to_sensor_value(converted_temp, &from_manual);
+	pvt_tt_bh_float_to_sensor_value(converted_temp, &from_manual);
 	LOG_DBG("TS celsius from manual: %d.%d", from_manual.val1, from_manual.val2);
 
 	/* Get temperature value from decoder */

@@ -70,7 +70,7 @@ static uint8_t read_ts_handler(uint32_t msg_code, const struct request *request,
 	decoder->decode(buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, id}, NULL, 8,
 			&celcius);
 
-	response->data[1] = temp_to_raw(&celcius);
+	response->data[1] = pvt_tt_bh_temp_to_raw(&celcius);
 	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&celcius));
 
 	return ret;
@@ -96,7 +96,7 @@ static uint8_t read_pd_handler(uint32_t msg_code, const struct request *request,
 	decoder->decode(buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, id}, NULL, 8,
 			&freq);
 
-	response->data[1] = freq_to_raw(&freq);
+	response->data[1] = pvt_tt_bh_freq_to_raw(&freq);
 	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&freq));
 
 	return ret;
@@ -118,7 +118,7 @@ static uint8_t read_vm_handler(uint32_t msg_code, const struct request *request,
 	decoder->decode(buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, id}, NULL, 8,
 			&volts);
 
-	response->data[1] = volt_to_raw(&volts);
+	response->data[1] = pvt_tt_bh_volt_to_raw(&volts);
 	response->data[2] = (uint16_t)sensor_value_to_float(&volts) * 1000;
 
 	return ret;
