@@ -182,6 +182,34 @@ struct switch_clk_scheme_rqst {
 	uint32_t scheme;
 };
 
+/** @brief Host request to get frequency curve from voltage
+ * @details Requests of this type are processed by @ref get_freq_curve_from_voltage_handler
+ */
+struct get_freq_curve_from_voltage_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The input voltage in mV */
+	uint32_t input_voltage_mv;
+};
+
+/** @brief Host request to get voltage curve from frequency
+ * @details Requests of this type are processed by @ref get_voltage_curve_from_freq_handler
+ */
+struct get_voltage_curve_from_freq_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_GET_VOLTAGE_CURVE_FROM_FREQ */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The input frequency in MHz */
+	uint32_t input_freq_mhz;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -212,6 +240,12 @@ union request {
 
 	/** @brief A switch clock scheme request */
 	struct switch_clk_scheme_rqst switch_clk_scheme;
+
+	/** @brief A get frequency curve from voltage request */
+	struct get_freq_curve_from_voltage_rqst get_freq_curve_from_voltage;
+
+	/** @brief A get voltage curve from frequency request */
+	struct get_voltage_curve_from_freq_rqst get_voltage_curve_from_freq;
 };
 
 /** @} */

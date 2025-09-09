@@ -55,7 +55,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_REINIT_TENSIX = 0x20,
 	/** @brief @ref power_setting_rqst "Power Setting Request"*/
 	TT_SMC_MSG_POWER_SETTING = 0x21,
-	/** @brief Get frequency curve from voltage request (not supported) */
+	/** @brief @ref get_freq_curve_from_voltage_rqst "Frequency Curve from Voltage Request"*/
 	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
 	TT_SMC_MSG_AISWEEP_START = 0x31,
 	TT_SMC_MSG_AISWEEP_STOP = 0x32,
@@ -86,7 +86,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_ASIC_STATE3 = 0xA3,
 	/** @brief ASIC state 5 request (not supported) */
 	TT_SMC_MSG_ASIC_STATE5 = 0xA5,
-	/** @brief Get voltage curve from frequency request (not supported) */
+	/** @brief @ref get_voltage_curve_from_freq_rqst "Voltage Curve from Frequency Request"*/
 	TT_SMC_MSG_GET_VOLTAGE_CURVE_FROM_FREQ = 0xA6,
 
 	/** @brief @ref force_fan_speed_rqst "Force Fan Speed Request"*/
