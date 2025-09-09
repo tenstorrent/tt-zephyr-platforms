@@ -15,6 +15,13 @@ LOG_MODULE_REGISTER(test_pvt, LOG_LEVEL_DBG);
 
 #define NUM_READS 5
 
+/*
+ * The tolerance in degrees when computing the average temperature, as
+ * the average temperature of the chip could vary by one degree by the
+ * time the average is computed.
+ */
+#define AVG_TEMP_TOLERANCE 1
+
 const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
 SENSOR_DT_READ_IODEV(test_pd_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD, 0},
@@ -232,10 +239,11 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
 			9, &celcius_from_avg_channel);
 
 	/* Assert celcius temperature from manual average and average channel are equal */
-	zassert_equal(celcius_from_manual_avg.val1, celcius_from_avg_channel.val1,
-		      "Integral part of celcius from average channel %d is not equal to celcius "
-		      "from manual average %d",
-		      celcius_from_avg_channel.val1, celcius_from_manual_avg.val1);
+	zassert_within(celcius_from_manual_avg.val1, celcius_from_avg_channel.val1,
+		       AVG_TEMP_TOLERANCE,
+		       "Integral part of celcius from average channel %d is not equal to celcius "
+		       "from manual average %d",
+		       celcius_from_avg_channel.val1, celcius_from_manual_avg.val1);
 }
 
 /*
