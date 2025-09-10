@@ -33,4 +33,5 @@ int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size);
 int32_t Dm2CmSendThermTripCountHandler(const uint8_t *data, uint8_t size);
 int32_t Dm2CmWriteTelemetry(const uint8_t *data, uint8_t size);
 int32_t Dm2CmReadControlData(uint8_t *data, uint8_t size);
+int32_t Dm2CmDMCLogHandler(const uint8_t *data, uint8_t size);
 #endif

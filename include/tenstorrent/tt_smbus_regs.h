@@ -43,6 +43,8 @@ enum CMFWSMBusReg {
 	CMFW_SMBUS_POWER_INSTANT = 0x25,
 	/* WO, 16 bits. Write with therm trip count */
 	CMFW_SMBUS_THERM_TRIP_COUNT = 0x28,
+	/* WO, Up to 32 bytes. Write with data to log from DMC side */
+	CMFW_SMBUS_DMC_LOG = 0x29,
 	/* RO, 8 bits. Issue a test read from CMFW scratch register */
 	CMFW_SMBUS_TEST_READ = 0xD8,
 	/* WO, 8 bits. Write to CMFW scratch register */

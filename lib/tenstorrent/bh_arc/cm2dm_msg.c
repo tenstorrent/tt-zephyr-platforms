@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/drivers/watchdog.h>
+#include <zephyr/drivers/uart.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 #include <tenstorrent/msg_type.h>
@@ -392,5 +393,16 @@ int32_t Dm2CmReadControlData(uint8_t *data, uint8_t size)
 	pec = crc8(&size, 1, 0x7, 0U, false);
 	pec = crc8(data, size - 1, 0x7, pec, false);
 	data[19] = pec;
+	return 0;
+}
+
+const struct device *dmc_uart = DEVICE_DT_GET_OR_NULL(DT_ALIAS(dmc_vuart));
+
+int32_t Dm2CmDMCLogHandler(const uint8_t *data, uint8_t size)
+{
+	/* Just print the log data for now */
+	for (uint8_t i = 0; i < size; i++) {
+		uart_poll_out(dmc_uart, data[i]);
+	}
 	return 0;
 }
