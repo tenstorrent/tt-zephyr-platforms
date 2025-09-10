@@ -15,18 +15,43 @@ LOG_MODULE_REGISTER(tt_shell, CONFIG_LOG_DEFAULT_LEVEL);
 int telem_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	int32_t idx = atoi(argv[1]);
+	char fmt;
+	uint32_t value;
+
+	if (argc == 3 && (strlen(argv[2]) != 1U)) {
+		shell_error(sh, "Invalid format");
+		return -EINVAL;
+	}
+	if (argc == 2) {
+		fmt = 'x';
+	} else {
+		fmt = argv[2][0];
+	}
 
 	if (!GetTelemetryTagValid(idx)) {
 		shell_error(sh, "Invalid telemetry tag");
 		return -EINVAL;
 	}
 
-	shell_print(sh, "0x%08X", GetTelemetryTag(idx));
+	value = GetTelemetryTag(idx);
+
+	if (fmt == 'x') {
+		shell_print(sh, "0x%08X", value);
+	} else if (fmt == 'f') {
+		shell_print(sh, "%lf", (double)ConvertTelemetryToFloat(value));
+	} else if (fmt == 'd') {
+		shell_print(sh, "%d", value);
+	} else {
+		shell_error(sh, "Invalid format");
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_tt_commands,
-			       SHELL_CMD_ARG(telem, NULL, "<Telemetry Index>", telem_handler, 2, 0),
+			       SHELL_CMD_ARG(telem, NULL, "<Telemetry Index> [|x|f|d]",
+					     telem_handler, 2, 1),
 			       SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(tt, &sub_tt_commands, "Tensorrent commands", NULL);
