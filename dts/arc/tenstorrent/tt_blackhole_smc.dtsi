@@ -59,6 +59,111 @@
 			reg = <0x1>;
 			status = "disabled";
 		};
+
+		vuart2: uart_tt_virt@2 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x2>;
+			status = "disabled";
+		};
+
+		vuart3: uart_tt_virt@3 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x3>;
+			status = "disabled";
+		};
+
+		vuart4: uart_tt_virt@4 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x4>;
+			status = "disabled";
+		};
+
+		vuart5: uart_tt_virt@5 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x5>;
+			status = "disabled";
+		};
+
+		vuart6: uart_tt_virt@6 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x6>;
+			status = "disabled";
+		};
+
+		vuart7: uart_tt_virt@7 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x7>;
+			status = "disabled";
+		};
+
+		vuart8: uart_tt_virt@8 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x8>;
+			status = "disabled";
+		};
+
+		vuart9: uart_tt_virt@9 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x9>;
+			status = "disabled";
+		};
+
+		vuart10: uart_tt_virt@a {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xa>;
+			status = "disabled";
+		};
+
+		vuart11: uart_tt_virt@b {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xb>;
+			status = "disabled";
+		};
+
+		vuart12: uart_tt_virt@c {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xc>;
+			status = "disabled";
+		};
+
+		vuart13: uart_tt_virt@d {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xd>;
+			status = "disabled";
+		};
+
+		vuart14: uart_tt_virt@e {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xe>;
+			status = "disabled";
+		};
+
+		vuart15: uart_tt_virt@f {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0xf>;
+			status = "disabled";
+		};
+
+		vuart16: uart_tt_virt@10 {
+			compatible = "tenstorrent,vuart";
+			version = <0x00000000>;
+			reg = <0x10>;
+			status = "disabled";
+		};
 	};
 
 	gpio0: gpio@800301a0 {
