@@ -733,6 +733,38 @@ def fsck(path: Path, alignment: int = 0x1000) -> bool:
     return fs is not None
 
 
+def hexdump(start_addr: int, data: bytes):
+    def to_printable_ascii(byte):
+        return chr(byte) if 32 <= byte <= 126 else "."
+
+    # to remember chunk state
+    nskipped_chunks = 0
+    prev_chunk = []
+
+    offset = 0
+    while offset < len(data):
+        chunk = data[offset : offset + 16]
+
+        # skip if chunk is identical to prevuious
+        if chunk == prev_chunk:
+            nskipped_chunks += 1
+            offset += 16
+            continue
+
+        if nskipped_chunks > 0:
+            # avoid printing duplicate lines (zero information gain)
+            print("...")
+
+        hex_values = " ".join(f"{byte:02x}" for byte in chunk)
+        ascii_values = "".join(to_printable_ascii(byte) for byte in chunk)
+        print(f"{start_addr + offset:08x}  {hex_values:<48}  |{ascii_values}|")
+        offset += 16
+
+        # reset chunk state
+        prev_chunk = chunk
+        nskipped_chunks = 0
+
+
 def ls(
     bootfs: Path, verbose: int = 0, output_json: bool = False, input_base64=False
 ) -> bool:
@@ -782,6 +814,9 @@ def ls(
                     f"{fd.spi_addr:08x}\t{tag:<8}\t{len(entry.data)}\t{fd.copy_dest:08x}\t"
                     f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}"
                 )
+
+                if verbose >= 2:
+                    hexdump(start_addr=fd.spi_addr, data=entry.data)
 
     except Exception as e:
         _logger.error(f"Exception: {e}")
