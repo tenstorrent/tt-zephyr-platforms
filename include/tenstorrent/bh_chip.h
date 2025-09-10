@@ -152,6 +152,7 @@ int bh_chip_set_input_power(struct bh_chip *chip, uint16_t power);
 int bh_chip_set_input_power_lim(struct bh_chip *chip, uint16_t max_power);
 int bh_chip_set_fan_rpm(struct bh_chip *chip, uint16_t rpm);
 int bh_chip_set_therm_trip_count(struct bh_chip *chip, uint16_t therm_trip_count);
+int bh_chip_write_logs(struct bh_chip *chip, char *log_data, size_t log_size);
 
 void bh_chip_auto_reset(struct k_timer *timer);
 

@@ -114,6 +114,20 @@ void bh_chip_auto_reset(struct k_timer *timer)
 	tt_event_post(TT_EVENT_WAKE);
 }
 
+int bh_chip_write_logs(struct bh_chip *chip, char *log_data, size_t log_size)
+{
+	int ret;
+
+	if (log_size > 32) {
+		return -ENOBUFS;
+	}
+
+	ret = bharc_smbus_block_write(&chip->config.arc, CMFW_SMBUS_DMC_LOG, log_size,
+				      (uint8_t *)log_data);
+
+	return ret;
+}
+
 void bh_chip_assert_asic_reset(const struct bh_chip *chip)
 {
 	gpio_pin_set_dt(&chip->config.asic_reset, 1);

@@ -29,6 +29,7 @@
 #include <tenstorrent/bh_arc.h>
 #include <tenstorrent/event.h>
 #include <tenstorrent/jtag_bootrom.h>
+#include <tenstorrent/log_backend_ringbuf.h>
 #include <tenstorrent/tt_smbus_regs.h>
 
 #define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
@@ -573,6 +574,16 @@ int main(void)
 
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			process_cm2dm_message(chip);
+		}
+
+		/* SMBUS message may not be more than 32 bytes in length */
+		uint8_t log_data[32];
+
+		/* Pull up to 32 bytes from the ringbuf log backend */
+		ret = log_backend_ringbuf_get_data(log_data, sizeof(log_data));
+		if (ret > 0) {
+			/* Write log data to the first BH chip */
+			bh_chip_write_logs(&BH_CHIPS[0], log_data, ret);
 		}
 
 		/*
