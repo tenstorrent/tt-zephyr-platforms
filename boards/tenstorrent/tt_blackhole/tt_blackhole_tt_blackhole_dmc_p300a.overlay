@@ -21,7 +21,6 @@
  */
 
 /delete-node/ &jtag0;
-/delete-node/ &chip0_strapping;
 /delete-node/ &chip0_arc;
 
 / {
@@ -82,26 +81,26 @@
 			gpio6 {
 				compatible = "zephyr,gpio-line";
 				label = "GPIO pin representing strap GPIO6_PCIE_BOOT_INSTANCE";
-				gpios = <&chip1_strapping 4 GPIO_ACTIVE_HIGH>;
+				gpios = <&gpiox0 4 GPIO_ACTIVE_HIGH>;
 			};
 
 			/* Use QUAD DDR SPI mode, GPIO[39:38] = 2 is QUAD mode, GPIO40 is DDR_EN */
 			gpio38 {
 				compatible = "zephyr,gpio-line";
 				label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
-				gpios = <&chip1_strapping 13 GPIO_ACTIVE_LOW>;
+				gpios = <&gpiox0 13 GPIO_ACTIVE_LOW>;
 			};
 
 			gpio39 {
 				compatible = "zephyr,gpio-line";
 				label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
-				gpios = <&chip1_strapping 14 GPIO_ACTIVE_HIGH>;
+				gpios = <&gpiox0 14 GPIO_ACTIVE_HIGH>;
 			};
 
 			gpio40 {
 				compatible = "zephyr,gpio-line";
 				label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
-				gpios = <&chip1_strapping 15 GPIO_ACTIVE_HIGH>;
+				gpios = <&gpiox0 15 GPIO_ACTIVE_HIGH>;
 			};
 		};
 
@@ -210,32 +209,20 @@
 		gpio38 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
-			gpios = <&chip0_strapping 13 GPIO_ACTIVE_LOW>;
+			gpios = <&gpiox1 13 GPIO_ACTIVE_LOW>;
 		};
 
 		gpio39 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
-			gpios = <&chip0_strapping 14 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox1 14 GPIO_ACTIVE_HIGH>;
 		};
 
 		gpio40 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
-			gpios = <&chip0_strapping 15 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox1 15 GPIO_ACTIVE_HIGH>;
 		};
-	};
-};
-
-&i2c1 {
-	chip0_strapping: strapping_expander@20 {
-		compatible = "nxp,pca9555";
-		status = "okay";
-
-		#gpio-cells = <2>;
-		ngpios = <16>;
-		reg = <0x20>;
-		gpio-controller;
 	};
 };
 
@@ -255,18 +242,36 @@
 	};
 };
 
-&i2c3 {
+&gpiox0 {
 	status = "okay";
+};
 
-	chip1_strapping: strapping_expander@20 {
-		compatible = "nxp,pca9555";
-		status = "okay";
+&gpiox2 {
+	status = "disabled";
+};
 
-		#gpio-cells = <2>;
-		ngpios = <16>;
-		reg = <0x20>;
-		gpio-controller;
-	};
+&gpiox3 {
+	status = "disabled";
+};
+
+&gpiox4 {
+	status = "disabled";
+};
+
+&gpiox5 {
+	status = "disabled";
+};
+
+&gpiox6 {
+	status = "disabled";
+};
+
+&gpiox7 {
+	status = "disabled";
+};
+
+&gpiox8 {
+	status = "disabled";
 };
 
 /*

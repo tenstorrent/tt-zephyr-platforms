@@ -24,34 +24,44 @@
 	status = "disabled";
 };
 
+&gpiox0 {
+	status = "disabled";
+};
+
 &gpiox1 {
 	status = "disabled";
 };
 
-&i2c1 {
-	gpiox4: gpio@3c {
-		compatible = "nxp,pca9554";
-		reg = <0x3c>;
-		status = "okay";
-		ngpios = <8>;
-		/* external pull-up to 1.8V */
-		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+&gpiox2 {
+	status = "disabled";
+};
 
-		gpio-controller;
-		#gpio-cells = <2>;
-	};
+&gpiox3 {
+	status = "okay";
+	int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+};
 
-	gpiox5: gpio@3e {
-		compatible = "nxp,pca9554";
-		reg = <0x3e>;
-		status = "okay";
-		ngpios = <8>;
-		/* external pull-up to 1.8V */
-		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+&gpiox4 {
+	status = "disabled";
+};
 
-		gpio-controller;
-		#gpio-cells = <2>;
-	};
+&gpiox5 {
+	status = "disabled";
+};
+
+&gpiox6 {
+	status = "okay";
+	int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+};
+
+&gpiox7 {
+	status = "okay";
+	int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+};
+
+&gpiox8 {
+	status = "okay";
+	int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
 };
 
 &chip0 {
@@ -60,19 +70,19 @@
 		gpio38 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
-			gpios = <&gpiox4 3 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox7 3 GPIO_ACTIVE_HIGH>;
 		};
 
 		gpio39 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
-			gpios = <&gpiox4 4 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox7 4 GPIO_ACTIVE_HIGH>;
 		};
 
 		gpio40 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
-			gpios = <&gpiox4 5 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox7 5 GPIO_ACTIVE_HIGH>;
 		};
 	};
 };
