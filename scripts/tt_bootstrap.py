@@ -84,7 +84,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         # For flashing a hex/bin file, we only will write to the eeprom for one ASIC.
         # If we parse a firmware bundle, we will update all ASICs
         pyocd_config = self.pyocd_path / Path(
-            BOARD_ID_MAP[self.board_name][asic_id]["pyocd_config"]
+            BOARD_ID_MAP[self.board_name][asic_id]["pyocd-config"]
         )
 
         # We support flashing hex or binary files directly. Otherwise, we will
@@ -188,7 +188,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             print("Ensure the protobuf files are generated and the path is correct.")
             sys.exit(1)
         for cfg in board_cfg:
-            board_name = cfg["protobuf_name"]
+            board_name = cfg["protobuf-name"]
             if self.board_id == 0:
                 # Autogenerate board ID
                 board_id = cfg["upi"] << 36 | (0x1 << 32)
@@ -227,7 +227,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         for cfg in board_cfg:
             operations.append(
                 FlashOperation(
-                    cfg["bootfs"], self.pyocd_path / Path(cfg["pyocd_config"])
+                    cfg["bootfs"], self.pyocd_path / Path(cfg["pyocd-config"])
                 )
             )
         return operations
