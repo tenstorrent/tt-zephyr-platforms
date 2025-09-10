@@ -77,6 +77,8 @@
 
 &smbus3 {
 	status = "okay";
+	pinctrl-0 = <&i2c3_scl_pa7 &i2c3_sda_pb4>;
+	pinctrl-names = "default";
 
 	chip0_arc: bh_arc@A {
 		compatible = "tenstorrent,bh-arc";
