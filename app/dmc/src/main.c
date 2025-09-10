@@ -276,26 +276,26 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	/* Test SMBUS telemetry by selecting TAG_DM_APP_FW_VERSION and reading it back */
 	ret = bharc_smbus_byte_data_write(&chip->config.arc, 0x26, 26);
 	if (ret < 0) {
-		LOG_ERR("Failed to write to SMBUS telemetry register");
+		LOG_DBG("Failed to write to SMBUS telemetry register");
 		return ret;
 	}
 	ret = bharc_smbus_block_read(&chip->config.arc, 0x27, &count, data);
 	if (ret < 0) {
-		LOG_ERR("Failed to read from SMBUS telemetry register");
+		LOG_DBG("Failed to read from SMBUS telemetry register");
 		return ret;
 	}
 	if (count != 7) {
-		LOG_ERR("SMBUS telemetry read returned unexpected count: %d", count);
+		LOG_DBG("SMBUS telemetry read returned unexpected count: %d", count);
 		return -EIO;
 	}
 	if (data[0] != 0U) {
-		LOG_ERR("SMBUS telemetry read returned invalid telem idx");
+		LOG_DBG("SMBUS telemetry read returned invalid telem idx");
 		return -EIO;
 	}
 	(void)memcpy(&app_version, &data[3], sizeof(app_version));
 
 	if (app_version != APPVERSION) {
-		LOG_ERR("SMBUS telemetry read returned unexpected value: %08x", *(uint32_t *)data);
+		LOG_DBG("SMBUS telemetry read returned unexpected value: %08x", *(uint32_t *)data);
 		return -EIO;
 	}
 
@@ -303,7 +303,7 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	ret = bharc_smbus_block_write(&chip->config.arc, 0xDD, sizeof(pass_val),
 				      (uint8_t *)&pass_val);
 	if (ret < 0) {
-		LOG_ERR("Failed to write to SMBUS scratch register");
+		LOG_DBG("Failed to write to SMBUS scratch register");
 		return ret;
 	}
 	printk("SMBUS tests passed\n");
