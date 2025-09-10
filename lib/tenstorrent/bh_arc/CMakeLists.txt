@@ -50,6 +50,9 @@ zephyr_library_sources(
   spi_flash_buf.c
   timer.c
 )
+
+zephyr_library_sources_ifdef(CONFIG_TT_SHELL tt_shell.c)
+
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
 if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
