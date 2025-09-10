@@ -1,0 +1,108 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/** @file
+ * @brief Ring buffer log backend
+ *
+ * This backend logs into a ring buffer, which can be read via the
+ * `log_backend_ringbuf_get_data()` API. Applications can call this API
+ * to stream log data to an external consumer.
+ */
+
+#include <zephyr/logging/log_backend.h>
+#include <zephyr/logging/log_core.h>
+#include <zephyr/logging/log_output.h>
+#include <zephyr/logging/log_backend_std.h>
+
+/*
+ * We have a ringbuffer outside of the log framework, so this one can
+ * be kept small
+ */
+static uint8_t buf[1];
+static uint32_t log_format_current = CONFIG_LOG_BACKEND_RINGBUF_OUTPUT_DEFAULT;
+
+RING_BUF_DECLARE(ringbuf_output_buf, CONFIG_LOG_BACKEND_RINGBUF_BUFFER_SIZE);
+
+/*
+ * This function is exported so that the application can
+ * pull data from the ringbuf to stream to an external
+ * consumer.
+ */
+int log_backend_ringbuf_get_data(uint8_t *data, size_t length)
+{
+	return ring_buf_get(&ringbuf_output_buf, data, length);
+}
+
+/* This function is exported so the application can reset buffer state */
+void log_backend_ringbuf_clear(void)
+{
+	ring_buf_reset(&ringbuf_output_buf);
+}
+
+/* Finally, allow the application to query ring buffer size */
+size_t log_backend_ringbuf_get_used(void)
+{
+	return ring_buf_size_get(&ringbuf_output_buf);
+}
+
+static int char_out(uint8_t *data, size_t length, void *ctx)
+{
+	ARG_UNUSED(ctx);
+
+	if (IS_ENABLED(CONFIG_LOG_BACKEND_RINGBUF_MODE_DROP)) {
+		/* If drop mode is enabled, drop the message if there isn't enough space */
+		if (ring_buf_space_get(&ringbuf_output_buf) < length) {
+			/* Simply lie to the logging framework that we sent the message */
+			return length;
+		}
+	} else if (IS_ENABLED(CONFIG_LOG_BACKEND_RINGBUF_MODE_OVERWRITE)) {
+		if (ring_buf_space_get(&ringbuf_output_buf) < length) {
+			/* Drop existing data and start logging to front of buffer */
+			ring_buf_reset(&ringbuf_output_buf);
+		}
+	}
+
+	/* Write the data to the ring buffer */
+	return ring_buf_put(&ringbuf_output_buf, data, length);
+}
+
+LOG_OUTPUT_DEFINE(log_output_ringbuf, char_out, buf, sizeof(buf));
+
+static void log_backend_ringbuf_process(const struct log_backend *const backend,
+					union log_msg_generic *msg)
+{
+	uint32_t flags = log_backend_std_get_flags();
+
+	log_format_func_t log_output_func = log_format_func_t_get(log_format_current);
+
+	log_output_func(&log_output_ringbuf, &msg->log, flags);
+}
+
+static int format_set(const struct log_backend *const backend, uint32_t log_type)
+{
+	log_format_current = log_type;
+	return 0;
+}
+
+static void log_backend_ringbuf_panic(struct log_backend const *const backend)
+{
+}
+
+static void dropped(const struct log_backend *const backend, uint32_t cnt)
+{
+	ARG_UNUSED(backend);
+
+	log_backend_std_dropped(&log_output_ringbuf, cnt);
+}
+
+const struct log_backend_api log_backend_ringbuf_api = {
+	.process = log_backend_ringbuf_process,
+	.panic = log_backend_ringbuf_panic,
+	.dropped = IS_ENABLED(CONFIG_LOG_MODE_IMMEDIATE) ? NULL : dropped,
+	.format_set = format_set,
+};
+
+LOG_BACKEND_DEFINE(log_backend_ringbuf, log_backend_ringbuf_api, true);
