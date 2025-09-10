@@ -99,6 +99,7 @@ jobs:
           name: tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
 
       - name: Package firmware artifacts
+        shell: bash
         run: |
           BOARD_REVS=(${{ needs.prepare-release.outputs.boards }})
 
@@ -107,7 +108,7 @@ jobs:
             mv $REV/update.fwbundle $REV.fwbundle
           done
 
-          zip -r -9 tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip $BOARD_REVS
+          zip -r -9 tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
