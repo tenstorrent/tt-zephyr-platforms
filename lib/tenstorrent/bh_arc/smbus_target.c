@@ -83,6 +83,7 @@ typedef struct {
 	uint8_t expected_blocksize_r; /* Only used for block r commands */
 	uint8_t expected_blocksize_w; /* Only used for block w commands */
 	uint8_t pec: 1;
+	uint8_t variable_blocksize: 1; /* If set, block size can be <= expected */
 } SmbusCmdDef;
 
 /* Index into cmd_defs array is the command byte */
@@ -364,7 +365,8 @@ static int I2CWriteHandler(struct i2c_target_config *config, uint8_t val)
 		case kSmbusTransBlockWrite:
 		case kSmbusTransBlockWriteBlockRead:
 			smbus_data.blocksize = val;
-			if (smbus_data.blocksize != curr_cmd->expected_blocksize_w) {
+			if ((!curr_cmd->variable_blocksize) &&
+			    (smbus_data.blocksize != curr_cmd->expected_blocksize_w)) {
 				smbus_data.state = kSmbusStateWaitIdle;
 				return -1;
 			}
