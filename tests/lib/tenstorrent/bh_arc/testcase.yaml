@@ -3,3 +3,10 @@ tests:
     platform_allow: native_sim
     extra_args: DTC_OVERLAY_FILE=app.overlay
     tags: bh_arc
+  lib.tenstorrent.bh_arc.tt_shell:
+    platform_allow: native_sim
+    build_only: true
+    extra_args: DTC_OVERLAY_FILE=app.overlay
+    extra_configs:
+      - CONFIG_SHELL=y
+    tags: bh_arc
