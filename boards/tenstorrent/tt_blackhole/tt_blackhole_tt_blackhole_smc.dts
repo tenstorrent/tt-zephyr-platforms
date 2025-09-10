@@ -20,6 +20,10 @@
 		zephyr,console = &vuart0;
 		zephyr,shell-uart = &vuart0;
 	};
+
+	aliases {
+		dmc-vuart = &vuart2;
+	};
 };
 
 &spi0 {
@@ -121,6 +125,10 @@
 };
 
 &vuart0 {
+	status = "okay";
+};
+
+&vuart2 {
 	status = "okay";
 };
 

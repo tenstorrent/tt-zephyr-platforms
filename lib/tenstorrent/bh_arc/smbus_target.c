@@ -260,6 +260,11 @@ static const SmbusCmdDef smbus_therm_trip_count_cmd_def = {
 	.pec = 1U,
 	.trans_type = kSmbusTransWriteWord,
 	.handler = {.rcv_handler = &Dm2CmSendThermTripCountHandler}};
+
+static const SmbusCmdDef smbus_dmc_log_cmd_def = {.pec = 1U,
+						  .variable_blocksize = 1U,
+						  .trans_type = kSmbusTransBlockWrite,
+						  .handler = {.rcv_handler = &Dm2CmDMCLogHandler}};
 #endif /*CONFIG_TT_SMC_RECOVERY*/
 
 static const SmbusCmdDef smbus_test_read_byte_cmd_def = {
@@ -309,6 +314,7 @@ static const SmbusConfig smbus_config = {
 		     [0x26] = &smbus_telem_reg_cmd_def,
 		     [0x27] = &smbus_telem_data_cmd_def,
 		     [CMFW_SMBUS_THERM_TRIP_COUNT] = &smbus_therm_trip_count_cmd_def,
+		     [CMFW_SMBUS_DMC_LOG] = &smbus_dmc_log_cmd_def,
 #endif
 		     [CMFW_SMBUS_TEST_READ] = &smbus_test_read_byte_cmd_def,
 		     [CMFW_SMBUS_TEST_WRITE] = &smbus_test_write_byte_cmd_def,
