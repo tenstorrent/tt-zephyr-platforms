@@ -1,0 +1,60 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config LOG_BACKEND_RINGBUF
+	bool "Log data into a ring buffer"
+	depends on LOG
+	help
+	  Library for logging data into a ring buffer. Data can be read from
+	  the ring buffer via a custom API, `log_backend_ringbuf_get_data()`.
+
+if LOG_BACKEND_RINGBUF
+
+config LOG_BACKEND_RINGBUF_BUFFER_SIZE
+	int "Ring buffer log buffer size"
+	default 512
+	help
+	  Size of the buffer (in bytes) used to store log messages.
+	  If the buffer is full, the logging thread will be blocked until
+	  space is available in the buffer.
+
+choice LOG_BACKEND_RINGBUF_MODE
+	prompt "Logger behavior"
+	default LOG_BACKEND_RINGBUF_MODE_BLOCK
+	help
+	  Choose how the ring buffer logging backend should behave when
+	  the buffer is full.
+	  BLOCK: Block the logging thread until space is available in the buffer.
+	  DROP: Drop new messages if there is no space in the buffer.
+	  OVERWRITE: Overwrite old messages in the buffer with new messages.
+	  Note that if DROP or OVERWRITE are selected, log messages may be lost.
+
+config LOG_BACKEND_RINGBUF_MODE_BLOCK
+	bool "Block logging thread when buffer is full"
+	help
+	  If there is not enough space in the buffer for a message,
+	  block the logging thread until space is available.
+	  This is the safest option, as no log messages will be lost,
+	  but it may hang logging if the buffer is not read frequently enough.
+
+config LOG_BACKEND_RINGBUF_MODE_DROP
+	bool "Drop messages that do not fit in buffer"
+	help
+	  If there is not enough space in the buffer for a message,
+	  drop the new message.
+
+config LOG_BACKEND_RINGBUF_MODE_OVERWRITE
+	bool "Overwrite old messages if buffer full"
+	help
+	  If there is not enough space in the buffer for a message,
+	  clear the buffer and write the new message to the front.
+	  This may result in loss of old log messages.
+
+endchoice
+
+
+backend = RINGBUF
+backend-str = ringbuf
+source "subsys/logging/Kconfig.template.log_format_config"
+
+endif # LOG_BACKEND_RINGBUF
