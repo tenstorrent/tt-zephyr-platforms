@@ -148,11 +148,13 @@ void process_cm2dm_message(struct bh_chip *chip)
 		case kCm2DmMsgIdResetReq:
 			switch (message.data) {
 			case 0x0:
+				LOG_INF("Received ARC reset request");
 				jtag_bootrom_reset_sequence(chip, true);
 				break;
 			case 0x3:
 				/* Trigger reboot; will reset asic and reload dmfw
 				 */
+				LOG_INF("Received system reset request");
 				if (IS_ENABLED(CONFIG_REBOOT)) {
 					sys_reboot(SYS_REBOOT_COLD);
 				}
