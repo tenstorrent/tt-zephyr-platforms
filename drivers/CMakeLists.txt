@@ -14,6 +14,6 @@ add_subdirectory_ifdef(CONFIG_PWM pwm)
 add_subdirectory_ifdef(CONFIG_RESET reset)
 add_subdirectory_ifdef(CONFIG_SENSOR sensor)
 add_subdirectory_ifdef(CONFIG_SERIAL serial)
-add_subdirectory_ifdef(CONFIG_SMBUS_TARGET smbus_target)
+add_subdirectory_ifdef(CONFIG_SMBUS_TARGET smbus/target)
 add_subdirectory_ifdef(CONFIG_WATCHDOG watchdog)
 # zephyr-keep-sorted-stop
