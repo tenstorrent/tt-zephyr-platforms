@@ -16,18 +16,22 @@ static const struct device *const ports[] = {
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox0)), DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox1)),
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox2)), DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox3)),
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox4)), DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox5)),
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox6)), DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox7)),
+	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpiox8)),
 };
 
 /* clang-format off */
 static const bool expected_availability[] = {
 #ifdef CONFIG_BOARD_REVISION_P100
-	true, false, true, true, true, true
+	false, false, false, true, false, false, true, true, true
 #endif
 #if defined(CONFIG_BOARD_REVISION_P100A) || defined(CONFIG_BOARD_REVISION_P150A) ||                \
-	defined(CONFIG_BOARD_REVISION_P150B) || defined(CONFIG_BOARD_REVISION_P150C) ||            \
-	defined(CONFIG_BOARD_REVISION_P300A) || defined(CONFIG_BOARD_REVISION_P300B) ||            \
+	defined(CONFIG_BOARD_REVISION_P150B) || defined(CONFIG_BOARD_REVISION_P150C)
+	false, true, true, false, false, false, false, false, false
+#endif
+#if defined(CONFIG_BOARD_REVISION_P300A) || defined(CONFIG_BOARD_REVISION_P300B) ||                \
 	defined(CONFIG_BOARD_REVISION_P300C)
-	true, true, true, true, false, false,
+	true, true, false, false, false, false, false, false, false
 #endif
 	/* may be of zero size for 3rd-party boards so that tests will be skipped / pass */
 };

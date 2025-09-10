@@ -3,26 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-&ina228 {
-	status = "disabled";
-};
-
-&gpiox0 {
-	status = "disabled";
-};
-
-&gpiox1 {
-	status = "disabled";
-};
-
-&gpiox2 {
-	status = "disabled";
-};
-
-&gpiox3 {
-	status = "disabled";
-};
-
 / {
 	aliases {
 		pwm-0 = &max6639_pwm;

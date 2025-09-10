@@ -124,6 +124,16 @@
 		reg = <0x55>;
 		status = "okay";
 	};
+
+	gpiox0: gpio@20 {
+		compatible = "nxp,pca9555";
+		status = "okay";
+
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		reg = <0x20>;
+		gpio-controller;
+	};
 };
 
 &gpiob {
@@ -235,33 +245,71 @@
 		};
 	};
 
-	gpiox0: gpio@38 {
+	/*
+	 * BH cards all have a subset of the gpio expanders defined below.
+	 * Add them all here in case we want to use deferred init for the DMFW
+	 * in the future. For now, we just disable these in board overlays.
+	 */
+
+	gpiox1: gpio@20 {
+		compatible = "nxp,pca9555";
+		status = "okay";
+
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		reg = <0x20>;
+		gpio-controller;
+	};
+
+	gpiox2: gpio@21 {
+		compatible = "nxp,pca9555";
+		status = "okay";
+
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		reg = <0x21>;
+		gpio-controller;
+	};
+
+	gpiox3: gpio@38 {
 		compatible = "nxp,pca9554";
 		reg = <0x38>;
 		status = "okay";
 		ngpios = <8>;
 		/* external pull-up to 1.8V */
-		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+		int-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
 
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
 
-	gpiox1: gpio@39 {
+	gpiox4: gpio@39 {
 		compatible = "nxp,pca9554";
 		reg = <0x39>;
 		status = "okay";
 		ngpios = <8>;
 		/* external pull-up to 1.8V */
-		int-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+		int-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
 
 		gpio-controller;
 		#gpio-cells = <2>;
 	};
 
-	gpiox2: gpio@3a {
+	gpiox5: gpio@3a {
 		compatible = "nxp,pca9554";
 		reg = <0x3a>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox6: gpio@3b {
+		compatible = "nxp,pca9554";
+		reg = <0x3b>;
 		status = "okay";
 		ngpios = <8>;
 		/* external pull-up to 1.8V */
@@ -271,9 +319,21 @@
 		#gpio-cells = <2>;
 	};
 
-	gpiox3: gpio@3b {
+	gpiox7: gpio@3c {
 		compatible = "nxp,pca9554";
-		reg = <0x3b>;
+		reg = <0x3c>;
+		status = "okay";
+		ngpios = <8>;
+		/* external pull-up to 1.8V */
+		int-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	gpiox8: gpio@3e {
+		compatible = "nxp,pca9554";
+		reg = <0x3e>;
 		status = "okay";
 		ngpios = <8>;
 		/* external pull-up to 1.8V */

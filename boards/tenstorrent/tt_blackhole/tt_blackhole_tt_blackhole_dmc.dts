@@ -38,19 +38,19 @@
 		gpio38 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO38_SPI_MODE_0";
-			gpios = <&chip0_strapping 3 GPIO_ACTIVE_LOW>;
+			gpios = <&gpiox2 3 GPIO_ACTIVE_LOW>;
 		};
 
 		gpio39 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO39_SPI_MODE_1";
-			gpios = <&chip0_strapping 4 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox2 4 GPIO_ACTIVE_HIGH>;
 		};
 
 		gpio40 {
 			compatible = "zephyr,gpio-line";
 			label = "GPIO pin representing strap GPIO40_SPI_DDR_EN";
-			gpios = <&chip0_strapping 5 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiox2 5 GPIO_ACTIVE_HIGH>;
 		};
 	};
 };
@@ -63,16 +63,36 @@
 	};
 };
 
-&i2c1 {
-	chip0_strapping: strapping_expander@21 {
-		compatible = "nxp,pca9555";
-		status = "okay";
+&gpiox0 {
+	status = "disabled";
+};
 
-		#gpio-cells = <2>;
-		ngpios = <16>;
-		reg = <0x21>;
-		gpio-controller;
-	};
+/*
+ * To do- GPIOx3-GPIOx6 should be enabled for QSFP support, but they are not
+ * currently detected on a P150a board.
+ */
+&gpiox3 {
+	status = "disabled";
+};
+
+&gpiox4 {
+	status = "disabled";
+};
+
+&gpiox5 {
+	status = "disabled";
+};
+
+&gpiox6 {
+	status = "disabled";
+};
+
+&gpiox7 {
+	status = "disabled";
+};
+
+&gpiox8 {
+	status = "disabled";
 };
 
 &smbus3 {
