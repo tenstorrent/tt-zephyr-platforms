@@ -576,14 +576,19 @@ int main(void)
 			process_cm2dm_message(chip);
 		}
 
-		/* SMBUS message may not be more than 32 bytes in length */
-		uint8_t log_data[32];
+		uint8_t *log_data;
 
 		/* Pull up to 32 bytes from the ringbuf log backend */
-		ret = log_backend_ringbuf_get_data(log_data, sizeof(log_data));
+		ret = log_backend_ringbuf_get_claim(&log_data, 32);
 		if (ret > 0) {
 			/* Write log data to the first BH chip */
-			bh_chip_write_logs(&BH_CHIPS[0], log_data, ret);
+			if (bh_chip_write_logs(&BH_CHIPS[0], log_data, ret) == 0) {
+				/* Only finish the claim if the write was successful */
+				log_backend_ringbuf_finish_claim(ret);
+			} else {
+				/* Otherwise, indicate we consumed 0 bytes */
+				log_backend_ringbuf_finish_claim(0);
+			}
 		}
 
 		/*
