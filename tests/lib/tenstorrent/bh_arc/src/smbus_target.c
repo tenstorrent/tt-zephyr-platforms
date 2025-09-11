@@ -75,7 +75,7 @@ ZTEST(smbus_target, test_unsolicited_read_received)
 
 ZTEST(smbus_target, test_write_received_bad_blocksize)
 {
-	uint8_t write_data[] = {CMFW_SMBUS_TEST_WRITE_BLOCK, 5U};
+	uint8_t write_data[] = {CMFW_SMBUS_TEST_WRITE_BLOCK, 5U, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 54U};
 
 	/* WRITE_BLOCK is a valid command */
 	zassert_equal(-1, i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr));
@@ -206,7 +206,7 @@ ZTEST(smbus_target, test_update_arc_test_state_0)
 
 ZTEST(smbus_target, test_telem_read_bad_w_blocksize)
 {
-	uint8_t write_data[] = {CMFW_SMBUS_TELEMETRY_READ, 0x3};
+	uint8_t write_data[] = {CMFW_SMBUS_TELEMETRY_READ, 0x3, 0xAA, 0xBB, 0xCC};
 
 	zassert_equal(-1, i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr));
 }

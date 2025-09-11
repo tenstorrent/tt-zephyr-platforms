@@ -48,18 +48,15 @@ static int32_t Dm2CmSendFanSpeedHandler(const uint8_t *data, uint8_t size)
 	return -1;
 }
 
-int32_t ReadByteTest(uint8_t *data, uint8_t size)
+static int32_t ReadByteTest(uint8_t *data, uint8_t *size)
 {
-	if (size != 1) {
-		return -1;
-	}
-
+	*size = 1;
 	data[0] = ReadReg(STATUS_FW_SCRATCH_REG_ADDR) & 0xFF;
 
 	return 0;
 }
 
-int32_t WriteByteTest(const uint8_t *data, uint8_t size)
+static int32_t WriteByteTest(const uint8_t *data, uint8_t size)
 {
 	if (size != 1) {
 		return -1;
@@ -68,11 +65,9 @@ int32_t WriteByteTest(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t ReadWordTest(uint8_t *data, uint8_t size)
+static int32_t ReadWordTest(uint8_t *data, uint8_t *size)
 {
-	if (size != 2) {
-		return -1;
-	}
+	*size = 2U;
 
 	uint32_t tmp = ReadReg(STATUS_FW_SCRATCH_REG_ADDR);
 
@@ -82,7 +77,7 @@ int32_t ReadWordTest(uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t WriteWordTest(const uint8_t *data, uint8_t size)
+static int32_t WriteWordTest(const uint8_t *data, uint8_t size)
 {
 	if (size != 2) {
 		return -1;
@@ -91,11 +86,9 @@ int32_t WriteWordTest(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t BlockReadTest(uint8_t *data, uint8_t size)
+static int32_t BlockReadTest(uint8_t *data, uint8_t *size)
 {
-	if (size != 4) {
-		return -1;
-	}
+	*size = 4;
 	uint32_t tmp = ReadReg(STATUS_FW_SCRATCH_REG_ADDR);
 
 	memcpy(data, &tmp, 4);
@@ -131,7 +124,6 @@ int32_t UpdateArcStateHandler(const uint8_t *data, uint8_t size)
 
 static const SmbusCmdDef smbus_req_cmd_def = {.pec = 1U,
 					      .trans_type = kSmbusTransBlockRead,
-					      .expected_blocksize_r = 6,
 					      .send_handler = &Cm2DmMsgReqSmbusHandler};
 
 static const SmbusCmdDef smbus_ack_cmd_def = {
@@ -139,13 +131,10 @@ static const SmbusCmdDef smbus_ack_cmd_def = {
 
 static const SmbusCmdDef smbus_update_arc_state_cmd_def = {.pec = 0U,
 							   .trans_type = kSmbusTransBlockWrite,
-							   .expected_blocksize_w = 3,
 							   .rcv_handler = &UpdateArcStateHandler};
 
 static const SmbusCmdDef smbus_dm_static_info_cmd_def = {.pec = 1U,
 							 .trans_type = kSmbusTransBlockWrite,
-							 .expected_blocksize_w =
-								 sizeof(dmStaticInfo),
 							 .rcv_handler = &Dm2CmSendDataHandler};
 
 static const SmbusCmdDef smbus_ping_cmd_def = {
@@ -160,15 +149,11 @@ static const SmbusCmdDef smbus_fan_rpm_cmd_def = {
 #ifndef CONFIG_TT_SMC_RECOVERY
 static const SmbusCmdDef smbus_telem_read_cmd_def = {.pec = 0U,
 						     .trans_type = kSmbusTransBlockWriteBlockRead,
-						     .expected_blocksize_w = 1,
-						     .expected_blocksize_r = 7,
 						     .rcv_handler = SMBusTelemRegHandler,
 						     .send_handler = SMBusTelemDataHandler};
 
 static const SmbusCmdDef smbus_telem_write_cmd_def = {.pec = 0U,
 						      .trans_type = kSmbusTransBlockWriteBlockRead,
-						      .expected_blocksize_w = 33,
-						      .expected_blocksize_r = 20,
 						      .rcv_handler = Dm2CmWriteTelemetry,
 						      .send_handler = Dm2CmReadControlData};
 
@@ -183,7 +168,6 @@ static const SmbusCmdDef smbus_telem_reg_cmd_def = {
 
 static const SmbusCmdDef smbus_telem_data_cmd_def = {.pec = 1U,
 						     .trans_type = kSmbusTransBlockRead,
-						     .expected_blocksize_r = 7U,
 						     .send_handler = &SMBusTelemDataHandler};
 
 static const SmbusCmdDef smbus_therm_trip_count_cmd_def = {.pec = 1U,
@@ -193,7 +177,6 @@ static const SmbusCmdDef smbus_therm_trip_count_cmd_def = {.pec = 1U,
 
 #endif /*CONFIG_TT_SMC_RECOVERY*/
 static const SmbusCmdDef smbus_dmc_log_cmd_def = {.pec = 1U,
-						  .variable_blocksize = 1U,
 						  .trans_type = kSmbusTransBlockWrite,
 						  .rcv_handler = &Dm2CmDMCLogHandler};
 
@@ -212,19 +195,15 @@ static const SmbusCmdDef smbus_test_write_word_cmd_def = {
 static const SmbusCmdDef smbus_block_write_block_read_test = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockWriteBlockRead,
-	.expected_blocksize_r = 4,
-	.expected_blocksize_w = 4,
 	.rcv_handler = &BlockWriteTest,
 	.send_handler = BlockReadTest};
 
 static const SmbusCmdDef smbus_test_read_block_cmd_def = {.pec = 1U,
 							  .trans_type = kSmbusTransBlockRead,
-							  .expected_blocksize_r = 4,
 							  .send_handler = &BlockReadTest};
 
 static const SmbusCmdDef smbus_test_write_block_cmd_def = {.pec = 1U,
 							   .trans_type = kSmbusTransBlockWrite,
-							   .expected_blocksize_w = 4,
 							   .rcv_handler = &BlockWriteTest};
 
 static int InitSmbusTarget(void)

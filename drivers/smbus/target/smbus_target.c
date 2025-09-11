@@ -34,7 +34,8 @@ struct smbus_target_data {
 	/* clang-format on */
 	SmbusState state;
 	uint8_t command;
-	uint8_t blocksize;
+	uint8_t blocksize_r;
+	uint8_t blocksize_w;
 	uint8_t rcv_index;
 	uint8_t send_index;
 	uint8_t received_data[CONFIG_SMBUS_MAX_MSG_SIZE];
@@ -93,29 +94,24 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockWrite:
 		case kSmbusTransBlockWriteBlockRead:
-			smbus_data->blocksize = val;
-			if ((!curr_cmd->variable_blocksize) &&
-			    smbus_data->blocksize != curr_cmd->expected_blocksize_w) {
-				smbus_data->state = kSmbusStateWaitIdle;
-				return -1;
-			}
+			smbus_data->blocksize_w = val;
 			smbus_data->state = kSmbusStateRcvData;
 			break;
 		case kSmbusTransWriteByte:
-			smbus_data->blocksize = 1;
+			smbus_data->blocksize_w = 1;
 			smbus_data->received_data[smbus_data->rcv_index++] = val;
 
 			if (1U == curr_cmd->pec) {
 				smbus_data->state = kSmbusStateRcvPec;
 			} else {
 				ret = curr_cmd->rcv_handler(smbus_data->received_data,
-							    smbus_data->blocksize);
+							    smbus_data->blocksize_w);
 
 				smbus_data->state = kSmbusStateWaitIdle;
 			}
 			break;
 		case kSmbusTransWriteWord:
-			smbus_data->blocksize = 2;
+			smbus_data->blocksize_w = 2;
 			smbus_data->received_data[smbus_data->rcv_index++] = val;
 			smbus_data->state = kSmbusStateRcvData;
 			break;
@@ -127,13 +123,13 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 	} else if (smbus_data->state == kSmbusStateRcvData) {
 		/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1050); */
 		smbus_data->received_data[smbus_data->rcv_index++] = val;
-		if (smbus_data->rcv_index == smbus_data->blocksize) {
+		if (smbus_data->rcv_index == smbus_data->blocksize_w) {
 			if (1U == curr_cmd->pec &&
 			    (curr_cmd->trans_type != kSmbusTransBlockWriteBlockRead)) {
 				smbus_data->state = kSmbusStateRcvPec;
 			} else {
 				ret = curr_cmd->rcv_handler(smbus_data->received_data,
-							    smbus_data->blocksize);
+							    smbus_data->blocksize_w);
 				if (ret == 0 &&
 				    curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
 					smbus_data->state = kSmbusStateCmd;
@@ -153,17 +149,17 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 					     I2C_MSG_WRITE); /* start address byte */
 		pec = pec_crc_8(pec, smbus_data->command);
 		if (curr_cmd->trans_type == kSmbusTransBlockWrite) {
-			pec = pec_crc_8(pec, smbus_data->blocksize);
+			pec = pec_crc_8(pec, smbus_data->blocksize_w);
 		}
-		for (int i = 0; i < smbus_data->blocksize; i++) {
+		for (int i = 0; i < smbus_data->blocksize_w; i++) {
 			pec = pec_crc_8(pec, smbus_data->received_data[i]);
 		}
 
 		if (pec != rcv_pec) {
-			smbus_data->blocksize = kSmbusStateWaitIdle;
+			smbus_data->blocksize_w = kSmbusStateWaitIdle;
 			return -1;
 		}
-		ret = curr_cmd->rcv_handler(smbus_data->received_data, smbus_data->blocksize);
+		ret = curr_cmd->rcv_handler(smbus_data->received_data, smbus_data->blocksize_w);
 
 		if (ret == 0 && curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
 			smbus_data->state = kSmbusStateCmd;
@@ -194,13 +190,8 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		switch (curr_cmd->trans_type) {
 		case kSmbusTransBlockRead:
 		case kSmbusTransBlockWriteBlockRead:
-			smbus_data->blocksize = curr_cmd->expected_blocksize_r;
-			break;
 		case kSmbusTransReadByte:
-			smbus_data->blocksize = 1;
-			break;
 		case kSmbusTransReadWord:
-			smbus_data->blocksize = 2;
 			break;
 		default:
 			/* Error, invalid command for read */
@@ -209,7 +200,7 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 			return -1;
 		}
 		/* Call the send handler to get the data */
-		if (curr_cmd->send_handler(smbus_data->send_data, smbus_data->blocksize)) {
+		if (curr_cmd->send_handler(smbus_data->send_data, &smbus_data->blocksize_r)) {
 			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
 			 * 0xc0de0020);
 			 */
@@ -225,7 +216,7 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 			/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR,
 			 * 0xc0de0030);
 			 */
-			*val = smbus_data->blocksize;
+			*val = smbus_data->blocksize_r;
 			smbus_data->state = kSmbusStateSendData;
 			break;
 		case kSmbusTransReadByte:
@@ -249,7 +240,7 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 	} else if (smbus_data->state == kSmbusStateSendData) {
 		/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0050); */
 		*val = smbus_data->send_data[smbus_data->send_index++];
-		if (smbus_data->send_index == smbus_data->blocksize) {
+		if (smbus_data->send_index == smbus_data->blocksize_r) {
 			smbus_data->state =
 				curr_cmd->pec ? kSmbusStateSendPec : kSmbusStateWaitIdle;
 		}
@@ -266,7 +257,7 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		pec = pec_crc_8(pec, smbus_data->command);
 
 		if (curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
-			pec = pec_crc_8(pec, curr_cmd->expected_blocksize_w);
+			pec = pec_crc_8(pec, smbus_data->blocksize_w);
 		}
 		/* any received data */
 		for (int i = 0; i < smbus_data->rcv_index; i++) {
@@ -279,9 +270,9 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 		/* sent data */
 		if (curr_cmd->trans_type == kSmbusTransBlockRead ||
 		    curr_cmd->trans_type == kSmbusTransBlockWriteBlockRead) {
-			pec = pec_crc_8(pec, smbus_data->blocksize);
+			pec = pec_crc_8(pec, smbus_data->blocksize_r);
 		}
-		for (int i = 0; i < smbus_data->blocksize; i++) {
+		for (int i = 0; i < smbus_data->blocksize_r; i++) {
 			pec = pec_crc_8(pec, smbus_data->send_data[i]);
 		}
 
@@ -305,7 +296,8 @@ static int32_t smbus_stop_handler(struct i2c_target_config *config)
 
 	smbus_data->state = kSmbusStateIdle;
 	smbus_data->command = 0;
-	smbus_data->blocksize = 0;
+	smbus_data->blocksize_r = 0;
+	smbus_data->blocksize_w = 0;
 	smbus_data->rcv_index = 0;
 	smbus_data->send_index = 0;
 
