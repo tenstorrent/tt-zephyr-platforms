@@ -6,6 +6,12 @@
 
 IMAGE_URL="ghcr.io/danieldegrasse/tt-zephyr-platforms/recovery-image"
 IMAGE_TAG="latest"
+if [[ -n $BOARD_SERIAL ]]; then
+    SERIAL_ARG="--board-id ${BOARD_SERIAL}"
+fi
+if [[ -n $BOARD_NAME ]]; then
+    NAME_ARG="${BOARD_NAME}"
+fi
 
 # This script will download and run the blackhole recovery tool inside a
 # Docker container. Note that a recovery bundle can also be
@@ -15,7 +21,7 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ $# -lt 1 ]; then
+if [[ -z $BOARD_NAME && $# -lt 1 ]]; then
     echo "Usage: $0 <board name>"
     exit 1
 fi
@@ -33,4 +39,4 @@ echo "Launching docker container to recover blackhole device..."
 docker run --device /dev/bus/usb --privileged \
     --rm $IMAGE_URL:$IMAGE_TAG \
     python3 /tt-zephyr-platforms/scripts/tooling/blackhole_recovery/recover-blackhole.py \
-    /recovery.tar.gz $@
+    /recovery.tar.gz $NAME_ARG $SERIAL_ARG $@
