@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 IMAGE_URL="ghcr.io/danieldegrasse/tt-zephyr-platforms/recovery-image"
-IMAGE_TAG="v0.0.1"
+IMAGE_TAG="latest"
 
 # This script will download and run the blackhole recovery tool inside a
 # Docker container. Note that a recovery bundle can also be
