@@ -36,16 +36,13 @@ typedef int32_t (*SmbusRcvHandler)(const uint8_t *data, uint8_t size);
  *          application to send to the I2C controller. SMBUS send handlers shall
  *          return 0 on success, and any other value on failure.
  */
-typedef int32_t (*SmbusSendHandler)(uint8_t *data, uint8_t size);
+typedef int32_t (*SmbusSendHandler)(uint8_t *data, uint8_t *size);
 
 typedef struct {
 	SmbusTransType trans_type;
 	SmbusRcvHandler rcv_handler;
 	SmbusSendHandler send_handler;
-	uint8_t expected_blocksize_r; /* Only used for block r commands */
-	uint8_t expected_blocksize_w; /* Only used for block w commands */
 	uint8_t pec: 1;
-	uint8_t variable_blocksize: 1; /* If set, block size can be <= expected */
 } SmbusCmdDef;
 
 /**

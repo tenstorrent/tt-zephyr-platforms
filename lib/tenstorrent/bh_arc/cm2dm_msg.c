@@ -68,13 +68,11 @@ static Cm2DmMsgId next_id_rr(uint32_t pending_messages)
 	return (Cm2DmMsgId)next_message_id;
 }
 
-int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t size)
+int32_t Cm2DmMsgReqSmbusHandler(uint8_t *data, uint8_t *size)
 {
 	BUILD_ASSERT(sizeof(cm2dm_msg_state.curr_msg) == 6,
 		     "Unexpected size of cm2dm_msg_state.curr_msg");
-	if (size != sizeof(cm2dm_msg_state.curr_msg)) {
-		return -1;
-	}
+	*size = sizeof(cm2dm_msg_state.curr_msg);
 
 	if (!cm2dm_msg_state.curr_msg_valid) {
 		atomic_val_t pending_messages = atomic_get(&cm2dm_msg_state.pending_messages);
@@ -325,13 +323,11 @@ int32_t SMBusTelemRegHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t size)
+int32_t SMBusTelemDataHandler(uint8_t *data, uint8_t *size)
 {
 	uint32_t telemetry_data;
 
-	if (size != 7U) {
-		return -1;
-	}
+	*size = 7U;
 	data[0] = GetTelemetryTagValid(telemetry_reg) ? 0U : 1U;
 	data[1] = 0U;
 	data[2] = 0U;
@@ -361,12 +357,10 @@ int32_t Dm2CmWriteTelemetry(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
-int32_t Dm2CmReadControlData(uint8_t *data, uint8_t size)
+int32_t Dm2CmReadControlData(uint8_t *data, uint8_t *size)
 {
-	if (size != 20) {
-		return -1;
-	}
-	(void)memset(data, 0U, size);
+	*size = 20U;
+	(void)memset(data, 0U, *size);
 
 	struct {
 		uint32_t pcie_index: 8;
@@ -390,8 +384,8 @@ int32_t Dm2CmReadControlData(uint8_t *data, uint8_t size)
 	 */
 	uint8_t pec = 0U;
 
-	pec = crc8(&size, 1, 0x7, 0U, false);
-	pec = crc8(data, size - 1, 0x7, pec, false);
+	pec = crc8(size, 1, 0x7, 0U, false);
+	pec = crc8(data, *size - 1, 0x7, pec, false);
 	data[19] = pec;
 	return 0;
 }
