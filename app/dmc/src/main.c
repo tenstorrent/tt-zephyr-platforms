@@ -632,8 +632,6 @@ int main(void)
 
 		handle_pgood_change();
 
-		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
-		 */
 		/* send_init_data only triggers once per chip (per reset). */
 		send_init_data();
 
