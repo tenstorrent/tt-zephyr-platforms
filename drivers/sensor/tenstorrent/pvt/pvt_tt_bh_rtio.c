@@ -10,6 +10,8 @@
 #include <zephyr/rtio/rtio.h>
 #include <zephyr/rtio/work.h>
 
+#include "functional_efuse.h"
+
 LOG_MODULE_DECLARE(pvt_tt_bh);
 
 #define SDIF_DONE_TIMEOUT_MS          10
@@ -216,21 +218,29 @@ static ReadStatus read_pvt_auto_mode(PvtType type, uint32_t id, uint16_t *data,
 	return ReadOk;
 }
 
-static ReadStatus read_ts(uint32_t id, uint16_t *data)
+static ReadStatus read_ts(const struct device *dev, uint8_t chan, uint16_t *data)
 {
-	return read_pvt_auto_mode(TS, id, data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
-				  PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
+	struct pvt_tt_bh_config *pvt_cfg = (struct pvt_tt_bh_config *)dev->config;
+
+	ReadStatus status = read_pvt_auto_mode(TS, chan, data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
+					       PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
+
+	*data -= pvt_cfg->therm_cali_delta[chan];
+	return status;
 }
 
-static ReadStatus read_ts_avg(uint16_t *sum)
+static ReadStatus read_ts_avg(const struct device *dev, uint16_t *sum)
 {
+	struct pvt_tt_bh_config *pvt_cfg = (struct pvt_tt_bh_config *)dev->config;
+
 	*sum = 0;
 	for (int i = 0; i < 8; i++) {
 		uint16_t data;
 
 		read_pvt_auto_mode(TS, i, &data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
 				   PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
-		*sum += data;
+
+		*sum += data - pvt_cfg->therm_cali_delta[i];
 	}
 	*sum /= 8;
 	return ReadOk;
@@ -322,11 +332,11 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 				rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
 				return;
 			}
-			status = read_ts(chan->chan_idx, &data[i].raw);
+			status = read_ts(sensor_cfg->sensor, chan->chan_idx, &data[i].raw);
 			break;
 		case SENSOR_CHAN_PVT_TT_BH_TS_AVG:
 			/* Channel index is ignored as this is the average for all TS channels. */
-			status = read_ts_avg(&data[i].raw);
+			status = read_ts_avg(sensor_cfg->sensor, &data[i].raw);
 			break;
 		default:
 			LOG_ERR("Unsupported channel type: %d", chan->chan_type);

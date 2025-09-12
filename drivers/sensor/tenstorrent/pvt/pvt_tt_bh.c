@@ -9,6 +9,7 @@
 #include "tenstorrent/msg_type.h"
 #include "tenstorrent/msgqueue.h"
 #include "tenstorrent/post_code.h"
+#include "functional_efuse.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>
@@ -338,12 +339,44 @@ static void enable_aging_meas(void)
 		   IP_CFG0_ADDR, ip_cfg0.val);
 }
 
+int pvt_tt_bh_attr_get(const struct device *dev, enum sensor_channel chan,
+		       enum sensor_attribute attr, struct sensor_value *val)
+{
+	if (!dev || !val) {
+		return -EINVAL;
+	}
+
+	const struct pvt_tt_bh_config *config = (const struct pvt_tt_bh_config *)dev->config;
+	enum pvt_tt_bh_attribute pvt_attr = (enum pvt_tt_bh_attribute)attr;
+
+	switch (pvt_attr) {
+	case SENSOR_ATTR_PVT_TT_BH_NUM_PD:
+		val->val1 = config->num_pd;
+		break;
+	case SENSOR_ATTR_PVT_TT_BH_NUM_VM:
+		val->val1 = config->num_vm;
+		break;
+	case SENSOR_ATTR_PVT_TT_BH_NUM_TS:
+		val->val1 = config->num_ts;
+		break;
+	default:
+		return -ENOTSUP;
+	}
+
+	/* val2 is the fractional part, which is 0 for integers */
+	val->val2 = 0;
+
+	return 0;
+}
+
 /*
  * Setup Interrupt and clk configurations, TS, PD, VM IP configurations.
  * Enable continuous mode for TS and VM. For PD, run once mode should be used.
  */
 static int pvt_tt_bh_init(const struct device *dev)
 {
+	const struct pvt_tt_bh_config *pvt_cfg = (const struct pvt_tt_bh_config *)dev->config;
+
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
@@ -385,35 +418,26 @@ static int pvt_tt_bh_init(const struct device *dev)
 	/* Wait for all sensors to power up, TS takes 256 ip_clk cycles */
 	k_usleep(100);
 
-	return 0;
-}
+	/* Initialize the single thermal calibration fuse value from TS0's 25 degree data */
 
-int pvt_tt_bh_attr_get(const struct device *dev, enum sensor_channel chan,
-		       enum sensor_attribute attr, struct sensor_value *val)
-{
-	if (!dev || !val) {
-		return -EINVAL;
+	const struct sensor_value celcius25 = {.val1 = 25, .val2 = 0};
+	uint16_t celcius25_raw = pvt_tt_bh_temp_to_raw(&celcius25);
+
+	for (uint8_t id = 0; id < pvt_cfg->num_ts; ++id) {
+		uint32_t deg25_start = 2240 + (id * 64);
+		uint32_t deg25_end = deg25_start + 15; /* data is 16 bits */
+
+		uint16_t efuse = (uint16_t)ReadFunctionalEfuse(deg25_start, deg25_end);
+		float efuse_celcius = pvt_tt_bh_raw_to_temp(efuse);
+
+		/* Only use the calibration value if it is no more than three degrees away from 25
+		 */
+		if (efuse_celcius >= 22.0f && efuse_celcius <= 28.0f) {
+			pvt_cfg->therm_cali_delta[id] =
+				(uint16_t)ReadFunctionalEfuse(deg25_start, deg25_end) -
+				celcius25_raw;
+		}
 	}
-
-	const struct pvt_tt_bh_config *config = (const struct pvt_tt_bh_config *)dev->config;
-	enum pvt_tt_bh_attribute pvt_attr = (enum pvt_tt_bh_attribute)attr;
-
-	switch (pvt_attr) {
-	case SENSOR_ATTR_PVT_TT_BH_NUM_PD:
-		val->val1 = config->num_pd;
-		break;
-	case SENSOR_ATTR_PVT_TT_BH_NUM_VM:
-		val->val1 = config->num_vm;
-		break;
-	case SENSOR_ATTR_PVT_TT_BH_NUM_TS:
-		val->val1 = config->num_ts;
-		break;
-	default:
-		return -ENOTSUP;
-	}
-
-	/* val2 is the fractional part, which is 0 for integers */
-	val->val2 = 0;
 
 	return 0;
 }
@@ -432,10 +456,14 @@ static const struct sensor_driver_api pvt_tt_bh_driver_api = {
 };
 
 #define DEFINE_PVT_TT_BH(id)                                                                       \
+	static int16_t pvt_tt_bh_therm_cali_delta[DT_PROP(DT_DRV_INST(id), num_ts)] = {};          \
+                                                                                                   \
 	static const struct pvt_tt_bh_config pvt_tt_bh_config_##_id = {                            \
 		.num_ts = DT_PROP(DT_DRV_INST(id), num_ts),                                        \
 		.num_pd = DT_PROP(DT_DRV_INST(id), num_pd),                                        \
 		.num_vm = DT_PROP(DT_DRV_INST(id), num_vm),                                        \
+                                                                                                   \
+		.therm_cali_delta = pvt_tt_bh_therm_cali_delta,                                    \
 	};                                                                                         \
                                                                                                    \
 	static struct pvt_tt_bh_data pvt_tt_bh_data_##_id = {};                                    \

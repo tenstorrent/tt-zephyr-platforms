@@ -37,6 +37,32 @@ struct pvt_tt_bh_config {
 	uint8_t num_pd;
 	uint8_t num_vm;
 	uint8_t num_ts;
+
+	/*
+	 * Single-point calibration delta values for each temperature sensor.
+	 *
+	 * During device instantiation (DEFINE_PVT_TT_BH macro), a static array
+	 * of size num_ts is allocated and zero-initialized for each device instance.
+	 * The pointer is then set to reference this static array.
+	 *
+	 * During pvt_tt_bh_init(), each sensor's 25C calibration value is read from
+	 * the functional eFuse. The delta between this eFuse value and the expected
+	 * raw value for 25C is calculated and stored here.
+	 *
+	 * To apply calibration: calibrated_reading = raw_reading - therm_cali_delta[sensor_id]
+	 *
+	 * Values are in raw sensor units (not celcius). Positive delta means the
+	 * sensor reads higher than expected, negative means it reads lower.
+	 *
+	 * Only populated if the eFuse calibration value is within 3C of 25C
+	 * (22.0C to 28.0C range). If outside this range, the delta remains 0
+	 * (no calibration applied).
+	 *
+	 * Array allocation: Static array created per device instance via DEFINE_PVT_TT_BH
+	 * Array size: num_ts elements (from devicetree property)
+	 * Initialization: Zero-filled during compilation, populated during pvt_tt_bh_init()
+	 */
+	int16_t *therm_cali_delta;
 };
 
 struct pvt_tt_bh_data {
