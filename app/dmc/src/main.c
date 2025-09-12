@@ -561,7 +561,7 @@ static void send_logs_to_smc(void)
 	ret = log_backend_ringbuf_get_claim(&log_data, 32);
 	if (ret > 0) {
 		/* Write log data to the first BH chip */
-		if (bh_chip_write_logs(&BH_CHIPS[0], log_data, ret) == 0) {
+		if (bh_chip_write_logs(&BH_CHIPS[BH_CHIP_PRIMARY_INDEX], log_data, ret) == 0) {
 			/* Only finish the claim if the write was successful */
 			log_backend_ringbuf_finish_claim(ret);
 		} else {
