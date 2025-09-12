@@ -495,6 +495,10 @@ int vuart_start(struct vuart_data *data)
 		}
 		data->vuart_addr = ret;
 		D(2, "discovery address: 0x%08x", data->vuart_addr);
+		if (data->vuart_addr == 0xffffffff) {
+			D(1, "Read 0xffffffff from ARC. Please reset the card and try again.");
+			return -ENOENT;
+		}
 
 		uint64_t adjust;
 
