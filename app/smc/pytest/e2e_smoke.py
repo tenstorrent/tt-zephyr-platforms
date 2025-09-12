@@ -54,6 +54,7 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
     chip directly because tests may need to delete chip objects after they
     reset the ARC chip to induce pyluwen to close open file descriptors
     """
+    time.sleep(1)  # Wait for ARC to start
     start = time.time()
     # Attempt to detect the ARC chip for 15 seconds
     timeout = 15
