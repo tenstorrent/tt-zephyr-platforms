@@ -729,13 +729,6 @@ int main(void)
 		if (events & (TT_EVENT_LOGS_TO_SMC | TT_EVENT_WAKE)) {
 			send_logs_to_smc();
 		}
-
-		/*
-		 * Really only matters if running without security... but
-		 * cm should register that it is on the pcie bus and therefore can be an update
-		 * candidate. If chips that are on the bus see that an update has been requested
-		 * they can update?
-		 */
 	}
 
 	return EXIT_SUCCESS;
