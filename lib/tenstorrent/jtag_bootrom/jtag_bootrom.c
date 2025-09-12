@@ -77,7 +77,7 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 			bh_chip_cancel_bus_transfer_set(chip);
 		}
 	}
-	tt_event_post(TT_EVENT_WAKE);
+	tt_event_post(TT_EVENT_PERST);
 }
 
 static struct gpio_callback preset_cb_data;

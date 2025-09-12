@@ -123,7 +123,7 @@ void bh_chip_auto_reset(struct k_timer *timer)
 	chip->data.arc_wdog_triggered = true;
 	/* Cancel bus transfers, ARC is likely hung */
 	bh_chip_cancel_bus_transfer_set(chip);
-	tt_event_post(TT_EVENT_WAKE);
+	tt_event_post(TT_EVENT_WATCHDOG_EXPIRED);
 }
 
 int bh_chip_write_logs(struct bh_chip *chip, char *log_data, size_t log_size)
@@ -173,7 +173,7 @@ void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uin
 
 	chip->data.therm_trip_triggered = true;
 	bh_chip_cancel_bus_transfer_set(chip);
-	tt_event_post(TT_EVENT_WAKE);
+	tt_event_post(TT_EVENT_THERM_TRIP);
 }
 
 int therm_trip_gpio_setup(struct bh_chip *chip)
@@ -212,7 +212,7 @@ void pgood_change_detected(const struct device *dev, struct gpio_callback *cb, u
 	} else {
 		chip->data.pgood_fall_triggered = true;
 	}
-	tt_event_post(TT_EVENT_WAKE);
+	tt_event_post(TT_EVENT_PGOOD);
 }
 
 int pgood_gpio_setup(struct bh_chip *chip)

@@ -571,6 +571,14 @@ static void send_logs_to_smc(void)
 	}
 }
 
+static void shared_20ms_expired(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+	tt_event_post(TT_EVENT_BOARD_POWER_TO_SMC | TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_CM2DM_POLL |
+		      TT_EVENT_LOGS_TO_SMC);
+}
+static K_TIMER_DEFINE(shared_20ms_event_timer, shared_20ms_expired, NULL);
+
 int main(void)
 {
 	int ret;
@@ -689,9 +697,12 @@ int main(void)
 
 	max_power = detect_max_power();
 
-	while (true) {
-		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
+	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
 
+	while (true) {
+		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
+
+		/* These are urgent events, and gated by their own flags. */
 		handle_therm_trip();
 
 		handle_watchdog_reset();
@@ -702,15 +713,24 @@ int main(void)
 
 		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
 		 */
+		/* send_init_data only triggers once per chip (per reset). */
 		send_init_data();
 
-		board_power_update();
+		if (events & (TT_EVENT_BOARD_POWER_TO_SMC | TT_EVENT_WAKE)) {
+			board_power_update();
+		}
 
-		fan_rpm_feedback();
+		if (events & (TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_WAKE)) {
+			fan_rpm_feedback();
+		}
 
-		handle_cm2dm_messages();
+		if (events & (TT_EVENT_CM2DM_POLL | TT_EVENT_WAKE)) {
+			handle_cm2dm_messages();
+		}
 
-		send_logs_to_smc();
+		if (events & (TT_EVENT_LOGS_TO_SMC | TT_EVENT_WAKE)) {
+			send_logs_to_smc();
+		}
 
 		/*
 		 * Really only matters if running without security... but

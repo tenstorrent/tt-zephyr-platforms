@@ -23,11 +23,19 @@ extern "C" {
  * system. Multiple events may be posted and receieved simultaneously, as they form a bitmask.
  */
 enum tt_event {
-	TT_EVENT_WAKE = BIT(31), /**< @brief Wake firmware for a generic reason */
+	TT_EVENT_THERM_TRIP = BIT(0),         /**< @brief ASIC thermal trip detected */
+	TT_EVENT_WATCHDOG_EXPIRED = BIT(1),   /**< @brief Watchdog timeout expired */
+	TT_EVENT_PERST = BIT(2),              /**< @brief PERST (pcie reset) signal asserted */
+	TT_EVENT_PGOOD = BIT(3),              /**< @brief PGOOD (power good) state change */
+	TT_EVENT_BOARD_POWER_TO_SMC = BIT(4), /**< @brief 20ms: board power sense & send to smc */
+	TT_EVENT_FAN_RPM_TO_SMC = BIT(5),     /**< @brief 20ms: fan RPM sense & send to smc */
+	TT_EVENT_CM2DM_POLL = BIT(6),         /**< @brief 20ms: CM2DM message polling */
+	TT_EVENT_LOGS_TO_SMC = BIT(7),        /**< @brief 20ms: send log chunk to smc */
+	TT_EVENT_WAKE = BIT(31),              /**< @brief Wake firmware for a generic reason */
 };
 
 /** @brief Bitmask of all Tenstorrent firmware events */
-#define TT_EVENT_MASK (TT_EVENT_WAKE)
+#define TT_EVENT_ANY UINT32_MAX
 
 /**
  * @brief Post an event to Tenstorrent firmware.
