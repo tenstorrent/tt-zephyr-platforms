@@ -62,7 +62,12 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
         try:
             chips = pyluwen.detect_chips()
         except Exception:
-            print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
+            logger.warning("SMC firmware requires a reset. Rescanning PCIe bus")
+        except BaseException as e:
+            # We will continue through these exceptions, since pyluwen
+            # sometimes throws rust exceptions when the chip is resetting.
+            # log them with a higher severity so we can track them
+            logger.error(f"Base exception error while detecting chips: {e}")
         if len(chips) > asic_id:
             logger.info("Detected ARC chip")
             break
@@ -74,7 +79,7 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
     try:
         status = chip.axi_read32(ARC_STATUS)
     except Exception:
-        print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
+        logger.warning("SMC firmware requires a reset. Rescanning PCIe bus")
         rescan_pcie()
         status = chip.axi_read32(ARC_STATUS)
     assert (status & 0xFFFF0000) == 0xC0DE0000, "SMC firmware postcode is invalid"
