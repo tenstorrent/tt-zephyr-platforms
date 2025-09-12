@@ -9,6 +9,7 @@
 #include "tenstorrent/msg_type.h"
 #include "tenstorrent/msgqueue.h"
 #include "tenstorrent/post_code.h"
+#include "functional_efuse.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>
@@ -344,6 +345,9 @@ static void enable_aging_meas(void)
  */
 static int pvt_tt_bh_init(const struct device *dev)
 {
+	const struct pvt_tt_bh_config *pvt_cfg = (const struct pvt_tt_bh_config *)dev->config;
+	struct pvt_tt_bh_data *pvt_data = (struct pvt_tt_bh_data *)dev->data;
+
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
@@ -384,6 +388,14 @@ static int pvt_tt_bh_init(const struct device *dev)
 
 	/* Wait for all sensors to power up, TS takes 256 ip_clk cycles */
 	k_usleep(100);
+
+	/* Initialize the single thermal calibration fuse value from TS0's 25 degree data */
+	for (uint8_t id = 0; id < pvt_cfg->num_ts; ++id) {
+		uint32_t deg25_start = 2240 * (id * 64);
+		uint32_t deg25_end = deg25_start + 15; /* data is 16 bits */
+
+		pvt_data->therm_cali[id] = (uint16_t)ReadFunctionalEfuse(deg25_start, deg25_end);
+	}
 
 	return 0;
 }
