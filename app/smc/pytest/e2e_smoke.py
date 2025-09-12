@@ -57,10 +57,12 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
     start = time.time()
     # Attempt to detect the ARC chip for 15 seconds
     timeout = 15
-    chips = []
     while True:
         try:
             chips = pyluwen.detect_chips()
+            if len(chips) > asic_id:
+                logger.info("Detected ARC chip")
+                break
         except Exception:
             logger.warning("SMC firmware requires a reset. Rescanning PCIe bus")
         except BaseException as e:
@@ -68,9 +70,6 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
             # sometimes throws rust exceptions when the chip is resetting.
             # log them with a higher severity so we can track them
             logger.error(f"Base exception error while detecting chips: {e}")
-        if len(chips) > asic_id:
-            logger.info("Detected ARC chip")
-            break
         time.sleep(0.5)
         if time.time() - start > timeout:
             raise RuntimeError("Did not detect ARC chip within timeout period")
