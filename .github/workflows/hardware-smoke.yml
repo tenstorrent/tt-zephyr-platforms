@@ -125,11 +125,13 @@ jobs:
             --outdir twister-dmc-e2e
 
           # Run tests tagged with "smoke"
+          # Flash before to ensure tt-kmd can't set watchdog when tt-console
+          # rescans for devices
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
-            --west-flash \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/tooling/tt-console -d $CONSOLE_DEV" \
             --flash-before \
+            --west-flash \
             --tag smoke \
             --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
             --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
@@ -241,8 +243,7 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
-            --flash-before \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/tooling/tt-console -d $CONSOLE_DEV" \
             --west-flash \
             -T ../tt-zephyr-platforms/app \
             --outdir twister-smc-e2e
@@ -256,8 +257,7 @@ jobs:
             --west-flash="--force" \
             --west-runner tt_flash \
             --device-testing -c \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
-            --flash-before \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/tooling/tt-console -d $CONSOLE_DEV" \
             --outdir twister-e2e-flash
 
       - name: Upload E2E Test results
