@@ -32,7 +32,6 @@ BOOT_STATUS = 0x80030408
 PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
 CMFW_START_TIME_REG_ADDR = 0x8003043C
 ARC_START_TIME_REG_ADDR = 0x80030440
-ARC_HANG_PC_REG_ADDR = 0x80030454
 
 # ARC messages
 ARC_MSG_TYPE_REINIT_TENSIX = 0x20
@@ -44,16 +43,21 @@ ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
 
 
-@pytest.fixture()
-def arc_chip_dut(dut: DeviceAdapter, asic_id):
+def get_arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
     """
-    This fixture returns the Zephyr DUT once the ARC chip is ready. Otherwise, it
-    raises a runtime error.
-
-    We use this approach rather than providing a reference to the pyluwen
-    chip directly because tests may need to delete chip objects after they
-    reset the ARC chip to induce pyluwen to close open file descriptors
+    Validates the ARC firmware is alive and booted, since this required
+    for any test to run
     """
+    logger.info(f"Getting ASIC ID {asic_id}")
+    # This is a hack- the RTT terminal doesn't work in pytest, so
+    # we directly call this internal API to flash the DUT.
+    unlaunched_dut.generate_command()
+    if unlaunched_dut.device_config.extra_test_args:
+        unlaunched_dut.command.extend(
+            unlaunched_dut.device_config.extra_test_args.split()
+        )
+    unlaunched_dut._flash_and_run()
+    time.sleep(1)
     start = time.time()
     # Attempt to detect the ARC chip for 15 seconds
     timeout = 15
@@ -80,19 +84,19 @@ def arc_chip_dut(dut: DeviceAdapter, asic_id):
     assert (status & 0xFFFF0000) == 0xC0DE0000, "SMC firmware postcode is invalid"
     # Check post code status of firmware
     assert (status & 0xFFFF) >= 0x1D, "SMC firmware boot failed"
-    # Remove references to chip objects so pyluwen will close file descriptors.
-    # Otherwise these may become stale when SMC resets.
-    del chips
-    del chip
-    return dut
+    return chip
 
 
-def test_arc_msg(arc_chip_dut, asic_id):
+@pytest.fixture(scope="session")
+def arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
+    return get_arc_chip(unlaunched_dut, asic_id)
+
+
+def test_arc_msg(arc_chip):
     """
     Runs a smoke test to verify that the ARC firmware can receive ARC messages
     """
     # Send a test message. We expect response to be incremented by 1
-    arc_chip = pyluwen.detect_chips()[asic_id]
     response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 20, 0, 1000)
     assert response[0] == 21, "SMC did not respond to test message"
     assert response[1] == 0, "SMC response invalid"
@@ -102,44 +106,41 @@ def test_arc_msg(arc_chip_dut, asic_id):
     assert status == 0xC0DE003F, "SMC firmware has incorrect status"
 
 
-def test_dmc_msg(arc_chip_dut, asic_id):
+def test_dmc_msg(arc_chip):
     """
     Validates the DMC firmware is alive and responding to pings
     """
     # Send an ARC message to ping the DMC, and validate that it is online
-    arc_chip = pyluwen.detect_chips()[asic_id]
     response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
     assert response[0] == 1, "DMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
     logger.info('DMC ping message response "%d"', response[0])
 
 
-def test_boot_status(arc_chip_dut, asic_id):
+def test_boot_status(arc_chip):
     """
     Validates the boot status of the ARC firmware
     """
     # Read the boot status register and validate that it is correct
-    arc_chip = pyluwen.detect_chips()[asic_id]
     status = arc_chip.axi_read32(BOOT_STATUS)
     assert (status >> 1) & 0x3 == 0x2, "SMC HW boot status is not valid"
     logger.info('SMC boot status "%d"', status)
 
 
-def test_smbus_status(arc_chip_dut, asic_id):
+def test_smbus_status(arc_chip):
     """
     Validates that the SMBUS tests run from the DMC firmware passed
     """
     # We have limited visibility into the DMC firmware, so we read
     # the ARC scratch register the DMC should have set within SMBUS
     # tests to check that they passed
-    arc_chip = pyluwen.detect_chips()[asic_id]
     ARC_SCRATCH_63 = 0x80030400 + (63 * 4)
     status = arc_chip.axi_read32(ARC_SCRATCH_63)
     assert status == 0xFEEDFACE, "SMC firmware did not pass SMBUS tests"
     logger.info('SMC SMBUS status: "0x%x"', status)
 
 
-def test_flash_write(arc_chip_dut, asic_id):
+def test_flash_write(arc_chip):
     """
     Validates that flash read/write works via pyluwen,
     since this is the same interface used by tt-flash
@@ -151,7 +152,6 @@ def test_flash_write(arc_chip_dut, asic_id):
     WRITE_SIZE = 0x8000
     NUM_ITERATIONS = 5
 
-    arc_chip = pyluwen.detect_chips()[asic_id]
     # Read the SPI RX training region and validate that it is correct
     data = bytes(4)
     check_data = SPI_RX_TRAIN_DATA.to_bytes(4, byteorder="little")
@@ -212,12 +212,11 @@ def get_int_version_from_file(filename) -> int:
     return version_int
 
 
-def arc_watchdog_test(asic_id):
+def arc_watchdog_test(arc_chip):
     """
     Helper to run ARC watchdog test. Returns True on pass, or False on
     failure
     """
-    arc_chip = pyluwen.detect_chips()[asic_id]
     wdt_timeout = 1000
     # Setup ARC watchdog for a 1000ms timeout
     arc_chip.arc_msg(ARC_MSG_TYPE_SET_WDT, True, False, wdt_timeout, 0, 1000)
@@ -230,46 +229,34 @@ def arc_watchdog_test(asic_id):
     if response[1] != 0:
         logger.warning("SMC response invalid")
         return False
-    # Clear the ARC hang register- this should be set during a watchdog reset
-    arc_chip.axi_write32(ARC_HANG_PC_REG_ADDR, 0)
     # Halt the ARC cores.
     arc_chip.axi_write32(ARC_MISC_CTRL, 0xF0)
     # Make sure we can still detect ARC core after 500 ms
     time.sleep(0.5)
-    try:
-        arc_chip = pyluwen.detect_chips()[asic_id]
-        hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
-        if hang_pc != 0:
-            logger.error(
-                "DMC reset too early (hang PC set), ARC should still be online"
-            )
-            return False
-    except Exception:
-        # Ideally we would catch a more specific exception here, but pyluwen
-        # does not currently have specific exception types
-        logger.error("DMC reset too early, ARC should still be online")
-        return False
+    arc_chip = pyluwen.detect_chips()[0]
     # Delay 600 more ms. Make sure the ARC has been reset.
     time.sleep(0.6)
-    # Delete arc chip object, to make sure pyluwen drops open file descriptors
-    del arc_chip
-    # Rescan PCIe, and see if ARC chip has been reset
-    rescan_pcie()
-    arc_chip = pyluwen.detect_chips()[asic_id]
-    hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
-    # If the ARC chip was reset, the hang program counter should have been set
-    if hang_pc == 0:
-        logger.warning(
-            "ARC did not reset, waiting 10 additional seconds to see if ARC core resets"
-        )
+    # Ideally we would catch a more narrow exception, but this is what pyluwen raises
+    try:
+        # This should fail, since the ARC should have been reset
+        arc_chip = pyluwen.detect_chips()[0]
+        logger.warning("DMC did not reset ARC core. Still able to detect ARC chip")
+        # tt-kmd sets its own 10000ms timer, which sometimes can race our own
+        # timer and override it. To handle this case, delay 10 more seconds
+        # to allow the ARC to reset
+        logger.warning("Waiting 10 additional seconds to see if ARC core resets")
         time.sleep(10)
-        rescan_pcie()
-        arc_chip = pyluwen.detect_chips()[asic_id]
-        hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
-        if hang_pc == 0:
-            logger.error("ARC core was not reset after ten seconds")
-            return False
-    logger.info(f"ARC was reset, hang PC 0x{hang_pc:08X}")
+        arc_chip = pyluwen.detect_chips()[0]
+        logger.error("ARC core was not reset after 10 seconds")
+        return False
+    except Exception:
+        # Expected behavior, since the ARC should have been reset.
+        # Unfortunately, pyluwen does not throw a specific exception
+        pass
+    time.sleep(1.0)
+    rescan_pcie()
+    # ARC should now be back online
+    arc_chip = pyluwen.detect_chips()[0]
     # Make sure ARC can still ping the DMC
     response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
     if response[0] != 1:
@@ -283,19 +270,18 @@ def arc_watchdog_test(asic_id):
 
 
 @pytest.mark.flash
-def test_arc_watchdog(arc_chip_dut, asic_id):
+def test_arc_watchdog(arc_chip):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
     reset the chip
     """
-    assert arc_watchdog_test(asic_id), "ARC watchdog test failed"
+    assert arc_watchdog_test(arc_chip), "ARC watchdog test failed"
 
 
-def pcie_fw_load_time_test(asic_id):
+def pcie_fw_load_time_test(arc_chip):
     """
     Helper to run PCIe FW load time test. Returns True if passed, False if failed
     """
-    arc_chip = pyluwen.detect_chips()[asic_id]
     duration_deadline = 40  # 40 ms.
     pcie_init_cpl_time = arc_chip.axi_read32(PCIE_INIT_CPL_TIME_REG_ADDR)
     cmfw_start_time = arc_chip.axi_read32(CMFW_START_TIME_REG_ADDR)
@@ -330,20 +316,19 @@ def pcie_fw_load_time_test(asic_id):
 
 
 @pytest.mark.flash
-def test_pcie_fw_load_time(arc_chip_dut, asic_id):
+def test_pcie_fw_load_time(arc_chip):
     """
     Checks PCIe firmware load time is within 40ms.
     This test needs to be run after production reset.
     """
-    assert pcie_fw_load_time_test(asic_id), "PCIe firmware load time test failed"
+    assert pcie_fw_load_time_test(arc_chip), "PCIe firmware load time test failed"
 
 
 @pytest.mark.flash
-def test_fw_bundle_version(arc_chip_dut, asic_id):
+def test_fw_bundle_version(arc_chip):
     """
     Checks that the fw bundle version in telemetry matches the repo
     """
-    arc_chip = pyluwen.detect_chips()[asic_id]
     telemetry = arc_chip.get_telemetry()
 
     exp_bundle_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "VERSION")
@@ -467,13 +452,12 @@ def tensix_reset_sequence(arc_chip):
     arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, arg0=0, arg1=0)
 
 
-def test_tensix_reset(arc_chip_dut, asic_id):
+def test_tensix_reset(arc_chip):
     """
     Validates the Tensix reset sequence
     """
     # Unused register in Tensix. Use bit 0 as a scratch bit
     # "PREFECTH" is a typo carried over from the register name in the RTL
-    arc_chip = pyluwen.detect_chips()[asic_id]
     ETH_RISC_PREFECTH_CTRL_ADDR = 0xFFB120B8
     # This Tensix coordinate (1-2) should be available in all current harvesting configs
     scratch_set = arc_chip.noc_read32(
@@ -501,8 +485,7 @@ def test_tensix_reset(arc_chip_dut, asic_id):
         logger.info(f"Tensix reset test iteration {i} passed")
 
 
-def test_aiclk(arc_chip_dut, asic_id):
-    arc_chip = pyluwen.detect_chips()[asic_id]
+def test_aiclk(arc_chip):
     TARGET_AICLKS = [
         1350,  # Max value we rise to with GO_BUSY
         800,  # Value we settle to with GO_IDLE_LONG
