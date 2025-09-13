@@ -1,0 +1,10 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Direct Memory Access (DMA) Drivers"
+
+# zephyr-keep-sorted-start
+rsource "dma/Kconfig"
+# zephyr-keep-sorted-end
+
+endmenu
