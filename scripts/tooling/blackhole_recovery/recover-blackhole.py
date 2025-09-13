@@ -209,6 +209,9 @@ def main():
             # Delay a moment for ASIC boot
             time.sleep(2)
             pcie_utils.rescan_pcie()
+        # Now, check if all asics are functional
+        for idx in range(len(BOARD_ID_MAP[args.board])):
+            asic = BOARD_ID_MAP[args.board][idx]
             if not check_card_status(idx, asic):
                 raise RuntimeError(f"ASIC {idx} did not enumerate after flash")
             print(f"Successfully flashed {asic['bootfs-name']}")
