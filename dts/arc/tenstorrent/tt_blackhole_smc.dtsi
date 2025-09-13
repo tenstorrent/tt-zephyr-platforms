@@ -157,13 +157,6 @@
 			reg = <0xf>;
 			status = "disabled";
 		};
-
-		vuart16: uart_tt_virt@10 {
-			compatible = "tenstorrent,vuart";
-			version = <0x00000000>;
-			reg = <0x10>;
-			status = "disabled";
-		};
 	};
 
 	gpio0: gpio@800301a0 {
