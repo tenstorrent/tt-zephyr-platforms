@@ -40,6 +40,14 @@ struct pvt_tt_bh_config {
 };
 
 struct pvt_tt_bh_data {
+	/*
+	 * Thermal calibration fuse values are specified to be 16 bits.
+	 * Each temperature sensor has a different calibration value.
+	 * Uses sigle point calibration from 25 degree data based on Candence
+	 *   fusing.
+	 * These values are set during PVT initialization.
+	 */
+	uint16_t therm_cali[8];
 };
 
 /*
