@@ -5,6 +5,7 @@ Welcome to TT Zephyr Platforms!
    :maxdepth: 2
    :caption: Contents
 
+   develop/getting_started/index
    boards/index
    zephyr
 
