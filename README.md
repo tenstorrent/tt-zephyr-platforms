@@ -13,7 +13,7 @@ This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com
 
 ## Getting Started
 
-To get started with the development environment, building and flashing to a board, please refer to our [Getting Started docs](https://docs.tenstorrent.com/tt-zephyr-platforms/getting-started.html).
+To get started with the development environment, building and flashing to a board, please refer to our [Getting Started docs](https://docs.tenstorrent.com/tt-zephyr-platforms/develop/getting_started/index.html).
 
 ## Further Reading
 
