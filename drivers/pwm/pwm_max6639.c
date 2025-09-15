@@ -15,7 +15,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(max6639_pwm, CONFIG_PWM_LOG_LEVEL);
+LOG_MODULE_REGISTER(max6639_pwm, LOG_LEVEL_DBG);
 
 struct max6639_pwm_config {
 	struct i2c_dt_spec i2c;
@@ -24,7 +24,10 @@ struct max6639_pwm_config {
 static int max6639_pwm_set_cycles(const struct device *dev, uint32_t channel, uint32_t period_count,
 				  uint32_t pulse_count, pwm_flags_t flags)
 {
+	int r;
 	uint8_t duty_cycle_reg_addr;
+
+	LOG_DBG("%s(%p, %u, %u, %u, %u)", __func__, dev, channel, period_count, pulse_count, flags);
 
 	switch (channel) {
 	case 0:
@@ -34,13 +37,22 @@ static int max6639_pwm_set_cycles(const struct device *dev, uint32_t channel, ui
 		duty_cycle_reg_addr = MAX6639_REG_CHANNEL_2_DUTY_CYCLE;
 		break;
 	default:
+		LOG_ERR("Invalid channel %u", channel);
 		return -EINVAL;
 	}
 
 	const struct max6639_pwm_config *config = dev->config;
 	uint8_t fan_speed = (uint32_t)pulse_count * MAX6639_PWM_PERIOD / period_count;
 
-	return i2c_reg_write_byte_dt(&config->i2c, duty_cycle_reg_addr, fan_speed);
+	LOG_DBG("%s(%p, %u, %u, %u, %u) -> fan_speed=%u", "i2c_reg_write_byte_dt", config->i2c.bus,
+		channel, period_count, pulse_count, flags, fan_speed);
+
+	r = i2c_reg_write_byte_dt(&config->i2c, duty_cycle_reg_addr, fan_speed);
+	if (r < 0) {
+		LOG_ERR("%s() failed: %d", "i2c_reg_write_byte_dt", r);
+	}
+
+	return r;
 }
 
 static int max6639_pwm_get_cycles_per_sec(const struct device *dev, uint32_t channel,

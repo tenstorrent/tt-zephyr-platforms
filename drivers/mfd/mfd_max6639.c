@@ -22,13 +22,43 @@ struct max6639_config {
 
 static int max6639_init(const struct device *dev)
 {
-	const struct max6639_config *config = dev->config;
 	int result;
+	uint8_t device_id;
+	uint8_t manuf_id;
+	uint8_t revision;
+	const struct max6639_config *config = dev->config;
 
 	if (!i2c_is_ready_dt(&config->i2c)) {
 		LOG_ERR("I2C device not ready");
 		return -ENODEV;
 	}
+
+	/* Check device ID and manufacturer ID */
+	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_DEVICE_ID, &device_id);
+	if (result < 0) {
+		LOG_ERR("%s() failed: %d", "i2c_reg_read_byte_dt", result);
+		return result;
+	}
+
+	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_MANUF_ID, &manuf_id);
+	if (result < 0) {
+		LOG_ERR("%s() failed: %d", "i2c_reg_read_byte_dt", result);
+		return result;
+	}
+
+	if (!((device_id == MAX6639_DEVICE_ID_MAX6639) && (manuf_id == MAX6639_MANUF_ID_MAXIM))) {
+		LOG_ERR("Unexpected device ID (0x%02x) or manufacturer ID (0x%02x)", device_id,
+			manuf_id);
+		return -ENODEV;
+	}
+
+	result = i2c_reg_read_byte_dt(&config->i2c, MAX6639_REG_REVISION, &revision);
+	if (result < 0) {
+		LOG_ERR("%s() failed: %d", "i2c_reg_read_byte_dt", result);
+		return result;
+	}
+
+	LOG_INF("Found MAX6639 at 0x%02x, rev 0x%02x", config->i2c.addr, revision);
 
 	/* enable PWM manual mode, RPM to max */
 	result = i2c_reg_write_byte_dt(&config->i2c, MAX6639_REG_CHANNEL_1_CONFIG_1, 0x83);
