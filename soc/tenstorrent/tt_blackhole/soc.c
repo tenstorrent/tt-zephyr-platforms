@@ -29,6 +29,16 @@ void soc_early_init_hook(void)
 		delay_spin(1000);
 		/* Clear reset bit */
 		*RESET_UNIT_I2C_CNTL = (reg & ~BIT(4));
+
+		/*
+		 * This is added here since our pinctrl driver does not yet handle i2c pin muxing
+		 * and the fan controller (max6639) is on the i2c2 bus on p100 and cb.
+		 *
+		 * See tickets SYS-1899, SYS-864
+		 */
+		void I2CInitGPIO(uint32_t id);
+
+		I2CInitGPIO(/* FAN_CTRL_MST_ID */ 2);
 	}
 	if (DT_HAS_COMPAT_STATUS_OKAY(snps_designware_ssi) &&
 	    IS_ENABLED(CONFIG_MSPI)) {
