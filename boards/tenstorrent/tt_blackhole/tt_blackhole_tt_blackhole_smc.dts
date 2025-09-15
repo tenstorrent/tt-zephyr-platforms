@@ -105,10 +105,21 @@
 &i2c2 {
 	status = "disabled";
 
-	fanctl0: max6639@58 {
+	max6639: max6639@2c {
 		compatible = "maxim,max6639";
-		reg = <0x58>;
+		reg = <0x2c>;
 		status = "disabled";
+
+		max6639_pwm: pwm {
+			compatible = "maxim,max6639-pwm";
+			#pwm-cells = <1>;
+			status = "disabled";
+		};
+
+		max6639_sensor: sensor {
+			compatible = "maxim,max6639-sensor";
+			status = "disabled";
+		};
 	};
 
 	sw0: switch@72 {

@@ -9,3 +9,19 @@
 &spi_flash {
 	mspi-max-frequency = <DT_FREQ_M(8)>;
 };
+
+&i2c2 {
+	status = "okay";
+};
+
+&max6639 {
+	status = "okay";
+};
+
+&max6639_pwm {
+	status = "okay";
+};
+
+&max6639_sensor {
+	status = "okay";
+};

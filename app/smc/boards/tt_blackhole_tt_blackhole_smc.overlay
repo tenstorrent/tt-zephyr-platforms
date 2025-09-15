@@ -7,10 +7,6 @@
 	status = "disabled";
 };
 
-&i2c2 {
-	status = "disabled";
-};
-
 /*
  * ARC clock will be raised to 800MHz in the application
  */
