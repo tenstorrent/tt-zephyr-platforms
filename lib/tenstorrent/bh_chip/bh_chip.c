@@ -48,8 +48,8 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 
 		wire_ack.f = ack;
 		output.ack = ack;
-		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc,
-							     CMFW_SMBUS_ACK, wire_ack.val);
+		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_ACK,
+							     wire_ack.val);
 	}
 
 	if (output.ret != 0 || (output.msg.msg_id != kCm2DmMsgIdNull && output.ack_ret != 0)) {
