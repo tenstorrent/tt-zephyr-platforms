@@ -84,4 +84,8 @@ config TT_BH_ARC_DMFW_PING_TIMEOUT
 	  Timeout for DMFW ping in milliseconds. If the DMFW does not respond within this time,
 	  the ping will be considered failed.
 
+module = TT_BH_ARC
+module-str = bh_arc
+source "subsys/logging/Kconfig.template.log_config"
+
 endif
