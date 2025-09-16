@@ -956,15 +956,26 @@ static int start_next_packet(const struct device *dev, k_timeout_t timeout)
 		tx_data(dev, packet);
 	}
 
-	/* Enable interrupts now and wait until the packet is done. */
-	write_imr(dev, imr);
+	if (dev_data->buf_pos >= dev_data->buf_end) {
+		/* Set SER to start transfer */
+		write_ser(dev, BIT(dev_data->dev_id->dev_idx));
+		/* It may happen that at this point the controller is still
+		 * shifting out the last frame (the last interrupt occurs when
+		 * the TX FIFO is empty). Wait if it signals that it is busy.
+		 */
+		while (read_sr(dev) & SR_BUSY_BIT) {
+		}
+	} else {
+		/* Enable interrupts now and wait until the packet is done. */
+		write_imr(dev, imr);
 
-	/* Set SER to start transfer */
-	write_ser(dev, BIT(dev_data->dev_id->dev_idx));
+		/* Set SER to start transfer */
+		write_ser(dev, BIT(dev_data->dev_id->dev_idx));
 
-	rc = k_sem_take(&dev_data->finished, timeout);
-	if (rc < 0) {
-		rc = -ETIMEDOUT;
+		rc = k_sem_take(&dev_data->finished, timeout);
+		if (rc < 0) {
+			rc = -ETIMEDOUT;
+		}
 	}
 
 	/* Disable the controller. This will immediately halt the transfer
