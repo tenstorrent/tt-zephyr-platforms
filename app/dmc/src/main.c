@@ -113,12 +113,12 @@ void update_fan_speed(bool notify_smcs)
 static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	switch (msg_data) {
-	case 0x0:
+	case kCm2DmResetLevelAsic:
 		LOG_INF("Received ARC reset request");
 		bh_chip_reset_chip(chip, true);
 		break;
 
-	case 0x3:
+	case kCm2DmResetLevelDmc:
 		/* Trigger reboot; will reset asic and reload dmfw */
 		LOG_INF("Received system reset request");
 		if (IS_ENABLED(CONFIG_REBOOT)) {
