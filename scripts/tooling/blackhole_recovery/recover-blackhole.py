@@ -23,6 +23,7 @@ try:
     import yaml
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
+    from pyocd.flash.eraser import FlashEraser
 except ImportError:
     print("Required modules not found. Please run pip install -r requirements.txt")
     sys.exit(os.EX_UNAVAILABLE)
@@ -216,6 +217,10 @@ def main():
                 session.close()
                 continue
 
+            # Erase the flash
+            print(f"Erasing flash on ASIC {idx}...")
+            FlashEraser(session, FlashEraser.Mode.CHIP).erase()
+            time.sleep(1)
             # Program the recovery hex
             print(f"Flashing {recovery_hex} to ASIC {idx}...")
             FileProgrammer(session).program(str(recovery_hex), file_format="hex")
