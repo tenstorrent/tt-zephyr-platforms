@@ -190,7 +190,6 @@ def main():
             recovery_hex = set_board_serial(
                 str(recovery_hex), asic["protobuf-name"], board_id
             )
-            print(f"Flashing {recovery_hex} to ASIC {idx}...")
             if args.adapter_id is None:
                 print(
                     "No adapter ID provided, please select the debugger "
@@ -207,6 +206,18 @@ def main():
                     unique_id=args.adapter_id,
                 )
             session.open()
+            # First, reset the DMC and see if we can reach the card
+            session.board.target.reset_and_halt()
+            session.board.target.resume()
+            time.sleep(2)
+            pcie_utils.rescan_pcie()
+            if (not args.force) and check_card_status(idx, asic):
+                print(f"ASIC {idx} returned after reset, skipping flash")
+                session.close()
+                continue
+
+            # Program the recovery hex
+            print(f"Flashing {recovery_hex} to ASIC {idx}...")
             FileProgrammer(session).program(str(recovery_hex), file_format="hex")
             session.board.target.reset_and_halt()
             session.board.target.resume()
