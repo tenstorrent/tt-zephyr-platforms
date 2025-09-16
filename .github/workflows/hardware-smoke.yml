@@ -23,6 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        test-iteration: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         config:
           - board: p100
             runs-on:
@@ -43,6 +44,10 @@ jobs:
         - /dev/hugepages-1G:/dev/hugepages-1G
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
+      - name: Print test iteration
+        run: |
+          echo "Test iteration: ${{ matrix.test-iteration }}"
+
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
@@ -96,7 +101,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: DMC Smoke test results (${{ matrix.config.board }})
+          name: DMC Smoke test results (${{ matrix.config.board }}, iteration ${{ matrix.test-iteration }})
           include-hidden-files: true
           path: |
             zephyr/twister-dmc-smoke/**/handler.log
@@ -141,7 +146,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: SMC Smoke test results (${{ matrix.config.board }})
+          name: SMC Smoke test results (${{ matrix.config.board }}, iteration ${{ matrix.test-iteration }})
           include-hidden-files: true
           path: |
             zephyr/twister-smc-smoke/**/handler.log
@@ -168,6 +173,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        test-iteration: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         config:
           - board: p100
             runs-on:
@@ -264,7 +270,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: E2E test results (${{ matrix.config.board }})
+          name: E2E test results (${{ matrix.config.board }}) iteration ${{ matrix.test-iteration }}
           include-hidden-files: true
           path: |
             zephyr/twister-*e2e*/**/handler.log
