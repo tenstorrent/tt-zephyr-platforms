@@ -31,6 +31,22 @@ config FLASH_MSPI_NOR_RUNTIME_PROBE
 	  If enabled, the driver will probe the flash device's JEDEC ID at
 	  runtime, and used that to determine the command set and flash size.
 
+config FLASH_MSPI_NOR_WRITE_MAX
+	int "Maximum write size"
+	default 65536
+	help
+	  Maximum number of bytes that can be written in a single write operation.
+	  Can be used to limit max write size for flash devices that require it,
+	  or bugging mspi controllers that cannot handle large transfers.
+
+config FLASH_MSPI_NOR_READ_MAX
+	int "Maximum read size"
+	default 65536
+	help
+	  Maximum number of bytes that can be read in a single read operation.
+	  Can be used to limit max read size for flash devices that require it,
+	  or bugging mspi controllers that cannot handle large transfers.
+
 endif # FLASH_MSPI_NOR
 
 endmenu

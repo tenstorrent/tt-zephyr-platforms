@@ -123,6 +123,7 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
 	const struct flash_mspi_nor_config *dev_config = dev->config;
 	struct flash_mspi_nor_data *dev_data = dev->data;
 	const uint32_t flash_size = dev_flash_size(dev);
+	size_t read_off = 0;
 	int rc;
 
 	if (size == 0) {
@@ -150,11 +151,22 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
 
 	/* TODO: get rid of all these hard-coded values for MX25Ux chips */
 	flash_mspi_command_set(dev, &FLASH_DATA(dev).jedec_cmds->read);
-	dev_data->packet.address   = addr;
-	dev_data->packet.data_buf  = dest;
-	dev_data->packet.num_bytes = size;
-	rc = mspi_transceive(dev_config->bus, &dev_config->mspi_id,
-			     &dev_data->xfer);
+	while (read_off < size) {
+		/* Split read into parts, each within SPI FIFO size */
+		size_t to_read = MIN(size - read_off, CONFIG_FLASH_MSPI_NOR_READ_MAX);
+
+		/* Setup and execute the read transfer */
+		dev_data->packet.address = addr + read_off;
+		dev_data->packet.data_buf = ((uint8_t *)dest) + read_off;
+		dev_data->packet.num_bytes = to_read;
+		rc = mspi_transceive(dev_config->bus, &dev_config->mspi_id, &dev_data->xfer);
+		if (rc < 0) {
+			LOG_ERR("Read xfer failed: %d", rc);
+			break;
+		}
+
+		read_off += to_read;
+	}
 
 	release(dev);
 
@@ -268,6 +280,7 @@ static int api_write(const struct device *dev, off_t addr, const void *src,
 		uint16_t page_offset = (uint16_t)(addr % page_size);
 		uint16_t page_left = page_size - page_offset;
 		uint16_t to_write = (uint16_t)MIN(size, page_left);
+		to_write = MIN(CONFIG_FLASH_MSPI_NOR_WRITE_MAX, to_write);
 
 		if (write_enable(dev) < 0) {
 			LOG_ERR("Write enable xfer failed: %d", rc);
