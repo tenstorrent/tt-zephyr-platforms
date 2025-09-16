@@ -124,6 +124,7 @@ def check_card_status(pci_idx, config):
     """Check if the card is in a good state"""
     # See if the card is on the bus
     if not Path(f"/dev/tenstorrent/{pci_idx}").exists():
+        print(f"Card {pci_idx} not found on bus")
         return False
     # Check if the card can be accessed by pyluwen
     try:
@@ -131,16 +132,20 @@ def check_card_status(pci_idx, config):
         response = card.arc_msg(ARC_PING_MSG, True, True, 0, 0)
         if response[0] != 1 or response[1] != 0:
             # ping arc message failed
+            print("ARC ping failed")
             return False
         # Test DMC ping
         response = card.arc_msg(DMC_PING_MSG, True, True, 0, 0)
         if response[0] != 1 or response[1] != 0:
             # ping dmc message failed
+            print("DMC ping failed")
             return False
         # Check telemetry data to see if the UPI looks right
         if card.get_telemetry().board_id >> 36 != config["upi"]:
+            print("Board ID UPI does not match expected value")
             return False
     except BaseException:
+        print("Error accessing card with pyluwen")
         return False
     return True
 
@@ -209,6 +214,7 @@ def main():
             # Delay a moment for ASIC boot
             time.sleep(2)
             pcie_utils.rescan_pcie()
+            time.sleep(1)
         # Now, check if all asics are functional
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
