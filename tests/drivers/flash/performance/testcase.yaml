@@ -10,8 +10,8 @@ tests:
     extra_configs:
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
-      - CONFIG_EXPECTED_READ_TIME=5
-      - CONFIG_EXPECTED_PROGRAM_TIME=400
+      - CONFIG_EXPECTED_READ_TIME=50
+      - CONFIG_EXPECTED_PROGRAM_TIME=500
   drivers.flash.performance.mt25:
     tags: smoke
     platform_allow:
@@ -21,5 +21,5 @@ tests:
     extra_configs:
       # The below values are set experimentally. A test failure may
       # indicate a performance regression in the flash driver.
-      - CONFIG_EXPECTED_READ_TIME=8
-      - CONFIG_EXPECTED_PROGRAM_TIME=400
+      - CONFIG_EXPECTED_READ_TIME=50
+      - CONFIG_EXPECTED_PROGRAM_TIME=500

@@ -33,9 +33,13 @@
 		compatible = "jedec,mspi-nor";
 		reg = <0>;
 		status = "okay";
-		/* Programming has experimentally been reliable up to 17 MHz, use 15 to be safe */
 		size = <DT_SIZE_M(512)>;
-		mspi-max-frequency = <DT_FREQ_M(15)>;
+		/*
+		 * We limit the program and read size to avoid overruning the
+		 * SPI FIFO, so this frequency can be higher than the ARC
+		 * chip can keep pace with
+		 */
+		mspi-max-frequency = <DT_FREQ_M(30)>;
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";

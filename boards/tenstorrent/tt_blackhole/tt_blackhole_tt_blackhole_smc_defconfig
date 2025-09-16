@@ -31,6 +31,12 @@ CONFIG_FLASH=y
 # enable external spi flash
 CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE=y
 
+# limit max read/write size to avoid SPI FIFO over/underruns
+# Disable waiting between polling attempts to improve performance
+CONFIG_FLASH_MSPI_NOR_READ_MAX=11
+CONFIG_FLASH_MSPI_NOR_WRITE_MAX=11
+CONFIG_FLASH_MSPI_NOR_LIMIT_POLLING=n
+
 # enable the bh_arc library
 CONFIG_TT_BH_ARC=y
 # BH_ARC will raise system clock frequency, update it here
