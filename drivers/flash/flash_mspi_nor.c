@@ -227,7 +227,9 @@ static int wait_until_ready(const struct device *dev, k_timeout_t poll_period)
 			break;
 		}
 
-		k_sleep(poll_period);
+		if (IS_ENABLED(CONFIG_FLASH_MSPI_NOR_LIMIT_POLLING)) {
+			k_sleep(poll_period);
+		}
 	}
 
 	return 0;

@@ -47,6 +47,13 @@ config FLASH_MSPI_NOR_READ_MAX
 	  Can be used to limit max read size for flash devices that require it,
 	  or bugging mspi controllers that cannot handle large transfers.
 
+config FLASH_MSPI_NOR_LIMIT_POLLING
+	bool "Limit status polling speed"
+	default y
+	help
+	  If enabled, the driver will add a small delay between each poll of the
+	  flash device's status register when waiting for operations to complete.
+
 endif # FLASH_MSPI_NOR
 
 endmenu
