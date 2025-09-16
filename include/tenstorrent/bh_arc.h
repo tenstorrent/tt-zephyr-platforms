@@ -24,6 +24,12 @@ typedef enum {
 	kCm2DmMsgCount
 } Cm2DmMsgId;
 
+/* These values are used by CM2DM and MSG_TYPE_TRIGGER_RESET. */
+typedef enum {
+	kCm2DmResetLevelAsic = 0,
+	kCm2DmResetLevelDmc = 3,
+} Cm2DmResetLevel;
+
 typedef struct dmStaticInfo {
 	/*
 	 * Non-zero for valid data

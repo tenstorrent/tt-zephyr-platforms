@@ -43,8 +43,8 @@ K_SEM_DEFINE(dmfw_ping_sem, 0, 1);
 static uint16_t power;
 static uint16_t telemetry_reg;
 static struct {
-	uint8_t chip_reset_0_called: 1;
-	uint8_t chip_reset_3_called: 1;
+	uint8_t chip_reset_asic_called: 1;
+	uint8_t chip_reset_dmc_called: 1;
 } chip_reset_state;
 
 void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data)
@@ -119,11 +119,11 @@ int32_t Cm2DmMsgAckSmbusHandler(const uint8_t *data, uint8_t size)
 	}
 }
 
-void IssueChipReset(uint32_t reset_level)
+void IssueChipReset(Cm2DmResetLevel reset_level)
 {
 	lock_down_for_reset();
-	chip_reset_state.chip_reset_0_called |= reset_level == 0U;
-	chip_reset_state.chip_reset_3_called |= reset_level == 3U;
+	chip_reset_state.chip_reset_asic_called |= reset_level == kCm2DmResetLevelAsic;
+	chip_reset_state.chip_reset_dmc_called |= reset_level == kCm2DmResetLevelDmc;
 	/* Send a reset request to the DMFW */
 	PostCm2DmMsg(kCm2DmMsgIdResetReq, reset_level);
 }
@@ -134,7 +134,7 @@ void ChipResetRequest(void *arg)
 
 	irq_disable(irq_num); /* So we don't get repeatedly interrupted */
 
-	IssueChipReset(0);
+	IssueChipReset(kCm2DmResetLevelAsic);
 }
 
 void UpdateFanSpeedRequest(uint32_t fan_speed)
@@ -172,8 +172,8 @@ static uint8_t reset_dm_handler(uint32_t msg_code, const struct request *request
 	uint8_t ret = 0;
 
 	switch (arg) {
-	case 0:
-	case 3:
+	case kCm2DmResetLevelAsic:
+	case kCm2DmResetLevelDmc:
 		IssueChipReset(arg);
 		break;
 	default:
@@ -373,8 +373,8 @@ int32_t Dm2CmReadControlData(uint8_t *data, uint8_t *size)
 		uint32_t spare: 18;
 	} ctl_data = {0};
 
-	ctl_data.trigger_asic_reset = chip_reset_state.chip_reset_0_called;
-	ctl_data.trigger_asic_and_m3_reset = chip_reset_state.chip_reset_3_called;
+	ctl_data.trigger_asic_reset = chip_reset_state.chip_reset_asic_called;
+	ctl_data.trigger_asic_and_m3_reset = chip_reset_state.chip_reset_dmc_called;
 
 	memcpy(&data[11], &ctl_data, sizeof(ctl_data));
 
