@@ -10,8 +10,32 @@
 
 #include "telemetry.h"
 #include "smbus_target.h"
+#include "gddr.h"
 #include "asic_state.h"
 LOG_MODULE_REGISTER(tt_shell, CONFIG_LOG_DEFAULT_LEVEL);
+
+int mrisc_power_handler(const struct shell *sh, size_t argc, char **argv)
+{
+	bool on = false;
+
+	if (strcmp(argv[1], "off") == 0) {
+		on = false;
+
+	} else if (strcmp(argv[1], "on") == 0) {
+		on = true;
+	} else {
+		shell_error(sh, "Invalid MRISC power setting");
+	}
+
+	int ret = set_mrisc_power_setting(on);
+
+	if (ret != 0) {
+		shell_error(sh, "Failure to set MRISC power setting %u", on);
+		return ret;
+	}
+	shell_print(sh, "OK");
+	return 0;
+}
 
 int asic_state_handler(const struct shell *sh, size_t argc, char **argv)
 {
@@ -69,10 +93,10 @@ int telem_handler(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-SHELL_STATIC_SUBCMD_SET_CREATE(sub_tt_commands,
-			       SHELL_CMD_ARG(asic_state, NULL, "[|0|3]", asic_state_handler, 1, 1),
-			       SHELL_CMD_ARG(telem, NULL, "<Telemetry Index> [|x|f|d]",
-					     telem_handler, 2, 1),
-			       SHELL_SUBCMD_SET_END);
+SHELL_STATIC_SUBCMD_SET_CREATE(
+	sub_tt_commands, SHELL_CMD_ARG(mrisc_power, NULL, "[off|on]", mrisc_power_handler, 2, 0),
+	SHELL_CMD_ARG(asic_state, NULL, "[|0|3]", asic_state_handler, 1, 1),
+	SHELL_CMD_ARG(telem, NULL, "<Telemetry Index> [|x|f|d]", telem_handler, 2, 1),
+	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(tt, &sub_tt_commands, "Tensorrent commands", NULL);
