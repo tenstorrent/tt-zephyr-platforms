@@ -23,7 +23,6 @@ try:
     import yaml
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
-    from pyocd.flash.eraser import FlashEraser
 except ImportError:
     print("Required modules not found. Please run pip install -r requirements.txt")
     sys.exit(os.EX_UNAVAILABLE)
@@ -121,34 +120,35 @@ def set_board_serial(hex_file, board_name, board_id):
     return hex_file
 
 
-def check_card_status(pci_idx, config):
+def check_card_status(board_config):
     """Check if the card is in a good state"""
-    # See if the card is on the bus
-    if not Path(f"/dev/tenstorrent/{pci_idx}").exists():
-        print(f"Card {pci_idx} not found on bus")
-        return False
-    # Check if the card can be accessed by pyluwen
-    try:
-        card = pyluwen.detect_chips()[pci_idx]
-        response = card.arc_msg(ARC_PING_MSG, True, True, 0, 0)
-        if response[0] != 1 or response[1] != 0:
-            # ping arc message failed
-            print("ARC ping failed")
+    for pci_idx, config in enumerate(board_config):
+        # See if the card is on the bus
+        if not Path(f"/dev/tenstorrent/{pci_idx}").exists():
+            print(f"Card {pci_idx} not found on bus")
             return False
-        # Test DMC ping
-        response = card.arc_msg(DMC_PING_MSG, True, True, 0, 0)
-        if response[0] != 1 or response[1] != 0:
-            # ping dmc message failed
-            print("DMC ping failed")
+        # Check if the card can be accessed by pyluwen
+        try:
+            card = pyluwen.detect_chips()[pci_idx]
+            response = card.arc_msg(ARC_PING_MSG, True, True, 0, 0)
+            if response[0] != 1 or response[1] != 0:
+                # ping arc message failed
+                print(f"ARC ping failed for ASIC {pci_idx}")
+                return False
+            # Test DMC ping
+            response = card.arc_msg(DMC_PING_MSG, True, True, 0, 0)
+            if response[0] != 1 or response[1] != 0:
+                # ping dmc message failed
+                print(f"DMC ping failed for ASIC {pci_idx}")
+                return False
+            # Check telemetry data to see if the UPI looks right
+            if card.get_telemetry().board_id >> 36 != config["upi"]:
+                print(f"Board ID UPI does not match expected value for ASIC {pci_idx}")
+                return False
+        except BaseException:
+            print(f"Error accessing card with pyluwen for ASIC {pci_idx}")
             return False
-        # Check telemetry data to see if the UPI looks right
-        if card.get_telemetry().board_id >> 36 != config["upi"]:
-            print("Board ID UPI does not match expected value")
-            return False
-    except BaseException:
-        print("Error accessing card with pyluwen")
-        return False
-    return True
+        return True
 
 
 def main():
@@ -172,12 +172,12 @@ def main():
 
         sys.path.append(str(Path(temp_dir) / args.board / "python_proto_files"))
 
-        # Now execute flash recovery for the board
+        if (not args.force) and check_card_status(BOARD_ID_MAP[args.board]):
+            print(f"All ASICs on board {args.board} are functional, skipping recovery")
+            return
+
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
-            if (not args.force) and check_card_status(idx, asic):
-                print(f"ASIC {idx} appears functional, skipping")
-                continue
             recovery_hex = (
                 Path(temp_dir) / args.board / f"{asic['bootfs-name']}_recovery.hex"
             )
@@ -212,16 +212,15 @@ def main():
             session.board.target.resume()
             time.sleep(2)
             pcie_utils.rescan_pcie()
-            if (not args.force) and check_card_status(idx, asic):
-                print(f"ASIC {idx} returned after reset, skipping flash")
+            if (not args.force) and check_card_status(BOARD_ID_MAP[args.board]):
+                print(
+                    f"All ASICs on board {args.board} are functional after reset, skipping flash"
+                )
                 session.close()
                 continue
 
             # Program the recovery hex
             print(f"Flashing {recovery_hex} to ASIC {idx}...")
-            if args.force:
-                print("Erasing entire flash due to --force option")
-                FlashEraser(session, FlashEraser.Mode.CHIP).erase()
             FileProgrammer(session).program(str(recovery_hex), file_format="hex")
             session.board.target.reset_and_halt()
             session.board.target.resume()
@@ -231,11 +230,10 @@ def main():
             pcie_utils.rescan_pcie()
             time.sleep(1)
         # Now, check if all asics are functional
-        for idx in range(len(BOARD_ID_MAP[args.board])):
-            asic = BOARD_ID_MAP[args.board][idx]
-            if not check_card_status(idx, asic):
-                raise RuntimeError(f"ASIC {idx} did not enumerate after flash")
-            print(f"Successfully flashed {asic['bootfs-name']}")
+        if not check_card_status(BOARD_ID_MAP[args.board]):
+            raise RuntimeError("Card did not recover successfully, try a reboot?")
+
+        print("Card recovered successfully")
 
 
 if __name__ == "__main__":
