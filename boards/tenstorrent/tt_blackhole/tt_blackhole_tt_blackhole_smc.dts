@@ -105,12 +105,6 @@
 &i2c2 {
 	status = "disabled";
 
-	fanctl0: max6639@58 {
-		compatible = "maxim,max6639";
-		reg = <0x58>;
-		status = "disabled";
-	};
-
 	sw0: switch@72 {
 		compatible = "ti,tps22993";
 		reg = <0x72>;
