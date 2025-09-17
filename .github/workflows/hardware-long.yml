@@ -110,7 +110,10 @@ jobs:
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n --openocd /opt/tenstorrent/bin/openocd-rtt
+          python3 ./scripts/smc_console.py --rtt -n
+          echo "SMC state dump:"
+          python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
+
   # Temporarily moved from hardware-smoke.yml until metal tests occupy less time for CI on each PR
   metal-test:
     needs: build-fw-artifact
