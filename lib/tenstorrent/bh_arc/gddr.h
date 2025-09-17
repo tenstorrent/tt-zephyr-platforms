@@ -33,11 +33,15 @@
 #define MRISC_INIT_STARTED    0x0
 #define MRISC_INIT_TIMEOUT    1000 /* In ms */
 #define MRISC_MEMTEST_TIMEOUT 1000 /* In ms */
+#define MRISC_POWER_SETTING_TIMEOUT_MS 1000
 
 /* Defined by MRISC FW */
 #define MRISC_MSG_TYPE_NONE        0
+#define MRISC_MSG_TYPE_PHY_POWERDOWN   1
+#define MRISC_MSG_TYPE_PHY_WAKEUP  2
 #define MRISC_MSG_TYPE_RUN_MEMTEST 8
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
+int32_t set_mrisc_power_setting(bool on);
 
 #endif
