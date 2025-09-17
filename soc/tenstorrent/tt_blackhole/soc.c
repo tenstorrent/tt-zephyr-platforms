@@ -6,6 +6,11 @@
 
 #include <zephyr/devicetree.h>
 #include <stdint.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/logging/log.h>
+#include <kernel_arch_func.h>
+
+LOG_MODULE_REGISTER(soc, CONFIG_LOG_DEFAULT_LEVEL);
 
 static inline void delay_spin(uint32_t count)
 {
@@ -16,8 +21,60 @@ static inline void delay_spin(uint32_t count)
 	}
 }
 
+#define PANIC_REASON_MAGIC 0xBADC0DE0
+#define REASON_K_PANIC     0x1
+#define REASON_ARC_RESET   0x2
+
+#define ARC_RESET_ADDR 0x80000000
+
+/*
+ * After panic the arc can't write to scratch registers. Write to ICCM
+ * to indicate we have panicked.
+ */
+#define ARC_PANIC(reason, blink)                                                                   \
+	do {                                                                                       \
+		sys_write32(PANIC_REASON_MAGIC | (reason), 0x0);                                   \
+		sys_write32(blink, 0x4);                                                           \
+	} while (0)
+
+/*
+ * Override the default kernel panic handler. We want to also
+ * dump the BLINK register value.
+ */
+__weak void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
+{
+	ARG_UNUSED(esf);
+
+	ARC_PANIC(REASON_K_PANIC, esf->blink);
+
+	LOG_PANIC();
+	LOG_ERR("Halting system");
+	k_fatal_halt(reason);
+	CODE_UNREACHABLE;
+}
+
+/* This function is a custom hook we run during panic */
+static void arc_panic(void)
+{
+	uint32_t blink;
+
+	/* Get the BLINK register */
+	__asm__ volatile("mov %0, blink" : "=r"(blink));
+
+	ARC_PANIC(REASON_K_PANIC, blink);
+	while (1) {
+		/* Spin */
+	}
+}
+
 void soc_early_init_hook(void)
 {
+	/* Set the reset vector to arc_panic. */
+	sys_write32((uint32_t)&arc_panic, ARC_RESET_ADDR);
+	/* Clear ICCM registers */
+	sys_write32(0, 0x0);
+	sys_write32(0, 0x4);
+
 	if (IS_ENABLED(CONFIG_I2C)) {
 		uint32_t reg;
 		/* Manually toggle I2C reset control bits */
