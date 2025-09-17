@@ -8,17 +8,11 @@
 
 #include <stdint.h>
 #include <zephyr/sys/util.h>
+#include "reg.h"
 
-#ifdef CONFIG_BOARD_NATIVE_SIM
-/* Fake out both NOC address spaces (16 MB each) */
-static uint8_t fake_noc0_window[MB(16)];
-static uint8_t fake_noc1_window[MB(16)];
-#define ARC_NOC0_BASE_ADDR ((uintptr_t)fake_noc0_window)
-#define ARC_NOC1_BASE_ADDR ((uintptr_t)fake_noc1_window)
-#else
-#define ARC_NOC0_BASE_ADDR       0xC0000000
-#define ARC_NOC1_BASE_ADDR       0xE0000000
-#endif
+#define ARC_NOC0_BASE_ADDR 0xC0000000
+#define ARC_NOC1_BASE_ADDR 0xE0000000
+
 #define NOC_TLB_LOG_SIZE         24
 #define NOC_TLB_WINDOW_ADDR_MASK ((1 << NOC_TLB_LOG_SIZE) - 1)
 
@@ -50,8 +44,7 @@ static inline void volatile *GetTlbWindowAddr(const uint8_t noc_id, const uint8_
 static inline void NOC2AXIWrite32(const uint8_t noc_id, const uint8_t tlb_entry,
 				  const uint64_t addr, const uint32_t data)
 {
-	uint32_t volatile *_addr = GetTlbWindowAddr(noc_id, tlb_entry, addr);
-	*_addr = data;
+	WriteReg((uint32_t)GetTlbWindowAddr(noc_id, tlb_entry, addr), data);
 }
 
 static inline void NOC2AXIWrite8(const uint8_t noc_id, const uint8_t tlb_entry, const uint64_t addr,
@@ -64,8 +57,7 @@ static inline void NOC2AXIWrite8(const uint8_t noc_id, const uint8_t tlb_entry, 
 static inline uint32_t NOC2AXIRead32(const uint8_t noc_id, const uint8_t tlb_entry,
 				     const uint64_t addr)
 {
-	uint32_t volatile *_addr = GetTlbWindowAddr(noc_id, tlb_entry, addr);
-	return *_addr;
+	return ReadReg((uint32_t)GetTlbWindowAddr(noc_id, tlb_entry, addr));
 }
 
 #endif
