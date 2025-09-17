@@ -238,3 +238,15 @@ patches:
     comments: |
       Ensure that the serial connection is properly closed when terminating the process.
       This prevents issues with lingering connections that can interfere with subsequent tests.
+  - path: zephyr/scripts-twister-add-failure_script-parameter-to-run.patch
+    sha256sum: eb1db0329a50cc20e536a221b1c8cb641cd09d4fb62e7fb0a3f8eb5fddcecdc3
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-09-17
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96180
+    comments: |
+      Add support for a failure_script parameter to twister. This script will be executed
+      whenever a test fails, allowing for custom failure handling such as
+      dumping logs, resetting hardware, etc.
