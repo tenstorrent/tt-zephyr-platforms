@@ -220,3 +220,13 @@ patches:
       read_processed should be called on every subsequent byte in the
       transaction, and it should also send the data fetched in the CB
       back on the wire.
+  - path: zephyr/scripts-pylib-pytest-twister-harness-ensure-serial.patch
+    sha256sum: a638bb624dbf6b1a087c21c3312ac574402ef89d9788ce8987fbeb8c69e55e69
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-09-17
+    upstreamable: true
+    comments: |
+      Ensure that the serial connection is properly closed when terminating the process.
+      This prevents issues with lingering connections that can interfere with subsequent tests.
