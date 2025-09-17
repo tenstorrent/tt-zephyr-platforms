@@ -54,15 +54,9 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
     for any test to run
     """
     logger.info(f"Getting ASIC ID {asic_id}")
-    # This is a hack- the RTT terminal doesn't work in pytest, so
-    # we directly call this internal API to flash the DUT.
-    unlaunched_dut.generate_command()
-    if unlaunched_dut.device_config.extra_test_args:
-        unlaunched_dut.command.extend(
-            unlaunched_dut.device_config.extra_test_args.split()
-        )
+    # Try to flash the DUT
     try:
-        unlaunched_dut._flash_and_run()
+        unlaunched_dut.launch()
     except TwisterHarnessException:
         pytest.exit("Failed to flash DUT")
     except TwisterHarnessTimeoutException:
