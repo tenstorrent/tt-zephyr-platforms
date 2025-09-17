@@ -199,6 +199,12 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
 
+      - name: build-tt-smc_console
+        working-directory: tt-zephyr-platforms/scripts/tooling
+        run: |
+          # Build tt-console
+          make
+
       - name: Generate board names
         working-directory: tt-zephyr-platforms
         shell: bash
