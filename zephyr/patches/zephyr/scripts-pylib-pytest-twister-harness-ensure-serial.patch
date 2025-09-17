@@ -1,0 +1,30 @@
+From 7798051ae8978956352389243c92270e67e9de8c Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Wed, 17 Sep 2025 17:40:35 -0500
+Subject: [PATCH] scripts: pylib: pytest-twister-harness: ensure serial-pty
+ terminates
+
+Ensure serial-pty process terminates, by forwarding SIGTERM to all
+children of the serial-pty process.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ .../src/twister_harness/device/hardware_adapter.py             | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/scripts/pylib/pytest-twister-harness/src/twister_harness/device/hardware_adapter.py b/scripts/pylib/pytest-twister-harness/src/twister_harness/device/hardware_adapter.py
+index 79a3a935644..1e377fc81b2 100644
+--- a/scripts/pylib/pytest-twister-harness/src/twister_harness/device/hardware_adapter.py
++++ b/scripts/pylib/pytest-twister-harness/src/twister_harness/device/hardware_adapter.py
+@@ -193,8 +193,7 @@ class HardwareAdapter(DeviceAdapter):
+     def _close_serial_pty(self) -> None:
+         """Terminate the process opened for serial pty script"""
+         if self._serial_pty_proc:
+-            self._serial_pty_proc.terminate()
+-            self._serial_pty_proc.communicate(timeout=self.base_timeout)
++            terminate_process(self._serial_pty_proc)
+             logger.debug('Process %s terminated', self.device_config.serial_pty)
+             self._serial_pty_proc = None
+
+--
+2.34.1
