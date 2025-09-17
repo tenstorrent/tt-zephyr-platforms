@@ -187,6 +187,31 @@ static uint32_t GetDramMask(void)
 	return dram_mask;
 }
 
+static int check_mrisc_busy(uint8_t gddr_inst)
+{
+	uint32_t status = MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER);
+
+	if (status != MRISC_MSG_TYPE_NONE) {
+		LOG_WRN("GDDR %d message buffer is not free. Current value: 0x%x", gddr_inst,
+			status);
+		return -EBUSY;
+	}
+	return 0;
+}
+
+static int wait_mrisc_not_busy(uint8_t gddr_inst, k_timepoint_t timeout, const char *op_desc)
+{
+	while (MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER) != 0) {
+		/* Wait for the message to be processed */
+		if (sys_timepoint_expired(timeout)) {
+			LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to run %s",
+				MRISC_MEMTEST_TIMEOUT, gddr_inst, op_desc);
+			return -ETIMEDOUT;
+		}
+	}
+	return 0;
+}
+
 static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_addr, uint32_t mask)
 {
 	uint32_t msg_args[3] = {addr_bits, start_addr, mask};
@@ -211,13 +236,12 @@ static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_
 	 * Messaging should not be done concurrently to the same GDDR instance, but still do sanity
 	 * check if the message buffer is free.
 	 */
-	uint32_t status = MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER);
+	int32_t ret = check_mrisc_busy(gddr_inst);
 
-	if (status != MRISC_MSG_TYPE_NONE) {
-		LOG_WRN("GDDR %d message buffer is not free. Current value: 0x%x", gddr_inst,
-			status);
-		return -EBUSY;
+	if (ret != 0) {
+		return ret;
 	}
+
 	if (addr_bits > 26) {
 		LOG_WRN("Invalid number of address bits for memory test. Expected <= 26, got %d",
 			addr_bits);
@@ -233,15 +257,12 @@ static int StartHwMemtest(uint8_t gddr_inst, uint32_t addr_bits, uint32_t start_
 static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 {
 	/* This should only be called after StartHwMemtest() has already been called. */
-	while (MriscRegRead32(gddr_inst, MRISC_MSG_REGISTER) != 0) {
-		/* Wait for the message to be processed */
-		if (sys_timepoint_expired(timeout)) {
-			LOG_ERR("Timeout after %d ms waiting for GDDR instance %d to run "
-				"memtest",
-				MRISC_MEMTEST_TIMEOUT, gddr_inst);
-			return -ETIMEDOUT;
-		}
+	int32_t ret = wait_mrisc_not_busy(gddr_inst, timeout, "memtest");
+
+	if (ret != 0) {
+		return ret;
 	}
+
 	uint32_t pass = MriscL1Read32(gddr_inst, GDDR_MSG_STRUCT_ADDR + 8 * 4);
 
 	if (pass != 0) {
@@ -471,4 +492,43 @@ static int gddr_training(void)
 
 	return 0;
 }
+
+static int32_t mrisc_message(uint32_t op_code, uint32_t instance_mask, uint32_t timeout_ms,
+			     const char *op_desc)
+{
+	for (uint8_t gddr_inst = 0U; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(instance_mask, gddr_inst)) {
+
+			int ret = check_mrisc_busy(gddr_inst);
+
+			if (ret != 0) {
+				return ret;
+			}
+			MriscRegWrite32(gddr_inst, MRISC_MSG_REGISTER, op_code);
+		}
+	}
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(timeout_ms));
+
+	for (uint8_t gddr_inst = 0U; gddr_inst < NUM_GDDR; gddr_inst++) {
+		if (IS_BIT_SET(instance_mask, gddr_inst)) {
+
+			int ret = wait_mrisc_not_busy(gddr_inst, timeout, op_desc);
+
+			if (ret != 0) {
+				return ret;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int32_t set_mrisc_power_setting(bool on)
+{
+	uint32_t op_code = on ? MRISC_MSG_TYPE_PHY_WAKEUP : MRISC_MSG_TYPE_PHY_POWERDOWN;
+
+	return mrisc_message(op_code, GetDramMask(), MRISC_POWER_SETTING_TIMEOUT_MS,
+			     "power_setting");
+}
+
 SYS_INIT_APP(gddr_training);
