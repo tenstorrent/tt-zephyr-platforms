@@ -66,8 +66,10 @@ jobs:
 
           if [ ${{ matrix.config.board }} = 'p300a' ]; then
             echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
+            echo "ASIC_ID=1" >> "$GITHUB_ENV"
           else
             echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
+            echo "ASIC_ID=0" >> "$GITHUB_ENV"
           fi
 
       - name: build-tt-smc_console
@@ -163,6 +165,8 @@ jobs:
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
           python3 ./scripts/smc_console.py --rtt -n
+          echo "SMC state dump:"
+          python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-test:
     strategy:
@@ -215,10 +219,12 @@ jobs:
           DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
           echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
 
-          if [ ${{matrix.board}} = 'p300a' ]; then
+          if [ ${{ matrix.config.board }} = 'p300a' ]; then
             echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
+            echo "ASIC_ID=1" >> "$GITHUB_ENV"
           else
             echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
+            echo "ASIC_ID=0" >> "$GITHUB_ENV"
           fi
 
       - name: run-e2e-tests
@@ -287,3 +293,5 @@ jobs:
           python3 ./scripts/dmc_rtt.py -n
           echo "SMC RTT logs:"
           python3 ./scripts/smc_console.py --rtt -n
+          echo "SMC state dump:"
+          python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
