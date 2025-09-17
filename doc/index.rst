@@ -6,6 +6,7 @@ Welcome to TT Zephyr Platforms!
    :caption: Contents
 
    develop/getting_started/index
+   develop/debugging/tracing
    boards/index
    zephyr
 
