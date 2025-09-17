@@ -14,9 +14,14 @@ from pathlib import Path
 import pyluwen
 import pytest
 from twister_harness import DeviceAdapter
+from twister_harness.exceptions import (
+    TwisterHarnessException,
+    TwisterHarnessTimeoutException,
+)
 
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
 from pcie_utils import rescan_pcie
+import smc_test_recovery
 import dmc_reset
 
 logger = logging.getLogger(__name__)
@@ -56,7 +61,12 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
         unlaunched_dut.command.extend(
             unlaunched_dut.device_config.extra_test_args.split()
         )
-    unlaunched_dut._flash_and_run()
+    try:
+        unlaunched_dut._flash_and_run()
+    except TwisterHarnessException:
+        pytest.exit("Failed to flash DUT")
+    except TwisterHarnessTimeoutException:
+        pytest.exit("DUT flash timed out")
     time.sleep(1)
     start = time.time()
     # Attempt to detect the ARC chip for 15 seconds
@@ -65,14 +75,17 @@ def get_arc_chip(unlaunched_dut: DeviceAdapter, asic_id):
     while True:
         try:
             chips = pyluwen.detect_chips()
+            if len(chips) > asic_id:
+                logger.info("Detected ARC chip")
+                break
         except Exception:
             print("Warning- SMC firmware requires a reset. Rescanning PCIe bus")
-        if len(chips) > asic_id:
-            logger.info("Detected ARC chip")
-            break
         time.sleep(0.5)
         if time.time() - start > timeout:
-            raise RuntimeError("Did not detect ARC chip within timeout period")
+            # Dump the SMC state for debugging
+            smc_test_recovery.recover_smc(asic_id)
+            logger.error("Did not detect ARC chip within timeout period")
+            pytest.exit("Did not detect ARC chip within timeout period")
         rescan_pcie()
     chip = chips[asic_id]
     try:
