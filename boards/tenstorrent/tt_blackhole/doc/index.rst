@@ -91,28 +91,34 @@ Supported Features
    Some components are in the process of being migrated to Zephyr's driver model, and are
    currently implemented in the ``lib/tenstorrent/bh_arc`` library.
 
-.. :external+zephyr:zephyr:board-supported-hw::
-
 Building
 ========
 
 SMC firmware can be built using the standard Zephyr build system. For other apps, tests,
 and samples, simply point the build system to the desired app directory.
 
-.. :external+zephyr:zephyr-app-commands::
-   :zephyr-app: app/smc
+.. zephyr-app-commands::
+   :zephyr-app: <tt_zephyr_platforms>/app/smc
    :host-os: unix
    :board: tt_blackhole@p100a/tt_blackhole/smc
+   :flash-args: -r tt_flash --force
    :goals: build flash
    :compact:
 
 The ``tt-console`` app is a terminal-emulator-like utility that can be used to view log messages
 and interact with the Zephyr shell.
 
-.. code-block:: bash
+.. code-block:: shell
 
-   $ gcc -std=gnu11 -Iinclude -o tt-console scripts/tt-console/console.c
-   $ ./tt-console
+    # Build the TT console utility (for board communication)
+    make -j -C scripts/tooling OUTDIR=/tmp tt-console
+
+    # Reset the board and refresh PCIe connectivity
+    tt-smi -r
+    ./scripts/rescan-pcie.sh
+
+    # Connect to the board console
+    /tmp/tt-console
 
 Press ``Ctrl-x,a`` to exit the ``tt-console`` app.
 

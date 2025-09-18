@@ -12,12 +12,13 @@ To enable tracing for the ``tt_blackhole`` platform, you need to add the tracing
 configuration overlays to your build command. For example, to enable tracing
 when building for the ``p150a`` board revision, you would use the following command:
 
-.. :external+zephyr:zephyr-app-commands::
-   :zephyr-app: app/smc
+.. zephyr-app-commands::
+   :zephyr-app: <tt_zephyr_platforms>/app/smc
    :host-os: unix
    :board: tt_blackhole@p150a/tt_blackhole/smc
    :west-args: --sysbuild
    :build-args: -- -DEXTRA_CONF_FILE=tracing.conf -DEXTRA_DTC_OVERLAY_FILE=tracing.overlay
+   :flash-args: -r tt_flash --force
    :goals: build flash
    :compact:
 
