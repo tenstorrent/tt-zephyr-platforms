@@ -106,7 +106,7 @@ def test_pcie_fw_load_time(arc_chip):
     )
 
 
-def test_smi_reset():
+def test_smi_reset(arc_chip, asic_id):
     """
     Checks that tt-smi resets are working successfully
     """
@@ -116,7 +116,7 @@ def test_smi_reset():
     dmfw_ping_max = 0
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        result = smi_reset_test()
+        result = smi_reset_test(asic_id)
 
         if not result:
             logger.warning(f"tt-smi reset failed on iteration {i}")

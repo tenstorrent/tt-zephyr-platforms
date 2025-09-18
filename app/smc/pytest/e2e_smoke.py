@@ -345,21 +345,24 @@ def test_fw_bundle_version(arc_chip):
     logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
 
 
-def smi_reset_test():
+def smi_reset_test(asic_id):
     """
     Helper to run tt-smi reset test. Returns True if test passed, False otherwise
     """
     smi_reset_cmd = "tt-smi -r"
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
-    ).returncode
-    logger.info(f"'tt-smi -r' returncode:{smi_reset_result}")
+    )
+    logger.info(f"'tt-smi -r' returncode:{smi_reset_result.returncode}")
+    if smi_reset_result.returncode != 0:
+        logger.warning(f"'tt-smi -r' failed: {smi_reset_result.stdout.decode()}")
+        smc_test_recovery.recover_smc(asic_id)
 
-    return smi_reset_result == 0
+    return smi_reset_result.returncode == 0
 
 
 @pytest.mark.flash
-def test_smi_reset():
+def test_smi_reset(arc_chip, asic_id):
     """
     Checks that tt-smi resets are working successfully
     """
@@ -367,7 +370,7 @@ def test_smi_reset():
     fail_count = 0
     for i in range(total_tries):
         logger.info(f"Iteration {i}:")
-        result = smi_reset_test()
+        result = smi_reset_test(asic_id)
 
         if not result:
             logger.warning(f"tt-smi reset failed on iteration {i}")
