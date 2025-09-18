@@ -220,3 +220,11 @@ patches:
       read_processed should be called on every subsequent byte in the
       transaction, and it should also send the data fetched in the CB
       back on the wire.
+  - path: zephyr/stm32-bwbr.patch
+    sha256sum: 1c5f0cfe4e39b57f28bc5501e8c7a1e759765887de55fea03f21eec7e322f5d1
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-09-18
+    comments: |
+      Add support for BWBR smbus32 pcalls
