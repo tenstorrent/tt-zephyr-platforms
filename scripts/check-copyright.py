@@ -52,7 +52,7 @@ PATHS = {
 }
 
 # Set of dirs to exclude from check
-EXCLUDE_DIRS = {"build/**", "twister-out*/**"}
+EXCLUDE_DIRS = {"**/build*/**", "build*/**", "twister-out*/**"}
 
 
 def is_excluded(filename):
