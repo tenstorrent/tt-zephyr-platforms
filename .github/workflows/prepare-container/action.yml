@@ -38,7 +38,7 @@ runs:
           echo "Removing old west configuration"
           rm -rf ".west"
         fi
-        west init -l tt-zephyr-platforms || true
+        west init -l ${{ inputs.app-path }} || true
         west config --global update.narrow true
         west update --path-cache /tt-zephyr || ( rm -rf modules bootloader tools && west update --path-cache /tt-zephyr)
         west forall -c 'git reset --hard HEAD'
@@ -63,3 +63,27 @@ runs:
       shell: bash
       run: |
         west -v patch apply
+
+    - name: Install modinfo
+      shell: bash
+      run: |
+        if ! command -v modinfo &> /dev/null ; then
+          apt-get update
+          apt-get install -y kmod
+        fi
+
+    - name: Log system state
+      shell: bash
+      run: |
+        echo "Zephyr SDK: $ZEPHYR_SDK_INSTALL_DIR"
+        echo "Python: $( which python3 ) $( python3 --version )"
+        echo "Pip: $( which pip3 ) $( pip3 --version )"
+        echo "West: $( which west ) $( west --version )"
+        echo "CMake: $( which cmake ) $( cmake --version | head -n 1 )"
+        echo "Ninja: $( which ninja ) $( ninja --version )"
+        echo "Rustc: $( which rustc ) $( rustc --version )"
+        echo "Cargo: $( which cargo ) $( cargo --version )"
+        echo "PIP packages:"
+        pip3 freeze
+        echo "tt-kmd version:"
+        modinfo tenstorrent

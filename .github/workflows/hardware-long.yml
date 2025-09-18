@@ -37,7 +37,7 @@ jobs:
       image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /opt/tenstorrent:/opt/tenstorrent
+        - /lib/modules:/lib/modules
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - name: Checkout
