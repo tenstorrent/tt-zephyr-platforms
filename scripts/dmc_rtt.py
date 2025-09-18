@@ -19,7 +19,7 @@ DEFAULT_SEARCH_BASE = 0x20000000
 DEFAULT_SEARCH_RANGE = 0x80000
 
 
-def start_dmc_rtt():
+def start_dmc_rtt(args):
     """
     Main function to start RTT console
     """
@@ -28,9 +28,9 @@ def start_dmc_rtt():
         search_base=DEFAULT_SEARCH_BASE,
         search_range=DEFAULT_SEARCH_RANGE,
     )
-    rtt_helper.parse_args(sys.argv[1:])
+    rtt_helper.parse_args(args)
     rtt_helper.run_rtt_server()
 
 
 if __name__ == "__main__":
-    start_dmc_rtt()
+    start_dmc_rtt(sys.argv[1:])
