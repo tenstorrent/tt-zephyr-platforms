@@ -2,8 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+import sys
 
 TTZP = Path(__file__).parent.parent
+ZEPHYR_BASE = TTZP.parent / "zephyr"
+
+# Add the '_extensions' directory to sys.path, to enable finding Sphinx
+# extensions within.
+sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_extensions"))
+
+# Add the '_scripts' directory to sys.path, to enable finding utility
+# modules.
+sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_scripts"))
 
 project = "TT Zephyr Platforms"
 copyright = "2025, Tenstorrent AI ULC"
@@ -13,6 +23,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
     "sphinx_tabs.tabs",
+    "zephyr.application",
 ]
 templates_path = ["_templates"]
 exclude_patterns = ["_build_sphinx", "Thumbs.db", ".DS_Store"]
