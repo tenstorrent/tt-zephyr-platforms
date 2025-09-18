@@ -18,3 +18,5 @@ fi
 
 set -e exec
 exec git diff --cached | ${zep_base}/scripts/checkpatch.pl -
+exec ruff format --diff $(git diff --name-only | grep ".py")
+exec ruff check --diff $(git diff --name-only | grep ".py")
