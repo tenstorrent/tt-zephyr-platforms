@@ -19,7 +19,7 @@ when building for the ``p150a`` board revision, you would use the following comm
    :host-os: unix
    :board: tt_blackhole@p150a/tt_blackhole/smc
    :west-args: --sysbuild
-   :build-args: -- -DEXTRA_CONF_FILE=tracing.conf -DEXTRA_DTC_OVERLAY_FILE=tracing.overlay
+   :gen-args: -DEXTRA_CONF_FILE=tracing.conf -DEXTRA_DTC_OVERLAY_FILE=tracing.overlay
    :flash-args: -r tt_flash --force
    :goals: build flash
    :compact:
