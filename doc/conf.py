@@ -4,7 +4,6 @@
 import sys
 
 from pathlib import Path
-import sys
 
 TTZP = Path(__file__).parent.parent
 ZEPHYR_BASE = TTZP.parent / "zephyr"
