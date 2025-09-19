@@ -1,0 +1,46 @@
+diff --git a/doc/_templates/zversions.html b/doc/_templates/zversions.html
+index c24195a7b9c..ca3ae6e8b35 100644
+--- a/doc/_templates/zversions.html
++++ b/doc/_templates/zversions.html
+@@ -1,22 +1,26 @@
+ {# Add rst-badge after rst-versions for small badge style. #}
+   <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+     <span class="rst-current-version" data-toggle="rst-current-version">
+-      <span class="fa fa-book"> Zephyr Project</span>
++      <span class="fa fa-book"> {{ project }}</span>
+       v: {{ current_version if is_release else "latest" }}
+       <span class="fa fa-caret-down"></span>
+     </span>
+     <div class="rst-other-versions">
++      {% if versions %}
+       <dl>
+         <dt>{{ _('Document Release Versions') }}</dt>
+         {% for slug, url in versions %}
+           <dd><a href="{{ url }}">{{ slug }}</a></dd>
+         {% endfor %}
+       </dl>
++      {% endif %}
++      {% if pdf %}
+       <dl>
+         <dt>{{ _('Downloads') }}</dt>
+         {% set prefix = current_version if is_release else "latest" %}
+-        <dd><a href="/{{ prefix }}/zephyr.pdf">PDF</a></dd>
++        <dd><a href="/{{ prefix }}/{{ pdf }}.pdf">PDF</a></dd>
+       </dl>
++      {% endif %}
+       <dl>
+         <dt>{{ _('zephyrproject.org Links') }}</dt>
+           <dd>
+diff --git a/doc/conf.py b/doc/conf.py
+index f995ad5288d..427e8b52fc8 100644
+--- a/doc/conf.py
++++ b/doc/conf.py
+@@ -195,6 +195,8 @@ if tags.has("publish"):  # pylint: disable=undefined-variable  # noqa: F821
+ docs_title = "Docs / {}".format(version if is_release else "Latest")
+ html_context = {
+     "show_license": True,
++    "project": project,
++    "pdf": "zephyr",
+     "docs_title": docs_title,
+     "is_release": is_release,
+     "current_version": version,
