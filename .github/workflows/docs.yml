@@ -36,7 +36,16 @@ jobs:
 
           rm -f zephyr.tag
           wget https://docs.zephyrproject.org/latest/doxygen/html/zephyr.tag -O /tmp/zephyr.tag
-          doxygen
+
+          # We should try to limit the number of environment variables we reference in Doxyfile
+          # but they can be added here, as needed.
+          # For reference, this method of passing variables is based on Doxygen's examples
+          # https://github.com/doxygen/doxygen/issues/7975
+          ( \
+            cat Doxyfile; \
+            echo "PROJECT_NUMBER=$(../scripts/get_ttzp_version.py)"; \
+            echo "" \
+          ) | doxygen -
 
           make html
 
