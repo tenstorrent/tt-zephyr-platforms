@@ -12,6 +12,7 @@
 #include <tenstorrent/tt_smbus_regs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/clock.h>
 #include <string.h>
 
 LOG_MODULE_REGISTER(bh_chip, CONFIG_TT_BH_CHIP_LOG_LEVEL);
@@ -47,8 +48,19 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 
 		wire_ack.f = ack;
 		output.ack = ack;
-		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc,
-							     CMFW_SMBUS_ACK, wire_ack.val);
+		output.ack_ret = bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_ACK,
+							     wire_ack.val);
+	}
+
+	if (output.ret != 0 || (output.msg.msg_id != kCm2DmMsgIdNull && output.ack_ret != 0)) {
+		static k_timepoint_t message_ratelimit;
+
+		if (sys_timepoint_expired(message_ratelimit)) {
+			message_ratelimit = sys_timepoint_calc(K_SECONDS(1));
+
+			LOG_WRN("CM2DM SMBus communication failed. req: %d ack: %d", output.ret,
+				output.ack_ret);
+		}
 	}
 
 	return output;
@@ -150,6 +162,8 @@ void bh_chip_deassert_spi_reset(const struct bh_chip *chip)
 
 int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 {
+	chip->data.last_cm2dm_seq_num_valid = false;
+
 	return jtag_bootrom_reset_sequence(chip, force_reset);
 }
 
