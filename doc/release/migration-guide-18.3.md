@@ -1,5 +1,7 @@
 # v18.3.0
 
+## Migration Guide
+
 This document lists recommended and required changes for those migrating from the previous v18.2.0 firmware release to the new v18.3.0 firmware release.
 
 * Going forward, and following the more standard semantic versioning of firmware, the filename
