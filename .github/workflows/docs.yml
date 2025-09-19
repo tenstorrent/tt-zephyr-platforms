@@ -33,6 +33,7 @@ jobs:
           pip install west
           west init -l tt-zephyr-platforms
           west update
+          west patch apply
 
       - name: Build
         working-directory: tt-zephyr-platforms

@@ -250,6 +250,14 @@ patches:
       Add support for a failure_script parameter to twister. This script will be executed
       whenever a test fails, allowing for custom failure handling such as
       dumping logs, resetting hardware, etc.
+  - path: zephyr/zversion-from-conf-py.patch
+    sha256sum: 1871c68114204de705c382a2cb34680a13687fedbce0439958866bec6f40ab49
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-08-19
+    comments: |
+      Make zversion html take project/version settings from conf.py
   - path: zephyr/stm32-bwbr.patch
     sha256sum: 1c5f0cfe4e39b57f28bc5501e8c7a1e759765887de55fea03f21eec7e322f5d1
     module: zephyr
