@@ -541,10 +541,16 @@ static void send_logs_to_smc(void)
 static void shared_20ms_expired(struct k_timer *timer)
 {
 	ARG_UNUSED(timer);
-	tt_event_post(TT_EVENT_BOARD_POWER_TO_SMC | TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_CM2DM_POLL |
-		      TT_EVENT_LOGS_TO_SMC);
+	tt_event_post(TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_CM2DM_POLL | TT_EVENT_LOGS_TO_SMC);
 }
 static K_TIMER_DEFINE(shared_20ms_event_timer, shared_20ms_expired, NULL);
+
+static void board_power_update_expired(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+	tt_event_post(TT_EVENT_BOARD_POWER_TO_SMC);
+}
+static K_TIMER_DEFINE(board_power_update_timer, board_power_update_expired, NULL);
 
 int main(void)
 {
@@ -639,6 +645,7 @@ int main(void)
 	max_power = detect_max_power();
 
 	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
+	k_timer_start(&board_power_update_timer, K_MSEC(1), K_MSEC(1));
 
 	while (true) {
 		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
