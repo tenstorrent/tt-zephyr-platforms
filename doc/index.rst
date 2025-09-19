@@ -10,6 +10,7 @@ Welcome to TT Zephyr Platforms!
    develop/index.rst
    services/index.rst
    boards/index.rst
+   release/index.rst
    zephyr.rst
 
 Indices and tables
