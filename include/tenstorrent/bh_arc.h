@@ -32,9 +32,9 @@ typedef struct dmStaticInfo {
 	uint32_t version;
 	uint32_t bl_version;
 	uint32_t app_version;
-	uint32_t arc_start_time;  /* Timestamp in ASIC refclk (50 MHz) */
+	uint32_t arc_start_time;   /* Timestamp in ASIC refclk (50 MHz) */
 	uint32_t dm_init_duration; /* Duration in DMC refclk (64 MHz) */
-	uint32_t arc_hang_pc; /* Program counter during last ARC hang */
+	uint32_t arc_hang_pc;      /* Program counter during last ARC hang */
 } __packed dmStaticInfo;
 
 typedef struct cm2dmMessage {
@@ -70,6 +70,8 @@ int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input);
 int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t word);
 int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word);
+int bharc_smbus_block_write_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t snd_count,
+				       uint8_t *send_buf, uint8_t *rcv_count, uint8_t *rcv_buf);
 
 #define BH_ARC_INIT(n)                                                                             \
 	{.smbus = SMBUS_DT_SPEC_GET(n),                                                            \
