@@ -1,6 +1,8 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
+
 from pathlib import Path
 import sys
 
@@ -15,10 +17,14 @@ sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_extensions"))
 # modules.
 sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_scripts"))
 
+sys.path.insert(0, str(TTZP / "scripts"))
+
+from get_ttzp_version import get_ttzp_version  # noqa: E402
+
 project = "TT Zephyr Platforms"
 copyright = "2025, Tenstorrent AI ULC"
 author = "Tenstorrent AI ULC"
-release = "1.0.0"
+release = get_ttzp_version()
 extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
