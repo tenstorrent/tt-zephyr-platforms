@@ -1,12 +1,12 @@
-# TT-Zephyr-Platforms v18.5.0
+# v18.5.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.5.0 🥳🎉.
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 Performance Improvements, if applicable)
-[comment]: <> (H3 New and Experimental Features, if applicable)
-[comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+<!-- H3 Performance Improvements, if applicable -->
+<!-- H3 New and Experimental Features, if applicable -->
+<!-- H3 External Project Collaboration Efforts, if applicable -->
 
 ## Stability Improvements
 
@@ -18,47 +18,45 @@ Major enhancements with this release include:
 * fan_ctrl: disable initial fan spin-up to 100%
 * pcie: drive perst of cem1 slot when operating in RC mode
 
-[comment]: <> (H1 Security vulnerabilities fixed?)
+<!-- H1 Security vulnerabilities fixed? -->
 
-[comment]: <> (H2 API Changes)
+<!-- H2 API Changes -->
 
-[comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
+<!-- H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 New Samples, if applicable)
+<!-- H2 New Samples, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-## Other Notable Changes
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-
-### Drivers
+## Drivers
 
 * renamed `tenstorrent,blackhole-reset` to `tenstorrent,bh-reset` to be consistent with other compatibles
 * add `tenstorrent,bh-watchdog` driver + tests
 * add `tenstorrent,bh-gpio` driver + tests
 
-[comment]: <> (UL Libraries)
+<!-- UL Libraries -->
 
-### Documentation
+## Documentation
 
 * added beginning of Sphinx documentation generation
 * updated board doc for `tt_blackhole`
@@ -67,7 +65,7 @@ Major enhancements with this release include:
 
 An overview of required and recommended changes to make when migrating from the previous v18.4.0 release can be found in [v18.5.0 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-v18.5.0.md).
 
-## Full ChangeLog
+### Full ChangeLog
 
 The full ChangeLog from the previous v18.4.0 release can be found at the link below.
 

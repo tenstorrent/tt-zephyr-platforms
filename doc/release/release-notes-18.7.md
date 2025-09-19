@@ -1,18 +1,18 @@
-# TT-Zephyr-Platforms v18.7.0
+# v18.7.0
 
-[comment]: <> (We are pleased to announce the release of TT Zephyr Platforms firmware version 18.7.0 🥳🎉.)
+<!-- We are pleased to announce the release of TT Zephyr Platforms firmware version 18.7.0 🥳🎉. -->
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 Performance Improvements, if applicable)
+<!-- H3 Performance Improvements, if applicable -->
 
-### New and Experimental Features
+## New and Experimental Features
 
 * Implement aiclk_ppm sweep handler
 
-[comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+<!-- H3 External Project Collaboration Efforts, if applicable -->
 
-### Stability Improvements
+## Stability Improvements
 
 * Reduce Blackhole Galaxy GDDR speed from 16G to 14G
 * Update Wormhole FW blob
@@ -20,38 +20,38 @@ Major enhancements with this release include:
     * Fix telemetry entry ENABLED_TENSIX_ROW
     * Add telemetry entries for ASIC_ID_{HIGH,LOW}
 
-[comment]: <> (H1 Security vulnerabilities fixed?)
+<!-- H1 Security vulnerabilities fixed? -->
 
-[comment]: <> (H2 API Changes, if applicable)
+<!-- H2 API Changes, if applicable -->
 
-[comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
+<!-- H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 New Samples, if applicable)
+<!-- H2 New Samples, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-### Other Notable Changes
+## Other Notable Changes
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
 
-#### Debug / Developer Features
+## Debug / Developer Features
 
 * The `tenstorrent,vuart` virtual PCIe serial device is now the default for console I/O. The
   virtual uart supports multiple instances, so one instance may be used for console I/O while
@@ -66,12 +66,10 @@ Major enhancements with this release include:
   but plans are in place to integrate this feature into production firmware with support for
   dynamically configurable tracing
 
-![Scheduler and ISR tracing](../img/tracing.gif)
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
-
-[comment]: <> (H2 New Boards, if applicable)
+<!-- H2 New Boards, if applicable -->
 
 ## Migration guide
 
