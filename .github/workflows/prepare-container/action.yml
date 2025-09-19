@@ -21,10 +21,38 @@ runs:
         #        GitHub comes up with a fundamental fix for this problem.
         git config --global --add safe.directory ${GITHUB_WORKSPACE}
 
+    # This step is required because stateful runners (e.g. self-hosted runners) may have
+    # a stale copy of the repos in the manifest. This step ensures that all state
+    # repos are cleaned out before the manifest is cloned.
+    - name: Remove existing data
+      shell: bash
+      run: |
+        if [ -d ".west" ]; then
+          echo "Cleaning out old west manifest directories"
+          for dir in $(west list -f "{path}"); do
+            if [ $dir != ${{ inputs.app-path }} ]; then
+              echo "Removing $dir"
+              rm -rf $dir
+            fi
+          done
+          rm -rf ".west"
+        fi
+        if [ -d "zephyr-sdk" ]; then
+          echo "Cleaning out old zephyr-sdk directory"
+          rm -rf zephyr-sdk
+        fi
+        # Remove any stale hal_stm32 blobs directories to avoid west blobs fetch errors
+        rm -Rf $(find * -path '*/hal/stm32/zephyr/blobs')
+
+        N_LOCKS=$(find * -path '*/.git/shallow.lock' | wc -l)
+        if [ $N_LOCKS -gt 0 ]; then
+          echo "Cleaning out $N_LOCKS stale .git/shallow.lock files"
+          find * -path '*/.git/shallow.lock' -exec rm -f {} \;
+        fi
+
     - name: Set Environment Variables
       shell: bash
       run: |
-        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat zephyr/SDK_VERSION )" >> $GITHUB_ENV
         echo "ZEPHYR_BASE=${{github.workspace}}/zephyr" >> $GITHUB_ENV
 
         echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -44,6 +72,11 @@ runs:
         west forall -c 'git reset --hard HEAD'
         west patch clean
 
+        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat zephyr/SDK_VERSION )" >> $GITHUB_ENV
+
+    - name: Install Zephyr SDK CMake package
+      shell: bash
+      run: |
         # Remove old CMake pakages
         rm -rf $HOME/.cmake/packages/Zephyr-sdk
         # Install Zephyr SDK CMake package
