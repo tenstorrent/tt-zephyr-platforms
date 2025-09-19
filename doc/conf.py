@@ -41,6 +41,7 @@ external_content_contents = [
 ]
 
 html_context = {
+    "project": project,
     "reference_links": {"API": "doxygen/index.html"},
 }
 
