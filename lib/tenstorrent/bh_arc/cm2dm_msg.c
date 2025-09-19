@@ -15,8 +15,10 @@
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/drivers/watchdog.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
+#include <zephyr/logging/log_ctrl.h>
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
@@ -26,6 +28,8 @@
 #include "status_reg.h"
 #include "fan_ctrl.h"
 #include "telemetry.h"
+
+LOG_MODULE_REGISTER(cm2dm, CONFIG_TT_APP_LOG_LEVEL);
 
 typedef struct {
 	atomic_t pending_messages;
@@ -125,6 +129,8 @@ void IssueChipReset(Cm2DmResetLevel reset_level)
 	chip_reset_state.chip_reset_asic_called |= reset_level == kCm2DmResetLevelAsic;
 	chip_reset_state.chip_reset_dmc_called |= reset_level == kCm2DmResetLevelDmc;
 	/* Send a reset request to the DMFW */
+	LOG_INF("Requesting reset from DMFW, level %d", reset_level);
+	log_flush();
 	PostCm2DmMsg(kCm2DmMsgIdResetReq, reset_level);
 }
 
