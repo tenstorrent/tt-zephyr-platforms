@@ -1,3 +1,5 @@
+.. _ttzp_getting_started:
+
 Getting Started
 ===============
 
