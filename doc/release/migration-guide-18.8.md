@@ -1,5 +1,7 @@
 # v18.8.0
 
+## Migration Guide
+
 This document lists recommended and required changes for those migrating from the previous v18.7.0 firmware release to the new v18.8.0 firmware release.
 
 * Update `pyluwen`, `tt-smi` and `tt-flash` to support more firmware telemetry values being added.
