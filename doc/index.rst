@@ -1,14 +1,16 @@
+.. _ttzp_home:
+
 Welcome to TT Zephyr Platforms!
 ===============================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
 
-   develop/getting_started/index
-   develop/debugging/tracing
-   boards/index
-   zephyr
+   develop/index.rst
+   services/index.rst
+   boards/index.rst
+   zephyr.rst
 
 Indices and tables
 ==================

@@ -118,3 +118,4 @@ smc-reset-vars.cfg
 
 # .env for users to store their GitHub runner tokens
 .env
+/doc/deploy/

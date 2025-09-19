@@ -1,8 +1,10 @@
+.. _ttzp_tracing:
+
 Tracing Support
 ===============
 
 The firmware running on TT platforms includes support for tracing using the
-Zephyr Tracing Subsystem. This allows developers to collect and analyze runtime
+:ref:`Zephyr Tracing<tracing>` Subsystem. This allows developers to collect and analyze runtime
 data to help with debugging and performance optimization.
 
 Enabling Tracing

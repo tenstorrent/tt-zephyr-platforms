@@ -4,7 +4,7 @@ Supported Boards
 ################
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :glob:
 
    tenstorrent/*/doc/index
