@@ -1,4 +1,4 @@
-# Migration Guide: TT-Zephyr-Platforms v18.7.0
+# v18.7.0
 
 This document lists recommended and required changes for those migrating from the previous v18.6.0 firmware release to the new v18.7.0 firmware release.
 
@@ -20,5 +20,3 @@ This document lists recommended and required changes for those migrating from th
       accessed before PCIe enumerates, via JTAG. After PCIe has enumerated, firmware (or possibly
       tooling) will disable the RTT log backend, as it is much lower-bandwidth and would likely
       overflow during regular operation if verbose logging is enabled.
-
-[comment]: <> (UL by area, indented as necessary)

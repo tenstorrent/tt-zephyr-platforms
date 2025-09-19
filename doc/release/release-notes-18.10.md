@@ -1,14 +1,14 @@
-# TT-Zephyr-Platforms v18.10.0
+# v18.10.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.10.0 🥳🎉.
 
 Major enhancements with this release include:
 
-[comment]: <> (H3 Performance Improvements, if applicable)
-[comment]: <> (H3 New and Experimental Features, if applicable)
-[comment]: <> (H3 External Project Collaboration Efforts, if applicable)
+<!-- H3 Performance Improvements, if applicable -->
+<!-- H3 New and Experimental Features, if applicable -->
+<!-- H3 External Project Collaboration Efforts, if applicable -->
 
-### Stability Improvements
+## Stability Improvements
 
 * Update Blackhole ERISC FW to v1.6.0
   * Added eth_flush_icache to flush instruction cache for SYS-1944 - function is 2048 NOP instructions unrolled
@@ -20,41 +20,41 @@ Major enhancements with this release include:
   * ETH msg LINK_UP_CHECK: fast check to only update rx_link_up field of eth_live_status
 * Setup FW table to lower ETH train speeds for Galaxy products to 200G, other products stay 400G
 
-[comment]: <> (H1 Security vulnerabilities fixed?)
+<!-- H1 Security vulnerabilities fixed? -->
 
-[comment]: <> (H2 API Changes, if applicable)
+<!-- H2 API Changes, if applicable -->
 
-[comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
+<!-- H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 New Samples, if applicable)
+<!-- H2 New Samples, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 Other Notable Changes, if applicable)
+<!-- H2 Other Notable Changes, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 New Boards, if applicable)
+<!-- H2 New Boards, if applicable -->
 
 ## Migration guide
 

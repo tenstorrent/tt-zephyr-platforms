@@ -1,10 +1,10 @@
-# TT-Zephyr-Platforms v18.6.0
+# v18.6.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.6.0 🥳🎉.
 
 Major enhancements with this release include:
 
-### Zephyr-4.2.0-rc1
+## Zephyr-4.2.0-rc1
 
 This release of `tt-zephyr-platforms` migrates our application to run on v4.2.0-rc1 of the Zephyr
 Real-time Operating System. While the final v4.2.0 release of Zephyr is not yet available, we are
@@ -20,15 +20,15 @@ Upstream (draft) release notes for the up-coming v4.2.0 release of Zephyr are av
 More information about the Zephyr Release Process is available
 [here](https://docs.zephyrproject.org/latest/project/release_process.html).
 
-### New and Experimental Features
+## New and Experimental Features
 
 * Enabled PCIe event counters
 
-### Performance Improvements
+## Performance Improvements
 
 * Enabled Quad DDR SPI mode to speed up loading cmfw
 
-### Stability Improvements
+## Stability Improvements
 
 * Aligned ASIC location definition in the SPI table with that of the telemetry table
 * Update Blackhole ERISC FW to v1.4.2
@@ -47,29 +47,27 @@ More information about the Zephyr Release Process is available
     * Add multi-mesh support for T3K
     * Fix intermittent static training synchronization failures
 
-[comment]: <> (H1 Security vulnerabilities fixed?)
+<!-- H1 Security vulnerabilities fixed? -->
 
-## API Changes
+<!-- H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
 
-[comment]: <> (H3 Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- H2 New Samples, if applicable -->
 
-[comment]: <> (H2 New Samples, if applicable)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-
-### Drivers
+## Drivers
 
 * add `tenstorrent,bh-gpio` driver in place of `bh_arc` GPIO library
 * add `maxim,max6639` driver + tests
@@ -77,19 +75,19 @@ More information about the Zephyr Release Process is available
 
 * add Zephyr PLL driver + tests
 
-[comment]: <> (UL Libraries)
+<!-- UL Libraries -->
 
-[comment]: <> (H2 Other Notable Changes, if applicable)
+<!-- H2 Other Notable Changes, if applicable -->
 
-[comment]: <> (UL PCIe)
-[comment]: <> (UL DDR)
-[comment]: <> (UL Ethernet)
-[comment]: <> (UL Telemetry)
-[comment]: <> (UL Debug / Developer Features)
-[comment]: <> (UL Drivers)
-[comment]: <> (UL Libraries)
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
 
-[comment]: <> (H2 New Boards, if applicable)
+<!-- H2 New Boards, if applicable -->
 
 ## Migration guide
 
