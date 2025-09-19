@@ -6,7 +6,7 @@ if(CONFIG_SOC_TT_BLACKHOLE_DMC)
 endif()
 
 if(CONFIG_SOC_TT_BLACKHOLE_SMC)
-  board_runner_args(openocd "--config=${BOARD_DIR}/support/tt_blackhole_smc.cfg" "--use-elf")
+  board_runner_args(openocd "--config=${BOARD_DIR}/support/tt_blackhole_smc.cfg" "--use-elf" "--verify")
 endif()
 
 if(CONFIG_ARM)
