@@ -26,6 +26,7 @@ copyright = "2025, Tenstorrent AI ULC"
 author = "Tenstorrent AI ULC"
 release = get_ttzp_version()
 extensions = [
+    "myst_parser",
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
     "sphinx_tabs.tabs",
@@ -39,3 +40,7 @@ external_content_contents = [
     (TTZP, "boards/**/*.rst"),
 ]
 intersphinx_mapping = {"zephyr": ("https://docs.zephyrproject.org/latest/", None)}
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
