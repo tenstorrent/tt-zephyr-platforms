@@ -32,13 +32,19 @@ extensions = [
     "sphinx_tabs.tabs",
     "zephyr.application",
 ]
-templates_path = ["_templates"]
+templates_path = [str(ZEPHYR_BASE / "doc/_templates")]
 exclude_patterns = ["_build_sphinx", "Thumbs.db", ".DS_Store"]
 html_theme = "sphinx_rtd_theme"
 external_content_contents = [
     (TTZP / "doc", "[!_]*"),
     (TTZP, "boards/**/*.rst"),
 ]
+
+html_context = {
+    "reference_links": {"API": "doxygen/index.html"},
+}
+
+
 intersphinx_mapping = {"zephyr": ("https://docs.zephyrproject.org/latest/", None)}
 source_suffix = {
     ".rst": "restructuredtext",
