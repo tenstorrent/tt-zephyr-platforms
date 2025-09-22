@@ -265,8 +265,8 @@ SKIP_FUNCTION_MACROS   = YES
 TAGFILES               = "/tmp/zephyr.tag=https://docs.zephyrproject.org/latest/doxygen/html/"
 GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
-EXTERNAL_GROUPS        = YES
-EXTERNAL_PAGES         = YES
+EXTERNAL_GROUPS        = NO
+EXTERNAL_PAGES         = NO
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = YES
 HAVE_DOT               = NO
