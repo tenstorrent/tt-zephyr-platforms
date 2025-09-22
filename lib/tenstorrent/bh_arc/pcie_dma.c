@@ -194,7 +194,7 @@ static uint8_t pcie_dma_transfer_handler(const union request *request, struct re
 
 	bool accept;
 
-	if (request->fields.command_code == MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
+	if (request->command_code == MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
 		accept = PcieDmaReadTransfer(chip_addr, host_addr, transfer_size_bytes,
 					     msi_completion_addr, completion_data);
 	} else {

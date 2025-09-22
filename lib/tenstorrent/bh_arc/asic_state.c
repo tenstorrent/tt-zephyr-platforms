@@ -41,9 +41,9 @@ void lock_down_for_reset(void)
 
 static uint8_t asic_state_handler(const union request *request, struct response *response)
 {
-	if (request->fields.command_code == MSG_TYPE_ASIC_STATE0) {
+	if (request->command_code == MSG_TYPE_ASIC_STATE0) {
 		enter_state0();
-	} else if (request->fields.command_code == MSG_TYPE_ASIC_STATE3) {
+	} else if (request->command_code == MSG_TYPE_ASIC_STATE3) {
 		enter_state3();
 	}
 	return 0;

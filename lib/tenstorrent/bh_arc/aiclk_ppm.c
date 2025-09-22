@@ -221,7 +221,7 @@ uint32_t GetAiclkTarg(void)
 
 static uint8_t AiclkBusyHandler(const union request *request, struct response *response)
 {
-	if (request->fields.command_code == MSG_TYPE_AICLK_GO_BUSY) {
+	if (request->command_code == MSG_TYPE_AICLK_GO_BUSY) {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmax);
 	} else {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
@@ -255,7 +255,7 @@ static uint8_t get_aiclk_handler(const union request *request, struct response *
 
 static uint8_t SweepAiclkHandler(const union request *request, struct response *response)
 {
-	if (request->fields.command_code == MSG_TYPE_AISWEEP_START) {
+	if (request->command_code == MSG_TYPE_AISWEEP_START) {
 		if (request->data[1] == 0 || request->data[2] == 0) {
 			return 1;
 		}
