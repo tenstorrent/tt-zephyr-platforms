@@ -42,6 +42,13 @@ struct message_queue_header {
 	uint32_t unused_3;
 };
 
+/** @brief Host request to force the fan speed
+ * @details This message corresponds to a command code of @ref MSG_TYPE_FORCE_FAN_SPEED
+ */
+typedef struct {
+	uint32_t raw_speed; /** @brief The raw speed of the fan to set */
+} force_fan_speed_rqst_t;
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -53,8 +60,10 @@ union request {
 
 		/** @brief Extra command data embedded in the command code word */
 		uint8_t cc_data[3];
-
-		/*TODO Add commands and their documentation here*/
+		union {
+			/** @brief A force fan speed request*/
+			force_fan_speed_rqst_t force_fan_speed;
+		};
 	} fields;
 };
 
@@ -62,8 +71,7 @@ struct response {
 	uint32_t data[RESPONSE_MSG_LEN];
 };
 
-typedef uint8_t (*msgqueue_request_handler_t)(const union request *req,
-					      struct response *rsp);
+typedef uint8_t (*msgqueue_request_handler_t)(const union request *req, struct response *rsp);
 
 struct msgqueue_handler {
 	uint32_t msg_type;

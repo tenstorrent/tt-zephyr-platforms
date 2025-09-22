@@ -143,7 +143,7 @@ static uint8_t force_fan_speed(const union request *request, struct response *re
 		return 1;
 	}
 
-	uint32_t raw_speed = request->data[1];
+	uint32_t raw_speed = request->fields.force_fan_speed.raw_speed;
 
 	if (raw_speed == UINT32_MAX) {
 		fan_speed_forced = false;
