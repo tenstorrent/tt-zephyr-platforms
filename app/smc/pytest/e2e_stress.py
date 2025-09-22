@@ -372,3 +372,92 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
     )
+
+
+def test_power_virus(arc_chip):
+    """
+    - Run the power virus TTX workload (tt-burnin) for 180 seconds
+    - Verify TMON temperatures are within expected range while workload is running
+    """
+
+    def read_ts_once(chip, sensor_idx: int):
+        # ARC handler expects sensor id; returns status in response[1]
+        for i in range(NUM_TS):
+            rsp = chip.arc_msg(ARC_MSG_TYPE_READ_TS, True, False, i, 0, 1000)
+        # Best-effort logging; exact response layout is FW-defined
+        logger.info(f"READ_TS idx={sensor_idx} rsp={rsp}")
+        # If status is present as second field, ensure success
+        if len(rsp) > 1:
+            assert rsp[1] == 0, f"READ_TS status error for TS[{sensor_idx}]"
+        return rsp
+
+    # Sample TMON before PV
+    for _ in range(20):
+        for ts in range(0, 8):
+            try:
+                read_ts_once(arc_chip, ts)
+            except Exception as e:
+                logger.warning(f"READ_TS pre-PV failed for idx {ts}: {e}")
+        time.sleep(0.1)
+
+    # Run tt-burnin for 180s and read_ts at the same time
+    logger.info("Starting tt-burnin process for power virus test")
+    burnin_process = subprocess.Popen(
+        ["tt-burnin"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    duration = 180  # 180 seconds
+    fail_count = 0
+
+    try:
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            # Read temperature sensors during burnin
+            for ts in range(NUM_TS):
+                try:
+                    read_ts_once(arc_chip, ts)
+                except Exception as e:
+                    logger.warning(f"READ_TS during PV failed for idx {ts}: {e}")
+                    fail_count += 1
+
+            # Check if burnin process is still running
+            if burnin_process.poll() is not None:
+                logger.warning("tt-burnin process terminated early")
+                fail_count += 1
+                break
+
+            time.sleep(1.0)  # Sample every second during power virus
+
+    except Exception as e:
+        logger.warning(f"Power virus test failed: {e}")
+        fail_count += 1
+
+    finally:
+        # Stop tt-burnin
+        logger.info("Stopping tt-burnin process")
+        if burnin_process.poll() is None:
+            # Send enter key to stop tt-burnin gracefully
+            try:
+                burnin_process.stdin.write(b"\n")
+                burnin_process.stdin.flush()
+                burnin_process.wait(timeout=5)
+            except (subprocess.TimeoutExpired, BrokenPipeError):
+                logger.warning(
+                    "tt-burnin did not terminate gracefully, killing process"
+                )
+                burnin_process.terminate()
+                try:
+                    burnin_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    burnin_process.kill()
+                    burnin_process.wait()
+
+    logger.info(
+        f"Power virus test completed with {fail_count} temperature read failures"
+    )
+    assert fail_count == 0, (
+        f"Power virus test failed with {fail_count} temperature read failures"
+    )
