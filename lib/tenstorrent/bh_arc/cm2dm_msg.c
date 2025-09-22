@@ -163,8 +163,7 @@ void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
 	PostCm2DmMsg(kCm2DmMsgTelemHeartbeatUpdate, heartbeat); /* in ms */
 }
 
-static uint8_t reset_dm_handler(uint32_t msg_code, const struct request *request,
-				struct response *response)
+static uint8_t reset_dm_handler(const union request *request, struct response *response)
 {
 	uint8_t arg = request->data[1];
 
@@ -186,8 +185,7 @@ static uint8_t reset_dm_handler(uint32_t msg_code, const struct request *request
 
 REGISTER_MESSAGE(MSG_TYPE_TRIGGER_RESET, reset_dm_handler);
 
-static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t ping_dm_handler(const union request *request, struct response *response)
 {
 	int ret;
 	uint64_t timestamp;
@@ -208,8 +206,7 @@ static uint8_t ping_dm_handler(uint32_t msg_code, const struct request *request,
 
 REGISTER_MESSAGE(MSG_TYPE_PING_DM, ping_dm_handler);
 
-static uint8_t set_watchdog_timeout(uint32_t msg_code, const struct request *request,
-				    struct response *response)
+static uint8_t set_watchdog_timeout(const union request *request, struct response *response)
 {
 	const struct device *wdt_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
 	struct wdt_timeout_cfg cfg = {0};

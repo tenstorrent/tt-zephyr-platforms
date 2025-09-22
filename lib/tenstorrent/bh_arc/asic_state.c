@@ -39,12 +39,11 @@ void lock_down_for_reset(void)
 	/* (and the I2C code it relies on). */
 }
 
-static uint8_t asic_state_handler(uint32_t msg_code, const struct request *request,
-				  struct response *response)
+static uint8_t asic_state_handler(const union request *request, struct response *response)
 {
-	if (msg_code == MSG_TYPE_ASIC_STATE0) {
+	if (request->fields.command_code == MSG_TYPE_ASIC_STATE0) {
 		enter_state0();
-	} else if (msg_code == MSG_TYPE_ASIC_STATE3) {
+	} else if (request->fields.command_code == MSG_TYPE_ASIC_STATE3) {
 		enter_state3();
 	}
 	return 0;

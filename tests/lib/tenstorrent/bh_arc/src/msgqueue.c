@@ -9,8 +9,7 @@
 #include <tenstorrent/msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
-static uint8_t msgqueue_handler_73(uint32_t msg_code, const struct request *req,
-				   struct response *rsp)
+static uint8_t msgqueue_handler_73(const union request *req, struct response *rsp)
 {
 	BUILD_ASSERT(MSG_TYPE_SHIFT % 8 == 0);
 	rsp->data[1] = req->data[0];
@@ -19,7 +18,7 @@ static uint8_t msgqueue_handler_73(uint32_t msg_code, const struct request *req,
 
 ZTEST(msgqueue, test_msgqueue_register_handler)
 {
-	struct request req = {0};
+	union request req = {0};
 	struct response rsp = {0};
 
 	msgqueue_register_handler(0x73, msgqueue_handler_73);

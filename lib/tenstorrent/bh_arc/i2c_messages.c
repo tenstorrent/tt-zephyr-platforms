@@ -38,8 +38,7 @@
  * | 7 |                                                       |
  */
 
-static uint8_t i2c_message_handler(uint32_t msg_code, const struct request *request,
-				   struct response *response)
+static uint8_t i2c_message_handler(const union request *request, struct response *response)
 {
 	uint8_t I2C_mst_id = BYTE_GET(request->data[0], 1);
 	bool valid_id = IsValidI2CMasterId(I2C_mst_id);

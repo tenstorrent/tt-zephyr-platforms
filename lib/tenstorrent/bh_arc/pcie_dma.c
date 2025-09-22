@@ -184,8 +184,7 @@ bool PcieDmaReadTransfer(uint64_t chip_addr, uint64_t host_addr, uint32_t transf
 	return true;
 }
 
-static uint8_t pcie_dma_transfer_handler(uint32_t msg_code, const struct request *request,
-					 struct response *response)
+static uint8_t pcie_dma_transfer_handler(const union request *request, struct response *response)
 {
 	uint8_t completion_data = (request->data[0] >> 8) & 0xff;
 	uint32_t transfer_size_bytes = request->data[1];
@@ -195,7 +194,7 @@ static uint8_t pcie_dma_transfer_handler(uint32_t msg_code, const struct request
 
 	bool accept;
 
-	if (msg_code == MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
+	if (request->fields.command_code == MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
 		accept = PcieDmaReadTransfer(chip_addr, host_addr, transfer_size_bytes,
 					     msi_completion_addr, completion_data);
 	} else {

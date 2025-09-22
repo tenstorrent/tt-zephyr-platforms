@@ -141,8 +141,7 @@ static int DeassertRiscvResets(void)
 }
 SYS_INIT_APP(DeassertRiscvResets);
 
-static __maybe_unused uint8_t ToggleTensixReset(uint32_t msg_code, const struct request *req,
-						struct response *rsp)
+static __maybe_unused uint8_t ToggleTensixReset(const union request *req, struct response *rsp)
 {
 	/* Assert reset (active low) */
 	RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = {.val = 0};
@@ -169,8 +168,7 @@ REGISTER_MESSAGE(MSG_TYPE_TOGGLE_TENSIX_RESET, ToggleTensixReset);
  *
  * This includes all NOC programming and any programming within the tile.
  */
-static __maybe_unused uint8_t ReinitTensix(uint32_t msg_code, const struct request *req,
-					   struct response *rsp)
+static __maybe_unused uint8_t ReinitTensix(const union request *req, struct response *rsp)
 {
 	ClearNocTranslation();
 	/* We technically don't have to re-program the entire NOC (only the Tensix NOC portions),

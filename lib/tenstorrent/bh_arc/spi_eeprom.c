@@ -146,8 +146,7 @@ static bool check_csm_region(uint32_t addr, uint32_t num_bytes)
 	       (addr + num_bytes) > ((uint32_t)spi_global_buffer + sizeof(spi_global_buffer));
 }
 
-static uint8_t read_eeprom_handler(uint32_t msg_code, const struct request *request,
-	struct response *response)
+static uint8_t read_eeprom_handler(const union request *request, struct response *response)
 {
 	uint8_t buffer_mem_type = BYTE_GET(request->data[0], 1);
 	uint32_t spi_address = request->data[1];
@@ -171,9 +170,7 @@ static uint8_t read_eeprom_handler(uint32_t msg_code, const struct request *requ
 	return SpiBlockRead(spi_address, num_bytes, csm_addr);
 }
 
-
-static uint8_t write_eeprom_handler(uint32_t msg_code, const struct request *request,
-				    struct response *response)
+static uint8_t write_eeprom_handler(const union request *request, struct response *response)
 {
 	uint8_t buffer_mem_type = BYTE_GET(request->data[0], 1);
 	uint32_t spi_address = request->data[1];

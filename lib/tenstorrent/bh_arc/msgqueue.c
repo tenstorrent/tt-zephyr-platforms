@@ -83,7 +83,7 @@ typedef union {
 /* Describes a single message queue. */
 struct message_queue {
 	struct message_queue_header header;
-	struct request request_queue[MSG_QUEUE_SIZE];
+	union request request_queue[MSG_QUEUE_SIZE];
 	struct response response_queue[MSG_QUEUE_SIZE];
 };
 
@@ -110,12 +110,7 @@ static inline void *unmask_voidp(void *x, uintptr_t mask)
 	return (void *)y;
 }
 
-static inline uint8_t command_code(const struct request *req)
-{
-	return (req->data[MSG_TYPE_INDEX] & MSG_TYPE_MASK) >> MSG_TYPE_SHIFT;
-}
-
-static struct request *request_entry(struct message_queue *queue, uint32_t ptr)
+static union request *request_entry(struct message_queue *queue, uint32_t ptr)
 {
 	return &queue->request_queue[ptr % MSG_QUEUE_SIZE];
 }
@@ -125,7 +120,7 @@ static struct response *response_entry(struct message_queue *queue, uint32_t ptr
 	return &queue->response_queue[ptr % MSG_QUEUE_SIZE];
 }
 
-int msgqueue_request_push(uint32_t msgqueue_id, const struct request *request)
+int msgqueue_request_push(uint32_t msgqueue_id, const union request *request)
 {
 	struct message_queue *queue = &message_queues[msgqueue_id];
 
@@ -145,7 +140,7 @@ int msgqueue_request_push(uint32_t msgqueue_id, const struct request *request)
 	return 0;
 }
 
-int msgqueue_request_pop(uint32_t msgqueue_id, struct request *request)
+int msgqueue_request_pop(uint32_t msgqueue_id, union request *request)
 {
 	struct message_queue *queue = &message_queues[msgqueue_id];
 
@@ -239,12 +234,12 @@ static bool start_next_message(struct message_queue *queue, uint32_t *request_rp
 	return true;
 }
 
-static bool command_writes_serial(const struct request *request)
+static bool command_writes_serial(const union request *request)
 {
-	return command_code(request) == MSG_TYPE_SET_LAST_SERIAL;
+	return request->fields.command_code == MSG_TYPE_SET_LAST_SERIAL;
 }
 
-static void advance_serial(struct message_queue *queue, const struct request *request)
+static void advance_serial(struct message_queue *queue, const union request *request)
 {
 	if (!command_writes_serial(request)) {
 		queue->header.last_serial++; /* This just wraps. */
@@ -252,9 +247,9 @@ static void advance_serial(struct message_queue *queue, const struct request *re
 }
 
 /* Forward to process_l2_message. Nearly every message takes this path. */
-static void process_l2_message_queue(const struct request *request, struct response *response)
+static void process_l2_message_queue(const union request *request, struct response *response)
 {
-	uint32_t msg_code = command_code(request);
+	uint32_t msg_code = request->fields.command_code;
 
 	if (msg_code >= CONFIG_TT_BH_ARC_NUM_MSG_CODES || message_handlers[msg_code] == NULL) {
 		response->data[0] = MSG_ERROR_REPLY;
@@ -262,17 +257,17 @@ static void process_l2_message_queue(const struct request *request, struct respo
 	}
 
 	msgqueue_request_handler_t handler = message_handlers[msg_code];
-	uint8_t exit_code = handler(msg_code, request, response);
+	uint8_t exit_code = handler(request, response);
 
 	response->data[0] |= exit_code;
 }
 
-static void handle_set_last_serial(struct message_queue *queue, const struct request *request)
+static void handle_set_last_serial(struct message_queue *queue, const union request *request)
 {
 	queue->header.last_serial = request->data[1];
 }
 
-static void handle_test(struct message_queue *queue, const struct request *request,
+static void handle_test(struct message_queue *queue, const union request *request,
 			struct response *response)
 {
 	/* MSG_TYPE_TEST is a scratch-style message that we want to extend with extra info. */
@@ -287,10 +282,10 @@ static void report_scratch_only_message(struct response *response)
 }
 
 /* Run a single message. */
-static void process_queued_message(struct message_queue *queue, const struct request *request,
+static void process_queued_message(struct message_queue *queue, const union request *request,
 				   struct response *response)
 {
-	switch (command_code(request)) {
+	switch (request->fields.command_code) {
 	case MSG_TYPE_SET_LAST_SERIAL:
 		handle_set_last_serial(queue, request);
 		break;
@@ -314,7 +309,7 @@ static void process_message_queue(struct message_queue *queue)
 	uint32_t response_wptr;
 
 	while (start_next_message(queue, &request_rptr, &response_wptr)) {
-		struct request request = (struct request){0};
+		union request request = (union request){0};
 		struct response response = (struct response){0};
 
 		msgqueue_request_pop(queue - message_queues, &request);

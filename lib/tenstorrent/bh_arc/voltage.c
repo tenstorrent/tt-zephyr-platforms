@@ -95,8 +95,7 @@ uint8_t ForceVdd(uint32_t voltage)
 	return 0;
 }
 
-static uint8_t ForceVddHandler(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t ForceVddHandler(const union request *request, struct response *response)
 {
 	uint32_t forced_voltage = request->data[1];
 

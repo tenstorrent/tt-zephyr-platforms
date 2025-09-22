@@ -204,7 +204,7 @@ int NocInit(void)
 
 				niu_cfg_0 |= niu_cfg_0_updates;
 				WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF,
-					GetTileClkDisable(px, py));
+					  GetTileClkDisable(px, py));
 				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
 
 				uint32_t router_cfg_0 = ReadNocCfgReg(noc_regs, ROUTER_CFG(0));
@@ -281,12 +281,12 @@ static void CopyNoc0ToNoc1(const struct NocTranslation *noc0, struct NocTranslat
 	}
 }
 
-	/* https://tenstorrent.sharepoint.com/:x:/r/sites/SOC/Blackhole%20Documents/
-	 * Blackhole%20-%20NOC%20Co-ordinates.xlsx?
-	 * d=w449397eff6fc48abaed13762398c30dd&csf=1&web=1&e=G4HRZp
-	 */
-	/* X coordinate of tensix_with_l1[i][j] (for all j) and tt_eth_ss[i] */
-	static const uint8_t kTensixEthNoc0X[] = {1, 16, 2, 15, 3, 14, 4, 13, 5, 12, 6, 11, 7, 10};
+/* https://tenstorrent.sharepoint.com/:x:/r/sites/SOC/Blackhole%20Documents/
+ * Blackhole%20-%20NOC%20Co-ordinates.xlsx?
+ * d=w449397eff6fc48abaed13762398c30dd&csf=1&web=1&e=G4HRZp
+ */
+/* X coordinate of tensix_with_l1[i][j] (for all j) and tt_eth_ss[i] */
+static const uint8_t kTensixEthNoc0X[] = {1, 16, 2, 15, 3, 14, 4, 13, 5, 12, 6, 11, 7, 10};
 /* Y coordinate of l2cpu_ss_inst[i]-P1. */
 static const uint8_t kL2CpuNoc0Y[] = {3, 9, 5, 7};
 /* Y coordinates of GDDR[i] and GDDR[i+4]. Order of ports within controllers doesn't matter. */
@@ -411,8 +411,8 @@ static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned int 
  * and also the python reference code.
  */
 static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
-						   uint16_t bad_tensix_cols,
-						   uint8_t bad_gddr, uint16_t skip_eth)
+						   uint16_t bad_tensix_cols, uint8_t bad_gddr,
+						   uint16_t skip_eth)
 {
 	struct NocTranslation noc0;
 
@@ -642,8 +642,7 @@ void ClearNocTranslation(void)
 	noc_translation_enabled = false;
 }
 
-static uint8_t DebugNocTranslationHandler(uint32_t msg_code, const struct request *req,
-					  struct response *rsp)
+static uint8_t DebugNocTranslationHandler(const union request *req, struct response *rsp)
 {
 	bool enable_translation = FIELD_GET(GENMASK(8, 8), req->data[0]);
 	unsigned int pcie_instance = FIELD_GET(GENMASK(9, 9), req->data[0]);

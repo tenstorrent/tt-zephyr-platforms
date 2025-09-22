@@ -42,15 +42,27 @@ struct message_queue_header {
 	uint32_t unused_3;
 };
 
-struct request {
+/** @brief A tenstorrent host request*/
+union request {
+	/** @brief The interpretation of the request as an array of uint32_t entries*/
 	uint32_t data[REQUEST_MSG_LEN];
+	/** @brief The parsing of the message for the SMC ARC processor */
+	struct {
+		/** @brief The command code corresponding to @ref msg_type */
+		uint8_t command_code;
+
+		/** @brief Extra command data embedded in the command code word */
+		uint8_t cc_data[3];
+
+		/*TODO Add commands and their documentation here*/
+	} fields;
 };
 
 struct response {
 	uint32_t data[RESPONSE_MSG_LEN];
 };
 
-typedef uint8_t (*msgqueue_request_handler_t)(uint32_t msg_code, const struct request *req,
+typedef uint8_t (*msgqueue_request_handler_t)(const union request *req,
 					      struct response *rsp);
 
 struct msgqueue_handler {
@@ -67,8 +79,8 @@ struct msgqueue_handler {
 void process_message_queues(void);
 void msgqueue_register_handler(uint32_t msg_code, msgqueue_request_handler_t handler);
 
-int msgqueue_request_push(uint32_t msgqueue_id, const struct request *request);
-int msgqueue_request_pop(uint32_t msgqueue_id, struct request *request);
+int msgqueue_request_push(uint32_t msgqueue_id, const union request *request);
+int msgqueue_request_pop(uint32_t msgqueue_id, union request *request);
 int msgqueue_response_push(uint32_t msgqueue_id, const struct response *response);
 int msgqueue_response_pop(uint32_t msgqueue_id, struct response *response);
 void init_msgqueue(void);
