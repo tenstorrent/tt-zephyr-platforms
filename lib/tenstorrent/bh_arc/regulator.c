@@ -56,6 +56,7 @@
 #define SCRAPPY_GDDR_VDDR_FB1 1.07
 #define SCRAPPY_GDDR_VDDR_FB2 3.48
 
+/* clang-format off */
 typedef struct {
 	uint8_t reserved : 1;
 	uint8_t transition_control : 1;
@@ -64,7 +65,7 @@ typedef struct {
 	uint8_t turn_off_behaviour : 1;
 	uint8_t on_off_state : 1;
 } OperationBits;
-
+/* clang-format on */
 LOG_MODULE_REGISTER(regulator);
 
 /* The default value is the regulator default */
@@ -287,8 +288,7 @@ uint32_t RegulatorInit(PcbType board_type)
 	return aggregate_i2c_errors;
 }
 
-static uint8_t set_voltage_handler(uint32_t msg_code, const struct request *request,
-				   struct response *response)
+static uint8_t set_voltage_handler(const union request *request, struct response *response)
 {
 	uint32_t slave_addr = request->data[1];
 	uint32_t voltage_in_mv = request->data[2];
@@ -305,8 +305,7 @@ static uint8_t set_voltage_handler(uint32_t msg_code, const struct request *requ
 	}
 }
 
-static uint8_t get_voltage_handler(uint32_t msg_code, const struct request *request,
-				   struct response *response)
+static uint8_t get_voltage_handler(const union request *request, struct response *response)
 {
 	uint32_t slave_addr = request->data[1];
 
@@ -322,8 +321,7 @@ static uint8_t get_voltage_handler(uint32_t msg_code, const struct request *requ
 	}
 }
 
-static uint8_t switch_vout_control_handler(uint32_t msg_code, const struct request *request,
-					   struct response *response)
+static uint8_t switch_vout_control_handler(const union request *request, struct response *response)
 {
 	uint32_t source = request->data[1];
 
@@ -338,6 +336,7 @@ REGISTER_MESSAGE(MSG_TYPE_SWITCH_VOUT_CONTROL, switch_vout_control_handler);
 static int regulator_init(void)
 {
 	int ret;
+
 	extern STATUS_ERROR_STATUS0_reg_u error_status0;
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPC);

@@ -45,8 +45,7 @@ void SwitchClkScheme(ClockingScheme clk_scheme)
 	Wait(10); /* wait for 10 refclk cycles for aiclk to stablize */
 }
 
-uint8_t switch_clk_scheme_handler(uint32_t msg_code, const struct request *request,
-				  struct response *response)
+uint8_t switch_clk_scheme_handler(const union request *request, struct response *response)
 {
 	uint32_t clk_scheme = request->data[1];
 

@@ -55,8 +55,7 @@ RTIO_DEFINE(pvt_ctx, 16, 16);
 uint8_t buf[sizeof(struct sensor_value) * 8];
 
 /* return selected TS raw reading and temperature in telemetry format */
-static uint8_t read_ts_handler(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t read_ts_handler(const union request *request, struct response *response)
 {
 	struct sensor_value celcius;
 	const struct sensor_decoder_api *decoder;
@@ -77,8 +76,7 @@ static uint8_t read_ts_handler(uint32_t msg_code, const struct request *request,
 }
 
 /* return selected PD raw reading and frequency in telemetry format */
-static uint8_t read_pd_handler(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t read_pd_handler(const union request *request, struct response *response)
 {
 	struct sensor_value freq;
 	const struct sensor_decoder_api *decoder;
@@ -103,8 +101,7 @@ static uint8_t read_pd_handler(uint32_t msg_code, const struct request *request,
 }
 
 /* return selected VM raw reading and voltage in mV */
-static uint8_t read_vm_handler(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t read_vm_handler(const union request *request, struct response *response)
 {
 	struct sensor_value volts;
 	const struct sensor_decoder_api *decoder;

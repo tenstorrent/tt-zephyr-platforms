@@ -137,8 +137,7 @@ void init_fan_ctrl(void)
 		      K_MSEC(fan_ctrl_update_interval));
 }
 
-static uint8_t force_fan_speed(uint32_t msg_code, const struct request *request,
-			       struct response *response)
+static uint8_t force_fan_speed(const union request *request, struct response *response)
 {
 	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en) {
 		return 1;

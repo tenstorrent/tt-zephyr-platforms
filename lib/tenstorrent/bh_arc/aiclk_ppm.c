@@ -219,10 +219,9 @@ uint32_t GetAiclkTarg(void)
 	return aiclk_ppm.targ_freq;
 }
 
-static uint8_t AiclkBusyHandler(uint32_t msg_code, const struct request *request,
-				struct response *response)
+static uint8_t AiclkBusyHandler(const union request *request, struct response *response)
 {
-	if (msg_code == MSG_TYPE_AICLK_GO_BUSY) {
+	if (request->fields.command_code == MSG_TYPE_AICLK_GO_BUSY) {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmax);
 	} else {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
@@ -230,8 +229,7 @@ static uint8_t AiclkBusyHandler(uint32_t msg_code, const struct request *request
 	return 0;
 }
 
-static uint8_t ForceAiclkHandler(uint32_t msg_code, const struct request *request,
-				 struct response *response)
+static uint8_t ForceAiclkHandler(const union request *request, struct response *response)
 {
 	uint32_t forced_freq = request->data[1];
 
@@ -239,8 +237,7 @@ static uint8_t ForceAiclkHandler(uint32_t msg_code, const struct request *reques
 }
 
 /* This message returns aiclk and aiclk control mode */
-static uint8_t get_aiclk_handler(uint32_t msg_code, const struct request *request,
-				 struct response *response)
+static uint8_t get_aiclk_handler(const union request *request, struct response *response)
 {
 	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 			       &(response->data[1]));
@@ -256,10 +253,9 @@ static uint8_t get_aiclk_handler(uint32_t msg_code, const struct request *reques
 	return 0;
 }
 
-static uint8_t SweepAiclkHandler(uint32_t msg_code, const struct request *request,
-				 struct response *response)
+static uint8_t SweepAiclkHandler(const union request *request, struct response *response)
 {
-	if (msg_code == MSG_TYPE_AISWEEP_START) {
+	if (request->fields.command_code == MSG_TYPE_AISWEEP_START) {
 		if (request->data[1] == 0 || request->data[2] == 0) {
 			return 1;
 		}
