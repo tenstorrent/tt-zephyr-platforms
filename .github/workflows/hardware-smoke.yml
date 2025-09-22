@@ -250,7 +250,7 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --tag e2e \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV -p" \
             --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
             --flash-before \
             --west-flash \
@@ -266,7 +266,7 @@ jobs:
             --west-flash="--force" \
             --west-runner tt_flash \
             --device-testing -c \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV -p" \
             --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
             --flash-before \
             --outdir twister-e2e-flash
