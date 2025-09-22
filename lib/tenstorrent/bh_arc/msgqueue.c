@@ -236,7 +236,7 @@ static bool start_next_message(struct message_queue *queue, uint32_t *request_rp
 
 static bool command_writes_serial(const union request *request)
 {
-	return request->fields.command_code == MSG_TYPE_SET_LAST_SERIAL;
+	return request->command_code == MSG_TYPE_SET_LAST_SERIAL;
 }
 
 static void advance_serial(struct message_queue *queue, const union request *request)
@@ -249,7 +249,7 @@ static void advance_serial(struct message_queue *queue, const union request *req
 /* Forward to process_l2_message. Nearly every message takes this path. */
 static void process_l2_message_queue(const union request *request, struct response *response)
 {
-	uint32_t msg_code = request->fields.command_code;
+	uint32_t msg_code = request->command_code;
 
 	if (msg_code >= CONFIG_TT_BH_ARC_NUM_MSG_CODES || message_handlers[msg_code] == NULL) {
 		response->data[0] = MSG_ERROR_REPLY;
@@ -285,7 +285,7 @@ static void report_scratch_only_message(struct response *response)
 static void process_queued_message(struct message_queue *queue, const union request *request,
 				   struct response *response)
 {
-	switch (request->fields.command_code) {
+	switch (request->command_code) {
 	case MSG_TYPE_SET_LAST_SERIAL:
 		handle_set_last_serial(queue, request);
 		break;

@@ -42,30 +42,45 @@ struct message_queue_header {
 	uint32_t unused_3;
 };
 
-/** @brief Host request to force the fan speed
- * @details This message corresponds to a command code of @ref MSG_TYPE_FORCE_FAN_SPEED
+/**
+ * @defgroup tt_msg_apis Tenstorrent Host Request/Response Interface
+ * @brief Interface for handling host request and response messages between the Tenstorrent host and
+ * ARC processor.
+ *
+ * The host will send a @ref request, specifying the @ref host_request_fields_t::command_code (of
+ * type @ref msg_type) SMC firmware will parse this message and send back a @ref response.
+ *
+ * Specific types of requests are parsed via @ref host_request_fields_t and documented therein.
+ * @{
  */
+
+/** @brief Host request to force the fan speed */
 typedef struct {
-	uint32_t raw_speed; /** @brief The raw speed of the fan to set */
+	/** @brief The command code corresponding to @ref MSG_TYPE_FORCE_FAN_SPEED*/
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The raw speed of the fan to set, as a percentage from 0 to 100 */
+	uint32_t raw_speed;
 } force_fan_speed_rqst_t;
 
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
 	uint32_t data[REQUEST_MSG_LEN];
-	/** @brief The parsing of the message for the SMC ARC processor */
-	struct {
-		/** @brief The command code corresponding to @ref msg_type */
-		uint8_t command_code;
 
-		/** @brief Extra command data embedded in the command code word */
-		uint8_t cc_data[3];
-		union {
-			/** @brief A force fan speed request*/
-			force_fan_speed_rqst_t force_fan_speed;
-		};
-	} fields;
+	/** @brief The interpretation of the request as just the first byte representing command
+	 * code
+	 */
+	uint8_t command_code;
+
+	/** @brief A force fan speed request*/
+	force_fan_speed_rqst_t force_fan_speed;
 };
+
+/** @} */
 
 struct response {
 	uint32_t data[RESPONSE_MSG_LEN];

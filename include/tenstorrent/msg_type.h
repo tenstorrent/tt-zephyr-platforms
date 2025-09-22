@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * @file msg_type.h
+ * @brief Tenstorrent host command IDs
+ */
+
 #ifndef TENSTORRENT_MSG_TYPE_H_
 #define TENSTORRENT_MSG_TYPE_H_
 
@@ -11,9 +16,19 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup tt_msg_apis
+ * @{
+ */
+
+/** @brief Enumeration listing the available host requests IDs the SMC can process*/
 enum msg_type {
-	MSG_TYPE_RESERVED_01 = 0x1, /* reserved to avoid conflict with initial SCRATCH[5] value */
-	MSG_TYPE_NOP = 0x11,        /* Do nothing */
+	/** @brief Reserved*/
+	MSG_TYPE_RESERVED_01 = 0x1,
+
+	/** @brief No-op request*/
+	MSG_TYPE_NOP = 0x11,
+
 	MSG_TYPE_SET_VOLTAGE = 0x12,
 	MSG_TYPE_GET_VOLTAGE = 0x13,
 	MSG_TYPE_SWITCH_CLK_SCHEME = 0x14,
@@ -40,8 +55,9 @@ enum msg_type {
 	MSG_TYPE_AICLK_GO_LONG_IDLE = 0x54,
 	MSG_TYPE_TRIGGER_RESET =
 		0x56, /* arg: 3 = ASIC + M3 reset, other values = ASIC-only reset */
-	MSG_TYPE_RESERVED_60 =
-		0x60, /* reserved to avoid conflict with boot-time SCRATCH[5] value */
+
+	/** @brief Reserved*/
+	MSG_TYPE_RESERVED_60 = 0x60,
 	MSG_TYPE_TEST = 0x90,
 	MSG_TYPE_PCIE_DMA_CHIP_TO_HOST_TRANSFER = 0x9B,
 	MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER = 0x9C,
@@ -52,6 +68,8 @@ enum msg_type {
 	MSG_TYPE_ASIC_STATE3 = 0xA3,
 	MSG_TYPE_ASIC_STATE5 = 0xA5,
 	MSG_TYPE_GET_VOLTAGE_CURVE_FROM_FREQ = 0xA6,
+
+	/** @brief @ref force_fan_speed_rqst_t "Force Fan Speed Request"*/
 	MSG_TYPE_FORCE_FAN_SPEED = 0xAC,
 	MSG_TYPE_GET_DRAM_TEMPERATURE = 0xAD,
 	MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF,
@@ -69,6 +87,8 @@ enum msg_type {
 	MSG_TYPE_PING_DM = 0xC0,
 	MSG_TYPE_SET_WDT_TIMEOUT = 0xC1,
 };
+
+/** @} */
 
 #ifdef __cplusplus
 }
