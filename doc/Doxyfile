@@ -57,7 +57,7 @@ INLINE_SIMPLE_STRUCTS  = NO
 TYPEDEF_HIDES_STRUCT   = NO
 LOOKUP_CACHE_SIZE      = 0
 NUM_PROC_THREADS       = 1
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
 EXTRACT_PRIV_VIRTUAL   = NO
 EXTRACT_PACKAGE        = NO
@@ -152,9 +152,14 @@ HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
 HTML_STYLESHEET        =
-HTML_EXTRA_STYLESHEET  =
-HTML_EXTRA_FILES       =
-HTML_COLORSTYLE        = AUTO_LIGHT
+HTML_EXTRA_STYLESHEET  = ../../zephyr/doc/_doxygen/doxygen-awesome.css \
+                         ../../zephyr/doc/_doxygen/doxygen-awesome-sidebar-only.css \
+                         ../../zephyr/doc/_doxygen/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         ../../zephyr/doc/_doxygen/doxygen-awesome-zephyr.css
+
+HTML_EXTRA_FILES       = ../../zephyr/doc/_doxygen/doxygen-awesome-darkmode-toggle.js \
+                         ../../zephyr/doc/_doxygen/doxygen-awesome-zephyr.js
+HTML_COLORSTYLE        = LIGHT
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
 HTML_COLORSTYLE_GAMMA  = 80
@@ -185,7 +190,7 @@ QHG_LOCATION           =
 GENERATE_ECLIPSEHELP   = NO
 ECLIPSE_DOC_ID         = org.doxygen.Project
 DISABLE_INDEX          = NO
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 FULL_SIDEBAR           = NO
 ENUM_VALUES_PER_LINE   = 1
 TREEVIEW_WIDTH         = 250

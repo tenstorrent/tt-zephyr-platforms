@@ -43,14 +43,15 @@ struct message_queue_header {
 };
 
 /**
- * @defgroup tt_msg_apis Tenstorrent Host Request/Response Interface
+ * @defgroup tt_msg_apis Host Message Interface
  * @brief Interface for handling host request and response messages between the Tenstorrent host and
  * ARC processor.
  *
- * The host will send a @ref request, specifying the @ref host_request_fields_t::command_code (of
+ * The host will send a @ref request, specifying the @ref request::command_code (of
  * type @ref msg_type) SMC firmware will parse this message and send back a @ref response.
  *
- * Specific types of requests are parsed via @ref host_request_fields_t and documented therein.
+ * Specific types of requests are parsed via the union members of @ref request and documented
+ * therein.
  * @{
  */
 
