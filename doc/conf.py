@@ -32,7 +32,7 @@ extensions = [
     "zephyr.application",
 ]
 templates_path = [str(ZEPHYR_BASE / "doc/_templates")]
-exclude_patterns = ["_build_sphinx", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build_sphinx", "_doxygen/main.md", "Thumbs.db", ".DS_Store"]
 html_theme = "sphinx_rtd_theme"
 external_content_contents = [
     (TTZP / "doc", "[!_]*"),
