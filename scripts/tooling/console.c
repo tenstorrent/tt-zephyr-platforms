@@ -50,6 +50,7 @@
 
 struct console {
 	bool stop;
+	bool skip_rescan;
 	timer_t timer;
 	unsigned long timeout_rel_ms;
 
@@ -222,6 +223,7 @@ static void usage(const char *progname)
 	  "-h                 : print this help message\n"
 	  "-i <pci_device_id> : pci device id (default: %04x)\n"
 	  "-m <magic>         : vuart magic (default: %08x)\n"
+	  "-p                 : skip PCIe rescan if device not found (passive mode)\n"
 	  "-q                 : decrease debug verbosity\n"
 	  "-v                 : increase debug verbosity\n"
 	  "-w <timeout>       : wait timeout ms and exit\n",
@@ -233,7 +235,7 @@ static int parse_args(struct console *cons, int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt(argc, argv, ":a:c:d:hi:m:qt:vw:")) != -1) {
+	while ((c = getopt(argc, argv, ":a:c:d:hi:m:pqt:vw:")) != -1) {
 		switch (c) {
 		case 'a': {
 			unsigned long addr;
@@ -298,6 +300,9 @@ static int parse_args(struct console *cons, int argc, char **argv)
 			}
 			cons->vuart.magic = magic;
 		} break;
+		case 'p':
+			cons->skip_rescan = true;
+			break;
 		case 'q':
 			--verbose;
 			break;
@@ -432,6 +437,11 @@ int main(int argc, char **argv)
 
 		ret = loop(&_cons);
 		if ((ret == -ENOENT) || (ret == -ENXIO)) {
+			if (_cons.skip_rescan) {
+				I("Skipping PCIe rescan");
+				ret = 0;
+				continue;
+			}
 			/*
 			 * Lost the virtual uart connection OR it was not found in the first place.
 			 * Remove and rescan for the device if possible
