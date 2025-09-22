@@ -27,6 +27,8 @@
 #include "fan_ctrl.h"
 #include "telemetry.h"
 
+static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
 typedef struct {
 	atomic_t pending_messages;
 	uint8_t next_id_rr;
@@ -313,7 +315,8 @@ int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 		return -1;
 	}
 
-	power = sys_get_le16(data);
+	power = sys_get_le16(data) +
+		tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.additional_board_power;
 
 	return 0;
 }

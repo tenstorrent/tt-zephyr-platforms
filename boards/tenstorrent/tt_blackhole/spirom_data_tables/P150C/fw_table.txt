@@ -16,6 +16,7 @@ chip_limits {
   frequency_margin: 0
   gddr_thm_limit: 85
   board_power_limit: 450
+  additional_board_power: 20
 }
 
 feature_enable {
