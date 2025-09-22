@@ -79,7 +79,7 @@ jobs:
             --west-runner tt_flash \
             --device-testing -c \
             --device-flash-timeout 120 \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/smc_console.py \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -p" \
             --flash-before \
             --outdir twister-e2e-stress
 
@@ -112,7 +112,7 @@ jobs:
           echo "SMC RTT logs:"
           python3 ./scripts/smc_console.py --rtt -n
           echo "SMC state dump:"
-          python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
+          python3 ./scripts/dump_smc_state.py
 
   # Temporarily moved from hardware-smoke.yml until metal tests occupy less time for CI on each PR
   metal-test:
