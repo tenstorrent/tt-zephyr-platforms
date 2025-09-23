@@ -95,7 +95,7 @@ partition_layout: partitions {
 		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
 	};
 
-	bmfw: partition@14a000 {
+	bmfw: bmfw-partition@14a000 {
 		label = "bmfw";
 		reg = <0x14a000 DT_SIZE_K(512)>;
 		source = "$AUTO";
