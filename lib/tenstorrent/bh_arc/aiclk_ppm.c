@@ -219,13 +219,24 @@ uint32_t GetAiclkTarg(void)
 	return aiclk_ppm.targ_freq;
 }
 
-static uint8_t AiclkBusyHandler(const union request *request, struct response *response)
+void aiclk_set_busy(bool is_busy)
 {
-	if (request->command_code == MSG_TYPE_AICLK_GO_BUSY) {
+	if (is_busy) {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmax);
 	} else {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
 	}
+}
+
+/** @brief Handles the request to set AICLK busy or idle
+ * @param[in] request The request, of type @ref aiclk_set_speed_rqst_t, with command code
+ *	@ref MSG_TYPE_AICLK_GO_BUSY to go busy, or @ref MSG_TYPE_AICLK_GO_LONG_IDLE to go idle.
+ * @param[out] response The response to the host
+ * @return 0 for success
+ */
+static uint8_t aiclk_busy_handler(const union request *request, struct response *response)
+{
+	aiclk_set_busy(request->aiclk_set_speed.command_code == MSG_TYPE_AICLK_GO_BUSY);
 	return 0;
 }
 
@@ -268,8 +279,8 @@ static uint8_t SweepAiclkHandler(const union request *request, struct response *
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_BUSY, AiclkBusyHandler);
-REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_LONG_IDLE, AiclkBusyHandler);
+REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_BUSY, aiclk_busy_handler);
+REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_LONG_IDLE, aiclk_busy_handler);
 REGISTER_MESSAGE(MSG_TYPE_FORCE_AICLK, ForceAiclkHandler);
 REGISTER_MESSAGE(MSG_TYPE_GET_AICLK, get_aiclk_handler);
 REGISTER_MESSAGE(MSG_TYPE_AISWEEP_START, SweepAiclkHandler);

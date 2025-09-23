@@ -51,7 +51,9 @@ enum msg_type {
 	MSG_TYPE_GET_AICLK = 0x34,
 	MSG_TYPE_FORCE_VDD = 0x39,
 	MSG_TYPE_PCIE_INDEX = 0x51,
+	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Busy Speed Request"*/
 	MSG_TYPE_AICLK_GO_BUSY = 0x52,
+	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Idle Speed Request"*/
 	MSG_TYPE_AICLK_GO_LONG_IDLE = 0x54,
 	MSG_TYPE_TRIGGER_RESET =
 		0x56, /* arg: 3 = ASIC + M3 reset, other values = ASIC-only reset */
