@@ -152,7 +152,7 @@
 	pinctrl-names = "default";
 	status = "okay";
 
-	flash1: flash@0 {
+	flash1: spi-flash@0 {
 		/* base properties */
 		compatible = "jedec,spi-nor";
 		status = "okay";
@@ -173,6 +173,19 @@
 		t-enter-dpd = <3000>;
 		t-exit-dpd = <30000>;
 		jedec-id = [20 bb 20];
+
+		/*
+		 * Flash partition tools expect a nv-flash node to be
+		 * present as the parent of the partitions node.
+		 */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		nv_flash: nv-flash@0 {
+			compatible = "soc-nv-flash";
+			reg = <0 DT_SIZE_M(512)>;
+			write-block-size = <1>;
+			erase-block-size = <DT_SIZE_K(4)>;
+		};
 	};
 };
 
@@ -350,6 +363,6 @@
 	status = "okay";
 };
 
-&flash1 {
+&nv_flash {
 	#include "tt_blackhole_partitions.dtsi"
 };
