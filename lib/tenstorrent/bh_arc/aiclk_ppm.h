@@ -7,6 +7,7 @@
 #define AICLK_PPM_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum {
 	kAiclkArbMaxFmax,
@@ -26,6 +27,7 @@ typedef enum {
 	kAiclkArbMinCount,
 } AiclkArbMin;
 
+void aiclk_set_busy(bool is_busy);
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq);
 void SetAiclkArbMin(AiclkArbMin arb_min, float freq);
 void CalculateTargAiclk(void);

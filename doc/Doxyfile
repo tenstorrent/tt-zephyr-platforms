@@ -110,7 +110,8 @@ WARN_LINE_FORMAT       = "at line $line of file $file"
 WARN_LOGFILE           =
 INPUT                  = _doxygen/main.md \
                          _doxygen/groups.dox \
-                         ../include
+                         ../include \
+                         ../lib
 INPUT_ENCODING         = UTF-8
 INPUT_FILE_ENCODING    =
 FILE_PATTERNS          = *.c \

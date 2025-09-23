@@ -67,6 +67,19 @@ typedef struct {
 	uint32_t raw_speed;
 } force_fan_speed_rqst_t;
 
+/** @brief Host request to adjust the AICLK speed
+ * @details Requests of this type are processed by @ref aiclk_busy_handler
+ */
+typedef struct {
+	/** @brief The command code corresponding to @ref MSG_TYPE_AICLK_GO_BUSY or @ref
+	 * MSG_TYPE_AICLK_GO_LONG_IDLE
+	 */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+} aiclk_set_speed_rqst_t;
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -79,6 +92,9 @@ union request {
 
 	/** @brief A force fan speed request*/
 	force_fan_speed_rqst_t force_fan_speed;
+
+	/** @brief An AICLK set speed request*/
+	aiclk_set_speed_rqst_t aiclk_set_speed;
 };
 
 /** @} */
