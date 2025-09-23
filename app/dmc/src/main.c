@@ -299,6 +299,22 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 		return -EIO;
 	}
 
+	/* Test block write block read call*/
+	uint32_t test_data = 0x1234FEDC;
+
+	ret = bharc_smbus_block_write_block_read(
+		&chip->config.arc, CMFW_SMBUS_TEST_WRITE_BLOCK_READ_BLOCK, sizeof(test_data),
+		(uint8_t *)&test_data, &count, data);
+	if (ret < 0) {
+		LOG_DBG("Failed to Perform block write block read command");
+		return ret;
+	}
+	(void)memcpy(&test_data, data, sizeof(test_data));
+	if (test_data != 0x1234FEDC) {
+		LOG_DBG("Incorrect read back value: Expected 0x1234FEDC; actual:0x%08X", test_data);
+		return -EIO;
+	}
+
 	/* Record test status into scratch register */
 	ret = bharc_smbus_block_write(&chip->config.arc, 0xDD, sizeof(pass_val),
 				      (uint8_t *)&pass_val);
