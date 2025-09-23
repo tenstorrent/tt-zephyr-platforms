@@ -68,6 +68,7 @@ typedef union {
 #define MSI_CATCHER_STATUS_OFFSET 8
 #define MSI_CATCHER_STATUS_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_STATUS_OFFSET)
 
+BUILD_ASSERT(sizeof(union request) <= (sizeof(uint32_t) * REQUEST_MSG_LEN));
 typedef struct {
 	uint32_t msi_ready: 1; /* [0:0] -- FIFO can accept a push. (Out of reset and not full.) */
 	uint32_t unused: 7;
