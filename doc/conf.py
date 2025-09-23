@@ -39,6 +39,7 @@ external_content_contents = [
     (TTZP, "boards/**/*.rst"),
 ]
 
+html_logo = "img/tt_logo_stacked_color.svg"
 reference_prefix = "/tt-zephyr-platforms"
 html_context = {
     "project": project,
