@@ -54,6 +54,11 @@ static const struct device *const max6639_pwm_dev =
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
 
+/* No mechanism for getting bl version... yet */
+static dmStaticInfo static_info = {.version = 1, .bl_version = 0, .app_version = APPVERSION};
+
+static uint16_t max_power;
+
 int update_fw(void)
 {
 	/* To get here we are already running known good fw */
@@ -327,6 +332,190 @@ static int bh_chip_run_smbus_tests(struct bh_chip *chip)
 	return 0;
 }
 
+static void handle_therm_trip(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (chip->data.therm_trip_triggered) {
+			chip->data.therm_trip_triggered = false;
+
+			if (board_fault_led.port != NULL) {
+				gpio_pin_set_dt(&board_fault_led, 1);
+			}
+
+			/* hold fan at 100% until we hear otherwise from this chip */
+			chip->data.fan_speed = 100;
+			chip->data.fan_speed_forced = true;
+
+			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
+			}
+
+			/* Prioritize the system rebooting over the therm trip handler */
+			if (!atomic_get(&chip->data.trigger_reset)) {
+				/* Technically trigger_reset could have been set here but I
+				 * think I'm happy to eat the non-enum in that case
+				 */
+				chip->data.performing_reset = true;
+				/* Set the bus cancel following the logic of
+				 * (reset_triggered && !performing_reset)
+				 */
+				bh_chip_cancel_bus_transfer_clear(chip);
+
+				chip->data.therm_trip_count++;
+				bh_chip_reset_chip(chip, true);
+
+				/* Set the bus cancel following the logic of
+				 * (reset_triggered && !performing_reset)
+				 */
+				if (atomic_get(&chip->data.trigger_reset)) {
+					bh_chip_cancel_bus_transfer_set(chip);
+				}
+				chip->data.performing_reset = false;
+			}
+		}
+	}
+}
+
+static void handle_watchdog_reset(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (chip->data.arc_wdog_triggered) {
+			chip->data.arc_wdog_triggered = false;
+			/* Read PC from ARC and record it */
+			jtag_setup(chip->config.jtag);
+			jtag_reset(chip->config.jtag);
+			jtag_axi_read32(chip->config.jtag, RESET_UNIT_ARC_PC_CORE_0,
+					&chip->data.arc_hang_pc);
+			jtag_teardown(chip->config.jtag);
+			/* Clear watchdog state */
+			chip->data.auto_reset_timeout = 0;
+
+			/* hold fan at 100% until we hear otherwise from this chip */
+			chip->data.fan_speed = 100;
+			chip->data.fan_speed_forced = true;
+
+			if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+				pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
+			}
+
+			chip->data.performing_reset = true;
+			bh_chip_reset_chip(chip, true);
+			/* Clear bus transfer cancel flag */
+			bh_chip_cancel_bus_transfer_clear(chip);
+
+			chip->data.performing_reset = false;
+		}
+	}
+}
+
+static void handle_perst(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (atomic_set(&chip->data.trigger_reset, false)) {
+			chip->data.performing_reset = true;
+			/*
+			 * Set the bus cancel following the logic of (reset_triggered &&
+			 * !performing_reset)
+			 */
+			bh_chip_cancel_bus_transfer_clear(chip);
+
+			jtag_bootrom_reset_asic(chip);
+			jtag_bootrom_soft_reset_arc(chip);
+			jtag_bootrom_teardown(chip);
+
+			/*
+			 * Set the bus cancel following the logic of (reset_triggered &&
+			 * !performing_reset)
+			 */
+			if (atomic_get(&chip->data.trigger_reset)) {
+				bh_chip_cancel_bus_transfer_set(chip);
+			}
+			chip->data.therm_trip_count = 0;
+			chip->data.arc_hang_pc = 0;
+			chip->data.performing_reset = false;
+		}
+	}
+}
+
+static void handle_pgood_change(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		handle_pgood_event(chip, board_fault_led);
+	}
+}
+
+static void send_init_data(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		if (chip->data.arc_needs_init_msg) {
+			if (bh_chip_set_static_info(chip, &static_info) == 0 &&
+			    bh_chip_set_input_power_lim(chip, max_power) == 0 &&
+			    bh_chip_set_therm_trip_count(chip, chip->data.therm_trip_count) == 0 &&
+			    bh_chip_run_smbus_tests(chip) == 0) {
+				chip->data.arc_needs_init_msg = false;
+			}
+		}
+	}
+}
+
+static void board_power_update(void)
+{
+	if (IS_ENABLED(CONFIG_INA228)) {
+		ina228_power_update();
+	}
+}
+
+static void fan_rpm_feedback(void)
+{
+	if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
+		uint16_t rpm;
+		struct sensor_value data;
+
+		sensor_sample_fetch_chan(max6639_sensor_dev, MAX6639_CHAN_1_RPM);
+		sensor_channel_get(max6639_sensor_dev, MAX6639_CHAN_1_RPM, &data);
+
+		rpm = (uint16_t)data.val1;
+
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			bh_chip_set_fan_rpm(chip, rpm);
+		}
+	}
+}
+
+static void handle_cm2dm_messages(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		process_cm2dm_message(chip);
+	}
+}
+
+static void send_logs_to_smc(void)
+{
+	uint8_t *log_data;
+	int ret;
+
+	/* Pull up to 32 bytes from the ringbuf log backend */
+	ret = log_backend_ringbuf_get_claim(&log_data, 32);
+	if (ret > 0) {
+		/* Write log data to the first BH chip */
+		if (bh_chip_write_logs(&BH_CHIPS[BH_CHIP_PRIMARY_INDEX], log_data, ret) == 0) {
+			/* Only finish the claim if the write was successful */
+			log_backend_ringbuf_finish_claim(ret);
+		} else {
+			/* Otherwise, indicate we consumed 0 bytes */
+			log_backend_ringbuf_finish_claim(0);
+		}
+	}
+}
+
+static void shared_20ms_expired(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+	tt_event_post(TT_EVENT_BOARD_POWER_TO_SMC | TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_CM2DM_POLL |
+		      TT_EVENT_LOGS_TO_SMC);
+}
+static K_TIMER_DEFINE(shared_20ms_event_timer, shared_20ms_expired, NULL);
+
 int main(void)
 {
 	int ret;
@@ -443,176 +632,40 @@ int main(void)
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
 
-	/* No mechanism for getting bl version... yet */
-	dmStaticInfo static_info =
-		(dmStaticInfo){.version = 1, .bl_version = 0, .app_version = APPVERSION};
+	max_power = detect_max_power();
 
-	uint16_t max_power = detect_max_power();
+	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
 
 	while (true) {
-		tt_event_wait(TT_EVENT_WAKE, K_MSEC(20));
+		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
 
-		/* handler for therm trip */
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.therm_trip_triggered) {
-				chip->data.therm_trip_triggered = false;
+		/* These are urgent events, and gated by their own flags. */
+		handle_therm_trip();
 
-				if (board_fault_led.port != NULL) {
-					gpio_pin_set_dt(&board_fault_led, 1);
-				}
+		handle_watchdog_reset();
 
-				/* hold fan at 100% until we hear otherwise from this chip */
-				chip->data.fan_speed = 100;
-				chip->data.fan_speed_forced = true;
+		handle_perst();
 
-				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
-				}
+		handle_pgood_change();
 
-				/* Prioritize the system rebooting over the therm trip handler */
-				if (!atomic_get(&chip->data.trigger_reset)) {
-					/* Technically trigger_reset could have been set here but I
-					 * think I'm happy to eat the non-enum in that case
-					 */
-					chip->data.performing_reset = true;
-					/* Set the bus cancel following the logic of
-					 * (reset_triggered && !performing_reset)
-					 */
-					bh_chip_cancel_bus_transfer_clear(chip);
+		/* send_init_data only triggers once per chip (per reset). */
+		send_init_data();
 
-					chip->data.therm_trip_count++;
-					bh_chip_reset_chip(chip, true);
-
-					/* Set the bus cancel following the logic of
-					 * (reset_triggered && !performing_reset)
-					 */
-					if (atomic_get(&chip->data.trigger_reset)) {
-						bh_chip_cancel_bus_transfer_set(chip);
-					}
-					chip->data.performing_reset = false;
-				}
-			}
+		if (events & (TT_EVENT_BOARD_POWER_TO_SMC | TT_EVENT_WAKE)) {
+			board_power_update();
 		}
 
-		/* Handler for watchdog trigger */
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.arc_wdog_triggered) {
-				chip->data.arc_wdog_triggered = false;
-				/* Read PC from ARC and record it */
-				jtag_setup(chip->config.jtag);
-				jtag_reset(chip->config.jtag);
-				jtag_axi_read32(chip->config.jtag, RESET_UNIT_ARC_PC_CORE_0,
-						&chip->data.arc_hang_pc);
-				jtag_teardown(chip->config.jtag);
-				/* Clear watchdog state */
-				chip->data.auto_reset_timeout = 0;
-
-				/* hold fan at 100% until we hear otherwise from this chip */
-				chip->data.fan_speed = 100;
-				chip->data.fan_speed_forced = true;
-
-				if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-					pwm_set_cycles(max6639_pwm_dev, 0, UINT8_MAX, UINT8_MAX, 0);
-				}
-
-				chip->data.performing_reset = true;
-				bh_chip_reset_chip(chip, true);
-				/* Clear bus transfer cancel flag */
-				bh_chip_cancel_bus_transfer_clear(chip);
-
-				chip->data.performing_reset = false;
-			}
+		if (events & (TT_EVENT_FAN_RPM_TO_SMC | TT_EVENT_WAKE)) {
+			fan_rpm_feedback();
 		}
 
-		/* handler for PERST */
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (atomic_set(&chip->data.trigger_reset, false)) {
-				chip->data.performing_reset = true;
-				/*
-				 * Set the bus cancel following the logic of (reset_triggered &&
-				 * !performing_reset)
-				 */
-				bh_chip_cancel_bus_transfer_clear(chip);
-
-				jtag_bootrom_reset_asic(chip);
-				jtag_bootrom_soft_reset_arc(chip);
-				jtag_bootrom_teardown(chip);
-
-				/*
-				 * Set the bus cancel following the logic of (reset_triggered &&
-				 * !performing_reset)
-				 */
-				if (atomic_get(&chip->data.trigger_reset)) {
-					bh_chip_cancel_bus_transfer_set(chip);
-				}
-				chip->data.therm_trip_count = 0;
-				chip->data.arc_hang_pc = 0;
-				chip->data.performing_reset = false;
-			}
+		if (events & (TT_EVENT_CM2DM_POLL | TT_EVENT_WAKE)) {
+			handle_cm2dm_messages();
 		}
 
-		/* handler for PGOOD */
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			handle_pgood_event(chip, board_fault_led);
+		if (events & (TT_EVENT_LOGS_TO_SMC | TT_EVENT_WAKE)) {
+			send_logs_to_smc();
 		}
-
-		/* TODO(drosen): Turn this into a task which will re-arm until static data is sent
-		 */
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			if (chip->data.arc_needs_init_msg) {
-				if (bh_chip_set_static_info(chip, &static_info) == 0 &&
-				    bh_chip_set_input_power_lim(chip, max_power) == 0 &&
-				    bh_chip_set_therm_trip_count(
-					    chip, chip->data.therm_trip_count) == 0 &&
-				    bh_chip_run_smbus_tests(chip) == 0) {
-					chip->data.arc_needs_init_msg = false;
-				}
-			}
-		}
-
-		if (IS_ENABLED(CONFIG_INA228)) {
-			ina228_power_update();
-		}
-
-		if (DT_NODE_HAS_STATUS(DT_ALIAS(fan0), okay)) {
-			uint16_t rpm;
-			struct sensor_value data;
-
-			sensor_sample_fetch_chan(max6639_sensor_dev, MAX6639_CHAN_1_RPM);
-			sensor_channel_get(max6639_sensor_dev, MAX6639_CHAN_1_RPM, &data);
-
-			rpm = (uint16_t)data.val1;
-
-			ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-				bh_chip_set_fan_rpm(chip, rpm);
-			}
-		}
-
-		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
-			process_cm2dm_message(chip);
-		}
-
-		uint8_t *log_data;
-
-		/* Pull up to 32 bytes from the ringbuf log backend */
-		ret = log_backend_ringbuf_get_claim(&log_data, 32);
-		if (ret > 0) {
-			/* Write log data to the first BH chip */
-			if (bh_chip_write_logs(&BH_CHIPS[0], log_data, ret) == 0) {
-				/* Only finish the claim if the write was successful */
-				log_backend_ringbuf_finish_claim(ret);
-			} else {
-				/* Otherwise, indicate we consumed 0 bytes */
-				log_backend_ringbuf_finish_claim(0);
-			}
-		}
-
-		/*
-		 * Really only matters if running without security... but
-		 * cm should register that it is on the pcie bus and therefore can be an update
-		 * candidate. If chips that are on the bus see that an update has been requested
-		 * they can update?
-		 */
 	}
 
 	return EXIT_SUCCESS;
