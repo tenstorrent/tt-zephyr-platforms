@@ -20,3 +20,29 @@ child-binding:
     binary-path:
       type: string
       required: true
+    provisioning-only:
+      type: boolean
+      description: |
+        Set to indicate the partition is only provisioned during manufacturing
+    source:
+      type: string
+      description: |
+        Where to place the binary in flash memory. Can be an absolute address,
+        or relative to end of flash by referencing $END. If absent, the register
+        address is used to determine where the binary is placed in flash.
+        If set to $AUTO, the image will be automatically placed as close to
+        the start of flash as it will fit.
+    padto:
+      type: int
+      description: |
+        Pad the region the binary occupies to support fixed size tt_boot_fs entries.
+    executable:
+      type: boolean
+      description: |
+        Set to indicate the partition is executable. This is used to determine
+        whether the partition should be loaded into memory and executed by the
+        bootloader.
+    offset:
+      type: int
+      description: |
+        Address where the bootloader should load an executable binary within memory.
