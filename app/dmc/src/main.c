@@ -9,7 +9,6 @@
 
 #include <app_version.h>
 #include <tenstorrent/bist.h>
-#include <tenstorrent/fwupdate.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/drivers/gpio.h>
@@ -304,15 +303,6 @@ int main(void)
 {
 	int ret;
 	int bist_rc;
-
-	if (IS_ENABLED(CONFIG_TT_FWUPDATE)) {
-		/* Only try to update from the primary chip spi */
-		ret = tt_fwupdate_init(BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.flash,
-				       BH_CHIPS[BH_CHIP_PRIMARY_INDEX].config.spi_mux);
-		if (ret != 0) {
-			return ret;
-		}
-	}
 
 	bist_rc = 0;
 	if (IS_ENABLED(CONFIG_TT_BIST)) {

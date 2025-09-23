@@ -16,7 +16,6 @@ build:
 # twister settings
 samples:
   - app
-  - samples
 tests:
   - tests
 boards:
