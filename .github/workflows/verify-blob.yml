@@ -13,7 +13,7 @@ on:
       - collab*
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -29,7 +29,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{github.ref}}
           path: tt-zephyr-platforms
           fetch-depth: 0
 
