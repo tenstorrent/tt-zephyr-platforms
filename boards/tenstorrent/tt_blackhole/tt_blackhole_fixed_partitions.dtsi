@@ -78,7 +78,7 @@ partitions {
 
 	bmfw: partition@4c000 {
 		label = "bmfw";
-		reg = <0x4c000 DT_SIZE_K(64)>;
+		reg = <0x4c000 DT_SIZE_K(68)>;
 		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
 		read-only;
 	};
