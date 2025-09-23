@@ -1,0 +1,5 @@
+#include "tt_blackhole_tt_blackhole_smc.overlay"
+
+&bmfw {
+	reg = <0x4c000 DT_SIZE_K(96)>;
+};
