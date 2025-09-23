@@ -36,12 +36,25 @@
 #define MRISC_POWER_SETTING_TIMEOUT_MS 1000
 
 /* Defined by MRISC FW */
+
+/** @brief MRISC message type when no active message is signalled;
+ *  acts as a completion signal from MRISC
+ */
 #define MRISC_MSG_TYPE_NONE          0
+/** @brief MRISC message to set the phy to power down state.*/
 #define MRISC_MSG_TYPE_PHY_POWERDOWN 1
+/** @brief MRISC message to set the phy to wake up state.*/
 #define MRISC_MSG_TYPE_PHY_WAKEUP    2
+/** @brief MRISC message to run the memory test.*/
 #define MRISC_MSG_TYPE_RUN_MEMTEST   8
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
+
+/** @brief Sets the MRISC power setting for all active MRISCs
+ * @param [in] on `true` to send MRISCs the @ref MRISC_MSG_TYPE_PHY_WAKEUP command <br>
+ * `false` to send MRISCs the @ref MRISC_MSG_TYPE_PHY_POWERDOWN command
+ * @return 0 on success. Negative error code on failure.
+ */
 int32_t set_mrisc_power_setting(bool on);
 
 #endif

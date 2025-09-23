@@ -30,6 +30,7 @@ zephyr_library_sources_ifndef(
   throttler.c
   vf_curve.c
   voltage.c
+  power.c
 )
 
 zephyr_library_sources(

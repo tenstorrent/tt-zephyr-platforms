@@ -80,6 +80,44 @@ typedef struct {
 	uint8_t pad[3];
 } aiclk_set_speed_rqst_t;
 
+/** @brief Host request to adjust the power settings
+ * @details Requests of this type are processed by @ref power_setting_msg_handler
+ */
+typedef struct {
+	/** @brief The command code corresponding to @ref MSG_TYPE_POWER_SETTING*/
+	uint8_t command_code;
+
+	/** @brief The number of bits in the @ref power_flags_bitfield that are valid */
+	uint8_t power_flags_valid: 4;
+
+	/** @brief The number of fields that are valid in the @ref power_settings_array */
+	uint8_t power_settings_valid: 4;
+
+	/** @brief The list of On/Off style power flags SMC supports toggling */
+	struct {
+		/** @brief 1 - @ref aiclk_set_busy "Set AICLK to Busy" <br>
+		 *  0 - @ref aiclk_set_busy "Set AICLK to Idle"
+		 */
+		uint16_t max_ai_clk: 1;
+
+		/** @brief 1 - @ref set_mrisc_power_setting "Set MRISC power setting to Phy wakeup"
+		 * <br> 0 - @ref set_mrisc_power_setting "Set MRISC power setting to Phy Powerdown"
+		 */
+		uint16_t mrisc_phy_power: 1;
+
+		/** @brief Future use flags currently not supported*/
+		uint16_t future_use: 13;
+
+		/** @brief Reserved*/
+		uint16_t reserved: 1;
+	} power_flags_bitfield;
+
+	struct {
+		/** @brief Future use settings currently not supported by SMC*/
+		uint16_t future_use[14];
+	} power_settings_array;
+} power_setting_rqst_t;
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -95,6 +133,9 @@ union request {
 
 	/** @brief An AICLK set speed request*/
 	aiclk_set_speed_rqst_t aiclk_set_speed;
+
+	/** @brief A power setting request*/
+	power_setting_rqst_t power_setting;
 };
 
 /** @} */
