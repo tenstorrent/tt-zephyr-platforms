@@ -469,7 +469,7 @@ Samples:
   # Maintainer needed!
   status: odd fixes
   files:
-    - samples/
+    # - samples/
     - test-conf/samples/
   labels:
     - "area: Samples"
