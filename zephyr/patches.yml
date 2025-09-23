@@ -250,3 +250,11 @@ patches:
       Add support for a failure_script parameter to twister. This script will be executed
       whenever a test fails, allowing for custom failure handling such as
       dumping logs, resetting hardware, etc.
+  - path: zephyr/stm32-bwbr.patch
+    sha256sum: 1c5f0cfe4e39b57f28bc5501e8c7a1e759765887de55fea03f21eec7e322f5d1
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-09-18
+    comments: |
+      Add support for BWBR smbus32 pcalls
