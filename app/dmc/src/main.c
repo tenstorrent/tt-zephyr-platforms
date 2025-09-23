@@ -24,6 +24,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/dfu/mcuboot.h>
 
 #include <tenstorrent/bh_chip.h>
 #include <tenstorrent/bh_arc.h>
@@ -627,6 +628,15 @@ int main(void)
 				LOG_ERR("%s() failed: %d", "tt_fwupdate_confirm", ret);
 				return EXIT_FAILURE;
 			}
+		}
+	} else {
+		if (bist_rc == 0 && !boot_is_img_confirmed()) {
+			ret = boot_write_img_confirmed();
+			if (ret < 0) {
+				LOG_DBG("%s() failed: %d", "boot_write_img_confirmed", ret);
+				return ret;
+			}
+			LOG_INF("Firmware update is confirmed.");
 		}
 	}
 
