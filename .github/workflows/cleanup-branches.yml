@@ -24,7 +24,7 @@ jobs:
           for branch in $ALL_BRANCHES; do
             echo -n "Found branch $branch..."
 
-            if [[ "$branch" == "main" || "$branch" =~ ^v.*-branch$ ]]; then
+            if [[ "$branch" == "main" || "$branch" =~ ^v.*-branch$ || "$branch" =~ ^collab.* ]]; then
               echo -e "  \033[32mSkipping\033[0m"
               continue
             fi
