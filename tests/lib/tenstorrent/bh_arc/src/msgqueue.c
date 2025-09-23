@@ -31,4 +31,22 @@ ZTEST(msgqueue, test_msgqueue_register_handler)
 	zassert_equal(rsp.data[1], 0x73737373);
 }
 
+ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* LSB to MSB:
+	 * 0x21: MSG_TYPE_POWER_SETTING
+	 * 0x02: 2 power flags valid, 0 power settings valid
+	 * 0x0003: max_ai_clk on, mrisc power on
+	 */
+	req.data[0] = 0x00030221;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0x0);
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, NULL, NULL, NULL);
