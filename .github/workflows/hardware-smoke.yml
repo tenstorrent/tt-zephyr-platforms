@@ -51,6 +51,11 @@ jobs:
         with:
           path: tt-zephyr-platforms
 
+      - name: Log state
+        run: |
+          echo ${{ github.sha }}
+          echo ${{ github.ref }}
+
       - name: Prepare Container
         uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
