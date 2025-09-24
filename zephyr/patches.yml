@@ -219,6 +219,10 @@ patches:
     author: James Growden
     email: jgrowden@tenstorrent.com
     date: 2025-08-18
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/95657
+    merge-status: true
+    merge-date: 2025-09-10
     comments: |
       Corrections for the i2c_dw implementation for target operation.
 
