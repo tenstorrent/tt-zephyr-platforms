@@ -1,0 +1,25 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Tenstorrent STM32 Family flash controller wrapper. Required to fake
+  the flash page size to 4KB for MCUs with 2K pages.
+
+compatible: "tenstorrent,stm32-flash-wrapper"
+
+include: [flash-controller.yaml, soc-nv-flash.yaml]
+
+properties:
+  flash-device:
+    type: phandle
+    description: |
+      This property should point to an instance of a flash controller
+      compatible with "st,stm32-flash-controller".
+    required: true
+  page-size:
+    type: int
+    description: |
+      This property defines the flash page size in bytes. The driver
+      will report this value instead of the one provided by the
+      underlying flash controller.
+    required: true
