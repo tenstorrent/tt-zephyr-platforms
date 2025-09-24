@@ -25,7 +25,7 @@ on:
       - collab*
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 # TODO: read boards / board revs from a YAML file (generate a matrix)
