@@ -87,19 +87,10 @@ def launched_arc_dut(unlaunched_dut: DeviceAdapter):
     return unlaunched_dut
 
 
-@pytest.fixture()
-def arc_chip_dut(launched_arc_dut, asic_id):
-    """
-    This fixture returns the Zephyr DUT once the ARC chip is ready. Otherwise, it
-    raises a runtime error.
-
-    We use this approach rather than providing a reference to the pyluwen
-    chip directly because tests may need to delete chip objects after they
-    reset the ARC chip to induce pyluwen to close open file descriptors
-    """
+def wait_arc_boot(asic_id, timeout=15):
     start = time.time()
     # Attempt to detect the ARC chip for 15 seconds
-    timeout = 15
+    timeout = timeout
     while True:
         try:
             chips = pyluwen.detect_chips()
@@ -132,8 +123,21 @@ def arc_chip_dut(launched_arc_dut, asic_id):
     assert (status & 0xFFFF) >= 0x1D, "SMC firmware boot failed"
     # Remove references to chip objects so pyluwen will close file descriptors.
     # Otherwise these may become stale when SMC resets.
-    del chips
-    del chip
+    return chips[asic_id]
+
+
+@pytest.fixture()
+def arc_chip_dut(launched_arc_dut, asic_id):
+    """
+    This fixture returns the Zephyr DUT once the ARC chip is ready. Otherwise, it
+    raises a runtime error.
+
+    We use this approach rather than providing a reference to the pyluwen
+    chip directly because tests may need to delete chip objects after they
+    reset the ARC chip to induce pyluwen to close open file descriptors
+    """
+    chip = wait_arc_boot(asic_id, timeout=15)
+    del chip  # So we don't hold stale file descriptors
     return launched_arc_dut
 
 
