@@ -238,6 +238,10 @@
 		/* max_current / (2^19) */
 		current-lsb-microamps = <210>;
 		rshunt-micro-ohms = <1000>;
+		vbus-conversion-time-us = <50>;
+		vshunt-conversion-time-us = <50>;
+		temp-conversion-time-us = <50>;
+		adc-mode = "Bus and shunt voltage continuous";
 	};
 
 	max6639: max6639@2c {
