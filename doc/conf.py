@@ -39,11 +39,11 @@ external_content_contents = [
     (TTZP, "boards/**/*.rst"),
 ]
 
+reference_prefix = "/tt-zephyr-platforms"
 html_context = {
     "project": project,
-    "reference_links": {"API": "doxygen/index.html"},
+    "reference_links": {"API": f"{reference_prefix}/doxygen/index.html"},
 }
-
 
 intersphinx_mapping = {"zephyr": ("https://docs.zephyrproject.org/latest/", None)}
 source_suffix = {
