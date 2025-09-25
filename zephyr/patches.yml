@@ -190,6 +190,8 @@ patches:
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2025-07-24
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96516
     comments: |
       Implement smbus_block_read for smbus_stm32
   - path: zephyr/smbus-cancel.patch
