@@ -262,7 +262,7 @@ static int pcie_rescan_ioctl(const char *tt_dev_name)
 
 	fd = open(tt_dev_name, O_RDWR);
 	if (fd < 0) {
-		E("Failed to open device %s: %s", tt_dev_name, strerror(errno));
+		E_RL(1000, "Failed to open device %s: %s", tt_dev_name, strerror(errno));
 		return -errno;
 	}
 
