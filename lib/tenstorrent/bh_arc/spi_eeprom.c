@@ -17,6 +17,7 @@
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/drivers/mspi.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 
@@ -28,6 +29,8 @@
 #define SSI_RX_DLY_SR_DEPTH            64
 #define SPI_RX_SAMPLE_DELAY_TRAIN_ADDR 0x13FFC
 #define SPI_RX_SAMPLE_DELAY_TRAIN_DATA 0xA5A55A5A
+
+LOG_MODULE_REGISTER(spi_eeprom, CONFIG_TT_APP_LOG_LEVEL);
 
 /* Temporary buffer to hold SPI page */
 static uint8_t spi_page_buf[SPI_BUFFER_SIZE];
@@ -49,11 +52,18 @@ static void EepromSetup(void)
 
 static int SpiBlockRead(uint32_t spi_address, uint32_t num_bytes, uint8_t *dest)
 {
+	int rc;
+
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
+		LOG_ERR("Flash device not ready");
 		return -ENODEV;
 	}
-	return flash_read(flash, spi_address, dest, num_bytes);
+	rc = flash_read(flash, spi_address, dest, num_bytes);
+	if (rc < 0) {
+		LOG_ERR("%s failed %sat 0x%08x: %d", "Flash read", "", spi_address, rc);
+	}
+	return rc;
 }
 
 /* automatically erases sectors and merges incoming data with existing data as needed */
@@ -71,6 +81,7 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 	chunk_size = MIN((ROUND_UP((address + 1), sector_size) - address), num_bytes);
 	rc = flash_read(flash, addr, spi_page_buf, sector_size);
 	if (rc < 0) {
+		LOG_ERR("%s failed %sat 0x%08x: %d", "Flash read", "[phase 1] ", addr, rc);
 		return rc;
 	}
 	if (memcmp(&spi_page_buf[address - addr], data, chunk_size) != 0) {
@@ -78,10 +89,12 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 		memcpy(&spi_page_buf[address - addr], data, chunk_size);
 		rc = flash_erase(flash, addr, sector_size);
 		if (rc < 0) {
+			LOG_ERR("%s failed %sat 0x%08x: %d", "Flash erase", "[phase 1] ", addr, rc);
 			return rc;
 		}
 		rc = flash_write(flash, addr, spi_page_buf, sector_size);
 		if (rc < 0) {
+			LOG_ERR("%s failed %sat 0x%08x: %d", "Flash write", "[phase 1] ", addr, rc);
 			return rc;
 		}
 	}
@@ -94,16 +107,21 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 
 		rc = flash_read(flash, addr, spi_page_buf, sector_size);
 		if (rc < 0) {
+			LOG_ERR("%s failed %sat 0x%08x: %d", "Flash read", "[phase 2] ", addr, rc);
 			return rc;
 		}
 		if (memcmp(spi_page_buf, data, MIN(sector_size, sizeof(spi_page_buf))) != 0) {
 			/* Write this block */
 			rc = flash_erase(flash, addr, sector_size);
 			if (rc < 0) {
+				LOG_ERR("%s failed %sat 0x%08x: %d", "Flash erase", "[phase 2] ",
+					addr, rc);
 				return rc;
 			}
 			rc = flash_write(flash, addr, data, sector_size);
 			if (rc < 0) {
+				LOG_ERR("%s failed %sat 0x%08x: %d", "Flash write", "[phase 2] ",
+					addr, rc);
 				return rc;
 			}
 		}
@@ -121,6 +139,7 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 	chunk_size = num_bytes;
 	rc = flash_read(flash, addr, spi_page_buf, sector_size);
 	if (rc < 0) {
+		LOG_ERR("%s failed %sat 0x%08x: %d", "Flash read", "[phase 3] ", addr, rc);
 		return rc;
 	}
 	if (memcmp(spi_page_buf, data, chunk_size) != 0) {
@@ -128,10 +147,12 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 		memcpy(spi_page_buf, data, chunk_size);
 		rc = flash_erase(flash, addr, sector_size);
 		if (rc < 0) {
+			LOG_ERR("%s failed %sat 0x%08x: %d", "Flash erase", "[phase 3] ", addr, rc);
 			return rc;
 		}
 		rc = flash_write(flash, addr, spi_page_buf, sector_size);
 		if (rc < 0) {
+			LOG_ERR("%s failed %sat 0x%08x: %d", "Flash write", "[phase 3] ", addr, rc);
 			return rc;
 		}
 	}
