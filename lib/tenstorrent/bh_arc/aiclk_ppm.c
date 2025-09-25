@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>

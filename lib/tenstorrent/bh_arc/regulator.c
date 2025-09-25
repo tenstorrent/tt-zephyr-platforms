@@ -15,7 +15,7 @@
 #include <float.h> /* for FLT_MAX */
 #include <stdint.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
@@ -61,6 +61,7 @@ typedef struct {
 	uint8_t reserved : 1;
 	uint8_t transition_control : 1;
 	uint8_t margin_fault_response : 2;
+
 	VoltageCmdSource voltage_command_source : 2;
 	uint8_t turn_off_behaviour : 1;
 	uint8_t on_off_state : 1;

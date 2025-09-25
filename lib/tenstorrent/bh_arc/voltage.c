@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/sys/util.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "voltage.h"

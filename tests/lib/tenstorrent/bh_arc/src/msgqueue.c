@@ -6,7 +6,7 @@
 
 #include <zephyr/ztest.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
 static uint8_t msgqueue_handler_73(const union request *req, struct response *rsp)

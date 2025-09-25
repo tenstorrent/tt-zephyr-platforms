@@ -7,7 +7,7 @@
 #include "clock_wave.h"
 
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "timer.h"
