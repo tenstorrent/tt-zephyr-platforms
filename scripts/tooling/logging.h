@@ -36,6 +36,8 @@ extern int verbose;
 
 #define E(fmt, ...) _log(stderr, "E: %s(): " fmt, __func__, ##__VA_ARGS__)
 
+#define W(fmt, ...) _log(stderr, "W: %s(): " fmt, __func__, ##__VA_ARGS__)
+
 #define I(fmt, ...)                                                                                \
 	if (verbose >= 0) {                                                                        \
 		_log(stdout, fmt, ##__VA_ARGS__);                                                  \
@@ -47,6 +49,8 @@ extern int verbose;
 	}
 
 #define E_RL(msec, fmt, ...) _log_rl((msec), stderr, "E: %s(): " fmt, __func__, ##__VA_ARGS__);
+
+#define W_RL(msec, fmt, ...) _log_rl((msec), stderr, "W: %s(): " fmt, __func__, ##__VA_ARGS__);
 
 #define I_RL(msec, fmt, ...) _log_rl((msec), stdout, fmt, __func__, ##__VA_ARGS__);
 
