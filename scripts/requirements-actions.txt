@@ -320,6 +320,10 @@ docutils==0.19 \
     --hash=sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6 \
     --hash=sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc
     # via awscli
+dotfiles==0.6.5 \
+    --hash=sha256:368ccb6f7c724086cbc575078549a3a591d9f980ef070b609fbffd349518c86b \
+    --hash=sha256:7e47bc94d8f262db3a708ace34015de6bdb0025a56a8985dfaeb0500f08ee49e
+    # via -r scripts/requirements-actions.in
 elastic-transport==8.17.1 \
     --hash=sha256:192718f498f1d10c5e9aa8b9cf32aed405e469a7f0e9d6a8923431dbb2c59fb8 \
     --hash=sha256:5edef32ac864dca8e2f0a613ef63491ee8d6b8cfb52881fa7313ba9290cac6d2
