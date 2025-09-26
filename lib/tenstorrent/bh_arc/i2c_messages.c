@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include "dw_apb_i2c.h"
 

@@ -5,12 +5,12 @@
  */
 
 /**
- * @file msg_type.h
+ * @file tt_arc_msg_type.h
  * @brief Tenstorrent host command IDs
  */
 
-#ifndef TENSTORRENT_MSG_TYPE_H_
-#define TENSTORRENT_MSG_TYPE_H_
+#ifndef TT_ARC_MSG_TYPE_H_
+#define TT_ARC_MSG_TYPE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,8 +21,8 @@ extern "C" {
  * @{
  */
 
-/** @brief Enumeration listing the available host requests IDs the SMC can process*/
-enum msg_type {
+/** @brief Enumeration listing the available host request IDs the SMC can process*/
+enum tt_arc_msg_type {
 	/** @brief Reserved*/
 	MSG_TYPE_RESERVED_01 = 0x1,
 

@@ -14,7 +14,7 @@
 #include "harvesting.h"
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>

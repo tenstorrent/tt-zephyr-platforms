@@ -10,7 +10,7 @@
 
 #include <float.h> /* for FLT_MAX */
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/tt_arc_msg_type.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
