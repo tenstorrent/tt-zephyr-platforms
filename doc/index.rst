@@ -11,6 +11,7 @@ Welcome to TT Zephyr Platforms!
    services/index.rst
    boards/index.rst
    release/index.rst
+   contribute/index.rst
    zephyr.rst
 
 Indices and tables
