@@ -23,7 +23,7 @@ enum power_settings_e {
 	power_settings_max
 };
 
-static int32_t apply_power_settings(const power_setting_rqst_t *power_setting)
+static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
 	int32_t ret = 0;
 
@@ -46,7 +46,7 @@ static int32_t apply_power_settings(const power_setting_rqst_t *power_setting)
  */
 static uint8_t power_setting_msg_handler(const union request *request, struct response *response)
 {
-	const power_setting_rqst_t *power_setting = &request->power_setting;
+	const struct power_setting_rqst *power_setting = &request->power_setting;
 
 	apply_power_settings(power_setting);
 

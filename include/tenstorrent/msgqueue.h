@@ -56,7 +56,7 @@ struct message_queue_header {
  */
 
 /** @brief Host request to force the fan speed */
-typedef struct {
+struct force_fan_speed_rqst {
 	/** @brief The command code corresponding to @ref MSG_TYPE_FORCE_FAN_SPEED*/
 	uint8_t command_code;
 
@@ -65,12 +65,12 @@ typedef struct {
 
 	/** @brief The raw speed of the fan to set, as a percentage from 0 to 100 */
 	uint32_t raw_speed;
-} force_fan_speed_rqst_t;
+};
 
 /** @brief Host request to adjust the AICLK speed
  * @details Requests of this type are processed by @ref aiclk_busy_handler
  */
-typedef struct {
+struct aiclk_set_speed_rqst {
 	/** @brief The command code corresponding to @ref MSG_TYPE_AICLK_GO_BUSY or @ref
 	 * MSG_TYPE_AICLK_GO_LONG_IDLE
 	 */
@@ -78,12 +78,12 @@ typedef struct {
 
 	/** @brief Three bytes of padding */
 	uint8_t pad[3];
-} aiclk_set_speed_rqst_t;
+};
 
 /** @brief Host request to adjust the power settings
  * @details Requests of this type are processed by @ref power_setting_msg_handler
  */
-typedef struct {
+struct power_setting_rqst {
 	/** @brief The command code corresponding to @ref MSG_TYPE_POWER_SETTING*/
 	uint8_t command_code;
 
@@ -116,7 +116,7 @@ typedef struct {
 		/** @brief Future use settings currently not supported by SMC*/
 		uint16_t future_use[14];
 	} power_settings_array;
-} power_setting_rqst_t;
+};
 
 /** @brief A tenstorrent host request*/
 union request {
@@ -129,13 +129,13 @@ union request {
 	uint8_t command_code;
 
 	/** @brief A force fan speed request*/
-	force_fan_speed_rqst_t force_fan_speed;
+	struct force_fan_speed_rqst force_fan_speed;
 
 	/** @brief An AICLK set speed request*/
-	aiclk_set_speed_rqst_t aiclk_set_speed;
+	struct aiclk_set_speed_rqst aiclk_set_speed;
 
 	/** @brief A power setting request*/
-	power_setting_rqst_t power_setting;
+	struct power_setting_rqst power_setting;
 };
 
 /** @} */
