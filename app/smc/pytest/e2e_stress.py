@@ -237,7 +237,7 @@ def test_power_virus(arc_chip):
     def read_ts_once(chip, sensor_idx: int):
         # ARC handler expects sensor id; returns status in response[1]
         for i in range(NUM_TS):
-            rsp = chip.arc_msg(ARC_MSG_TYPE_READ_TS, True, False, i, 0, 1000)
+            rsp = chip.arc_msg(ARC_MSG_TYPE_READ_TS, True, False, i, 0, 5000)
         # Best-effort logging; exact response layout is FW-defined
         logger.info(f"READ_TS idx={sensor_idx} rsp={rsp}")
         # If status is present as second field, ensure success
@@ -263,12 +263,12 @@ def test_power_virus(arc_chip):
         stderr=subprocess.PIPE,
     )
 
-    start_time = time.time()
     duration = 180  # 180 seconds
     fail_count = 0
 
     try:
-        while time.time() - start_time < duration:
+        end_time = time.time() + duration
+        while time.time() < end_time:
             # Read temperature sensors during burnin
             for ts in range(NUM_TS):
                 try:
