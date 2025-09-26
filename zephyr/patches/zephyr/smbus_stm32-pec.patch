@@ -1,11 +1,11 @@
 diff --git a/drivers/smbus/Kconfig b/drivers/smbus/Kconfig
-index a81b239e444..f07bcb72718 100644
+index 66ca5df627d..a589735c00a 100644
 --- a/drivers/smbus/Kconfig
 +++ b/drivers/smbus/Kconfig
-@@ -82,6 +82,7 @@ menuconfig SMBUS_STM32
- 	default y
+@@ -83,6 +83,7 @@ menuconfig SMBUS_STM32
  	depends on DT_HAS_ST_STM32_SMBUS_ENABLED
  	depends on I2C_STM32
+ 	select PINCTRL
 +	select CRC
  	help
  	  Enable STM32 SMBus driver.

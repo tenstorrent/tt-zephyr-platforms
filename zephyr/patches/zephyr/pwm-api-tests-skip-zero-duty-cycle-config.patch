@@ -1,15 +1,3 @@
-diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index cf144fcaff4..f5fc1b2e5f3 100755
---- a/scripts/ci/check_compliance.py
-+++ b/scripts/ci/check_compliance.py
-@@ -1245,6 +1245,7 @@ flagged.
-         "SHIFT",
-         "SINGLE_APPLICATION_SLOT", # Used in sysbuild for MCUboot configuration
-         "SINGLE_APPLICATION_SLOT_RAM_LOAD", # Used in sysbuild for MCUboot configuration
-+        "SKIP_ZERO_DUTY_CYCLE_TEST",
-         "SOC_SDKNG_UNSUPPORTED", # Used in modules/hal_nxp/mcux/CMakeLists.txt
-         "SOC_SERIES_", # Used as regex in scripts/utils/board_v1_to_v2.py
-         "SOC_WATCH",  # Issue 13749
 diff --git a/tests/drivers/pwm/pwm_api/Kconfig b/tests/drivers/pwm/pwm_api/Kconfig
 new file mode 100644
 index 00000000000..c538b26dfe0

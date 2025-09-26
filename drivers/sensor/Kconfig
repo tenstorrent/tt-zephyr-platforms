@@ -8,7 +8,6 @@ menu "Sensor Drivers"
 # zephyr-keep-sorted-start
 rsource "maxim/Kconfig"
 rsource "tenstorrent/Kconfig"
-rsource "ti/Kconfig"
 # zephyr-keep-sorted-stop
 
 endmenu

@@ -1,9 +1,9 @@
 diff --git a/kernel/init.c b/kernel/init.c
-index dd9f3d7258f..4e338a6e599 100644
+index a758c16ee0e..9fe4cf5c791 100644
 --- a/kernel/init.c
 +++ b/kernel/init.c
-@@ -337,6 +337,8 @@ static int do_device_init(const struct device *dev)
- 	return rc;
+@@ -206,6 +206,8 @@ static void z_device_state_init(void)
+ 	}
  }
  
 +__weak int tt_init_status;
@@ -11,7 +11,7 @@ index dd9f3d7258f..4e338a6e599 100644
  /**
   * @brief Execute all the init entry initialization functions at a given level
   *
-@@ -376,6 +378,9 @@ static void z_sys_init_run_level(enum init_level level)
+@@ -245,6 +247,9 @@ static void z_sys_init_run_level(enum init_level level)
  		} else {
  			result = entry->init_fn();
  		}

@@ -1,26 +1,26 @@
 diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index d7eb670022e..b816be6567b 100755
+index 13a2b4839e9..99aeda03600 100755
 --- a/scripts/ci/check_compliance.py
 +++ b/scripts/ci/check_compliance.py
 @@ -291,7 +291,7 @@ class CheckPatch(ComplianceTest):
              cmd = [checkpatch]
  
          cmd.extend(['--mailback', '--no-tree', '-'])
--        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE),
-+        diff = subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE, '--', ':!*.diff', ':!*.patch'),
+-        with subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE),
++        with subprocess.Popen(('git', 'diff', '--no-ext-diff', COMMIT_RANGE, '--', ':!*.diff', ':!*.patch'),
                                  stdout=subprocess.PIPE,
-                                 cwd=GIT_TOP)
-         try:
-@@ -900,7 +900,7 @@ Found disallowed Kconfig symbol in SoC Kconfig files: {sym_name:35}
+                                 cwd=GIT_TOP) as diff:
+             try:
+@@ -742,7 +742,7 @@ class KconfigCheck(ComplianceTest):
  
-         # Grep samples/ and tests/ for symbol definitions
-         grep_stdout = git("grep", "-I", "-h", "--perl-regexp", regex, "--",
--                          ":samples", ":tests", cwd=ZEPHYR_BASE)
-+                          ":samples", ":tests", cwd=Path(GIT_TOP))
+         # Use hard coded paths for Zephyr for tests, samples and ext. module root
+         tmp_output = git("grep", "-I", "-h", "--perl-regexp", regex, "--", ":tests", ":samples",
+-                         ":modules", cwd=ZEPHYR_BASE, ignore_non_zero=True)
++                         ":modules", cwd=Path(GIT_TOP), ignore_non_zero=True)
  
-         # Generate combined list of configs and choices from the main Kconfig tree.
-         kconf_syms = kconf.unique_defined_syms + kconf.unique_choices
-@@ -1185,6 +1185,7 @@ flagged.
+         if len(tmp_output) > 0:
+             kconfigs += tmp_output + "\n"
+@@ -1255,6 +1255,7 @@ flagged.
          "CRC",  # Used in TI CC13x2 / CC26x2 SDK comment
          "DEEP_SLEEP",  # #defined by RV32M1 in ext/
          "DESCRIPTION",
@@ -28,7 +28,23 @@ index d7eb670022e..b816be6567b 100755
          "ERR",
          "ESP_DIF_LIBRARY",  # Referenced in CMake comment
          "EXPERIMENTAL",
-@@ -1330,6 +1332,7 @@ class SysbuildKconfigCheck(KconfigCheck):
+@@ -1276,6 +1277,7 @@ flagged.
+         "IAR_LIBCPP",
+         "IAR_SEMIHOSTING",
+         "IAR_ZEPHYR_INIT",
++        "INA2XX",
+         "IPC_SERVICE_ICMSG_BOND_NOTIFY_REPEAT_TO_MS", # Used in ICMsg tests for intercompatibility
+                                                       # with older versions of the ICMsg.
+         "LIBGCC_RTLIB",
+@@ -1322,6 +1324,7 @@ flagged.
+         "SHIFT",
+         "SINGLE_APPLICATION_SLOT", # Used in sysbuild for MCUboot configuration
+         "SINGLE_APPLICATION_SLOT_RAM_LOAD", # Used in sysbuild for MCUboot configuration
++        "SKIP_ZERO_DUTY_CYCLE_TEST",
+         "SOC_SDKNG_UNSUPPORTED", # Used in modules/hal_nxp/mcux/CMakeLists.txt
+         "SOC_SERIES_", # Used as regex in scripts/utils/board_v1_to_v2.py
+         "SOC_WATCH",  # Issue 13749
+@@ -1412,6 +1415,7 @@ class SysbuildKconfigCheck(KconfigCheck):
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
          # zephyr-keep-sorted-start re(^\s+")
@@ -36,7 +52,38 @@ index d7eb670022e..b816be6567b 100755
          "FOO",
          "MY_IMAGE", # Used in sysbuild documentation as example
          "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example
-@@ -1856,6 +1859,11 @@ class KeepSorted(ComplianceTest):
+@@ -1582,17 +1586,25 @@ class LicenseAndCopyrightCheck(ComplianceTest):
+             self.fmtd_failure(severity, title, rel_path, desc=desc or "", line=1)
+ 
+     def run(self) -> None:
+-        changed_files = get_files(filter="d")
+-        if not changed_files:
+-            return
++        changed_files = set()
+ 
+         # Only scan text files for now, in the future we may want to leverage REUSE standard's
+         # ability to also associate license/copyright info with binary files.
+-        for file in changed_files:
++        for file in get_files(filter="d"):
++            skip_exts = {".diff", ".in", ".patch", ".yaml", ".yml"}
++            _, ext = os.path.splitext(file)
++            if ext in skip_exts:
++                continue
++
+             full_path = GIT_TOP / file
+             mime_type = magic.from_file(os.fspath(full_path), mime=True)
+             if not mime_type.startswith("text/"):
+-                changed_files.remove(file)
++                continue
++
++            changed_files.add(full_path)
++
++        if not changed_files:
++            return
+ 
+         project = Project.from_directory(GIT_TOP)
+         report = ProjectSubsetReport.generate(project, changed_files, multiprocessing=False)
+@@ -2017,6 +2029,11 @@ class KeepSorted(ComplianceTest):
          if not mime_type.startswith("text/"):
              return
  
@@ -48,15 +95,3 @@ index d7eb670022e..b816be6567b 100755
          block_data = ""
          in_block = False
  
-diff --git a/dts/bindings/vendor-prefixes.txt b/dts/bindings/vendor-prefixes.txt
-index c6874ab32de..0ec86e8807b 100644
---- a/dts/bindings/vendor-prefixes.txt
-+++ b/dts/bindings/vendor-prefixes.txt
-@@ -680,6 +680,7 @@ techstar	Shenzhen Techstar Electronics Co., Ltd.
- telink	Telink Semiconductor
- telit	Telit Cinterion
- tempo	Tempo Semiconductor
-+tenstorrent	Tenstorrent AI ULC
- terasic	Terasic Inc.
- tfc	Three Five Corp
- thine	THine Electronics, Inc.

@@ -72,7 +72,8 @@ runs:
         west forall -c 'git reset --hard HEAD'
         west patch clean
 
-        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat zephyr/SDK_VERSION )" >> $GITHUB_ENV
+        # FIXME: use zephyr/SDK_VERSION when it matches with the installed SDK version
+        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-0.17.2" >> $GITHUB_ENV
 
     - name: Install Zephyr SDK CMake package
       shell: bash
