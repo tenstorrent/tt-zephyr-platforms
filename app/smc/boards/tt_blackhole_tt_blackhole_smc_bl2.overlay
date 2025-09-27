@@ -1,0 +1,21 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "tt_blackhole_tt_blackhole_smc.overlay"
+#include "../../boards/tenstorrent/tt_blackhole/tt_blackhole_partitions_bl2.dtsi"
+
+/*
+ * MCUBoot expects a slot0_partition to be defined, but we can't actually
+ * access the internal DMC flash from the SMC, so we define a dummy partition here
+ */
+slot0_partition: &failover { };
+
+/ {
+	chosen {
+		/* Currently not used, as SMC does not use MCUBoot */
+		zephyr,code-partition = &cmfw;
+	};
+};

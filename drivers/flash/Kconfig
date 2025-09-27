@@ -9,6 +9,16 @@ menu "Flash drivers"
 rsource "Kconfig.mspi"
 # zephyr-keep-sorted-stop
 
+config FLASH_TT_STM32_WRAPPER
+	bool "Tenstorrent STM32 Flash Wrapper"
+	default y
+	select SOC_FLASH_STM32
+	depends on DT_HAS_TENSTORRENT_STM32_FLASH_WRAPPER_ENABLED
+	help
+	  Support for Tenstorrent STM32 Flash Wrapper driver.
+	  This is a wrapper around the standard STM32 flash driver
+	  that fakes the flash page size to 4KB for MCUs with 2K pages.
+
 endmenu
 
 endif

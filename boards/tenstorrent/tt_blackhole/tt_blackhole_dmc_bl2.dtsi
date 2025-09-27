@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This overlay defines the partitions used in the new bootloader
+ * scheme within the EEPROM, which is shared between the DMC and the SMC
+ *
+ * It also moves partition around within the DMC DTS to support
+ * the new bootloader scheme, since mcuboot updates directly from
+ * external flash.
+ */
+
+/* Raise the erase block size for the internal flash to 4K */
+&flash0 {
+	/delete-node/ partitions;
+	#address-cells = <1>;
+	#size-cells = <1>;
+	flash_wrapper@8000000 {
+		compatible = "tenstorrent,stm32-flash-wrapper";
+		flash-device = <&flash>;
+		reg = <0x8000000 DT_SIZE_K(512)>;
+		page-size = <4096>;
+		erase-block-size = <4096>;
+		write-block-size = <8>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			boot_partition: partition@0 {
+				label = "mcuboot";
+				reg = <0x00000000 DT_SIZE_K(48)>;
+				read-only;
+			};
+
+			slot0_partition: partition@c000 {
+				label = "image-0";
+				reg = <0x0000c000 DT_SIZE_K(464)>;
+			};
+		};
+	};
+};
+
+#include "tt_blackhole_partitions_bl2.dtsi"

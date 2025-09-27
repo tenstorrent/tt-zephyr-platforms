@@ -271,6 +271,44 @@ jobs:
             --flash-before \
             --outdir twister-e2e-flash
 
+      - name: run-e2e-bl2-test
+        working-directory: zephyr
+        run: |
+          # Load a DMFW that supports firmware update, so we can validate
+          # the full flash flow
+          ./scripts/twister -i \
+            --tag e2e-flash \
+            -p $DMC_BOARD --device-testing \
+            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
+            --flash-before \
+            --west-flash \
+            -T ../tt-zephyr-platforms/app \
+            --outdir twister-dmc-e2e-flash
+          # Reset the DMFW and wait for it to boot the SMC
+          ../tt-zephyr-platforms/scripts/dmc_reset.py -w
+          # Run a full flash test, using tt-flash as the runner
+          ./scripts/twister -i -p $SMC_BOARD \
+            --tag bl2 -T ../tt-zephyr-platforms/app \
+            --west-flash="--force" \
+            --west-runner tt_flash \
+            --device-testing -c \
+            --device-flash-timeout 180 \
+            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV -p" \
+            --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
+            --flash-before \
+            --outdir twister-e2e-bl2
+
+      - name: Restore stable FW
+        working-directory: tt-zephyr-platforms
+        if: ${{ always() }}
+        run: |
+          # Restore a stable DMFW, since the copy flashed by BL2 tests will
+          # leave the DMC flash in a different state than other tests expect
+          # We erase the DMC flash first to ensure no old image fragments remain
+          west build -p always -b $DMC_BOARD app/dmc --sysbuild -DCONFIG_TT_FWUPDATE=n
+          west flash --domain mcuboot --erase --cmd-erase 'flash erase_sector 0 0 last'
+          west flash --domain dmc
+
       - name: Upload E2E Test results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

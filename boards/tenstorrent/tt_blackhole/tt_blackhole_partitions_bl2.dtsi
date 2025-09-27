@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This overlay defines the partitions used in the new bootloader
+ * scheme within the EEPROM, which is shared between the DMC and the SMC
+ */
+
+/* Use the bl2 update firmware for BMFW */
+&bmfw {
+	binary-path = "$BUILD_DIR/dmc-rom-update/zephyr/zephyr.signed.bin";
+};
+
+&partition_layout {
+	slot1_partition: partition@14a000 {
+		label = "dmfw";
+		reg = <0x14a000 DT_SIZE_K(464)>;
+		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
+	};
+
+	/*
+	 * Place the image trailer for slot1 in the image as well, so
+	 * that mcuboot will swap this image in test mode on the next boot
+	 */
+	slot1_trailer: partition@1bd000 {
+		label = "dmfwtail";
+		reg = <0x1bd000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/mcuboot-test-trailer.bin";
+	};
+
+	/* Partition for new MCUBoot image */
+	blupdate: partition@1be000 {
+		label = "blupdate";
+		reg = <0x1be000 DT_SIZE_K(48)>;
+		binary-path = "$BUILD_DIR/mcuboot-bl2/zephyr/zephyr.bin";
+	};
+};

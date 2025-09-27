@@ -78,6 +78,26 @@ else()
   set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 endif()
 
+# BL2 images
+if (SB_CONFIG_BL2 AND NOT "${BOARD_REVISION}" STREQUAL "galaxy")
+  # BL2 requires additional firmware images to complete update process
+  ExternalZephyrProject_Add(
+    APPLICATION dmc-rom-update
+    SOURCE_DIR  ${APP_DIR}/../dmc_rom_update
+    BOARD       ${SB_CONFIG_DMC_BOARD}
+    BUILD_ONLY 1
+  )
+  ExternalZephyrProject_Add(
+    APPLICATION mcuboot-bl2
+    SOURCE_DIR  ${ZEPHYR_MCUBOOT_MODULE_DIR}/boot/zephyr
+    BOARD       ${SB_CONFIG_DMC_BOARD}
+    BUILD_ONLY 1
+  )
+  set(ROM_UPDATE_BIN ${CMAKE_BINARY_DIR}/dmc-rom-update/zephyr/zephyr.signed.bin)
+  set(MCUBOOT_BL2_BIN ${CMAKE_BINARY_DIR}/mcuboot-bl2/zephyr/zephyr.bin)
+  set(BOOTFS_DEPS ${BOOTFS_DEPS} ${ROM_UPDATE_BIN} ${MCUBOOT_BL2_BIN})
+endif()
+
 # ======== Generate filesystem ========
 set(DTS_FILE ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.dts)
 set(GEN_SCRIPT ${APP_DIR}/../../scripts/tt_boot_fs.py)
