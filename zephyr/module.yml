@@ -213,3 +213,12 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/fw_pack-grayskull.tar.gz"
     description: "Grayskull FW"
     doc-url: https://tenstorrent.com
+  - path: mcuboot-test-trailer.bin
+    sha256: db2811f2589eae626b1df751c1e7ee451548e5136df0c07ff247173999f09e44
+    type: img
+    version: '0.0.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+          raw/refs/heads/main/zephyr/blobs/mcuboot-test-trailer.bin"
+    description: "Image trailer for mcuboot"
+    doc-url: https://tenstorrent.com
