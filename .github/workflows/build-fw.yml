@@ -29,30 +29,72 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checkout:
+    runs-on: ubuntu-24.04
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+      - id: cache-key
+        run: |
+          echo "key=tt-zephyr-platforms-${{ github.sha }}" >> $GITHUB_OUTPUT
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+      - name: Cache repository and Zephyr environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ steps.cache-key.outputs.key }}
+
   genboards:
     runs-on: ubuntu-24.04
+    needs: checkout
     outputs:
       boards: ${{ steps.genboards.outputs.boards }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
       - id: genboards
         run: |
-          echo "boards=$(jq -c '.' .github/boards.json)" | tee -a $GITHUB_OUTPUT
+          echo "boards=$(jq -c '.' tt-zephyr-platforms/.github/boards.json)" | tee -a $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-24.04
-    needs: genboards
+    needs: [checkout, genboards]
     strategy:
       fail-fast: false
       matrix:
         board: ${{ fromJson(needs.genboards.outputs.boards) }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
 
       - name: Generate BOARD
         working-directory: tt-zephyr-platforms
@@ -108,13 +150,19 @@ jobs:
 
   build-recovery:
     runs-on: ubuntu-24.04
+    needs: checkout
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
 
       - name: Build recovery firmware
         shell: bash
@@ -144,6 +192,7 @@ jobs:
 
   build-assembly-test:
     runs-on: ubuntu-24.04
+    needs: checkout
     strategy:
       fail-fast: false
       matrix:
@@ -151,12 +200,17 @@ jobs:
           - p150
           - p300
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
 
       - name: Generate BOARD
         shell: bash
@@ -243,13 +297,19 @@ jobs:
 
   build-preflash:
     runs-on: ubuntu-24.04
+    needs: checkout
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
 
       - name: Build preflash firmware
         shell: bash
@@ -265,13 +325,21 @@ jobs:
 
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
-    needs: build
+    needs: [checkout, build]
     outputs:
       combined-fwbundle-artifact: ${{ steps.set_combined_fwbundle_output.outputs.combined_fwbundle_artifact }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
 
       - name: Download firmware artifacts
         uses: actions/download-artifact@v4
@@ -298,14 +366,20 @@ jobs:
 
   build-bh-flm:
     runs-on: ubuntu-24.04
+    needs: checkout
     name: Build Blackhole Flash Loader Module
     steps:
-      - uses: actions/checkout@v4
+      - name: Restore repository and Zephyr environment cache
+        uses: actions/cache@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
-        with:
-          app-path: tt-zephyr-platforms
+          path: |
+            tt-zephyr-platforms
+            zephyr
+            bootloader
+            modules
+            .west
+            ~/.cache/pip
+          key: ${{ needs.checkout.outputs.cache-key }}
       - name: Build Flash Loader Module
         working-directory: ./tt-zephyr-platforms/scripts/tooling/blackhole_recovery/data/bh_flm
         shell: bash
