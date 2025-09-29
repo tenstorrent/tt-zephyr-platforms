@@ -27,6 +27,7 @@ runs:
     - name: Remove existing data
       shell: bash
       run: |
+        ls -la
         if [ -d ".west" ]; then
           echo "Cleaning out old west manifest directories"
           for dir in $(west list -f "{path}"); do
