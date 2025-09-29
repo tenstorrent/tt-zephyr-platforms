@@ -16,8 +16,143 @@ env:
   DOXYGEN_VERSION: 1.14.0
 
 jobs:
+  ci-stats:
+    strategy:
+      matrix:
+        board: [p100, p100a, p150a, p300a]
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+    steps:
+      - name: Install dependencies
+        run: |
+           npm install adm-zip csv-parse csv-stringify
+
+           pip install plotly pandas
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Download Past CI runs
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const AdmZip = require('adm-zip');
+            const fs = require('fs');
+            const { parse } = require('csv-parse/sync');
+            const { stringify } = require('csv-stringify/sync');
+
+            // Aggregate results by test name and workflow run
+            const testResults = {};
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Stress test results (${{ matrix.board }})',
+            });
+            console.log(`Total artifacts found: ${artifacts.data.artifacts.length}`);
+
+            for (const artifact of artifacts.data.artifacts) {
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+                archive_format: 'zip'
+              });
+
+              const fname = `${artifact.name}-${artifact.id}-${artifact.workflow_run.head_sha}.zip`;
+              fs.writeFileSync(fname, Buffer.from(download.data));
+
+              const zip = new AdmZip(fname);
+              const zipEntries = zip.getEntries();
+
+              zipEntries.forEach(function (zipEntry) {
+                if (zipEntry.name === "recording.csv") {
+                  console.log(`Processing ${zipEntry.entryName} from artifact ${artifact.name} (${artifact.id})`);
+                  const content = zipEntry.getData().toString('utf8');
+
+                  // Parse CSV content
+                  const records = parse(content, {
+                    columns: true,
+                    trim: true
+                  });
+
+                  // Process each record
+                  records.forEach(record => {
+                    const testName = record.test_name;
+                    const workflowRunId = artifact.workflow_run.id;
+
+                    if (!testResults[testName]) {
+                      testResults[testName] = {};
+                    }
+
+                    if (artifact.workflow_run.head_branch != 'main') {
+                      console.log(`Skipping artifact ${artifact.id}, branch ${artifact.workflow_run.head_branch}`);
+                      return;
+                    }
+
+                    if (!testResults[testName][workflowRunId]) {
+                      testResults[testName][workflowRunId] = {
+                        commit: artifact.workflow_run.head_sha,
+                        branch: artifact.workflow_run.head_branch,
+                        timestamp: artifact.created_at,
+                        workflow_run_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${workflowRunId}`,
+                        total_tries: 0,
+                        fail_count: 0
+                      };
+                    }
+
+                    // Aggregate total_tries and fail_count
+                    testResults[testName][workflowRunId].total_tries += parseInt(record.total_tries);
+                    testResults[testName][workflowRunId].fail_count += parseInt(record.fail_count);
+                  });
+                }
+              });
+            }
+
+            // Create CSV files for each test
+            Object.entries(testResults).forEach(([testName, workflowRuns]) => {
+              // Convert to CSV
+              const csvData = [
+                ['Fail Count', 'Total Tries', 'Failure Percentage', 'Commit', 'Branch', 'Workflow Run URL', 'Timestamp']
+              ];
+
+              // Flatten the nested object into an array
+              Object.values(workflowRuns).forEach(result => {
+                csvData.push([
+                  result.fail_count,
+                  result.total_tries,
+                  result.total_tries > 0 ? (result.fail_count / result.total_tries * 100).toFixed(2) + '%' : '0.00%',
+                  result.commit,
+                  result.branch,
+                  result.workflow_run_url,
+                  result.timestamp
+                ]);
+              });
+
+              // Write CSV file
+              const csvContent = stringify(csvData);
+              fs.writeFileSync(`${testName} results.csv`, csvContent);
+              console.log(`Created ${testName} results.csv`);
+            });
+
+      - name: Generate HTML Report
+        run: |
+          python3 tt-zephyr-platforms/scripts/ci/render_ci_table.py . ci_stats.html ${{ matrix.board }}
+
+      - name: Upload CSV Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result-summaries ${{ matrix.board }}
+          path: |
+            ci_stats.html
+            *results.csv
+
   build:
     runs-on: ubuntu-22.04
+    needs: ci-stats
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,6 +203,19 @@ jobs:
           mv _build_doxygen/html deploy/doxygen
           mv _build_sphinx/html/* deploy
           rm -rf _build_doxygen _build_sphinx
+
+      - name: Download CI Results
+        uses: actions/download-artifact@v4
+        with:
+          path: ci-results
+          pattern: test-result-summaries*
+
+      - name: Copy CI Results
+        run: |
+          for board in p100 p100a p150a p300a; do
+            cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
+              tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
+          done
 
       - name: Setup pages
         if: github.event_name != 'pull_request'
