@@ -339,7 +339,11 @@ static const RegulatorConfig p300_left_config[] = {
 		.regulator_data = serdes_vr_data,
 		.count = ARRAY_SIZE(serdes_vr_data),
 	},
-	/* Left chip doesn't have its own SERDES_VDD */
+	{
+		.address = SERDES_VDD_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
 	{
 		.address = SERDES_VDDH_ADDR,
 		.regulator_data = serdes_vr_data,
