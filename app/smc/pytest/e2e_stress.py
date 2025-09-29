@@ -66,25 +66,17 @@ def test_arc_watchdog(arc_chip):
     Validates that the DMC firmware watchdog for the ARC will correctly
     reset the chip
     """
-    # todo: find better way to get test name
-    test_name = "ARC watchdog test"
     total_tries = min(MAX_TEST_ITERATIONS, 100)
     fail_count = 0
-    failure_fail_count = 1
-
     for i in range(total_tries):
-        if i % 10 == 0:
-            logger.info(f"{test_name} iteration {i}/{total_tries}")
-
+        logger.info(f"Starting ARC watchdog test iteration {i}/{total_tries}")
         result = arc_watchdog_test(arc_chip)
         if not result:
-            logger.warning(f"{test_name} failed on iteration {i}")
+            logger.warning(f"ARC watchdog test failed on iteration {i}")
             fail_count += 1
 
-    report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    report_results("ARC watchdog test", fail_count, total_tries)
+    assert fail_count == 0, "ARC watchdog test failed a non-zero number of times."
 
 
 def test_pcie_fw_load_time(arc_chip):
@@ -92,12 +84,8 @@ def test_pcie_fw_load_time(arc_chip):
     Checks PCIe firmware load time is within 40ms.
     This test needs to be run after production reset.
     """
-    # todo: find better way to get test name
-    test_name = "PCIe firmware load time test"
     total_tries = min(MAX_TEST_ITERATIONS, 10)
     fail_count = 0
-    failure_fail_count = 1
-
     for i in range(total_tries):
         logger.info(
             f"Starting PCIe firmware load time test iteration {i}/{total_tries}"
@@ -112,9 +100,9 @@ def test_pcie_fw_load_time(arc_chip):
             logger.warning(f"PCIe firmware load time test failed on iteration {i}")
             fail_count += 1
 
-    report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
+    report_results("PCIe firmware load time test", fail_count, total_tries)
+    assert fail_count == 0, (
+        "PCIe firmware load time test failed a non-zero number of times."
     )
 
 
@@ -122,17 +110,12 @@ def test_smi_reset(arc_chip, asic_id):
     """
     Checks that tt-smi resets are working successfully
     """
-    # todo: find better way to get test name
-    test_name = "tt-smi reset test"
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
     fail_count = 0
-    failure_fail_count = total_tries // 100
     dmfw_ping_avg = 0
     dmfw_ping_max = 0
     for i in range(total_tries):
-        if i % 10 == 0:
-            logger.info(f"{test_name} iteration {i}/{total_tries}")
-
+        logger.info(f"Iteration {i}:")
         result = smi_reset_test(asic_id)
 
         if not result:
@@ -154,10 +137,8 @@ def test_smi_reset(arc_chip, asic_id):
         f"Max DMFW ping time (after reset): {dmfw_ping_max:.2f} ms."
     )
 
-    report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    report_results("tt-smi reset test", fail_count, total_tries)
+    assert fail_count == 0, "tt-smi reset test failed a non-zero number of times."
 
 
 def test_dirty_reset():
@@ -166,29 +147,24 @@ def test_dirty_reset():
     DMC resets without the SMC requesting it. This is similar to the conditions
     that might be encountered after a NOC hang
     """
-    test_name = "Dirty reset test"
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
     fail_count = 0
-    failure_fail_count = total_tries // 100
 
     for i in range(total_tries):
-        if i % 10 == 0:
-            logger.info(f"{test_name} iteration {i}/{total_tries}")
-
+        logger.info(f"Iteration {i}:")
         result = dirty_reset_test()
         if not result:
             logger.warning(f"dirty reset failed on iteration {i}")
             fail_count += 1
         else:
+            logger.info(f"dirty reset passed on iteration {i}")
             # Delay a moment before next run. Without this, tests seem to fail
             # TODO- would be best to determine why rapidly resetting like this
             # breaks enumeration.
             time.sleep(0.5)
 
-    report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    report_results("Dirty reset test", fail_count, total_tries)
+    assert fail_count == 0, "Dirty reset failed a non-zero number of times."
 
 
 def test_dmc_ping(arc_chip):

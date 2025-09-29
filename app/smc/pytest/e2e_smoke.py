@@ -353,6 +353,7 @@ def smi_reset_test(asic_id):
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     )
+    logger.info(f"'tt-smi -r' returncode:{smi_reset_result.returncode}")
     if smi_reset_result.returncode != 0:
         logger.warning(f"'tt-smi -r' failed: {smi_reset_result.stdout.decode()}")
         smc_test_recovery.recover_smc(asic_id)
