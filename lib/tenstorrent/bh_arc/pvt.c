@@ -10,7 +10,7 @@
 
 #include <float.h> /* for FLT_MAX */
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
@@ -121,8 +121,8 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 	return ret;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_READ_TS, read_ts_handler);
-REGISTER_MESSAGE(MSG_TYPE_READ_PD, read_pd_handler);
-REGISTER_MESSAGE(MSG_TYPE_READ_VM, read_vm_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_READ_TS, read_ts_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_READ_PD, read_pd_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_READ_VM, read_vm_handler);
 
 #endif

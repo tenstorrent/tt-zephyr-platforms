@@ -15,7 +15,7 @@
 #include <float.h> /* for FLT_MAX */
 #include <stdint.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
@@ -61,6 +61,7 @@ typedef struct {
 	uint8_t reserved : 1;
 	uint8_t transition_control : 1;
 	uint8_t margin_fault_response : 2;
+
 	VoltageCmdSource voltage_command_source : 2;
 	uint8_t turn_off_behaviour : 1;
 	uint8_t on_off_state : 1;
@@ -329,9 +330,9 @@ static uint8_t switch_vout_control_handler(const union request *request, struct 
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_SET_VOLTAGE, set_voltage_handler);
-REGISTER_MESSAGE(MSG_TYPE_GET_VOLTAGE, get_voltage_handler);
-REGISTER_MESSAGE(MSG_TYPE_SWITCH_VOUT_CONTROL, switch_vout_control_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_SET_VOLTAGE, set_voltage_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_GET_VOLTAGE, get_voltage_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_SWITCH_VOUT_CONTROL, switch_vout_control_handler);
 
 static int regulator_init(void)
 {

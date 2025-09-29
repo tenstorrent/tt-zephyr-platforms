@@ -12,7 +12,7 @@
 #include <zephyr/kernel.h>
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
 #include "status_reg.h"
@@ -237,7 +237,7 @@ static bool start_next_message(struct message_queue *queue, uint32_t *request_rp
 
 static bool command_writes_serial(const union request *request)
 {
-	return request->command_code == MSG_TYPE_SET_LAST_SERIAL;
+	return request->command_code == TT_SMC_MSG_SET_LAST_SERIAL;
 }
 
 static void advance_serial(struct message_queue *queue, const union request *request)
@@ -287,13 +287,13 @@ static void process_queued_message(struct message_queue *queue, const union requ
 				   struct response *response)
 {
 	switch (request->command_code) {
-	case MSG_TYPE_SET_LAST_SERIAL:
+	case TT_SMC_MSG_SET_LAST_SERIAL:
 		handle_set_last_serial(queue, request);
 		break;
-	case MSG_TYPE_TEST:
+	case TT_SMC_MSG_TEST:
 		handle_test(queue, request, response);
 		break;
-	case MSG_TYPE_REPORT_SCRATCH_ONLY:
+	case TT_SMC_MSG_REPORT_SCRATCH_ONLY:
 		report_scratch_only_message(response);
 		break;
 	default:

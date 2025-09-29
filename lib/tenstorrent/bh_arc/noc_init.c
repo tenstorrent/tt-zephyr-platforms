@@ -16,7 +16,7 @@
 #include <stdint.h>
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
@@ -673,7 +673,7 @@ static uint8_t DebugNocTranslationHandler(const union request *req, struct respo
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_DEBUG_NOC_TRANSLATION, DebugNocTranslationHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_DEBUG_NOC_TRANSLATION, DebugNocTranslationHandler);
 
 void GetEnabledTensix(uint8_t *x, uint8_t *y)
 {

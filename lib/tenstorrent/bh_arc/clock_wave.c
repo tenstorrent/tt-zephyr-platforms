@@ -7,7 +7,7 @@
 #include "clock_wave.h"
 
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "timer.h"
@@ -52,4 +52,4 @@ uint8_t switch_clk_scheme_handler(const union request *request, struct response 
 	SwitchClkScheme(clk_scheme);
 	return 0;
 }
-REGISTER_MESSAGE(MSG_TYPE_SWITCH_CLK_SCHEME, switch_clk_scheme_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_SWITCH_CLK_SCHEME, switch_clk_scheme_handler);

@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
@@ -215,8 +215,8 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	return SpiSmartWrite(spi_address, csm_addr, num_bytes);
 }
 
-REGISTER_MESSAGE(MSG_TYPE_READ_EEPROM, read_eeprom_handler);
-REGISTER_MESSAGE(MSG_TYPE_WRITE_EEPROM, write_eeprom_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_READ_EEPROM, read_eeprom_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_WRITE_EEPROM, write_eeprom_handler);
 
 static int InitSpiFS(void)
 {

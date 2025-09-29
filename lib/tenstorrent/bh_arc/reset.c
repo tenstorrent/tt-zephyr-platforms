@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
@@ -160,7 +160,7 @@ static __maybe_unused uint8_t ToggleTensixReset(const union request *req, struct
 }
 
 #ifndef CONFIG_TT_SMC_RECOVERY
-REGISTER_MESSAGE(MSG_TYPE_TOGGLE_TENSIX_RESET, ToggleTensixReset);
+REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_TENSIX_RESET, ToggleTensixReset);
 #endif
 
 /**
@@ -183,7 +183,7 @@ static __maybe_unused uint8_t ReinitTensix(const union request *req, struct resp
 	return 0;
 }
 #ifndef CONFIG_TT_SMC_RECOVERY
-REGISTER_MESSAGE(MSG_TYPE_REINIT_TENSIX, ReinitTensix);
+REGISTER_MESSAGE(TT_SMC_MSG_REINIT_TENSIX, ReinitTensix);
 #endif
 
 static int DeassertTileResets(void)

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include <zephyr/logging/log.h>
@@ -40,7 +40,7 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 
 /** @brief Handles the request to set the power settings
  * @param[in] request The request, of type @ref power_setting_rqst_t, with command code
- *	@ref MSG_TYPE_POWER_SETTING
+ *	@ref TT_SMC_MSG_POWER_SETTING
  * @param[out] response The response to the host
  * @return 0 for success. 1 for Failure.
  */
@@ -62,4 +62,4 @@ static uint8_t power_setting_msg_handler(const union request *request, struct re
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_POWER_SETTING, power_setting_msg_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_POWER_SETTING, power_setting_msg_handler);
