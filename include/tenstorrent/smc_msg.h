@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2024 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @file smc_msg.h
+ * @brief Tenstorrent host command IDs
+ */
+
+#ifndef TT_SMC_MSG__H_
+#define TT_SMC_MSG__H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @addtogroup tt_msg_apis
+ * @{
+ */
+
+/** @brief Enumeration listing the available host requests IDs the SMC can process*/
+enum tt_smc_msg {
+	/** @brief Reserved*/
+	TT_SMC_MSG_RESERVED_01 = 0x1,
+
+	/** @brief No-op request*/
+	TT_SMC_MSG_NOP = 0x11,
+
+	TT_SMC_MSG_SET_VOLTAGE = 0x12,
+	TT_SMC_MSG_GET_VOLTAGE = 0x13,
+	TT_SMC_MSG_SWITCH_CLK_SCHEME = 0x14,
+	TT_SMC_MSG_DEBUG_NOC_TRANSLATION = 0x15,
+	TT_SMC_MSG_REPORT_SCRATCH_ONLY = 0x16,
+	TT_SMC_MSG_SEND_PCIE_MSI = 0x17,
+	TT_SMC_MSG_SWITCH_VOUT_CONTROL = 0x18,
+	TT_SMC_MSG_READ_EEPROM = 0x19,
+	TT_SMC_MSG_WRITE_EEPROM = 0x1A,
+	TT_SMC_MSG_READ_TS = 0x1B,
+	TT_SMC_MSG_READ_PD = 0x1C,
+	TT_SMC_MSG_READ_VM = 0x1D,
+	TT_SMC_MSG_I2C_MESSAGE = 0x1E,
+	TT_SMC_MSG_EFUSE_BURN_BITS = 0x1F,
+	TT_SMC_MSG_REINIT_TENSIX = 0x20,
+	/** @brief @ref power_setting_rqst_t "Power Setting Request"*/
+	TT_SMC_MSG_POWER_SETTING = 0x21,
+	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
+	TT_SMC_MSG_AISWEEP_START = 0x31,
+	TT_SMC_MSG_AISWEEP_STOP = 0x32,
+	TT_SMC_MSG_FORCE_AICLK = 0x33,
+	TT_SMC_MSG_GET_AICLK = 0x34,
+	TT_SMC_MSG_FORCE_VDD = 0x39,
+	TT_SMC_MSG_PCIE_INDEX = 0x51,
+	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Busy Speed Request"*/
+	TT_SMC_MSG_AICLK_GO_BUSY = 0x52,
+	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Idle Speed Request"*/
+	TT_SMC_MSG_AICLK_GO_LONG_IDLE = 0x54,
+	/* arg: 3 = ASIC + M3 reset, other values = ASIC-only reset */
+	TT_SMC_MSG_TRIGGER_RESET = 0x56,
+
+	/** @brief Reserved*/
+	TT_SMC_MSG_RESERVED_60 = 0x60,
+	TT_SMC_MSG_TEST = 0x90,
+	TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER = 0x9B,
+	TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER = 0x9C,
+	TT_SMC_MSG_PCIE_ERROR_CNT_RESET = 0x9D,
+	TT_SMC_MSG_TRIGGER_IRQ = 0x9F,
+	TT_SMC_MSG_ASIC_STATE0 = 0xA0,
+	TT_SMC_MSG_ASIC_STATE1 = 0xA1,
+	TT_SMC_MSG_ASIC_STATE3 = 0xA3,
+	TT_SMC_MSG_ASIC_STATE5 = 0xA5,
+	TT_SMC_MSG_GET_VOLTAGE_CURVE_FROM_FREQ = 0xA6,
+
+	/** @brief @ref force_fan_speed_rqst_t "Force Fan Speed Request"*/
+	TT_SMC_MSG_FORCE_FAN_SPEED = 0xAC,
+	TT_SMC_MSG_GET_DRAM_TEMPERATURE = 0xAD,
+	TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF,
+	TT_SMC_MSG_DRAM_BIST_START = 0xB0,
+	TT_SMC_MSG_NOC_WRITE_WORD = 0xB1, /* additional parameters passed in ARC_MAILBOX */
+	TT_SMC_MSG_TOGGLE_ETH_RESET = 0xB2,
+	TT_SMC_MSG_SET_DRAM_REFRESH_RATE = 0xB3,
+	TT_SMC_MSG_ARC_DMA = 0xB4,
+	TT_SMC_MSG_TEST_SPI = 0xB5,
+	TT_SMC_MSG_CURR_DATE = 0xB7,
+	TT_SMC_MSG_UPDATE_M3_AUTO_RESET_TIMEOUT = 0xBC,
+	TT_SMC_MSG_CLEAR_NUM_AUTO_RESET = 0xBD,
+	TT_SMC_MSG_SET_LAST_SERIAL = 0xBE,
+	TT_SMC_MSG_EFUSE_BURN = 0xBF,
+	TT_SMC_MSG_PING_DM = 0xC0,
+	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
+};
+
+/** @} */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

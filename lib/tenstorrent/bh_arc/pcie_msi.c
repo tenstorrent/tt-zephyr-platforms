@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "pcie.h"
@@ -79,4 +79,4 @@ static uint8_t send_pcie_msi_handler(const union request *request, struct respon
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_SEND_PCIE_MSI, send_pcie_msi_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_SEND_PCIE_MSI, send_pcie_msi_handler);

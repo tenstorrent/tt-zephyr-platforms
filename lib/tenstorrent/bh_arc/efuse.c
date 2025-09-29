@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "timer.h"

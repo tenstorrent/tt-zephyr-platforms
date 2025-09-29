@@ -7,7 +7,7 @@
 #include "asic_state.h"
 
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "regulator.h"
@@ -41,9 +41,9 @@ void lock_down_for_reset(void)
 
 static uint8_t asic_state_handler(const union request *request, struct response *response)
 {
-	if (request->command_code == MSG_TYPE_ASIC_STATE0) {
+	if (request->command_code == TT_SMC_MSG_ASIC_STATE0) {
 		enter_state0();
-	} else if (request->command_code == MSG_TYPE_ASIC_STATE3) {
+	} else if (request->command_code == TT_SMC_MSG_ASIC_STATE3) {
 		enter_state3();
 	}
 	return 0;
@@ -63,5 +63,5 @@ AsicState get_asic_state(void)
 	return asic_state;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_ASIC_STATE0, asic_state_handler);
-REGISTER_MESSAGE(MSG_TYPE_ASIC_STATE3, asic_state_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_ASIC_STATE0, asic_state_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_ASIC_STATE3, asic_state_handler);

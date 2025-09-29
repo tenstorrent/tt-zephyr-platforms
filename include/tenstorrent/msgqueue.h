@@ -84,7 +84,7 @@ struct aiclk_set_speed_rqst {
  * @details Requests of this type are processed by @ref power_setting_msg_handler
  */
 struct power_setting_rqst {
-	/** @brief The command code corresponding to @ref MSG_TYPE_POWER_SETTING*/
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_POWER_SETTING*/
 	uint8_t command_code;
 
 	/** @brief The number of bits in the @ref power_flags_bitfield that are valid */

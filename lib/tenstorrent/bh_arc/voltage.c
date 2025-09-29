@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/sys/util.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "voltage.h"
@@ -102,4 +102,4 @@ static uint8_t ForceVddHandler(const union request *request, struct response *re
 	return ForceVdd(forced_voltage);
 }
 
-REGISTER_MESSAGE(MSG_TYPE_FORCE_VDD, ForceVddHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_FORCE_VDD, ForceVddHandler);

@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <zephyr/init.h>
@@ -236,7 +236,7 @@ void aiclk_set_busy(bool is_busy)
  */
 static uint8_t aiclk_busy_handler(const union request *request, struct response *response)
 {
-	aiclk_set_busy(request->aiclk_set_speed.command_code == MSG_TYPE_AICLK_GO_BUSY);
+	aiclk_set_busy(request->aiclk_set_speed.command_code == TT_SMC_MSG_AICLK_GO_BUSY);
 	return 0;
 }
 
@@ -266,7 +266,7 @@ static uint8_t get_aiclk_handler(const union request *request, struct response *
 
 static uint8_t SweepAiclkHandler(const union request *request, struct response *response)
 {
-	if (request->command_code == MSG_TYPE_AISWEEP_START) {
+	if (request->command_code == TT_SMC_MSG_AISWEEP_START) {
 		if (request->data[1] == 0 || request->data[2] == 0) {
 			return 1;
 		}
@@ -279,9 +279,9 @@ static uint8_t SweepAiclkHandler(const union request *request, struct response *
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_BUSY, aiclk_busy_handler);
-REGISTER_MESSAGE(MSG_TYPE_AICLK_GO_LONG_IDLE, aiclk_busy_handler);
-REGISTER_MESSAGE(MSG_TYPE_FORCE_AICLK, ForceAiclkHandler);
-REGISTER_MESSAGE(MSG_TYPE_GET_AICLK, get_aiclk_handler);
-REGISTER_MESSAGE(MSG_TYPE_AISWEEP_START, SweepAiclkHandler);
-REGISTER_MESSAGE(MSG_TYPE_AISWEEP_STOP, SweepAiclkHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_AICLK_GO_BUSY, aiclk_busy_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_AICLK_GO_LONG_IDLE, aiclk_busy_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_FORCE_AICLK, ForceAiclkHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_GET_AICLK, get_aiclk_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_START, SweepAiclkHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_STOP, SweepAiclkHandler);

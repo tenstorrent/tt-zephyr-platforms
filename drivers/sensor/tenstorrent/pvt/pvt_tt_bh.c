@@ -6,7 +6,7 @@
 
 #define DT_DRV_COMPAT tenstorrent_bh_pvt
 
-#include "tenstorrent/msg_type.h"
+#include "tenstorrent/smc_msg.h"
 #include "tenstorrent/msgqueue.h"
 #include "tenstorrent/post_code.h"
 #include "functional_efuse.h"

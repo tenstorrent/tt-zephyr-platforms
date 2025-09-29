@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include "dw_apb_i2c.h"
 
@@ -68,4 +68,4 @@ static uint8_t i2c_message_handler(const union request *request, struct response
 	return status != 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_I2C_MESSAGE, i2c_message_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_I2C_MESSAGE, i2c_message_handler);

@@ -14,7 +14,7 @@
 #include "harvesting.h"
 
 #include <tenstorrent/msgqueue.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
@@ -161,7 +161,7 @@ static uint8_t force_fan_speed(const union request *request, struct response *re
 
 	return 0;
 }
-REGISTER_MESSAGE(MSG_TYPE_FORCE_FAN_SPEED, force_fan_speed);
+REGISTER_MESSAGE(TT_SMC_MSG_FORCE_FAN_SPEED, force_fan_speed);
 
 void DmcFanSpeedFeedback(uint32_t speed_percentage)
 {

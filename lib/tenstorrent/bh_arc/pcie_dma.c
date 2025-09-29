@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <zephyr/kernel.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "util.h"
@@ -194,7 +194,7 @@ static uint8_t pcie_dma_transfer_handler(const union request *request, struct re
 
 	bool accept;
 
-	if (request->command_code == MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
+	if (request->command_code == TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER) {
 		accept = PcieDmaReadTransfer(chip_addr, host_addr, transfer_size_bytes,
 					     msi_completion_addr, completion_data);
 	} else {
@@ -205,5 +205,5 @@ static uint8_t pcie_dma_transfer_handler(const union request *request, struct re
 	return accept ? 0 : 1;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_PCIE_DMA_HOST_TO_CHIP_TRANSFER, pcie_dma_transfer_handler);
-REGISTER_MESSAGE(MSG_TYPE_PCIE_DMA_CHIP_TO_HOST_TRANSFER, pcie_dma_transfer_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER, pcie_dma_transfer_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER, pcie_dma_transfer_handler);

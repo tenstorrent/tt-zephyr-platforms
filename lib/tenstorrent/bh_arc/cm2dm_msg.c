@@ -17,7 +17,7 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
-#include <tenstorrent/msg_type.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
 #include "cm2dm_msg.h"
@@ -183,7 +183,7 @@ static uint8_t reset_dm_handler(const union request *request, struct response *r
 	return ret;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_TRIGGER_RESET, reset_dm_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_TRIGGER_RESET, reset_dm_handler);
 
 static uint8_t ping_dm_handler(const union request *request, struct response *response)
 {
@@ -204,7 +204,7 @@ static uint8_t ping_dm_handler(const union request *request, struct response *re
 	return 0;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_PING_DM, ping_dm_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_PING_DM, ping_dm_handler);
 
 static uint8_t set_watchdog_timeout(const union request *request, struct response *response)
 {
@@ -235,7 +235,7 @@ static uint8_t set_watchdog_timeout(const union request *request, struct respons
 	return 0 - ret;
 }
 
-REGISTER_MESSAGE(MSG_TYPE_SET_WDT_TIMEOUT, set_watchdog_timeout);
+REGISTER_MESSAGE(TT_SMC_MSG_SET_WDT_TIMEOUT, set_watchdog_timeout);
 
 int32_t Dm2CmSendDataHandler(const uint8_t *data, uint8_t size)
 {
