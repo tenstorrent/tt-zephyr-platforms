@@ -1,0 +1,11 @@
+/*
+ * DTS overlay to expose the ARC DMA controller to the chan_blen_transfer test
+ * on the Tenstorrent Blackhole SMC platform.
+ */
+
+&dma0 {
+	status = "okay";
+	dma-channels = <2>;
+};
+
+tst_dma0: &dma0 { };
