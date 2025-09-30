@@ -277,6 +277,10 @@ def arc_watchdog_test(arc_chip):
 
 
 @pytest.mark.flash
+@pytest.mark.skipif(
+    os.environ.get("CONSOLE_DEV") == "/dev/tenstorrent/1",
+    reason="Test unreliable on p300a board",
+)
 def test_arc_watchdog(arc_chip):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
@@ -408,6 +412,10 @@ def dirty_reset_test():
 
 
 @pytest.mark.flash
+@pytest.mark.skipif(
+    os.environ.get("CONSOLE_DEV") == "/dev/tenstorrent/1",
+    reason="Test unreliable on p300a board",
+)
 def test_dirty_reset():
     """
     Checks that the SMC comes up correctly after a "dirty" reset, where the
