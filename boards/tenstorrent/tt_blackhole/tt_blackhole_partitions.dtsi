@@ -1,0 +1,114 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <mem.h>
+
+partitions {
+	compatible = "tenstorrent,tt-boot-fs", "fixed-partitions";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	flash-device-size = <DT_SIZE_M(64)>;
+	flash-block-size = <DT_SIZE_K(4)>;
+
+	cmfwcfg: partition@14000 {
+		label = "cmfwcfg";
+		reg = <0x14000 DT_SIZE_K(4)>;
+		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+		read-only;
+	};
+
+	origcfg: partition@15000 {
+		label = "origcfg";
+		reg = <0x15000 DT_SIZE_K(4)>;
+		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+		read-only;
+	};
+
+	cmfw: partition@10000000 {
+		label = "cmfw";
+		reg = <0x10000000 DT_SIZE_K(106)>;
+		binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
+	};
+
+	ethfwcfg: partition@30000 {
+		label = "ethfwcfg";
+		reg = <0x30000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+		read-only;
+	};
+
+	ethfw: partition@31000 {
+		label = "ethfw";
+		reg = <0x31000 DT_SIZE_K(64)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
+		read-only;
+	};
+
+	memfwcfg: partition@41000 {
+		label = "memfwcfg";
+		reg = <0x41000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+		read-only;
+	};
+
+	memfw: partition@42000 {
+		label = "memfw";
+		reg = <0x42000 DT_SIZE_K(16)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
+		read-only;
+	};
+
+	ethsdreg: partition@46000 {
+		label = "ethsdreg";
+		reg = <0x46000 DT_SIZE_K(4)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
+		read-only;
+	};
+
+	ethsdfw: partition@47000 {
+		label = "ethsdfw";
+		reg = <0x47000 DT_SIZE_K(20)>;
+		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
+		read-only;
+	};
+
+	bmfw: partition@4c000 {
+		label = "bmfw";
+		reg = <0x4c000 DT_SIZE_K(68)>;
+		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
+		read-only;
+	};
+
+	flshinfo: partition@59000 {
+		label = "flshinfo";
+		reg = <0x59000 DT_SIZE_K(4)>;
+		binary-path =
+			"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
+		read-only;
+	};
+
+	boardcfg: partition@5a000 {
+		label = "boardcfg";
+		reg = <0x5a000 DT_SIZE_K(4)>;
+		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+		read-only;
+	};
+
+	/*
+	 * FIXME: The address of this node triggers a warning that we should try to fix:
+	 * Warning (unique_unit_address_if_enabled):
+	 *  /soc/spi@80070000/eeprom@0/partitions/partition@10000000
+	 * duplicate unit-address (also used in node
+	 *   /soc/spi@80070000/eeprom@0/partitions/failover_partition@10000000)
+	 */
+	failover: failover_partition@10000000 {
+		label = "failover";
+		reg = <0x10000000 DT_SIZE_K(76)>;
+		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
+		read-only;
+	};
+};
