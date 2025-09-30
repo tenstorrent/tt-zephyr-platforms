@@ -151,9 +151,22 @@ void bh_chip_deassert_spi_reset(const struct bh_chip *chip)
 
 int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 {
-	chip->data.last_cm2dm_seq_num_valid = false;
+	int ret, ret2;
 
-	return jtag_bootrom_reset_sequence(chip, force_reset);
+	chip->data.last_cm2dm_seq_num_valid = false;
+	ret = bharc_disable_i2cbus(&chip->config.arc);
+	if (ret != 0) {
+		bharc_enable_i2cbus(&chip->config.arc);
+		return ret;
+	}
+
+	ret2 = jtag_bootrom_reset_sequence(chip, force_reset);
+
+	ret = bharc_enable_i2cbus(&chip->config.arc);
+	if (ret != 0) {
+		return ret;
+	}
+	return ret2;
 }
 
 void therm_trip_detected(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
