@@ -102,11 +102,13 @@ patches:
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: 109616eaa2460b32e82417152f2e54a8c9a7a44c1cb54d488b942f9d38a8715c
+    sha256sum: bd6e48cdeeb729b4c9c49c581a868230b24d9e74bd0c3373c87a0bec62d1e15a
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2025-07-24
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96691
     comments: |
       SMBus controller PEC for smbus_stm32
   - path: zephyr/scripts-pylib-pytest-twister-harness-ensure-serial.patch
@@ -140,7 +142,7 @@ patches:
     comments: |
       Make zversion html take project/version settings from conf.py
   - path: zephyr/stm32-bwbr.patch
-    sha256sum: 2412831ca1430db92f05a84f81f5000cb879748831fe2d5084839572905ee21d
+    sha256sum: 123e9cc2b7b1fd2c6833ac6ff5e654ea277f1d179d9d30954375bd49c54ec9c6
     module: zephyr
     author: James Growden
     email: jgrowden@tenstorrent.com
@@ -159,7 +161,7 @@ patches:
       Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
       does not complain about slot1_size not being defined.
   - path: zephyr/smbus-cancel.patch
-    sha256sum: 70a823aa801ce3e19aa1489eb1c5500387f1028d57ec977926f248066ce5f407
+    sha256sum: 24fc88269fd8c534ef9c1318a1c989ff6d8d45b44d48d532995cee4e884e78b5
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
