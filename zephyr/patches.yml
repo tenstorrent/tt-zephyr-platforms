@@ -7,8 +7,31 @@ patches:
     date: 2025-09-16
     comments: |
       Support multilevel interrupt priority on ARC cores.
+  - path: zephyr/twister-rtt-support.patch
+    sha256sum: 2bd73942e827989cd513ce8aa971674ad9d9a928fe9bd21964488d051bb81807
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2024-11-24
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/81837
+    comments: |
+      Minor fixes to ensure that twister works reliably with the --flash-before option.
+  - path: zephyr/multiple_icntl.patch
+    sha256sum: f2e48012cdbcd36bf2e542aa86f23544cb8e01aa0d9f1aeef2e9d98389575745
+    module: zephyr
+    author: Aaron Fong
+    email: afong@tenstorrent.com
+    date: 2025-02-07
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92268
+    merge-status: true
+    merge-date: 2025-08-12
+    comments: |
+      This patch fixes the DesignWare interrupt controller driver interrupt enablement and handling.
+      It also enhances the driver to support multiple instances on the same platform.
   - path: zephyr/check-compliance.patch
-    sha256sum: 6dba8fade73d86b8d07e73599b326f89355d0d6806a1bef55508d631d505e0c3
+    sha256sum: bfed70b44249abe722f50a06f38d87ae7f53c86fdb3b6ff951b1b51426837613
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -39,6 +62,21 @@ patches:
     comments: |
       Hack to support the version of the DesignWare I2C hardware that splits the interrupts
       to multiple lines.
+  - path: zephyr/k-event-wait-safe.patch
+    sha256sum: 33a271699fe20d1870fb3549db03ae50c24137a5b8916c0bb5df56b9665d4a88
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-05-07
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89624
+    merge-status: true
+    merge-date: 2025-08-29
+    comments: |
+      Add k_event_wait_safe() to ensure that events are not lost and we don't receive phantom
+      events. Update: This was actually rejected initially, but then picked up by another
+      community member and finished off. The follow-up PR was
+      https://github.com/zephyrproject-rtos/zephyr/pull/94789
   - path: zephyr/gpio-pca-series-pin-get-config.patch
     sha256sum: 7c640a600a922e157cc3f3c0acd244b16eec5fdcaa63370b5b5e1918fcef9a54
     module: zephyr
@@ -53,7 +91,7 @@ patches:
       Update: some minor changes requested on this PR that required ordering another part
       that belongs to the same gpio expander product family. Should be merged before 4.3.0.
   - path: zephyr/pwm-api-tests-skip-zero-duty-cycle-config.patch
-    sha256sum: a89daeb64fb3db5f876e7ee3ff0a6a62c6cba11a87949341466de2cca19a80d9
+    sha256sum: aaee09fd61d034b6c9ee6eb522402c87843be6f0936558cdc7684c903df9c2be
     module: zephyr
     author: Alexander Lay
     email: alexanderlay@tenstorrent.com
@@ -70,11 +108,29 @@ patches:
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
     date: 2025-04-16
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/88912
+    merge-status: true
+    merge-date: 2025-08-03
     comments: |
-      Skip building the upstream mspi-dw and flash-mspi-nor drivers while we have an
-      in-tree fork.
+      Skip building the upstream mspi-dw and flash-mspi-nor drivers.
+  - path: zephyr/pr-92709.patch
+    sha256sum: 1aeda42e476e60c1e2ac187d8855543fa59dd5c2445658b2cf792889c1c82105
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-07-14
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92709
+    merge-status: true
+    merge-date: 2025-09-02
+    comments: |
+      Correct system-wide timekeeping utilities (used by multiple subsystems).
+      Update: this change was reworked by another member in the Zephyr community.
+      The follow-up PR was
+      https://github.com/zephyrproject-rtos/zephyr/pull/94087
   - path: zephyr/dirty-hack-for-tt-hwinit.patch
-    sha256sum: 8769469bcab0fda7b9c793dd8f67740fb18ce11c315871790e0c74494f16d71e
+    sha256sum: 12f1b5793791e9eac256055f6a05bf491bb62b0b1b9bafa60969b36b984495be
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -84,6 +140,18 @@ patches:
       This is a filthy hack to enable TT HWInit and boot error reporting. Our checks should really
       be done from a BIST (aka a POST) launched from the application. Let's burn this with fire
       once we have a proper solution.
+  - path: zephyr/tracing-ctf-take-IRQ-lock-before-generating-timestam.patch
+    sha256sum: fd2b1bb3bede94a697d1cbcee73ee181ee54e91b9e31eda226c0c6a641947170
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-07-16
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/93210
+    merge-status: true
+    merge-date: 2025-09-08
+    comments: |
+      Fix timestamp generation in CTF_EVENT()
   - path: zephyr/k-busy-wait-ns.patch
     sha256sum: 3d8753d4f2d8d803bb0b14bc393f8ee35c46402c029206faa7ea22267dfc500d
     module: zephyr
@@ -101,6 +169,18 @@ patches:
     date: 2025-05-05
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
+  - path: zephyr/fix-stm32-block-write.patch
+    sha256sum: 7268d5f04027341b339a13542612121613f799c06ce65af9a2d9bbce1c4bce71
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Fix smbus_stm32_block_write
+
+      Send "count" byte. The SMBus block write protocol requires this byte.
+
+      Use I2C_MSG_WRITE named flag instead of 0.
   - path: zephyr/stm32-block-read.patch
     sha256sum: 15a6de40f59b4fdf0fd5a8292cd852b0627f2c3c794229d902c37ab9b70d2612
     module: zephyr
@@ -125,13 +205,32 @@ patches:
 
       Implementations are included for STM32 I2C and SMBus.
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: d54f0d559b265d39525ccde948db2a4749c1b29e8fad88f8cef3de175ababfd6
+    sha256sum: b4fe073932487fc5b4ca1502688e101624b98f9010e1273266c7dd8529988bfd
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2025-07-24
     comments: |
       SMBus controller PEC for smbus_stm32
+  - path: zephyr/i2c-dw-target-correction.patch
+    sha256sum: ff26f7e0c68759faf3b870a659e06f9b6cd1d4693b2bb714bf62082e368d7f3e
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-08-18
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/95657
+    merge-status: true
+    merge-date: 2025-09-10
+    comments: |
+      Corrections for the i2c_dw implementation for target operation.
+
+      read_requested should only be called on the first byte, and should
+      send the data fetched in the CB back on the wire.
+
+      read_processed should be called on every subsequent byte in the
+      transaction, and it should also send the data fetched in the CB
+      back on the wire.
   - path: zephyr/scripts-pylib-pytest-twister-harness-ensure-serial.patch
     sha256sum: a638bb624dbf6b1a087c21c3312ac574402ef89d9788ce8987fbeb8c69e55e69
     module: zephyr

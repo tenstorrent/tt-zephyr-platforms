@@ -201,21 +201,12 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 
 static int tt_bh_fwtable_init(const struct device *dev)
 {
-	int rc;
-
-	rc = tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || (rc < 0)) {
-		return rc;
-	}
-
-	rc = tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO);
-	if (rc < 0) {
-		return rc;
-	}
-
-	rc = tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG);
-	if (rc < 0) {
-		return rc;
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		return tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
+	} else {
+		return (tt_bh_fwtable_load(dev, BH_FWTABLE_FLSHINFO) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG) ||
+			tt_bh_fwtable_load(dev, BH_FWTABLE_CMFWCFG));
 	}
 
 	return 0;

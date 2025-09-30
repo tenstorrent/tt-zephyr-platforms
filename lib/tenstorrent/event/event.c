@@ -19,7 +19,7 @@ uint32_t tt_event_wait(uint32_t events, k_timeout_t timeout)
 {
 	uint32_t ret;
 
-	ret = k_event_wait_safe(&tt_event, events, false, timeout);
+	ret = k_event_wait_safe(&tt_event, events, timeout);
 	if (ret != 0) {
 		LOG_INF("Received wake up event: requested=0x%08X received=0x%08X", events, ret);
 	}

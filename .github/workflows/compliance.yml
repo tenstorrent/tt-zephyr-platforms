@@ -3,7 +3,7 @@ name: Compliance Checks
 
 env:
   checkout_path: tt-zephyr-platforms
-  compliance_excludes: "-e BinaryFiles -e KconfigBasicNoModules -e SysbuildKconfigBasic -e LicenseAndCopyrightCheck"
+  compliance_excludes: "-e BinaryFiles -e KconfigBasicNoModules -e SysbuildKconfigBasic"
   ZEPHYR_BASE: ${{ github.workspace }}/zephyr
   manifest_group_filter: "+ci,+optional"
 
@@ -93,8 +93,6 @@ jobs:
           if [ "${{ github.actor }}" == "dependabot[bot]" ]; then
             excludes="$excludes -e Identity"
           fi
-          # FIXME: why do i need to reinstall packages here?
-          pip install dotenv jsonschema
           ${{ env.ZEPHYR_BASE }}/scripts/ci/check_compliance.py --annotate $excludes \
             -c origin/${BASE_REF}..
 
