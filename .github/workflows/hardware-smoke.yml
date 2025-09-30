@@ -46,14 +46,6 @@ jobs:
         - /lib/modules:/lib/modules
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - name: Cleanup State
-        if: ${{ always() }}
-        run: |
-          # Print state of current directory
-          ls -la
-          # Clean up any files left over from previous steps
-          rm -rf *
-
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
@@ -204,14 +196,6 @@ jobs:
         - /lib/modules:/lib/modules
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
-      - name: Cleanup State
-        if: ${{ always() }}
-        run: |
-          # Print state of current directory
-          ls -la
-          # Clean up any files left over from previous steps
-          rm -rf *
-
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
