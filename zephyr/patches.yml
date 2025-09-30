@@ -102,7 +102,7 @@ patches:
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: 6f3990f30437ff992cf2e52da656d1690180dcae15dfa4e7dbace02d28a4b852
+    sha256sum: 74722b7155d2982232d14177f2195ae063007b613b7edfc9bb247d244d9da77b
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
@@ -140,7 +140,7 @@ patches:
     comments: |
       Make zversion html take project/version settings from conf.py
   - path: zephyr/stm32-bwbr.patch
-    sha256sum: 2412831ca1430db92f05a84f81f5000cb879748831fe2d5084839572905ee21d
+    sha256sum: a9c6d3471e13ef169f14bae375e37435bffae653d6a78f3a78613a6ddbcba8ea
     module: zephyr
     author: James Growden
     email: jgrowden@tenstorrent.com
@@ -159,7 +159,7 @@ patches:
       Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
       does not complain about slot1_size not being defined.
   - path: zephyr/smbus-cancel.patch
-    sha256sum: 70a823aa801ce3e19aa1489eb1c5500387f1028d57ec977926f248066ce5f407
+    sha256sum: 96eecc30fe2a3beea7e27714cad7991bf54f781208fb1999587f53f15e17c4e3
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
