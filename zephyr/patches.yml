@@ -93,14 +93,17 @@ patches:
     upstreamable: false
     comments: |
       Add k_busy_wait_ns() helper for nanosecond busy wait support.
-  - path: zephyr/drivers-i2c-i2c-stm32-v2-stability-improvements.patch
-    sha256sum: 3e46f31ad757ef94c8b260326a2b145aa64304d14b7d8c1fe9a12bd88c977f4a
+  - path: zephyr/stm-i2c-reload.patch
+    sha256sum: 9575d1a86a2a6fd5142e37ecdbfd84b78194c30c739eb864aecf4a469b96b8e4
     module: zephyr
-    author: Hidden
-    email: hidden@github.com
-    date: 2025-05-05
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-28
+    comments: |
+      Exit reload mode before stop or repeated start
+
+      The code checked that there's no following stop/restart before enabling
+      reload mode, but once in reload mode, it never checked again.
   - path: zephyr/smbus_stm32-pec.patch
     sha256sum: 6f3990f30437ff992cf2e52da656d1690180dcae15dfa4e7dbace02d28a4b852
     module: zephyr
@@ -159,7 +162,7 @@ patches:
       Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
       does not complain about slot1_size not being defined.
   - path: zephyr/smbus-cancel.patch
-    sha256sum: 70a823aa801ce3e19aa1489eb1c5500387f1028d57ec977926f248066ce5f407
+    sha256sum: 5eed3d42c3b25502d7c670d072a83290f62dbb67d940fb537165eb9528659d3d
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com

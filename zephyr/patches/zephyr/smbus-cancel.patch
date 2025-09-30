@@ -36,10 +36,10 @@ index 966a953a061..b421d94014b 100644
  
  static int i2c_stm32_init(const struct device *dev)
 diff --git a/drivers/i2c/i2c_ll_stm32.h b/drivers/i2c/i2c_ll_stm32.h
-index 2dfcea83af7..6a211f38415 100644
+index b194bc5e8f6..5297bdc3a3f 100644
 --- a/drivers/i2c/i2c_ll_stm32.h
 +++ b/drivers/i2c/i2c_ll_stm32.h
-@@ -127,6 +127,7 @@ struct i2c_stm32_data {
+@@ -126,6 +126,7 @@ struct i2c_stm32_data {
  	struct dma_config dma_rx_cfg;
  	struct dma_block_config dma_blk_cfg;
  #endif /* CONFIG_I2C_STM32_V2_DMA */
@@ -48,10 +48,98 @@ index 2dfcea83af7..6a211f38415 100644
  
  #ifdef CONFIG_I2C_TARGET
 diff --git a/drivers/i2c/i2c_ll_stm32_v2.c b/drivers/i2c/i2c_ll_stm32_v2.c
-index 44b27b63606..32ec97abba1 100644
+index ce07e20d9a4..9bc19d51c0b 100644
 --- a/drivers/i2c/i2c_ll_stm32_v2.c
 +++ b/drivers/i2c/i2c_ll_stm32_v2.c
-@@ -909,6 +909,7 @@ static inline int msg_done(const struct device *dev,
+@@ -672,7 +672,6 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 	const struct i2c_stm32_config *cfg = dev->config;
+ 	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+-	bool is_timeout = false;
+ 
+ 	data->current.len = msg->len;
+ 	data->current.buf = msg->buf;
+@@ -694,15 +693,16 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+ 	i2c_stm32_enable_transfer_interrupts(dev);
+ 	LL_I2C_EnableIT_TX(i2c);
+ 
+-	if (k_sem_take(&data->device_sync_sem,
+-		       K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0) {
++	bool is_timeout = (k_sem_take(&data->device_sync_sem,
++				      K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0);
++
++	if (is_timeout || data->cancelled) {
+ 		i2c_stm32_master_mode_end(dev);
+ 		k_sem_take(&data->device_sync_sem, K_FOREVER);
+-		is_timeout = true;
+ 	}
+ 
+ 	if (data->current.is_nack || data->current.is_err ||
+-	    data->current.is_arlo || is_timeout) {
++	    data->current.is_arlo || data->cancelled || is_timeout) {
+ 		goto error;
+ 	}
+ 
+@@ -725,6 +725,10 @@ error:
+ 		data->current.is_err = 0U;
+ 	}
+ 
++	if (data->cancelled) {
++		LOG_DBG("%s: CANCELLED", __func__);
++	}
++
+ 	if (is_timeout) {
+ 		LOG_DBG("%s: TIMEOUT", __func__);
+ 	}
+@@ -738,7 +742,6 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 	const struct i2c_stm32_config *cfg = dev->config;
+ 	struct i2c_stm32_data *data = dev->data;
+ 	I2C_TypeDef *i2c = cfg->i2c;
+-	bool is_timeout = false;
+ 
+ 	data->current.len = msg->len;
+ 	data->current.buf = msg->buf;
+@@ -753,13 +756,15 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ 	i2c_stm32_enable_transfer_interrupts(dev);
+ 	LL_I2C_EnableIT_RX(i2c);
+ 
+-	if (k_sem_take(&data->device_sync_sem,
+-		       K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0) {
++	bool is_timeout = (k_sem_take(&data->device_sync_sem,
++				      K_MSEC(I2C_STM32_TRANSFER_TIMEOUT_MSEC)) != 0);
++
++	if (is_timeout || data->cancelled) {
+ 		i2c_stm32_master_mode_end(dev);
+ 		k_sem_take(&data->device_sync_sem, K_FOREVER);
+-		is_timeout = true;
+ 	}
+-#if defined(CONFIG_I2C_STM32_V2_DMA)
++
++	#if defined(CONFIG_I2C_STM32_V2_DMA)
+ 	if (!stm32_buf_in_nocache((uintptr_t)msg->buf, msg->len)) {
+ 		LOG_DBG("Rx buffer at %p (len %zu) is in cached memory; invalidating cache",
+ 			msg->buf, msg->len);
+@@ -768,7 +773,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+ #endif /* CONFIG_I2C_STM32_V2_DMA */
+ 
+ 	if (data->current.is_nack || data->current.is_err ||
+-	    data->current.is_arlo || is_timeout) {
++	    data->current.is_arlo || data->cancelled || is_timeout) {
+ 		goto error;
+ 	}
+ 
+@@ -791,6 +796,10 @@ error:
+ 		data->current.is_err = 0U;
+ 	}
+ 
++	if (data->cancelled) {
++		LOG_DBG("%s: CANCELLED", __func__);
++	}
++
+ 	if (is_timeout) {
+ 		LOG_DBG("%s: TIMEOUT", __func__);
+ 	}
+@@ -840,6 +849,7 @@ static inline int msg_done(const struct device *dev,
  			   unsigned int current_msg_flags)
  {
  	const struct i2c_stm32_config *cfg = dev->config;
@@ -59,7 +147,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	int64_t start_time = k_uptime_get();
  
-@@ -917,6 +918,10 @@ static inline int msg_done(const struct device *dev,
+@@ -848,6 +858,10 @@ static inline int msg_done(const struct device *dev,
  		if (check_errors(dev, __func__)) {
  			return -EIO;
  		}
@@ -70,7 +158,7 @@ index 44b27b63606..32ec97abba1 100644
  		if ((k_uptime_get() - start_time) >
  		    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
  			return -ETIMEDOUT;
-@@ -925,7 +930,8 @@ static inline int msg_done(const struct device *dev,
+@@ -856,7 +870,8 @@ static inline int msg_done(const struct device *dev,
  	/* Issue stop condition if necessary */
  	if (current_msg_flags & I2C_MSG_STOP) {
  		LL_I2C_GenerateStopCondition(i2c);
@@ -80,7 +168,7 @@ index 44b27b63606..32ec97abba1 100644
  			if ((k_uptime_get() - start_time) >
  			    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
  				return -ETIMEDOUT;
-@@ -936,13 +942,14 @@ static inline int msg_done(const struct device *dev,
+@@ -867,13 +882,14 @@ static inline int msg_done(const struct device *dev,
  		LL_I2C_DisableReloadMode(i2c);
  	}
  
@@ -96,7 +184,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	unsigned int len = 0U;
  	uint8_t *buf = msg->buf;
-@@ -951,8 +958,8 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+@@ -882,8 +898,8 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
  	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_WRITE);
  
  	len = msg->len;
@@ -107,7 +195,7 @@ index 44b27b63606..32ec97abba1 100644
  			if (LL_I2C_IsActiveFlag_TXIS(i2c)) {
  				break;
  			}
-@@ -979,6 +986,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+@@ -910,6 +926,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
  			      uint8_t *next_msg_flags, uint16_t slave)
  {
  	const struct i2c_stm32_config *cfg = dev->config;
@@ -115,7 +203,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	unsigned int len = 0U;
  	uint8_t *buf = msg->buf;
-@@ -987,8 +995,8 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+@@ -918,8 +935,8 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
  	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_READ);
  
  	len = msg->len;
