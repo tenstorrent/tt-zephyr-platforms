@@ -57,7 +57,7 @@ struct message_queue_header {
 
 /** @brief Host request to force the fan speed */
 struct force_fan_speed_rqst {
-	/** @brief The command code corresponding to @ref MSG_TYPE_FORCE_FAN_SPEED*/
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_FORCE_FAN_SPEED*/
 	uint8_t command_code;
 
 	/** @brief Three bytes of padding */
@@ -71,8 +71,8 @@ struct force_fan_speed_rqst {
  * @details Requests of this type are processed by @ref aiclk_busy_handler
  */
 struct aiclk_set_speed_rqst {
-	/** @brief The command code corresponding to @ref MSG_TYPE_AICLK_GO_BUSY or @ref
-	 * MSG_TYPE_AICLK_GO_LONG_IDLE
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_AICLK_GO_BUSY or @ref
+	 * TT_SMC_MSG_AICLK_GO_LONG_IDLE
 	 */
 	uint8_t command_code;
 

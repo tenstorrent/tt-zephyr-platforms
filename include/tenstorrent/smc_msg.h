@@ -44,7 +44,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_I2C_MESSAGE = 0x1E,
 	TT_SMC_MSG_EFUSE_BURN_BITS = 0x1F,
 	TT_SMC_MSG_REINIT_TENSIX = 0x20,
-	/** @brief @ref power_setting_rqst_t "Power Setting Request"*/
+	/** @brief @ref power_setting_rqst "Power Setting Request"*/
 	TT_SMC_MSG_POWER_SETTING = 0x21,
 	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
 	TT_SMC_MSG_AISWEEP_START = 0x31,
@@ -53,9 +53,9 @@ enum tt_smc_msg {
 	TT_SMC_MSG_GET_AICLK = 0x34,
 	TT_SMC_MSG_FORCE_VDD = 0x39,
 	TT_SMC_MSG_PCIE_INDEX = 0x51,
-	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Busy Speed Request"*/
+	/** @brief @ref aiclk_set_speed_rqst "AI Clock Set Busy Speed Request"*/
 	TT_SMC_MSG_AICLK_GO_BUSY = 0x52,
-	/** @brief @ref aiclk_set_speed_rqst_t "AI Clock Set Idle Speed Request"*/
+	/** @brief @ref aiclk_set_speed_rqst "AI Clock Set Idle Speed Request"*/
 	TT_SMC_MSG_AICLK_GO_LONG_IDLE = 0x54,
 	/* arg: 3 = ASIC + M3 reset, other values = ASIC-only reset */
 	TT_SMC_MSG_TRIGGER_RESET = 0x56,
@@ -73,7 +73,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_ASIC_STATE5 = 0xA5,
 	TT_SMC_MSG_GET_VOLTAGE_CURVE_FROM_FREQ = 0xA6,
 
-	/** @brief @ref force_fan_speed_rqst_t "Force Fan Speed Request"*/
+	/** @brief @ref force_fan_speed_rqst "Force Fan Speed Request"*/
 	TT_SMC_MSG_FORCE_FAN_SPEED = 0xAC,
 	TT_SMC_MSG_GET_DRAM_TEMPERATURE = 0xAD,
 	TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF,
