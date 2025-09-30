@@ -127,11 +127,11 @@ index 44b27b63606..32ec97abba1 100644
  				return -EIO;
  			}
 diff --git a/drivers/smbus/smbus_stm32.c b/drivers/smbus/smbus_stm32.c
-index 3b264b3ec10..ceb42f88374 100644
+index 7bdf550d295..ea66b105338 100644
 --- a/drivers/smbus/smbus_stm32.c
 +++ b/drivers/smbus/smbus_stm32.c
-@@ -583,6 +583,18 @@ int smbus_stm32_block_pcall(const struct device *dev, uint16_t addr, uint8_t cmd
- 	return check_read_pec(dev, addr, messages, ARRAY_SIZE(messages));
+@@ -517,6 +517,18 @@ int smbus_stm32_block_pcall(const struct device *dev, uint16_t addr, uint8_t cmd
+ 	return 0;
  }
  
 +static int smbus_stm32_cancel(const struct device *dev)
@@ -149,7 +149,7 @@ index 3b264b3ec10..ceb42f88374 100644
  static DEVICE_API(smbus, smbus_stm32_api) = {
  	.configure = smbus_stm32_configure,
  	.get_config = smbus_stm32_get_config,
-@@ -596,6 +608,8 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
+@@ -530,6 +542,8 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
  	.smbus_pcall = smbus_stm32_pcall,
  	.smbus_block_write = smbus_stm32_block_write,
  	.smbus_block_read = smbus_stm32_block_read,
@@ -270,7 +270,7 @@ index 00e8d5767ef..84df00d5891 100644
  };
  
  /**
-@@ -1085,6 +1089,56 @@ static inline int z_impl_smbus_block_pcall(const struct device *dev,
+@@ -1085,6 +1089,46 @@ static inline int z_impl_smbus_block_pcall(const struct device *dev,
  				       rcv_count, rcv_buf);
  }
  
@@ -292,13 +292,8 @@ index 00e8d5767ef..84df00d5891 100644
 +
 +static inline int z_impl_smbus_cancel(const struct device *dev)
 +{
-+	const struct smbus_driver_api *api = (const struct smbus_driver_api *)dev->api;
-+
-+	if (api->smbus_cancel == NULL) {
-+		return -ENOSYS;
-+	}
-+
-+	return api->smbus_cancel(dev);
++	(void)dev;
++	return 0;
 +}
 +
 +/**
@@ -315,13 +310,8 @@ index 00e8d5767ef..84df00d5891 100644
 +
 +static inline int z_impl_smbus_uncancel(const struct device *dev)
 +{
-+	const struct smbus_driver_api *api = (const struct smbus_driver_api *)dev->api;
-+
-+	if (api->smbus_uncancel == NULL) {
-+		return -ENOSYS;
-+	}
-+
-+	return api->smbus_uncancel(dev);
++	(void)dev;
++	return 0;
 +}
 +
  #ifdef __cplusplus

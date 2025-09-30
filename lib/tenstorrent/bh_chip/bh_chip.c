@@ -52,6 +52,17 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 							     wire_ack.val);
 	}
 
+	if (output.ret != 0 || (output.msg.msg_id != kCm2DmMsgIdNull && output.ack_ret != 0)) {
+		static k_timepoint_t message_ratelimit;
+
+		if (sys_timepoint_expired(message_ratelimit)) {
+			message_ratelimit = sys_timepoint_calc(K_SECONDS(1));
+
+			LOG_WRN("CM2DM SMBus communication failed. req: %d ack: %d", output.ret,
+				output.ack_ret);
+		}
+	}
+
 	return output;
 }
 
