@@ -20,6 +20,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #define SPI_PAGE_SIZE   256
 #define SECTOR_SIZE     4096
@@ -173,6 +174,7 @@ static uint8_t read_eeprom_handler(const union request *request, struct response
 	uint32_t spi_address = request->data[1];
 	uint32_t num_bytes = request->data[2];
 	uint8_t *csm_addr = (uint8_t *)request->data[3];
+	int rc;
 
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
@@ -188,7 +190,11 @@ static uint8_t read_eeprom_handler(const union request *request, struct response
 		return 1;
 	}
 
-	return SpiBlockRead(spi_address, num_bytes, csm_addr);
+	rc = SpiBlockRead(spi_address, num_bytes, csm_addr);
+	if (rc < 0) {
+		LOG_ERR("%s failed %d", __func__, rc);
+	}
+	return rc;
 }
 
 static uint8_t write_eeprom_handler(const union request *request, struct response *response)
@@ -197,6 +203,7 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	uint32_t spi_address = request->data[1];
 	uint32_t num_bytes = request->data[2];
 	uint8_t *csm_addr = (uint8_t *)request->data[3];
+	int rc;
 
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
@@ -212,7 +219,11 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 		return 1;
 	}
 
-	return SpiSmartWrite(spi_address, csm_addr, num_bytes);
+	rc = SpiSmartWrite(spi_address, csm_addr, num_bytes);
+	if (rc < 0) {
+		LOG_ERR("%s failed %d", __func__, rc);
+	}
+	return rc;
 }
 
 REGISTER_MESSAGE(MSG_TYPE_READ_EEPROM, read_eeprom_handler);
