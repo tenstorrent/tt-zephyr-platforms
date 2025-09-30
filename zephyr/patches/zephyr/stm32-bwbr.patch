@@ -1,14 +1,15 @@
 diff --git a/drivers/smbus/smbus_stm32.c b/drivers/smbus/smbus_stm32.c
-index 04c0b08b02e..3b264b3ec10 100644
+index b74d94cdc9d..3e93e8f4ef7 100644
 --- a/drivers/smbus/smbus_stm32.c
 +++ b/drivers/smbus/smbus_stm32.c
-@@ -523,6 +523,66 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
+@@ -522,6 +522,65 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
  	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
  }
  
-+int smbus_stm32_block_pcall(const struct device *dev, uint16_t addr, uint8_t cmd,
-+			    uint8_t send_count, uint8_t *send_buf, uint8_t *recv_count,
-+			    uint8_t *recv_buf)
++int smbus_stm32_block_pcall(const struct device *dev,
++				       uint16_t addr, uint8_t cmd,
++				       uint8_t send_count, uint8_t *send_buf,
++				       uint8_t *recv_count, uint8_t *recv_buf)
 +{
 +	const struct smbus_stm32_config *config = dev->config;
 +
@@ -31,27 +32,27 @@ index 04c0b08b02e..3b264b3ec10 100644
 +			.flags = I2C_MSG_WRITE,
 +		},
 +		{
-+			.buf = NULL, /* will point to next message's len field */
++			.buf = NULL,	/* will point to next message's len field */
 +			.len = 1,
 +			.flags = I2C_MSG_READ | I2C_MSG_RESTART,
 +		},
 +		{
 +			.buf = recv_buf,
-+			.len = 0, /* written by previous message! */
++			.len = 0,	/* written by previous message! */
 +			.flags = I2C_MSG_READ,
 +		},
 +		{
 +			.buf = &received_pec,
 +			.len = 1,
 +			.flags = I2C_MSG_READ,
-+		},
++		}
 +	};
 +
 +	/* Count is read in msg 3 and stored in the len of msg 4.
 +	 * This works because the STM I2C driver processes each message serially.
 +	 * The addressing math assumes little-endian.
 +	 */
-+	messages[3].buf = (uint8_t *)&messages[4].len;
++	messages[3].buf = (uint8_t*)&messages[4].len;
 +
 +	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
 +
@@ -59,17 +60,15 @@ index 04c0b08b02e..3b264b3ec10 100644
 +
 +	*recv_count = messages[4].len;
 +
-+	if (res != 0) {
-+		return res;
-+	}
++	if (res != 0) return res;
 +
 +	return check_read_pec(dev, addr, messages, ARRAY_SIZE(messages));
 +}
 +
- static DEVICE_API(smbus, smbus_stm32_api) = {
- 	.configure = smbus_stm32_configure,
- 	.get_config = smbus_stm32_get_config,
-@@ -543,7 +603,7 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
+ static int smbus_stm32_cancel(const struct device *dev)
+ {
+ 	const struct smbus_stm32_config *config = dev->config;
+@@ -556,7 +615,7 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
  	.smbus_smbalert_set_cb = NULL,
  	.smbus_smbalert_remove_cb = NULL,
  #endif /* CONFIG_SMBUS_STM32_SMBALERT */

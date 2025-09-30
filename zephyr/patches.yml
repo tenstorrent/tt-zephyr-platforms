@@ -101,8 +101,31 @@ patches:
     date: 2025-05-05
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
+  - path: zephyr/stm32-block-read.patch
+    sha256sum: 15a6de40f59b4fdf0fd5a8292cd852b0627f2c3c794229d902c37ab9b70d2612
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96516
+    comments: |
+      Implement smbus_block_read for smbus_stm32
+  - path: zephyr/smbus-cancel.patch
+    sha256sum: 6b59d98679aa9fbb2039bf485626acc1d43911ada2f125d0290e918b19f4f627
+    module: zephyr
+    author: Andrew Lewycky
+    email: alewycky@tenstorrent.com
+    date: 2025-07-24
+    comments: |
+      Add SMBus/I2C transfer cancellation
+
+      Transfer cancellation immediately cancels the current transfer
+      and rejects all future transfers until cancellation is reversed.
+
+      Implementations are included for STM32 I2C and SMBus.
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: 6f3990f30437ff992cf2e52da656d1690180dcae15dfa4e7dbace02d28a4b852
+    sha256sum: d54f0d559b265d39525ccde948db2a4749c1b29e8fad88f8cef3de175ababfd6
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
@@ -140,7 +163,7 @@ patches:
     comments: |
       Make zversion html take project/version settings from conf.py
   - path: zephyr/stm32-bwbr.patch
-    sha256sum: 2412831ca1430db92f05a84f81f5000cb879748831fe2d5084839572905ee21d
+    sha256sum: 1c5f0cfe4e39b57f28bc5501e8c7a1e759765887de55fea03f21eec7e322f5d1
     module: zephyr
     author: James Growden
     email: jgrowden@tenstorrent.com
@@ -158,16 +181,3 @@ patches:
     comments: |
       Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
       does not complain about slot1_size not being defined.
-  - path: zephyr/smbus-cancel.patch
-    sha256sum: 70a823aa801ce3e19aa1489eb1c5500387f1028d57ec977926f248066ce5f407
-    module: zephyr
-    author: Andrew Lewycky
-    email: alewycky@tenstorrent.com
-    date: 2025-07-24
-    comments: |
-      Add SMBus/I2C transfer cancellation
-
-      Transfer cancellation immediately cancels the current transfer
-      and rejects all future transfers until cancellation is reversed.
-
-      Implementations are included for STM32 I2C and SMBus.
