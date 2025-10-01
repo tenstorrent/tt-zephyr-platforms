@@ -191,6 +191,21 @@ When DMC firmware boots successfully, you should see output similar to this:
    *** SDK_VERSION zephyr sdk 0.17.2 ***
    DMFW VERSION 0.9.99
 
+Pulling in New Code from ``main``
+---------------------------------
+
+After pulling in the latest code from ``main``, you will avoid many mysterious build / functional issues by executing these commands:
+
+.. code-block:: shell
+
+   # Clean up any existing patches
+   west patch clean
+   # Update Zephyr and other modules to the version in the manifest
+   west update
+   # Apply the latest patches
+   west patch apply
+
+
 Testing Your Setup
 ------------------
 
