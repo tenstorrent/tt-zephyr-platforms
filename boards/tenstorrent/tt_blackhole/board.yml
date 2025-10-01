@@ -5,7 +5,6 @@ boards:
   revision:
     format: custom
     revisions:
-    - name: "p100"
     - name: "p100a"
     - name: "p150a"
     - name: "p150b"

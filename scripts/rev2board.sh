@@ -7,9 +7,9 @@ CLUSTER="smc"
 
 if [ $# -eq 0 ]; then
   >&2 echo "Usage: $0 <board> [<cluster>]"
-  >&2 echo "Example: $0 p100 -> tt_blackhole@p100/tt_blackhole/smc"
-  >&2 echo "Example: $0 p100 smc -> tt_blackhole@p100/tt_blackhole/smc"
-  >&2 echo "Example: $0 p100 dmc -> tt_blackhole@p100/tt_blackhole/dmc"
+  >&2 echo "Example: $0 p100a -> tt_blackhole@p100a/tt_blackhole/smc"
+  >&2 echo "Example: $0 p100a smc -> tt_blackhole@p100a/tt_blackhole/smc"
+  >&2 echo "Example: $0 p100a dmc -> tt_blackhole@p100a/tt_blackhole/dmc"
   exit 1
 fi
 
@@ -18,7 +18,6 @@ if [ $# -ge 2 ]; then
 fi
 
 case "$1" in
-  p100) BOARD="tt_blackhole@p100/tt_blackhole/$CLUSTER";;
   p100a) BOARD="tt_blackhole@p100a/tt_blackhole/$CLUSTER";;
   p150a) BOARD="tt_blackhole@p150a/tt_blackhole/$CLUSTER";;
   p150b) BOARD="tt_blackhole@p150b/tt_blackhole/$CLUSTER";;

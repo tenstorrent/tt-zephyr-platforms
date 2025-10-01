@@ -19,7 +19,7 @@ jobs:
   ci-stats:
     strategy:
       matrix:
-        board: [p100, p100a, p150a, p300a]
+        board: [p100a, p150a, p300a]
     runs-on: ubuntu-22.04
     permissions:
       actions: read
@@ -212,7 +212,7 @@ jobs:
 
       - name: Copy CI Results
         run: |
-          for board in p100 p100a p150a p300a; do
+          for board in p100a p150a p300a; do
             cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
               tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
           done
