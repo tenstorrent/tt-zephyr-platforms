@@ -1,4 +1,9 @@
 /*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
  * DTS overlay to expose the ARC DMA controller to the chan_blen_transfer test
  * on the Tenstorrent Blackhole SMC platform.
  */

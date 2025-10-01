@@ -13,6 +13,7 @@ toolchain:
 supported:
   - smp
   - bh_1x
+  - dma
 testing:
   ignore_tags:
     - net
