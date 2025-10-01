@@ -272,26 +272,6 @@ static const RegulatorData serdes_vr_data[] = {
 
 /***** End of common serdes VR settings */
 
-/* p100 configuration removed - p100 no longer supported
-static const RegulatorConfig p100_config[] = {
-	{
-		.address = P0V8_VCORE_ADDR,
-		.regulator_data = p1x0_vcore_data,
-		.count = ARRAY_SIZE(p1x0_vcore_data),
-	},
-	{
-		.address = P0V8_VCOREM_ADDR,
-		.regulator_data = p1x0_vcorem_data,
-		.count = ARRAY_SIZE(p1x0_vcorem_data),
-	},
-};
-
-const BoardRegulatorsConfig p100_regulators_config = {
-	.regulator_config = p100_config,
-	.count = ARRAY_SIZE(p100_config),
-};
-*/
-
 static const RegulatorConfig p150_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
