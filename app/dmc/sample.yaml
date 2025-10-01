@@ -7,7 +7,6 @@ tests:
       - CONFIG_TT_FWUPDATE=n
       - CONFIG_DMC_RUN_SMBUS_TESTS=y
     platform_allow:
-      - tt_blackhole@p100/tt_blackhole/dmc
       - tt_blackhole@p100a/tt_blackhole/dmc
       - tt_blackhole@p150a/tt_blackhole/dmc
       - tt_blackhole@p300a/tt_blackhole/dmc

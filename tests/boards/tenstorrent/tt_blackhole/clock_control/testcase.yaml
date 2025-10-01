@@ -6,14 +6,11 @@ tests:
   drivers.clock_control.basic:
     tags: smoke
     platform_allow:
-      - tt_blackhole@p100/tt_blackhole/smc
       - tt_blackhole@p100a/tt_blackhole/smc
       - tt_blackhole@p150a/tt_blackhole/smc
       - tt_blackhole@p150b/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
-      - "platform:tt_blackhole@p100/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-         app.overlay"
       - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
          app.overlay"
       - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\

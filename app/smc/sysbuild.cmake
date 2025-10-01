@@ -30,9 +30,9 @@ if(BOARD STREQUAL "tt_blackhole")
   string(TOUPPER ${BOARD_REVISION} BASE_NAME)
   set(PROD_NAME "${BASE_NAME}-1")
 elseif(BOARD STREQUAL "native_sim")
-  # Use P100 data files to stand in
-  set(PROD_NAME "P100-1")
-  set(BOARD_REVISION "p100")
+  # Use P100A data files to stand in
+  set(PROD_NAME "P100A-1")
+  set(BOARD_REVISION "p100a")
 else()
   message(FATAL_ERROR "No support for board ${BOARD}")
 endif()
