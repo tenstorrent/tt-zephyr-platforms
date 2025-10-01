@@ -719,7 +719,7 @@
 			status = "disabled";
 		};
 
-		dma0: dma@d00 {
+		tst_dma0: dma0: dma@d00 {
 			compatible = "snps,designware-dma-arc";
 			reg = <0xd00 0x100>;
 			dma-channels = <1>;
