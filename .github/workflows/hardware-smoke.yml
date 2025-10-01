@@ -61,45 +61,18 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
 
-      - name: Generate board names
+      - name: Set ASIC ID
         shell: bash
-        working-directory: tt-zephyr-platforms
         run: |
-          SMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" smc)"
-          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
-
-          DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
-          echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
-
           if [ ${{ matrix.config.board }} = 'p300a' ]; then
-            echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
             echo "ASIC_ID=1" >> "$GITHUB_ENV"
           else
-            echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
             echo "ASIC_ID=0" >> "$GITHUB_ENV"
           fi
 
-      - name: build-tt-smc_console
-        working-directory: tt-zephyr-platforms/scripts/tooling
-        run: |
-          # Build tt-console
-          make
-
       - name: run-dmc-tests
-        working-directory: zephyr
         run: |
-          # Run tests tagged with "smoke"
-          ./scripts/twister -i \
-            -p $DMC_BOARD --device-testing \
-            --west-flash \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
-            --flash-before \
-            --tag smoke \
-            --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
-            --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
-            -T samples -T tests -T ../tt-zephyr-platforms/tests \
-            -T ../tt-zephyr-platforms/samples \
-            --outdir twister-dmc-smoke
+          tt-zephyr-platforms/scripts/ci/run-smoke.sh -t dmc -p $ASIC_ID ${{ matrix.config.board }}
 
       - name: Upload DMC Smoke Tests
         if: ${{ always() }}
@@ -120,32 +93,9 @@ jobs:
             zephyr/twister-dmc-smoke/twister.json
 
       - name: run-smc-tests
-        working-directory: zephyr
         run: |
-          # Flash the DMFW app back onto the DMC. Otherwise the flash device
-          # will not be muxed to the SMC, and flash tests will fail
-          ./scripts/twister -i \
-            --tag e2e \
-            -p $DMC_BOARD --device-testing \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
-            --west-flash \
-            --flash-before \
-            -T ../tt-zephyr-platforms/app \
-            --outdir twister-dmc-e2e
+          tt-zephyr-platforms/scripts/ci/run-smoke.sh -t smc -p $ASIC_ID ${{ matrix.config.board }}
 
-          # Run tests tagged with "smoke"
-          ./scripts/twister -i \
-            -p $SMC_BOARD --device-testing \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
-            --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-            --west-flash \
-            --flash-before \
-            --tag smoke \
-            --alt-config-root ../tt-zephyr-platforms/test-conf/samples \
-            --alt-config-root ../tt-zephyr-platforms/test-conf/tests \
-            -T samples -T tests -T ../tt-zephyr-platforms/tests \
-            -T ../tt-zephyr-platforms/samples \
-            --outdir twister-smc-smoke
 
       - name: Upload SMC Smoke Tests
         if: ${{ always() }}
