@@ -48,10 +48,10 @@ index 2dfcea83af7..6a211f38415 100644
  
  #ifdef CONFIG_I2C_TARGET
 diff --git a/drivers/i2c/i2c_ll_stm32_v2.c b/drivers/i2c/i2c_ll_stm32_v2.c
-index 44b27b63606..32ec97abba1 100644
+index 98b1fd256b0..70db251e0e9 100644
 --- a/drivers/i2c/i2c_ll_stm32_v2.c
 +++ b/drivers/i2c/i2c_ll_stm32_v2.c
-@@ -909,6 +909,7 @@ static inline int msg_done(const struct device *dev,
+@@ -905,6 +905,7 @@ static inline int msg_done(const struct device *dev,
  			   unsigned int current_msg_flags)
  {
  	const struct i2c_stm32_config *cfg = dev->config;
@@ -59,7 +59,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	int64_t start_time = k_uptime_get();
  
-@@ -917,6 +918,10 @@ static inline int msg_done(const struct device *dev,
+@@ -913,6 +914,10 @@ static inline int msg_done(const struct device *dev,
  		if (check_errors(dev, __func__)) {
  			return -EIO;
  		}
@@ -68,9 +68,9 @@ index 44b27b63606..32ec97abba1 100644
 +			break;
 +		}
  		if ((k_uptime_get() - start_time) >
- 		    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
+ 		    CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
  			return -ETIMEDOUT;
-@@ -925,7 +930,8 @@ static inline int msg_done(const struct device *dev,
+@@ -921,7 +926,8 @@ static inline int msg_done(const struct device *dev,
  	/* Issue stop condition if necessary */
  	if (current_msg_flags & I2C_MSG_STOP) {
  		LL_I2C_GenerateStopCondition(i2c);
@@ -78,9 +78,9 @@ index 44b27b63606..32ec97abba1 100644
 +		while (!LL_I2C_IsActiveFlag_STOP(i2c)
 +		       && !data->cancelled) {
  			if ((k_uptime_get() - start_time) >
- 			    I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
+ 			    CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC) {
  				return -ETIMEDOUT;
-@@ -936,13 +942,14 @@ static inline int msg_done(const struct device *dev,
+@@ -932,13 +938,14 @@ static inline int msg_done(const struct device *dev,
  		LL_I2C_DisableReloadMode(i2c);
  	}
  
@@ -96,7 +96,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	unsigned int len = 0U;
  	uint8_t *buf = msg->buf;
-@@ -951,8 +958,8 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
+@@ -947,8 +954,8 @@ static int i2c_stm32_msg_write(const struct device *dev, struct i2c_msg *msg,
  	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_WRITE);
  
  	len = msg->len;
@@ -107,7 +107,7 @@ index 44b27b63606..32ec97abba1 100644
  			if (LL_I2C_IsActiveFlag_TXIS(i2c)) {
  				break;
  			}
-@@ -979,6 +986,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+@@ -975,6 +982,7 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
  			      uint8_t *next_msg_flags, uint16_t slave)
  {
  	const struct i2c_stm32_config *cfg = dev->config;
@@ -115,7 +115,7 @@ index 44b27b63606..32ec97abba1 100644
  	I2C_TypeDef *i2c = cfg->i2c;
  	unsigned int len = 0U;
  	uint8_t *buf = msg->buf;
-@@ -987,8 +995,8 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
+@@ -983,8 +991,8 @@ static int i2c_stm32_msg_read(const struct device *dev, struct i2c_msg *msg,
  	msg_init(dev, msg, next_msg_flags, slave, LL_I2C_REQUEST_READ);
  
  	len = msg->len;
@@ -127,10 +127,10 @@ index 44b27b63606..32ec97abba1 100644
  				return -EIO;
  			}
 diff --git a/drivers/smbus/smbus_stm32.c b/drivers/smbus/smbus_stm32.c
-index 7bdf550d295..ea66b105338 100644
+index ebcdb26e073..ebcb51c71f3 100644
 --- a/drivers/smbus/smbus_stm32.c
 +++ b/drivers/smbus/smbus_stm32.c
-@@ -517,6 +517,18 @@ int smbus_stm32_block_pcall(const struct device *dev, uint16_t addr, uint8_t cmd
+@@ -511,6 +511,18 @@ int smbus_stm32_block_pcall(const struct device *dev, uint16_t addr, uint8_t cmd
  	return 0;
  }
  
@@ -149,7 +149,7 @@ index 7bdf550d295..ea66b105338 100644
  static DEVICE_API(smbus, smbus_stm32_api) = {
  	.configure = smbus_stm32_configure,
  	.get_config = smbus_stm32_get_config,
-@@ -530,6 +542,8 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
+@@ -524,6 +536,8 @@ static DEVICE_API(smbus, smbus_stm32_api) = {
  	.smbus_pcall = smbus_stm32_pcall,
  	.smbus_block_write = smbus_stm32_block_write,
  	.smbus_block_read = smbus_stm32_block_read,
@@ -249,7 +249,7 @@ index 3e3c104a291..9ce4f601a30 100644
  }
  #endif
 diff --git a/include/zephyr/drivers/smbus.h b/include/zephyr/drivers/smbus.h
-index 00e8d5767ef..84df00d5891 100644
+index 00e8d5767ef..e2879d28608 100644
 --- a/include/zephyr/drivers/smbus.h
 +++ b/include/zephyr/drivers/smbus.h
 @@ -378,6 +378,8 @@ typedef int (*smbus_api_smbalert_cb_t)(const struct device *dev,
