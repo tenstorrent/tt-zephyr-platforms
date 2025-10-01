@@ -18,7 +18,7 @@
 #include <zephyr/logging/log.h>
 
 #define BOARDTYPE_ORION 0x37
-#define BOARDTYPE_P100  0x36
+/* #define BOARDTYPE_P100  0x36 - removed, p100 no longer supported */
 #define BOARDTYPE_P100A 0x43
 #define BOARDTYPE_P150A 0x40
 #define BOARDTYPE_P150  0x41
@@ -97,9 +97,7 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 	case BOARDTYPE_ORION:
 		pcb_type = PcbTypeOrion;
 		break;
-	case BOARDTYPE_P100:
-		pcb_type = PcbTypeP100;
-		break;
+	/* BOARDTYPE_P100 case removed - p100 no longer supported */
 	/* Note: the P100A is a depopulated P150, so PcbType is actually P150 */
 	/* eth will be all disabled as per P100 specs anyways */
 	case BOARDTYPE_P100A:
