@@ -26,11 +26,20 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -70,11 +79,20 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 

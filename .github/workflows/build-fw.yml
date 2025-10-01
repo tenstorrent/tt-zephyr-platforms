@@ -43,6 +43,8 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     needs: genboards
     strategy:
       fail-fast: false
@@ -52,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -110,11 +112,20 @@ jobs:
 
   build-recovery:
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -145,18 +156,27 @@ jobs:
             build-recovery/**/zephyr.stat
 
   build-assembly-test:
-    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         board:
           - p150
           - p300
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -245,11 +265,20 @@ jobs:
 
   build-preflash:
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
 
@@ -266,11 +295,20 @@ jobs:
             preflash*.ihex
 
   build-combined-fwbundle:
-    runs-on: ubuntu-24.04
     needs: build
     outputs:
       combined-fwbundle-artifact: ${{ steps.set_combined_fwbundle_output.outputs.combined_fwbundle_artifact }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
@@ -299,13 +337,22 @@ jobs:
         run: echo "combined_fwbundle_artifact=combined-fwbundle" >> $GITHUB_OUTPUT
 
   build-bh-flm:
-    runs-on: ubuntu-24.04
     name: Build Blackhole Flash Loader Module
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/danieldegrasse/tt-zephyr-platforms/ci-image:v18.8.0
     steps:
+      - if: ${{ always() }}
+        shell: bash
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
       - name: Build Flash Loader Module
