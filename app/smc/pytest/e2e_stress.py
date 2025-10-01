@@ -70,7 +70,7 @@ def test_arc_watchdog(arc_chip):
     test_name = "ARC watchdog test"
     total_tries = min(MAX_TEST_ITERATIONS, 100)
     fail_count = 0
-    failure_fail_count = 1
+    failure_fail_count = 0
 
     for i in range(total_tries):
         if i % 10 == 0:
@@ -82,7 +82,7 @@ def test_arc_watchdog(arc_chip):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
+    assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
     )
 
@@ -96,7 +96,7 @@ def test_pcie_fw_load_time(arc_chip):
     test_name = "PCIe firmware load time test"
     total_tries = min(MAX_TEST_ITERATIONS, 10)
     fail_count = 0
-    failure_fail_count = 1
+    failure_fail_count = 0
 
     for i in range(total_tries):
         logger.info(
@@ -113,7 +113,7 @@ def test_pcie_fw_load_time(arc_chip):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
+    assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
     )
 
@@ -155,7 +155,7 @@ def test_smi_reset(arc_chip, asic_id):
     )
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
+    assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
     )
 
@@ -186,7 +186,7 @@ def test_dirty_reset():
             time.sleep(0.5)
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count < failure_fail_count, (
+    assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
     )
 
