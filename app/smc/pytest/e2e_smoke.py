@@ -240,7 +240,13 @@ def arc_watchdog_test(arc_chip):
     arc_chip.axi_write32(ARC_MISC_CTRL, 0xF0)
     # Make sure we can still detect ARC core after 500 ms
     time.sleep(0.5)
-    arc_chip = pyluwen.detect_chips()[0]
+
+    try: 
+        arc_chip = pyluwen.detect_chips()[0]
+    except Exception:
+        logger.error("ARC core was reset too quickly")
+        return False
+    
     # Delay 600 more ms. Make sure the ARC has been reset.
     time.sleep(0.6)
     # Ideally we would catch a more narrow exception, but this is what pyluwen raises
@@ -263,7 +269,12 @@ def arc_watchdog_test(arc_chip):
     time.sleep(1.0)
     rescan_pcie()
     # ARC should now be back online
-    arc_chip = pyluwen.detect_chips()[0]
+    try:
+        arc_chip = pyluwen.detect_chips()[0]
+    except Exception:
+        logger.error("ARC core was not re-detected after an additional second")
+        return False
+        
     # Make sure ARC can still ping the DMC
     response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
     if response[0] != 1:
@@ -277,10 +288,6 @@ def arc_watchdog_test(arc_chip):
 
 
 @pytest.mark.flash
-@pytest.mark.skipif(
-    os.environ.get("CONSOLE_DEV") == "/dev/tenstorrent/1",
-    reason="Test unreliable on p300a board",
-)
 def test_arc_watchdog(arc_chip):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
