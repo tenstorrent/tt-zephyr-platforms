@@ -58,7 +58,7 @@ build_firmware() {
   west build -p always -b tt_blackhole/tt_blackhole/smc app/smc/
 
   # Builds for DMC
-  west build -p always -b tt_blackhole@p100/tt_blackhole/dmc app/dmc/
+  west build -p always -b tt_blackhole@p100a/tt_blackhole/dmc app/dmc/
 }
 
 # Main script execution
