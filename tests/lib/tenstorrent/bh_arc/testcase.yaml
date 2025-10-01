@@ -1,12 +1,21 @@
 tests:
   lib.tenstorrent.bh_arc:
     platform_allow: native_sim
-    extra_args: DTC_OVERLAY_FILE=app.overlay
     tags: bh_arc
   lib.tenstorrent.bh_arc.tt_shell:
     platform_allow: native_sim
     build_only: true
-    extra_args: DTC_OVERLAY_FILE=app.overlay
     extra_configs:
       - CONFIG_SHELL=y
     tags: bh_arc
+  lib.tenstorrent.bh_arc.device_test:
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
+    extra_configs:
+      - CONFIG_DEVICE_TEST=y
+    tags:
+      - bh_arc
+      - smoke
