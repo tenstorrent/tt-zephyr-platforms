@@ -5,6 +5,11 @@
 [![HW Smoke](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/hardware-smoke.yml/badge.svg?branch=main)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/hardware-smoke.yml)
 [![HW Soak](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/hardware-long.yml/badge.svg?branch=main)](https://github.com/tenstorrent/tt-zephyr-platforms/actions/workflows/hardware-long.yml)
 
+[P100 CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p100_ci_stats.html)
+[P100A CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p100a_ci_stats.html)
+[P150A CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p150a_ci_stats.html)
+[P300A CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p300a_ci_stats.html)
+
 Welcome to TT-Zephyr-Platforms!
 
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
