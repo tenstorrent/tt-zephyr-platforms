@@ -191,7 +191,6 @@ void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv)
 			     CB_GDDR_VDDR_FB2);
 		set_max20730(CB_GDDR_VDDR_EAST_ADDR, voltage_in_mv, CB_GDDR_VDDR_FB1,
 			     CB_GDDR_VDDR_FB2);
-		/* PcbTypeP100 case removed - p100 no longer supported */
 	} else {
 		set_mpm3695(GDDR_VDDR_ADDR, voltage_in_mv, GDDR_VDDR_FB1, GDDR_VDDR_FB2);
 	}

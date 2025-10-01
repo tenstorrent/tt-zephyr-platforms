@@ -3,15 +3,6 @@ common:
     - drivers
     - flash
 tests:
-  # drivers.flash.performance.mx35: disabled - p100 board removed
-  #   tags: smoke
-  #   platform_allow:
-  #     - tt_blackhole@p100/tt_blackhole/smc
-  #   extra_configs:
-  #     # The below values are set experimentally. A test failure may
-  #     # indicate a performance regression in the flash driver.
-  #     - CONFIG_EXPECTED_READ_TIME=5
-  #     - CONFIG_EXPECTED_PROGRAM_TIME=400
   drivers.flash.performance.mt25:
     tags: smoke
     platform_allow:
