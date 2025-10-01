@@ -34,8 +34,8 @@ trap cleanup EXIT
 SCRIPT_DIR="$(dirname "$0")"
 TTZP_BASE="$(dirname "$SCRIPT_DIR")"
 
-# board revision is agnostic, we use p100 for preflash
-BOARD_REV="p100"
+# board revision is agnostic, we use p100a for preflash
+BOARD_REV="p100a"
 BUILD_DIR="$TEMP_DIR"
 
 # firmware version info
