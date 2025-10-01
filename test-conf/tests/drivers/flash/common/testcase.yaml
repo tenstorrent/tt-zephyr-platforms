@@ -6,17 +6,10 @@ tests:
   drivers.flash.common:
     tags: smoke
     platform_allow:
-      - tt_blackhole@p100/tt_blackhole/smc
       - tt_blackhole@p100a/tt_blackhole/smc
       - tt_blackhole@p150a/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
-      - "platform:tt_blackhole@p100/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
-         common/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p100/tt_blackhole/smc:EXTRA_CONF_FILE=\
-         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
-         common/tt_blackhole_tt_blackhole_smc.conf"
       - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/flash/\
          common/tt_blackhole_tt_blackhole_smc.overlay"

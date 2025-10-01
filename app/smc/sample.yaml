@@ -4,7 +4,6 @@ sample:
 common:
   timeout: 120
   platform_allow:
-    - tt_blackhole@p100/tt_blackhole/smc
     - tt_blackhole@p100a/tt_blackhole/smc
     - tt_blackhole@p150a/tt_blackhole/smc
     - tt_blackhole@p300a/tt_blackhole/smc

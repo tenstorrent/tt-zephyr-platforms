@@ -24,4 +24,4 @@ Successfully flashed tt_boot_fs
 
 The script will exit once the card is recovered.
 
-The script currently should support `p100`, `p100a`, `p150a`, `p150b`, and `p150c` cards.
+The script currently should support `p100a`, `p150a`, `p150b`, and `p150c` cards.
