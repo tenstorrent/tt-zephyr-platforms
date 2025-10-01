@@ -162,7 +162,7 @@ def gen_released_image(tmp_path: Path):
         with tarfile.open(targz, "r") as tar:
             tar.extractall(tmp_path / "fw_pack")
 
-        with open(tmp_path / "fw_pack" / "P100-1" / "image.bin", "r") as f:
+        with open(tmp_path / "fw_pack" / "P100A-1" / "image.bin", "r") as f:
             data = base64.b16decode(f.read())
 
         pth = tmp_path / "fw_pack" / "image.bin"
@@ -205,7 +205,7 @@ def get_corrupted_test_image_path(tmp_path: Path):
 
 def test_tt_boot_fs_schema():
     SCHEMA_PATH = MODULE_ROOT / "scripts" / "schemas" / "tt-boot-fs-schema.yml"
-    SPEC_PATH = TEST_ROOT / "p100.yml"
+    SPEC_PATH = TEST_ROOT / "p100a.yml"
 
     schema = None
     spec = None
@@ -220,7 +220,7 @@ def test_tt_boot_fs_mkfs():
     """
     Test the ability to make a tt_boot_fs.
     """
-    assert tt_boot_fs.mkfs(TEST_ROOT / "p100.yml") is not None, (
+    assert tt_boot_fs.mkfs(TEST_ROOT / "p100a.yml") is not None, (
         "tt_boot_fs.mkfs() failed"
     )
 
@@ -271,9 +271,9 @@ def test_tt_boot_fs_ls(tmp_path: Path):
             "image_tag": "cmfwcfg",
             "size": 56,
             "copy_dest": 0,
-            "data_crc": 2158370831,
+            "data_crc": 2024482826,
             "flags": 56,
-            "fd_crc": 4168430605,
+            "fd_crc": 4034542600,
         },
         {
             "spi_addr": 86016,
@@ -342,11 +342,11 @@ def test_tt_boot_fs_ls(tmp_path: Path):
             "spi_addr": 258048,
             # Device Mgmt FW (called bmfw here for historical reasons)
             "image_tag": "bmfw",
-            "size": 35744,
+            "size": 35704,
             "copy_dest": 0,
-            "data_crc": 2928587200,
-            "flags": 35744,
-            "fd_crc": 637115074,
+            "data_crc": 3947396359,
+            "flags": 35704,
+            "fd_crc": 1655924193,
         },
         {
             "spi_addr": 294912,
