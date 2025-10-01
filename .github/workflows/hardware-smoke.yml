@@ -166,76 +166,18 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
 
-      - name: build-tt-smc_console
-        working-directory: tt-zephyr-platforms/scripts/tooling
-        run: |
-          # Build tt-console
-          make
-
-      - name: Generate board names
-        working-directory: tt-zephyr-platforms
+      - name: Set ASIC ID
         shell: bash
         run: |
-          SMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" smc)"
-          echo "SMC_BOARD=$SMC_BOARD" >> "$GITHUB_ENV"
-
-          DMC_BOARD="$(./scripts/rev2board.sh "${{ matrix.config.board }}" dmc)"
-          echo "DMC_BOARD=$DMC_BOARD" >> "$GITHUB_ENV"
-
           if [ ${{ matrix.config.board }} = 'p300a' ]; then
-            echo "CONSOLE_DEV=/dev/tenstorrent/1" >> "$GITHUB_ENV"
             echo "ASIC_ID=1" >> "$GITHUB_ENV"
           else
-            echo "CONSOLE_DEV=/dev/tenstorrent/0" >> "$GITHUB_ENV"
             echo "ASIC_ID=0" >> "$GITHUB_ENV"
           fi
 
-      - name: build-tt-smc_console
-        working-directory: tt-zephyr-platforms/scripts/tooling
-        run: |
-          # Build tt-console
-          make
-
       - name: run-e2e-tests
-        working-directory: zephyr
         run: |
-          # TODO: ideally we would use one twister command to build and
-          # flash DMC and SMC firmware, but since each chip uses a separate
-          # debug adapter this doesn't work. For now, just flash DMC
-          # then run twister with SMC firmware
-          ./scripts/twister -i \
-            --tag e2e \
-            -p $DMC_BOARD --device-testing \
-            --device-serial-pty ../tt-zephyr-platforms/scripts/dmc_rtt.py \
-            --flash-before \
-            --west-flash \
-            -T ../tt-zephyr-platforms/app \
-            --outdir twister-dmc-e2e
-          # Run E2E test to verify DMC and SMC firmware boot, and that
-          # the SMC firmware sets up PCIe and ARC messages
-          ./scripts/twister -i \
-            -p $SMC_BOARD --device-testing \
-            --tag e2e \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV -p" \
-            --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-            --flash-before \
-            --west-flash \
-            -T ../tt-zephyr-platforms/app \
-            --outdir twister-smc-e2e
-
-      - name: run-e2e-flash-test
-        working-directory: zephyr
-        run: |
-          # Run a full flash test, using tt-flash as the runner
-          ./scripts/twister -i -p $SMC_BOARD \
-            --tag e2e-flash -T ../tt-zephyr-platforms/app \
-            --west-flash="--force" \
-            --west-runner tt_flash \
-            --device-testing -c \
-            --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV -p" \
-            --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-            --flash-before \
-            --outdir twister-e2e-flash
+          tt-zephyr-platforms/scripts/ci/run-e2e.sh -p $ASIC_ID ${{ matrix.config.board }}
 
       - name: Upload E2E Test results
         if: ${{ always() }}
