@@ -46,6 +46,7 @@ static struct {
 	uint8_t chip_reset_asic_called: 1;
 	uint8_t chip_reset_dmc_called: 1;
 } chip_reset_state;
+static uint8_t reset_type;
 
 void PostCm2DmMsg(Cm2DmMsgId msg_id, uint32_t data)
 {
@@ -163,21 +164,30 @@ void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
 	PostCm2DmMsg(kCm2DmMsgTelemHeartbeatUpdate, heartbeat); /* in ms */
 }
 
+void reset_request_handler(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+	IssueChipReset(reset_type);
+}
+
+K_TIMER_DEFINE(reset_timer, reset_request_handler, NULL);
+
 static uint8_t reset_dm_handler(const union request *request, struct response *response)
 {
-	uint8_t arg = request->data[1];
+	reset_type = request->data[1];
 
 	/* Don't expect a response from the dmfw so need to check here for a valid reset level */
 	uint8_t ret = 0;
 
-	switch (arg) {
+	switch (reset_type) {
 	case kCm2DmResetLevelAsic:
 	case kCm2DmResetLevelDmc:
-		IssueChipReset(arg);
+		/* Delay slightly to allow SMC response to be sent before reset occurs */
+		k_timer_start(&reset_timer, K_MSEC(5), K_NO_WAIT);
 		break;
 	default:
 		/* Can never be zero because that case is covered by asic reset */
-		ret = arg;
+		ret = reset_type;
 	}
 
 	return ret;
