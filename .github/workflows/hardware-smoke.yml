@@ -34,7 +34,7 @@ jobs:
               - p150a-jtag
           - board: p300a
             runs-on:
-              - p300a-jtag
+              - yyz-zephyr-01-lab-p300a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -190,7 +190,7 @@ jobs:
               - p150a-jtag
           - board: p300a
             runs-on:
-              - p300a-jtag
+              - yyz-zephyr-01-lab-p300a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
