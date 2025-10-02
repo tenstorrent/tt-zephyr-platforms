@@ -34,7 +34,7 @@ jobs:
               - p150a-jtag
           - board: p300a
             runs-on:
-              - p300a-jtag
+              - yyz-zephyr-01-lab-p300a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -137,6 +137,7 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
+            --device-flash-timeout 120 \
             --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
             --west-flash \
             --flash-before \
@@ -189,7 +190,7 @@ jobs:
               - p150a-jtag
           - board: p300a
             runs-on:
-              - p300a-jtag
+              - yyz-zephyr-01-lab-p300a
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
