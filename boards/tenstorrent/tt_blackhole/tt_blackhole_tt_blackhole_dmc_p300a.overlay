@@ -133,6 +133,15 @@
 	};
 };
 
+/* Reduce I2C speed to 100kHz */
+&i2c1 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};
+
+&i2c3 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};
+
 /*
  * Chip 1
  * sck: PA6
