@@ -137,6 +137,7 @@ jobs:
           ./scripts/twister -i \
             -p $SMC_BOARD --device-testing \
             --device-serial-pty "../tt-zephyr-platforms/scripts/smc_console.py -d $CONSOLE_DEV" \
+            --device-flash-timeout 120 \
             --failure-script "../tt-zephyr-platforms/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
             --west-flash \
             --flash-before \
