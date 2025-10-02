@@ -30,10 +30,10 @@ Major enhancements with this release include:
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v18.11.0 release can be found in [v19.0 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.0.md).
+An overview of required and recommended changes to make when migrating from the previous v18.12.0 release can be found in [v19.0 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.0.md).
 
 ## Full ChangeLog
 
-The full ChangeLog from the previous v18.11.0 release can be found at the link below.
+The full ChangeLog from the previous v18.12.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.11.0...v19.0.0
+https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.12.0...v19.0.0
