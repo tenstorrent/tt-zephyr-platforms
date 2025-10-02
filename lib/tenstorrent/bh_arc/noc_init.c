@@ -74,12 +74,16 @@ static volatile void *SetupNiuTlb(uint8_t tlb_index, uint8_t nx, uint8_t ny, uin
 
 static uint32_t ReadNocCfgReg(volatile void *regs, uint32_t cfg_reg_index)
 {
-	return ((volatile uint32_t *)regs)[kFirstCfgRegIndex + cfg_reg_index];
+	uint32_t address = (uint32_t)regs + sizeof(uint32_t) * (kFirstCfgRegIndex + cfg_reg_index);
+
+	return ReadReg(address);
 }
 
 static void WriteNocCfgReg(volatile void *regs, uint32_t cfg_reg_index, uint32_t value)
 {
-	((volatile uint32_t *)regs)[kFirstCfgRegIndex + cfg_reg_index] = value;
+	uint32_t address = (uint32_t)regs + sizeof(uint32_t) * (kFirstCfgRegIndex + cfg_reg_index);
+
+	WriteReg(address, value);
 }
 
 static void EnableOverlayCg(uint8_t tlb_index, uint8_t px, uint8_t py)
@@ -171,6 +175,29 @@ static bool GetTileClkDisable(uint8_t px, uint8_t py)
 		return !IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst);
 	}
 	return false;
+}
+
+int32_t set_tensix_enable(bool enable)
+{
+	const uint8_t noc_ring = 0;
+	const uint8_t noc_tlb = 0;
+	uint8_t x;
+	uint8_t y;
+
+	GetEnabledTensix(&x, &y);
+
+	volatile uint32_t *noc_regs = SetupNiuTlb(kTlbIndex, x, y, 0);
+
+	uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, !enable);
+	uint32_t niu_cfg_0_addr = 0xFFB20100;
+
+	NOC2AXITensixBroadcastTlbSetup(noc_ring, noc_tlb, niu_cfg_0_addr, kNoc2AxiOrderingStrict);
+	NOC2AXIWrite32(noc_ring, noc_tlb, niu_cfg_0_addr, niu_cfg_0);
+
+	noc_regs = SetupNiuTlb(kTlbIndex, x, y, 0);
+	return 0;
 }
 
 int NocInit(void)
