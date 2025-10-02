@@ -388,6 +388,21 @@ static const RegulatorConfig ubb_config[] = {
 		.regulator_data = ubb_gddrio_data,
 		.count = ARRAY_SIZE(ubb_gddrio_data),
 	},
+	{
+		.address = SERDES_VDDL_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDD_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
+	{
+		.address = SERDES_VDDH_ADDR,
+		.regulator_data = serdes_vr_data,
+		.count = ARRAY_SIZE(serdes_vr_data),
+	},
 };
 
 const BoardRegulatorsConfig ubb_regulators_config = {
