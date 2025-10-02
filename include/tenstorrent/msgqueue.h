@@ -105,8 +105,13 @@ struct power_setting_rqst {
 		 */
 		uint16_t mrisc_phy_power: 1;
 
+		/** @brief 1 - @ref set_tensix_enable "Enable Tensix cores"
+		 * <br> 0 - @ref set_tensix_enable "Disable Tensix cores"
+		 */
+		uint16_t tensix_enable: 1;
+
 		/** @brief Future use flags currently not supported*/
-		uint16_t future_use: 13;
+		uint16_t future_use: 12;
 
 		/** @brief Reserved*/
 		uint16_t reserved: 1;

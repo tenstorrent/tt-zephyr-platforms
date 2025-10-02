@@ -6,6 +6,7 @@
 
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
+#include "noc_init.h"
 
 #include <zephyr/logging/log.h>
 #include "aiclk_ppm.h"
@@ -16,6 +17,7 @@ LOG_MODULE_REGISTER(power, CONFIG_TT_APP_LOG_LEVEL);
 enum power_bit_flags_e {
 	power_bit_flag_aiclk,
 	power_bit_flag_mrisc,
+	power_bit_flag_tensix,
 	power_bit_flag_max
 };
 
@@ -33,6 +35,10 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 
 	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
 		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
+	}
+
+	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
+		ret = set_tensix_enable(power_setting->power_flags_bitfield.tensix_enable);
 	}
 
 	return ret;

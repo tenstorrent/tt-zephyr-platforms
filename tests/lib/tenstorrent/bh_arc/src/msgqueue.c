@@ -83,10 +83,10 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 
 	/* LSB to MSB:
 	 * 0x21: TT_SMC_MSG_POWER_SETTING
-	 * 0x02: 2 power flags valid, 0 power settings valid
-	 * 0x0003: max_ai_clk on, mrisc power on
+	 * 0x03: 3 power flags valid, 0 power settings valid
+	 * 0x0003: max_ai_clk on, mrisc power on, tensix power off
 	 */
-	req.data[0] = 0x00030221;
+	req.data[0] = 0x00030321;
 	msgqueue_request_push(0, &req);
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
