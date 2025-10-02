@@ -102,7 +102,7 @@ patches:
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: 6f3990f30437ff992cf2e52da656d1690180dcae15dfa4e7dbace02d28a4b852
+    sha256sum: 109616eaa2460b32e82417152f2e54a8c9a7a44c1cb54d488b942f9d38a8715c
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
