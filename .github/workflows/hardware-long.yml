@@ -57,7 +57,7 @@ jobs:
 
       - name: run-e2e-stress-test
         run: |
-          tt-zephyr-platforms/scripts/ci/run-stress.sh -p $ASIC_ID ${{ matrix.config.board }}
+          tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
 
       - name: Upload Stress Test results
         if: ${{ always() }}
