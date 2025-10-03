@@ -135,12 +135,18 @@ uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev)
 		return 0;
 	}
 
-	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
+	if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeP300) {
+		/* For the p300 a value of 1 is the left asic and 0 is the right */
+		return tt_bh_fwtable_is_p300_left_chip();
+	} else if (tt_bh_fwtable_get_pcb_type(dev) == PcbTypeUBB) {
+		/* For the UBB asic location is needed to determine training modes and should be
+		 * populated in SPI
+		 */
 		return data->read_only_table.asic_location;
 	}
 
-	/* Single chip and p300 right are location 0. */
-	return tt_bh_fwtable_is_p300_left_chip();
+	/* For all other supported boards this value is 0 */
+	return 0;
 }
 
 /* Loader function that deserializes the fw table bin from the SPI filesystem */
