@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "efuse.h"
+#include "functional_efuse.h"
 #include "eth.h"
 #include "harvesting.h"
 #include "init.h"
@@ -179,7 +179,7 @@ uint32_t GetEthSel(uint32_t eth_enabled)
 
 uint64_t GetMacAddressBase(void)
 {
-	uint32_t asic_id = EfuseRead(EfuseDirect, EfuseBoxFunc, FUSE_ASIC_ID_ADDR) & 0xFFFF;
+	uint32_t asic_id = READ_FUNCTIONAL_EFUSE(ASIC_ID_LOW) & 0xFFFF;
 
 	/* TODO: This will later be updated with the final code to create unique base MAC addresses
 	 */
@@ -272,6 +272,10 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *buf, uint32_t eth_en
 
 	fw_cfg_32b[36] = (mac_addr_base >> 24) & 0xFFFFFF;
 	fw_cfg_32b[37] = mac_addr_base & 0xFFFFFF;
+
+	fw_cfg_32b[38] = READ_FUNCTIONAL_EFUSE(ASIC_ID_HIGH);
+	fw_cfg_32b[39] = READ_FUNCTIONAL_EFUSE(ASIC_ID_LOW);
+	fw_cfg_32b[40] = tile_enable.eth_enabled;
 
 	/* Write the ETH Param table */
 	SetupEthTlb(eth_inst, ring, ETH_PARAM_ADDR);
