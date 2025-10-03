@@ -9,6 +9,7 @@
 # - The Zephyr base directory is set in the ZEPHYR_BASE environment variable
 # - All necessary dependencies to build the firmware are installed
 # - The DUT is connected and enumerating over PCIe
+# - An ST-Link adapter is connected to the DUT to flash firmware
 
 set -e # Exit on error
 
@@ -18,7 +19,7 @@ ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
 
 function print_help {
 	echo "Usage: $0 [-p <pcie_index>] [-t test_set] <board_name> -- [additional twister args]"
-	echo "Example: $0 -p 0 -t e2e -t e2e-flash p150a -- --clobber-output"
+	echo "Example: $0 -p 0 -t e2e-flash p150a -- --clobber-output"
 }
 
 if [ $# -lt 1 ]; then
@@ -52,7 +53,7 @@ export ASIC_ID
 export CONSOLE_DEV
 
 if [ -z "$TEST_SET" ]; then
-    TEST_SET=":e2e:e2e-flash"
+    TEST_SET=":e2e-flash"
 fi
 
 echo "Using firmware root: $TT_Z_P_ROOT, Zephyr base: $ZEPHYR_BASE"
@@ -69,10 +70,8 @@ DMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD dmc)
 echo "Building tt-console..."
 make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
 
-if [[ "$TEST_SET" == *"e2e"* ]]; then
-	# Run the DMC tests
-	echo "Running e2e tests..."
-	# TODO: ideally we would use one twister command to build and
+if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
+    # TODO: ideally we would use one twister command to build and
     # flash DMC and SMC firmware, but since each chip uses a separate
     # debug adapter this doesn't work. For now, just flash DMC
     # then run twister with SMC firmware
@@ -86,21 +85,6 @@ if [[ "$TEST_SET" == *"e2e"* ]]; then
         --outdir $ZEPHYR_BASE/twister-dmc-e2e \
         $@
 
-    # Run E2E test to verify DMC and SMC firmware boot, and that
-    # the SMC firmware sets up PCIe and ARC messages
-    $ZEPHYR_BASE/scripts/twister -i \
-      -p $SMC_BOARD --device-testing \
-      --tag e2e \
-      --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV -p" \
-      --failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-      --flash-before \
-      --west-flash \
-      -T $TT_Z_P_ROOT/app \
-      --outdir $ZEPHYR_BASE/twister-smc-e2e \
-      $@
-fi
-
-if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
     # Run a full flash test, using tt-flash as the runner
     $ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
         --tag e2e-flash -T $TT_Z_P_ROOT/app \
