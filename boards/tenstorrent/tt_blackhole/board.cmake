@@ -66,3 +66,6 @@ board_finalize_runner_args(tt_flash)
 
 board_set_flasher_ifnset(tt_bootstrap)
 board_finalize_runner_args(tt_bootstrap --board-name ${CONFIG_BOARD_REVISION})
+
+board_set_debugger(tt_pyluwen)
+board_finalize_runner_args(tt_pyluwen)
