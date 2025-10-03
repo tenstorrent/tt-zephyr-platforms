@@ -4,110 +4,102 @@
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.0 🥳🎉.
 
-Major enhancements with this release include:
+This release brings significant enhancements to power management, SMBus communication robustness, and developer tooling, along with improved stability across the platform.
 
-## What's Changed
+## Major Highlights
 
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
+- **Enhanced Power Management**: New MRISC PHY powerdown/wakeup support and power command capabilities
+- **Improved SMBus Reliability**: Enhanced error detection, logging, and robustness for CM2DM operations
+- **Advanced Developer Tooling**: New stack dump utilities and improved console tooling
+- **Zephyr v4.3.0 Alignment**: Updated to latest Zephyr pre-release for better upstream compatibility
+- **Streamlined Board Support**: Focused support on production devices
 
-<!-- Performance Improvements, if applicable -->
-### New and Experimental Features
+## New Features
 
-* lib: bh_arc: Add Support for MRISC PHY powerdown/wakeup
-* app: dmc: add support for smbus block pcall
-* app: smc: add overlay to build DMFW with I2C shell enabled
-* lib: bh_arc: Add Power command
-* scripts: dump_smc_stack.py
-  * dumps the state of the SMC, on demand
+### Power Management
+- **lib: bh_arc**: Added support for MRISC PHY powerdown/wakeup operations
+- **lib: bh_arc**: Implemented new Power command functionality
+- **boards: tt_blackhole**: Enabled AICLK PPM in firmware table for Galaxy boards
 
-<!-- External Project Collaboration Efforts, if applicable -->
+### Communication & Protocols
+- **app: dmc**: Added support for SMBus block process call (pcall) operations
+- **drivers: smbus: stm32**: Enhanced with block read capabilities
+- **app: smc**: Added overlay configuration to build DMFW with I2C shell enabled
 
-### Stability Improvements
+### Developer & Debug Tools
+- **scripts**: New `dump_smc_stack.py` utility for on-demand SMC state analysis
+- **scripts: tooling**: Enhanced `tt-console` with PCIe rescan skip option for smooth TT-KMD transitions (2.3.0 to 2.4.1)
+- **scripts**: Updated `blackhole_recovery` with improved status messaging and increased delays
 
-* scripts: tooling: tt-console: add option to skip pcie rescan
-  * to ensure a smooth transition between TT-KMD 2.3.0 and 2.4.1
-* CM2DM robustness improvements
-  * detection of 2 identical smbus messages, back to back
-  * error detection and logging of smbus messages
-* drivers: smbus: stm32: add rate-limited logging of PEC errors
-* lib: tenstorrent: bh_arc: add error logging to spi_eeprom
-* scripts: blackhole_recovery: add more status messages, increase delays
-* scripts: tooling: logging: rework macros and add rate-limited variants
-* app: dmc: use fine-grained DMC events
-  * a significant improvement over the previous single "wakeup" flag
-* boards: tt_blackhole: galaxy: enable aiclk ppm in fw_table
-* blobs: update wormhole fw blob
-* regulators: fix galaxy serdes programming regression
-* ci: build docker containers for ci and recovery
-  * containers are now hosted centrally at `ghcr.io/tenstorrent`
-* boards: tenstorrent: tt_blackhole: p300: use more conservative tdp limits
-* boards: tenstorrent: reduce p300 i2c clock speeds
-  * some measured reduction in packet errors at standard speed
-* lib: bh_chip: don't disable i2c gate unless we are resetting bh_arc
+## Stability & Robustness Improvements
 
-<!-- Security vulnerabilities fixed? -->
+### Communication Reliability
+- **CM2DM Protocol**: Enhanced robustness with detection of duplicate SMBus messages and improved error handling
+- **lib: tenstorrent: bh_arc**: Improved error logging in SPI EEPROM operations
 
-### API Changes
+### System Reliability
+- **app: dmc**: Implemented fine-grained DMC events, replacing the previous single "wakeup" flag approach
+- **regulators**: Fixed Galaxy SerDes programming regression
+- **boards: tenstorrent**: Applied more conservative TDP limits for P300 boards
+- **boards: tenstorrent**: Reduced P300 I2C clock speeds to minimize packet errors
+- **lib: bh_chip**: Optimized I2C gate handling during BH ARC reset operations
 
-* zephyr: patches: add patch for spi-nor erase-block-size property
-* lib: bh_arc: rename `msg_type` to `tt_smc_msg`
-  * the corresponding header was changes from `tenstorrent/msg_type.h` to `tenstorrent/smc_msg.h`
+### Infrastructure
+- **CI/CD**: Migrated to centralized Docker containers hosted at `ghcr.io/tenstorrent`
+- **blobs**: Updated Wormhole firmware blob
+- **scripts: tooling**: Reworked logging macros with new rate-limited variants
 
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
+## API Changes
 
-### Zephyr Version
+### Breaking Changes
+- **lib: bh_arc**: Renamed `msg_type` to `tt_smc_msg`
+  - Header file changed from `tenstorrent/msg_type.h` to `tenstorrent/smc_msg.h`
+  - **Migration Required**: Update include statements in existing code
 
-* manifest: switch to zephyr v4.3.0-pre
-  * as the Zephyr v4.3.0 feature freeze approaches (Oct 20th), we have updated to a more recent
-    revision
-  * sending upstream pull requests to ensure we minimize patches we need to carry in-tree
+### Platform Updates
+- **zephyr: patches**: Added patch for SPI-NOR erase-block-size property support
 
-### Documentatation
+## Zephyr Integration
 
-* doc: have zversion use the project settings from conf.py
-* lib: bh_arc: better documentation
-  * add doxygen for several host to smc message types
-* doxygen: Add supported boards link
-* doc: Add contribution and coding guidelines
-* docs: add visualization of CI job status
-  * graph of CI history now available on the project's landing page
-* doc: add snippet on pulling new code from main
-  * `west patch clean; west update; west patch apply`
-* lib: bh_arc: document unused commands
-
-<!-- New Boards, if applicable -->
-
-### Removed Boards
-
-* Support for `p100` has been removed
-  * `p100` (aka Scrappy) was an internal engineering unit used during initial bringup and during testing
-  * Removed support to focus on consumer-facing devices
+### Version Update
+- **manifest**: Updated to Zephyr v4.3.0-pre
+  - Aligned with Zephyr v4.3.0 feature freeze (October 20th)
+  - Minimized in-tree patches through active upstream contribution
 
 ### Upstream Contributions
+- Enhanced PWM API test suite with cleaner platform-specific conditionals
+- Fixed I2C DesignWare target implementation
+- Improved SMBus STM32 driver with proper block write byte count handling
+- Added IRQ lock protection for CTF tracing timestamp generation
+- Extended interrupt controller support for multiple DesignWare instances
+- Implemented "safe" API variants for `k_event_wait()` in kernel events
 
-* tests: drivers: pwm: pwm_api: clean up platform specific conditionals in testsuite
-* drivers: i2c: correct i2c_dw target implementation
-* drivers: smbus: stm32: send block write byte count
-* tracing: ctf: take IRQ lock before generating timestamp
-* drivers: intc_dw: support multiple instancesx
-* drivers: smbus: stm32: add block read capabilities
-* kernel: events: add "safe" API for `k_event_wait()`
+## Documentation Improvements
 
-## Migration guide
+### Enhanced Documentation
+- **lib: bh_arc**: Comprehensive Doxygen documentation for host-to-SMC message types
+- **doxygen**: Added supported boards reference links
+- **doc**: New contribution and coding guidelines
+- **docs**: Added CI job status visualization on project landing page
 
-An overview of required and recommended changes to make when migrating from the previous v18.11.0 release can be found in [v18.12 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-18.12.md).
+### Developer Guidance
+- **doc**: Added code update workflow snippet: `west patch clean; west update; west patch apply`
+- **lib: bh_arc**: Documented unused commands for better API clarity
+- **doc**: Improved version handling using project settings from `conf.py`
 
-## Full ChangeLog
+## Board Support Changes
 
-The full ChangeLog from the previous v18.11.0 release can be found at the link below.
+### Removed Support
+- **Removed P100 (Scrappy) Support**:
+  - P100 was an internal engineering unit used during initial bringup and testing
+  - Support removed to focus resources on consumer-facing devices
+  - **Migration Impact**: P100 users must transition to supported production boards
 
+## Migration Guide
+
+For detailed migration instructions from v18.11.0, including required code changes and recommended updates, please refer to the [v18.12 Migration Guide](migration-guide-18.12.md).
+
+## Full Changelog
+
+Complete changelog from v18.11.0 is available at:
 https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.11.0...v18.12.0
