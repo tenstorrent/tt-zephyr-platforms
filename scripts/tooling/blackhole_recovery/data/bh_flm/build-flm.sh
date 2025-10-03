@@ -3,12 +3,14 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-if [ -d "build" ]; then
+SCRIPT_DIR=$(realpath $(dirname $0))
+
+if [ -d "$SCRIPT_DIR/build" ]; then
     echo "Existing build directory found, removing it."
-    rm -r build
+    rm -r $SCRIPT_DIR/build
 fi
 
-mkdir build
-cd build
+mkdir $SCRIPT_DIR/build
+cd $SCRIPT_DIR/build
 cmake ..
-make -j$(nproc)
+make -j
