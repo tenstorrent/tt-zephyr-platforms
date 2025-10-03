@@ -66,7 +66,15 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
     """
 
     def __init__(
-        self, cfg, board_id, board_name, fw_bundle, bootfs_hex, asic_id, adapter_id
+        self,
+        cfg,
+        board_id,
+        board_name,
+        fw_bundle,
+        bootfs_hex,
+        asic_id,
+        adapter_id,
+        no_prompt,
     ):
         super().__init__(cfg)
         self.build_dir = Path(cfg.build_dir)
@@ -74,6 +82,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         self.board_id = board_id
         self.board_name = board_name
         self.adapter_id = adapter_id
+        self.no_prompt = no_prompt
         self.pyocd_path = (
             Path(__file__).parent / "tooling/blackhole_recovery/data/bh_flm"
         )
@@ -149,6 +158,12 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             type=str,
             help="Adapter ID for the ST-Link device used in recovery",
         )
+        parser.add_argument(
+            "--no-prompt",
+            default=False,
+            help="Do not prompt for adapter if none is provided, use first available",
+            action="store_true",
+        )
 
     @classmethod
     def do_create(cls, cfg, args):
@@ -160,6 +175,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             args.bootfs_hex,
             args.asic_id,
             args.adapter_id,
+            args.no_prompt,
         )
 
     def parse_bin(self, bin_file, asic_id):
@@ -342,20 +358,33 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             raise ValueError(f"Unsupported command: {command}")
         for flash_op in self.flash_data:
             if self.adapter_id is None:
-                print(
-                    "No adapter ID provided, please select the debugger "
-                    "attached to STM32 if prompted"
-                )
-                session = ConnectHelper.session_with_chosen_probe(
-                    target_override=PYOCD_TARGET,
-                    user_script=flash_op.pyocd_config,
-                )
+                # Check if we have a TTY for user interaction
+                if not sys.stdin.isatty() or self.no_prompt:
+                    self.logger.info(
+                        "No adapter ID provided and no TTY available, selecting first available debug probe"
+                    )
+                    session = ConnectHelper.session_with_chosen_probe(
+                        target_override=PYOCD_TARGET,
+                        user_script=flash_op.pyocd_config,
+                        return_first=True,
+                    )
+                else:
+                    self.logger.info(
+                        "No adapter ID provided, please select the debugger "
+                        "attached to STM32 if prompted"
+                    )
+                    session = ConnectHelper.session_with_chosen_probe(
+                        target_override=PYOCD_TARGET,
+                        user_script=flash_op.pyocd_config,
+                    )
             else:
                 session = ConnectHelper.session_with_chosen_probe(
                     target_override=PYOCD_TARGET,
                     user_script=flash_op.pyocd_config,
                     unique_id=self.adapter_id,
                 )
+            if session is None:
+                raise RuntimeError("Failed to connect to the debug probe")
             session.open()
             target = session.board.target
             # Program the flash with the provided data
