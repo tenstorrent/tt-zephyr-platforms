@@ -63,11 +63,7 @@ jobs:
       - name: Set ASIC ID
         shell: bash
         run: |
-          if [ ${{ matrix.config.board }} = 'p300a' ]; then
-            echo "ASIC_ID=1" >> "$GITHUB_ENV"
-          else
-            echo "ASIC_ID=0" >> "$GITHUB_ENV"
-          fi
+          echo "ASIC_ID=0" >> "$GITHUB_ENV"
 
       - name: run-dmc-tests
         run: |
@@ -167,11 +163,7 @@ jobs:
       - name: Set ASIC ID
         shell: bash
         run: |
-          if [ ${{ matrix.config.board }} = 'p300a' ]; then
-            echo "ASIC_ID=1" >> "$GITHUB_ENV"
-          else
-            echo "ASIC_ID=0" >> "$GITHUB_ENV"
-          fi
+          echo "ASIC_ID=0" >> "$GITHUB_ENV"
 
       - name: run-e2e-tests
         run: |

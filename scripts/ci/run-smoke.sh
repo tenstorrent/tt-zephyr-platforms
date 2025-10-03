@@ -9,6 +9,7 @@
 # - The Zephyr base directory is set in the ZEPHYR_BASE environment variable
 # - All necessary dependencies to build the firmware are installed
 # - The DUT is connected and enumerating over PCIe
+# - An ST-Link adapter is connected to the DUT to flash firmware
 
 set -e # Exit on error
 
@@ -69,6 +70,10 @@ DMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD dmc)
 echo "Building tt-console..."
 make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
 
+# Build the tt-bootstrap flash loading algorithms
+echo "Building tt-bootstrap flash loading algorithms..."
+$TT_Z_P_ROOT/scripts/tooling/blackhole_recovery/data/bh_flm/build-flm.sh
+
 if [[ "$TEST_SET" == *"dmc"* ]]; then
 	# Run the DMC tests
 	echo "Running DMC tests..."
@@ -107,8 +112,10 @@ if [[ "$TEST_SET" == *"smc"* ]]; then
 		-p $SMC_BOARD --device-testing \
 		--device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV" \
 		--failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-		--west-flash \
 		--flash-before \
+		--west-flash="--no-prompt" \
+		--west-runner tt_bootstrap \
+		--device-flash-timeout 120 \
 		--tag smoke \
 		--alt-config-root $TT_Z_P_ROOT/test-conf/samples \
 		--alt-config-root $TT_Z_P_ROOT/test-conf/tests \
