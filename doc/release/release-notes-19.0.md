@@ -21,6 +21,19 @@ Major enhancements with this release include:
 <!-- New and Experimental Features, if applicable -->
 <!-- External Project Collaboration Efforts, if applicable -->
 <!-- Stability Improvements, if applicable -->
+
+### Stability Improvements
+
+* Update Blackhole ERISC FW to v1.6.1
+  * Fix snapshot reading bug in eth_runtime where the upper 32 bits of a preceding metric read is picked up by the following metric read
+  * Remove interrupt enablement as current implementation can cause infinte loops
+  * Changed logical_eth_id calculation using new enabled_eth param to address SYS-2064
+  * Added ASIC ID in chip_info and param table to address SYS-2065
+  * Changed manual EQ TX-FIRs for ASIC 8 Retimer ports to address SYS-2096
+  * Only trigger retraining if check_link_up polls link down for 5ms
+  * Removed BIST check in training sequence, improves stability a bit
+  * Send chip_info packet on retrain completion, which along with BIST disabled allows for a single chip with an active link to be reset and allow the link come back up
+
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
 <!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
