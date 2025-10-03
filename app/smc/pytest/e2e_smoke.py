@@ -328,7 +328,6 @@ def arc_watchdog_test(asic_id):
     return True
 
 
-@pytest.mark.flash
 def test_arc_watchdog(arc_chip_dut, asic_id):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
@@ -375,7 +374,6 @@ def pcie_fw_load_time_test(asic_id):
     return True
 
 
-@pytest.mark.flash
 def test_pcie_fw_load_time(arc_chip_dut, asic_id):
     """
     Checks PCIe firmware load time is within 40ms.
@@ -384,7 +382,6 @@ def test_pcie_fw_load_time(arc_chip_dut, asic_id):
     assert pcie_fw_load_time_test(asic_id), "PCIe firmware load time test failed"
 
 
-@pytest.mark.flash
 def test_fw_bundle_version(arc_chip_dut, asic_id):
     """
     Checks that the fw bundle version in telemetry matches the repo
@@ -414,7 +411,6 @@ def smi_reset_test(asic_id):
     return smi_reset_result.returncode == 0
 
 
-@pytest.mark.flash
 def test_smi_reset(arc_chip_dut, asic_id):
     """
     Checks that tt-smi resets are working successfully
@@ -461,7 +457,6 @@ def dirty_reset_test():
     return True
 
 
-@pytest.mark.flash
 def test_dirty_reset():
     """
     Checks that the SMC comes up correctly after a "dirty" reset, where the
