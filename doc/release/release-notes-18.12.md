@@ -1,7 +1,5 @@
 # v18.12.0
 
-> This is a working draft for the up-coming v18.12.0 release.
-
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.0 🥳🎉.
 
 This release brings significant enhancements to power management, SMBus communication robustness, and developer tooling, along with improved stability across the platform.
