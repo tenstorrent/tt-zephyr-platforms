@@ -8,6 +8,51 @@
 
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
+#include "asic_state.h"
+
+#include "reg_mock.h"
+
+/* Custom fake for ReadReg to simulate timer progression */
+#define RESET_UNIT_REFCLK_CNT_LO_REG_ADDR 0x800300E0
+#define READ_VOUT_ADDR                    0x8003008B /* Example address for voltage read */
+static uint32_t timer_counter;
+static uint8_t i2c_read_buf_emul[256] = {0};
+static uint8_t i2c_read_buf_idx;
+
+static uint8_t i2c_write_buf_emul[256] = {0};
+static uint8_t i2c_write_buf_idx;
+
+static uint32_t ReadReg_msgqueue_fake(uint32_t addr)
+{
+	/* IC_STATUS; Fake out TX_FIFO to say empty and not full Fake out RX_FIFO to say not empty.
+	 * This should be replaced by a emulated i2c driver once we use
+	 * a real zephyr i2c controller in our app.
+	 */
+	if (addr == 0x80090070) {
+		return 0b1110;
+	}
+
+	/* IC_DATA_CMD; Fake out RX data to provide emulated data*/
+	if (addr == 0x80090010) {
+		return i2c_read_buf_emul[i2c_read_buf_idx++];
+	}
+
+	if (addr == RESET_UNIT_REFCLK_CNT_LO_REG_ADDR) {
+		return timer_counter++;
+	}
+	return 0;
+}
+
+static void WriteReg_msgqueue_fake(uint32_t addr, uint32_t value)
+{
+	/* IC_DATA_CMD; Fake out TX data to get test visibility on sent data
+	 * Note the truncation; data to I2C is in the LSB
+	 * More significant bytes of the value word contain i2c transaction flags
+	 */
+	if (addr == 0x80090010) {
+		i2c_write_buf_emul[i2c_write_buf_idx++] = value;
+	}
+}
 
 static uint8_t msgqueue_handler_73(const union request *req, struct response *rsp)
 {
@@ -49,4 +94,77 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 	zassert_equal(rsp.data[0], 0x0);
 }
 
-ZTEST_SUITE(msgqueue, NULL, NULL, NULL, NULL, NULL);
+ZTEST(msgqueue, test_msg_type_set_voltage)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.data[0] = TT_SMC_MSG_SET_VOLTAGE;
+	req.data[1] = 0x64; /* regulator id */
+	req.data[2] = 800;  /* voltage in mV */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(i2c_write_buf_emul[0], 33); /*VOUT_COMMAND*/
+
+	uint32_t received_voltage;
+
+	memcpy(&received_voltage, &i2c_write_buf_emul[1], sizeof(received_voltage));
+
+	zexpect_equal(received_voltage, 800 * 2);
+}
+
+ZTEST(msgqueue, test_msg_type_get_voltage)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/*Setup the simulated voltage for the i2c read*/
+	uint32_t simulated_voltage_mv = 950;
+
+	memcpy(i2c_read_buf_emul, &simulated_voltage_mv, sizeof(simulated_voltage_mv));
+
+	req.data[0] = TT_SMC_MSG_GET_VOLTAGE;
+	req.data[1] = 0x64; /* regulator id */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(rsp.data[1], simulated_voltage_mv / 2);
+}
+
+ZTEST(msgqueue, test_msg_type_switch_vout_control)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.data[0] = TT_SMC_MSG_SWITCH_VOUT_CONTROL;
+	req.data[1] = 0x01; /* regulator id */
+	req.data[2] = 1;    /* enable */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(i2c_write_buf_emul[0], 1); /*OPERATION command, for readback*/
+
+	zexpect_equal(i2c_write_buf_emul[2], 1);    /*OPERATION command, writ*/
+	zexpect_equal(i2c_write_buf_emul[3], 0x12); /* transition_control and command_source high*/
+}
+
+static void test_setup(void *ctx)
+{
+	(void)ctx;
+	ReadReg_fake.custom_fake = ReadReg_msgqueue_fake;
+	WriteReg_fake.custom_fake = WriteReg_msgqueue_fake;
+	timer_counter = 0U;
+	i2c_read_buf_idx = 0U;
+	i2c_write_buf_idx = 0U;
+	memset(i2c_read_buf_emul, 0, sizeof(i2c_read_buf_emul));
+	memset(i2c_write_buf_emul, 0, sizeof(i2c_write_buf_emul));
+}
+
+ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);

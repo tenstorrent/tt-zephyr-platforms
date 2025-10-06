@@ -29,13 +29,19 @@ enum tt_smc_msg {
 	/** @brief No-op request (not supported) */
 	TT_SMC_MSG_NOP = 0x11,
 
+	/** @brief @ref set_voltage_rqst "Set voltage request" */
 	TT_SMC_MSG_SET_VOLTAGE = 0x12,
+
+	/** @brief @ref get_voltage_rqst "Get voltage request" */
 	TT_SMC_MSG_GET_VOLTAGE = 0x13,
 	TT_SMC_MSG_SWITCH_CLK_SCHEME = 0x14,
 	TT_SMC_MSG_DEBUG_NOC_TRANSLATION = 0x15,
 	TT_SMC_MSG_REPORT_SCRATCH_ONLY = 0x16,
 	TT_SMC_MSG_SEND_PCIE_MSI = 0x17,
+
+	/** @brief @ref switch_vout_control_rqst "Switch VOUT control request" */
 	TT_SMC_MSG_SWITCH_VOUT_CONTROL = 0x18,
+
 	TT_SMC_MSG_READ_EEPROM = 0x19,
 	TT_SMC_MSG_WRITE_EEPROM = 0x1A,
 	TT_SMC_MSG_READ_TS = 0x1B,

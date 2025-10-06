@@ -118,6 +118,51 @@ struct power_setting_rqst {
 	} power_settings_array;
 };
 
+/** @brief Host request to set voltage
+ * @details Messages of this type are processed by @ref set_voltage_handler
+ */
+struct set_voltage_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SET_VOLTAGE */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief I2C slave address (P0V8_VCORE_ADDR or P0V8_VCOREM_ADDR) */
+	uint32_t slave_addr;
+
+	/** @brief Voltage to set in millivolts */
+	uint32_t voltage_in_mv;
+};
+
+/** @brief Host request to get voltage
+ * @details Messages of this type are processed by @ref get_voltage_handler
+ */
+struct get_voltage_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_GET_VOLTAGE */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief I2C slave address (P0V8_VCORE_ADDR or P0V8_VCOREM_ADDR) */
+	uint32_t slave_addr;
+};
+
+/** @brief Host request to switch VOUT control
+ * @details Messages of this type are processed by @ref switch_vout_control_handler
+ */
+struct switch_vout_control_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SWITCH_VOUT_CONTROL */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief VOUT control source */
+	uint32_t source;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -136,6 +181,15 @@ union request {
 
 	/** @brief A power setting request*/
 	struct power_setting_rqst power_setting;
+
+	/** @brief A set voltage request */
+	struct set_voltage_rqst set_voltage;
+
+	/** @brief A get voltage request */
+	struct get_voltage_rqst get_voltage;
+
+	/** @brief A switch VOUT control request */
+	struct switch_vout_control_rqst switch_vout_control;
 };
 
 /** @} */
