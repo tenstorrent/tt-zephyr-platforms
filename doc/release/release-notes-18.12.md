@@ -20,6 +20,7 @@ This release brings significant enhancements to power management, SMBus communic
 - **lib: bh_arc**: Added support for MRISC PHY powerdown/wakeup operations
 - **lib: bh_arc**: Implemented new Power command functionality
 - **boards: tt_blackhole**: Enabled AICLK PPM in firmware table for Galaxy boards
+- **boards: tenstorrent**: Applied more conservative TDP limits for P300 boards
 
 ### Communication & Protocols
 - **app: dmc**: Added support for SMBus block process call (pcall) operations
@@ -40,14 +41,28 @@ This release brings significant enhancements to power management, SMBus communic
 ### System Reliability
 - **app: dmc**: Implemented fine-grained DMC events, replacing the previous single "wakeup" flag approach
 - **regulators**: Fixed Galaxy SerDes programming regression
-- **boards: tenstorrent**: Applied more conservative TDP limits for P300 boards
 - **boards: tenstorrent**: Reduced P300 I2C clock speeds to minimize packet errors
 - **lib: bh_chip**: Optimized I2C gate handling during BH ARC reset operations
 
 ### Infrastructure
 - **CI/CD**: Migrated to centralized Docker containers hosted at `ghcr.io/tenstorrent`
-- **blobs**: Updated Wormhole firmware blob
 - **scripts: tooling**: Reworked logging macros with new rate-limited variants
+
+### Wormhole Updates
+- **blobs**: Updated Wormhole firmware blob
+  - CMFW 2.36.0.0
+    - Attempt to enter A3 state on both chips of n300 before triggering
+      reset
+    - Fix VR addresses for Nebula CB P0V8_GDDR_VDD and P1V35_MVDDQ
+    - Update Nebula CB SPI parameters
+      - Disable DRAM training at boot
+      - Voltage margin = 0
+      - P0V8_GDDR_VDD override to 850 mV
+      - P1V35_MVDDQ override to 1.35 V
+      - Enable additional DRAM training parameters
+  - ERISC 6.7.1.0
+    - Enable partial response phase detector mode to compensate jitter lanes
+    - Initial support for per asic resetting in WH Galaxy
 
 ## API Changes
 
@@ -63,7 +78,7 @@ This release brings significant enhancements to power management, SMBus communic
 
 ### Version Update
 - **manifest**: Updated to Zephyr v4.3.0-pre
-  - Aligned with Zephyr v4.3.0 feature freeze (October 20th)
+  - Snapshot from Zephyr mainline prior to v4.3.0 feature freeze (October 24th)
   - Minimized in-tree patches through active upstream contribution
 
 ### Upstream Contributions
