@@ -48,7 +48,7 @@ struct message_queue_header {
  * ARC processor.
  *
  * The host will send a @ref request, specifying the @ref request::command_code (of
- * type @ref msg_type) SMC firmware will parse this message and send back a @ref response.
+ * type @ref tt_smc_msg) SMC firmware will parse this message and send back a @ref response.
  *
  * Specific types of requests are parsed via the union members of @ref request and documented
  * therein.
