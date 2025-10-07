@@ -171,7 +171,7 @@ ZTEST(msgqueue, test_msg_type_switch_clk_scheme)
 	timer_counter = 0;
 
 	req.data[0] = TT_SMC_MSG_SWITCH_CLK_SCHEME;
-	req.data[1] = ClockWave; /* clock scheme ClockWave */
+	req.data[1] = TT_CLK_SCHEME_CLOCK_WAVE;
 	msgqueue_request_push(0, &req);
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
@@ -179,7 +179,7 @@ ZTEST(msgqueue, test_msg_type_switch_clk_scheme)
 	zassert_equal(rsp.data[0], 0);
 	zassert_equal(clock_wave_value, 2U);
 
-	req.data[1] = ZeroSkewClk; /* clock scheme ZeroSkewClk */
+	req.data[1] = TT_CLK_SCHEME_ZERO_SKEW;
 	msgqueue_request_push(0, &req);
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
