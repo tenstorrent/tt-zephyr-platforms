@@ -279,8 +279,8 @@ def arc_watchdog_test(asic_id):
         # does not currently have specific exception types
         logger.error("DMC reset too early, ARC should still be online")
         return False
-    # Delay 600 more ms. Make sure the ARC has been reset.
-    time.sleep(0.6)
+    # Delay 1000 more ms. Make sure the ARC has been reset.
+    time.sleep(1.0)
     # Delete arc chip object, to make sure pyluwen drops open file descriptors
     del arc_chip
     try:
