@@ -1,0 +1,9 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/delete-node/ &dma0;
+dma0: &dma1 {
+	status = "okay";
+};
