@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_TT_BH_NOC
+	bool "Tenstorrent Blackhole NOC DMA"
+	default y
+	depends on DT_HAS_TENSTORRENT_NOC_DMA_ENABLED
+	help
+		Enable the Tenstorrent Blackhole NOC DMA driver.
