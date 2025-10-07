@@ -6,10 +6,13 @@
 #ifndef CLOCK_WAVE_H
 #define CLOCK_WAVE_H
 
-typedef enum {
-	ZeroSkewClk = 0,
-	ClockWave = 1,
-} ClockingScheme;
+/** Available clock schemes to switch to*/
+enum tt_clk_scheme {
+	/** Zero skeq clock scheme*/
+	TT_CLK_SCHEME_ZERO_SKEW = 0,
 
-void SwitchClkScheme(ClockingScheme clk_scheme);
+	/** Clock wave clock scheme*/
+	TT_CLK_SCHEME_CLOCK_WAVE = 1,
+};
+
 #endif
