@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_TT_BH_NOC
+	bool "Tenstorrent Blackhole NOC DMA"
+	default y
+	depends on DT_HAS_TENSTORRENT_NOC_DMA_ENABLED
+	help
+		Enable the Tenstorrent Blackhole NOC DMA driver.
+
+config DMA_TT_NOC_MAX_CHANNELS
+	int "Maximum number of DMA channels"
+	depends on DMA_TT_BH_NOC
+	default 8
+	help
+		Maximum number of DMA channels supported by the Tenstorrent NOC DMA driver.
