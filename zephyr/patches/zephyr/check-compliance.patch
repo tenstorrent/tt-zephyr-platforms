@@ -20,9 +20,10 @@ index 13a2b4839e9..99aeda03600 100755
  
          if len(tmp_output) > 0:
              kconfigs += tmp_output + "\n"
-@@ -1255,6 +1255,7 @@ flagged.
+@@ -1255,6 +1255,8 @@ flagged.
          "CRC",  # Used in TI CC13x2 / CC26x2 SDK comment
          "DEEP_SLEEP",  # #defined by RV32M1 in ext/
++        "DEFAULT_PWM_PORT",
          "DESCRIPTION",
 +        "DMC_RUN_SMBUS_TESTS",
          "ERR",
