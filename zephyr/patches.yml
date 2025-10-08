@@ -127,6 +127,8 @@ patches:
     author: James Growden
     email: jgrowden@tenstorrent.com
     date: 2025-09-18
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97188
     comments: |
       Add support for BWBR smbus32 pcalls
   - path: zephyr/jedec-spi-nor-erase-block-size.patch
