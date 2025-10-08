@@ -29,16 +29,47 @@ except ImportError:
     print("Error: pyluwen not found. Make sure it's installed and accessible.")
     sys.exit(1)
 
-from pcie_utils import rescan_pcie
-
-
 # ARC_REGISTERS stubbed: all registers mapped to 0 (no real hardware access)
 ARC_REGISTERS = {
-    "r0": 0, "r1": 0, "r2": 0, "r3": 0, "r4": 0, "r5": 0, "r6": 0, "r7": 0,
-    "r8": 0, "r9": 0, "r10": 0, "r11": 0, "r12": 0, "r13": 0, "r14": 0, "r15": 0,
-    "r16": 0, "r17": 0, "r18": 0, "r19": 0, "r20": 0, "r21": 0, "r22": 0, "r23": 0,
-    "r24": 0, "r25": 0, "gp": 0, "fp": 0, "sp": 0, "ilink1": 0, "ilink2": 0, "blink": 0,
-    "pc": 0, "status32": 0, "lp_count": 0, "lp_start": 0, "lp_end": 0, "identity": 0, "debug": 0
+    "r0": 0,
+    "r1": 0,
+    "r2": 0,
+    "r3": 0,
+    "r4": 0,
+    "r5": 0,
+    "r6": 0,
+    "r7": 0,
+    "r8": 0,
+    "r9": 0,
+    "r10": 0,
+    "r11": 0,
+    "r12": 0,
+    "r13": 0,
+    "r14": 0,
+    "r15": 0,
+    "r16": 0,
+    "r17": 0,
+    "r18": 0,
+    "r19": 0,
+    "r20": 0,
+    "r21": 0,
+    "r22": 0,
+    "r23": 0,
+    "r24": 0,
+    "r25": 0,
+    "gp": 0,
+    "fp": 0,
+    "sp": 0,
+    "ilink1": 0,
+    "ilink2": 0,
+    "blink": 0,
+    "pc": 0,
+    "status32": 0,
+    "lp_count": 0,
+    "lp_start": 0,
+    "lp_end": 0,
+    "identity": 0,
+    "debug": 0,
 }
 
 
@@ -300,19 +331,19 @@ class GDBRemoteServer:
                 "pc": ' type="code_ptr"',
             }
             reg_xml_lines = []
-            for reg in ARC_REGISTERS.keys():
+            for reg in ARC_REGISTERS:
                 reg_type = reg_types.get(reg, "")
-                reg_xml_lines.append(f'    <reg name="{reg}" bitsize="32"{reg_type}/>' )
+                reg_xml_lines.append(f'    <reg name="{reg}" bitsize="32"{reg_type}/>')
             reg_xml = "\n".join(reg_xml_lines)
             target_xml = (
                 '<?xml version="1.0"?>\n'
                 '<!DOCTYPE target SYSTEM "gdb-target.dtd">\n'
-                '<target>\n'
-                '  <architecture>arc</architecture>\n'
+                "<target>\n"
+                "  <architecture>arc</architecture>\n"
                 '  <feature name="org.gnu.gdb.arc.core">\n'
-                f'{reg_xml}\n'
-                '  </feature>\n'
-                '</target>'
+                f"{reg_xml}\n"
+                "  </feature>\n"
+                "</target>"
             )
             return f"l{target_xml}"
         else:
