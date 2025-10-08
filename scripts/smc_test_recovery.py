@@ -59,7 +59,10 @@ def recover_smc(asic_id):
     Perform recovery actions on the SMC
     """
     # Dump SMC state
-    dump_smc_state.dump_states(asic_id)
+    try:
+        dump_smc_state.dump_states(asic_id)
+    except Exception as e:
+        print(f"Failed to dump SMC state: {e}")
     # Read DMC logs via RTT
     dmc_rtt.start_dmc_rtt(["--non-blocking"])
     # Reset DMC
