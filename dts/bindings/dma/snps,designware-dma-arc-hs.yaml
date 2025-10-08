@@ -4,59 +4,43 @@
 description: |
   Synopsys Designware ARC DMA Controller
 
-compatible: "snps,designware-dma-arc"
+compatible: "snps,designware-dma-arc-hs"
 
 include: [dma-controller.yaml]
 
 properties:
-  reg:
-    required: true
-
-  interrupts:
-    required: false
-
   "#dma-cells":
     const: 1
 
   dma-channels:
     type: int
     default: 1
-    enum: [1, 4, 8, 16]
     description: |
       Number of DMA channels supported by the DMA server.
-      Valid values are 1, 4, 8, or 16.
 
   dma-descriptors:
     type: int
     default: 32
-    enum: [32, 64, 128, 256]
     description: |
       Number of DMA descriptors supported by the DMA server.
-      Valid values are 32, 64, 128, or 256.
 
   max-burst-size:
     type: int
     default: 4
-    enum: [4, 8, 16]
     description: |
       Maximum burst size supported by the DMA server.
-      Valid values are 4, 8, or 16.
 
   max-pending-transactions:
     type: int
     default: 4
-    enum: [4, 8, 16, 32]
     description: |
       Maximum number of pending bus transactions supported by the DMA server.
-      Valid values are 4, 8, 16, or 32.
 
   buffer-size:
     type: int
     default: 16
-    enum: [16, 32, 64, 128]
     description: |
       DMA server data buffer size in word entries.
-      Valid values are 16, 32, 64, or 128.
 
   coherency-support:
     type: boolean

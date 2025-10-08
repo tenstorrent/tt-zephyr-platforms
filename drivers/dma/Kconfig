@@ -6,7 +6,7 @@ if DMA
 menu "DMA drivers"
 
 # zephyr-keep-sorted-start
-rsource "Kconfig.arc"
+rsource "Kconfig.arc_hs"
 # zephyr-keep-sorted-stop
 
 endmenu
