@@ -8,7 +8,7 @@ patches:
     comments: |
       Support multilevel interrupt priority on ARC cores.
   - path: zephyr/check-compliance.patch
-    sha256sum: 6dba8fade73d86b8d07e73599b326f89355d0d6806a1bef55508d631d505e0c3
+    sha256sum: dc78ea04be55acc74544e9cb4426413e0545cb581994653d1283852f7754eb08
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
