@@ -10,6 +10,9 @@
 
 #include <arc_dma.h>
 
+/* Useful addresses */
+#define FUSE_ASIC_ID_ADDR 50
+
 typedef enum {
 	EfuseBoxDft0 = 0,
 	EfuseBoxDft1 = 1,

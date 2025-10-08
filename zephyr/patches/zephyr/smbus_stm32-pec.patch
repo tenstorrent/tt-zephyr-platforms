@@ -1,19 +1,28 @@
 diff --git a/drivers/smbus/Kconfig b/drivers/smbus/Kconfig
-index 66ca5df627df..d29d02a10ab5 100644
+index 66ca5df627d..a589735c00a 100644
 --- a/drivers/smbus/Kconfig
 +++ b/drivers/smbus/Kconfig
-@@ -5,6 +5,7 @@
- 
- menuconfig SMBUS
- 	bool "System Management Bus (SMBus) drivers"
-+	imply CRC
+@@ -83,6 +83,7 @@ menuconfig SMBUS_STM32
+ 	depends on DT_HAS_ST_STM32_SMBUS_ENABLED
+ 	depends on I2C_STM32
+ 	select PINCTRL
++	select CRC
  	help
- 	  Enable SMBus Driver Configuration
+ 	  Enable STM32 SMBus driver.
  
 diff --git a/drivers/smbus/smbus_stm32.c b/drivers/smbus/smbus_stm32.c
-index c421c1c4504a..c127ccb50468 100644
+index c421c1c4504..04c0b08b02e 100644
 --- a/drivers/smbus/smbus_stm32.c
 +++ b/drivers/smbus/smbus_stm32.c
+@@ -10,7 +10,7 @@
+ #include <zephyr/drivers/pinctrl.h>
+ #include <zephyr/drivers/smbus.h>
+ #include <zephyr/logging/log.h>
+-#include <zephyr/sys/byteorder.h>
++#include <zephyr/sys/crc.h>
+ #include <soc.h>
+ 
+ #include "smbus_utils.h"
 @@ -97,11 +97,6 @@ static int smbus_stm32_configure(const struct device *dev, uint32_t config_value
  	const struct smbus_stm32_config *config = dev->config;
  	struct smbus_stm32_data *data = dev->data;
@@ -26,13 +35,102 @@ index c421c1c4504a..c127ccb50468 100644
  	if (config_value & SMBUS_MODE_HOST_NOTIFY) {
  		LOG_ERR("%s: not available", dev->name);
  		return -EINVAL;
-@@ -152,62 +147,200 @@ static int smbus_stm32_quick(const struct device *dev, uint16_t periph_addr,
+@@ -134,6 +129,87 @@ static int smbus_stm32_get_config(const struct device *dev, uint32_t *config)
+ 	return 0;
+ }
  
- static int smbus_stm32_byte_write(const struct device *dev, uint16_t periph_addr, uint8_t command)
++/* Compute PEC for the given messages, including a start byte and a repeated start byte each time
++ * the direction changes.
++ */
++static uint8_t compute_pec(uint8_t target_address, const struct i2c_msg *msgs, uint8_t num_msgs)
++{
++	uint8_t prior_direction;
++
++	uint8_t pec = 0;
++
++	for (uint8_t i = 0; i < num_msgs; i++) {
++		/* When direction changes, there is a repeated start byte. */
++		uint8_t direction = msgs[i].flags & I2C_MSG_RW_MASK;
++
++		if (i == 0 || direction != prior_direction) {
++			prior_direction = direction;
++			uint8_t start_byte = (target_address << 1) | direction;
++			pec = crc8_ccitt(pec, &start_byte, sizeof(start_byte));
++		}
++
++		pec = crc8_ccitt(pec, msgs[i].buf, msgs[i].len);
++	}
++
++	return pec;
++}
++
++/* Fix up an array of i2c_msg that are all writes and the last message is a single
++ * byte write for the PEC. The last message must be flagged I2C_MSG_WRITE.
++ * Returns the actual message count.
++ */
++static uint8_t prepare_write_pec(const struct device *dev, uint8_t periph_addr,
++				 struct i2c_msg *messages, uint8_t num_msgs)
++{
++	const struct smbus_stm32_data *data = dev->data;
++
++	if (data->config & SMBUS_MODE_PEC) {
++		/* The last message is just the PEC byte.*/
++		uint8_t pec = compute_pec(periph_addr, messages, num_msgs - 1);
++
++		messages[num_msgs - 1].buf[0] = pec;
++
++		return num_msgs;
++	} else {
++		/* PEC message is not sent, next-to-last message is the final. */
++		return num_msgs - 1;
++	}
++}
++
++/* Fix up an array of i2c_msg assuming that we will read the PEC in the last message.
++ * Returns the actual message count.
++ */
++static uint8_t prepare_read_pec(const struct device *dev, struct i2c_msg *messages,
++				uint8_t num_msgs)
++{
++	const struct smbus_stm32_data *data = dev->data;
++
++	if (data->config & SMBUS_MODE_PEC) {
++		/* The last message is just the PEC byte.*/
++		return num_msgs;
++	} else {
++		/* PEC message is not sent, next-to-last message is the final. */
++		return num_msgs - 1;
++	}
++}
++
++/* After a read transaction, verify that the received PEC is correct. */
++static int check_read_pec(const struct device *dev, uint8_t periph_addr,
++			  const struct i2c_msg *messages, uint8_t num_msgs)
++{
++
++	const struct smbus_stm32_data *data = dev->data;
++
++	if (!(data->config & SMBUS_MODE_PEC)) {
++		return 0;
++	}
++
++	uint8_t reported_pec = messages[num_msgs - 1].buf[0];
++	uint8_t computed_pec = compute_pec(periph_addr, messages, num_msgs - 1);
++
++	return (reported_pec == computed_pec) ? 0 : -EIO;
++}
++
+ static int smbus_stm32_quick(const struct device *dev, uint16_t periph_addr,
+ 			     enum smbus_direction rw)
  {
+@@ -154,82 +230,224 @@ static int smbus_stm32_byte_write(const struct device *dev, uint16_t periph_addr
+ {
+ 	const struct smbus_stm32_config *config = dev->config;
+ 
+-	return i2c_write(config->i2c_dev, &command, sizeof(command), periph_addr);
 +	uint8_t pec;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
++
++	struct i2c_msg messages[] = {
 +		{
 +			.buf = &command,
 +			.len = sizeof(command),
@@ -44,21 +142,20 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_WRITE,
 +		},
 +	};
-+	struct smbus_stm32_data *data = dev->data;
- 	const struct smbus_stm32_config *config = dev->config;
- 
--	return i2c_write(config->i2c_dev, &command, sizeof(command), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	smbus_write_prepare_pec(data->config, periph_addr, msgs, num_msgs);
-+	return i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
++
++	uint8_t num_msgs = prepare_write_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
++
++	return i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
  }
  
  static int smbus_stm32_byte_read(const struct device *dev, uint16_t periph_addr, uint8_t *byte)
  {
-+	int ret;
+ 	const struct smbus_stm32_config *config = dev->config;
+ 
+-	return i2c_read(config->i2c_dev, byte, sizeof(*byte), periph_addr);
 +	uint8_t pec = 0;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
++
++	struct i2c_msg messages[] = {
 +		{
 +			.buf = byte,
 +			.len = sizeof(*byte),
@@ -70,34 +167,28 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_READ,
 +		},
 +	};
-+	struct smbus_stm32_data *data = dev->data;
- 	const struct smbus_stm32_config *config = dev->config;
- 
--	return i2c_read(config->i2c_dev, byte, sizeof(*byte), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	ret = i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
-+	if (ret < 0) {
++
++	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
++
++	int ret = i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
++	if (ret != 0) {
 +		return ret;
 +	}
 +
-+	ret = smbus_read_check_pec(data->config, periph_addr, msgs, num_msgs);
-+	if (ret < 0) {
-+		return ret;
-+	}
-+
-+	return 0;
++	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
  }
  
  static int smbus_stm32_byte_data_write(const struct device *dev, uint16_t periph_addr,
  				       uint8_t command, uint8_t byte)
  {
--	const struct smbus_stm32_config *config = dev->config;
+ 	const struct smbus_stm32_config *config = dev->config;
 -	uint8_t buffer[] = {
 -		command,
 -		byte,
++
 +	uint8_t pec;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
++
++	struct i2c_msg messages[] = {
 +		{
 +			.buf = &command,
 +			.len = sizeof(command),
@@ -114,22 +205,22 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_WRITE,
 +		},
  	};
-+	struct smbus_stm32_data *data = dev->data;
-+	const struct smbus_stm32_config *config = dev->config;
  
 -	return i2c_write(config->i2c_dev, buffer, ARRAY_SIZE(buffer), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	smbus_write_prepare_pec(data->config, periph_addr, msgs, num_msgs);
-+	return i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
++	uint8_t num_msgs = prepare_write_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
++
++	return i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
  }
  
  static int smbus_stm32_byte_data_read(const struct device *dev, uint16_t periph_addr,
  				      uint8_t command, uint8_t *byte)
  {
-+	int ret;
 +	uint8_t pec;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
+ 	const struct smbus_stm32_config *config = dev->config;
+ 
+-	return i2c_write_read(config->i2c_dev, periph_addr, &command, sizeof(command), byte,
+-			      sizeof(*byte));
++	struct i2c_msg messages[] = {
 +		{
 +			.buf = &command,
 +			.len = sizeof(command),
@@ -146,31 +237,29 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_READ,
 +		},
 +	};
-+	struct smbus_stm32_data *data = dev->data;
- 	const struct smbus_stm32_config *config = dev->config;
- 
--	return i2c_write_read(config->i2c_dev, periph_addr, &command, sizeof(command), byte,
--			      sizeof(*byte));
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	ret = i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
-+	if (ret < 0) {
++
++	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
++
++	int ret = i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
++	if (ret != 0) {
 +		return ret;
 +	}
 +
-+	ret = smbus_read_check_pec(data->config, periph_addr, msgs, num_msgs);
-+	if (ret < 0) {
-+		return ret;
-+	}
-+
-+	return 0;
++	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
  }
  
  static int smbus_stm32_word_data_write(const struct device *dev, uint16_t periph_addr,
  				       uint8_t command, uint16_t word)
  {
 +	uint8_t pec;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
+ 	const struct smbus_stm32_config *config = dev->config;
+-	uint8_t buffer[sizeof(command) + sizeof(word)];
+ 
+-	buffer[0] = command;
+-	sys_put_le16(word, buffer + 1);
+-
+-	return i2c_write(config->i2c_dev, buffer, ARRAY_SIZE(buffer), periph_addr);
++	struct i2c_msg messages[] = {
 +		{
 +			.buf = &command,
 +			.len = sizeof(command),
@@ -187,25 +276,22 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_WRITE,
 +		},
 +	};
-+	struct smbus_stm32_data *data = dev->data;
- 	const struct smbus_stm32_config *config = dev->config;
--	uint8_t buffer[sizeof(command) + sizeof(word)];
--
--	buffer[0] = command;
--	sys_put_le16(word, buffer + 1);
- 
--	return i2c_write(config->i2c_dev, buffer, ARRAY_SIZE(buffer), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	smbus_write_prepare_pec(data->config, periph_addr, msgs, num_msgs);
-+	return i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
++
++	uint8_t num_msgs = prepare_write_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
++
++	return i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
  }
  
  static int smbus_stm32_word_data_read(const struct device *dev, uint16_t periph_addr,
  				      uint8_t command, uint16_t *word)
  {
-+	int ret;
 +	uint8_t pec;
-+	uint8_t num_msgs;
+-	const struct smbus_stm32_config *config = dev->config;
+-	int result;
+ 
+-	result = i2c_write_read(config->i2c_dev, periph_addr, &command, sizeof(command), word,
+-				sizeof(*word));
+-	*word = sys_le16_to_cpu(*word);
 +	struct i2c_msg messages[] = {
 +		{
 +			.buf = &command,
@@ -223,42 +309,73 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_READ,
 +		},
 +	};
-+	struct smbus_stm32_data *data = dev->data;
- 	const struct smbus_stm32_config *config = dev->config;
--	int result;
- 
--	result = i2c_write_read(config->i2c_dev, periph_addr, &command, sizeof(command), word,
--				sizeof(*word));
--	*word = sys_le16_to_cpu(*word);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(messages));
-+	ret = i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
-+	if (ret < 0) {
-+		return ret;
-+	}
  
 -	return result;
-+	ret = smbus_read_check_pec(data->config, periph_addr, messages, num_msgs);
-+	if (ret < 0) {
++	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
++
++	int ret = i2c_transfer(dev, messages, num_msgs, periph_addr);
++	if (ret != 0) {
 +		return ret;
 +	}
 +
-+	return 0;
++	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
  }
  
  static int smbus_stm32_pcall(const struct device *dev, uint16_t periph_addr, uint8_t command,
-@@ -230,8 +363,9 @@ static int smbus_stm32_pcall(const struct device *dev, uint16_t periph_addr, uin
+ 			     uint16_t send_word, uint16_t *recv_word)
+ {
+ 	const struct smbus_stm32_config *config = dev->config;
+-	uint8_t buffer[sizeof(command) + sizeof(send_word)];
+-	int result;
++	uint8_t received_pec;
+ 
+-	buffer[0] = command;
+-	sys_put_le16(send_word, buffer + 1);
++	struct i2c_msg messages[] = {
++		{
++			.buf = &command,
++			.len = sizeof(command),
++			.flags = I2C_MSG_WRITE,
++		},
++		{
++			.buf = (uint8_t *)&send_word,
++			.len = sizeof(send_word),
++			.flags = I2C_MSG_WRITE,
++		},
++		{
++			.buf = (uint8_t *)recv_word,
++			.len = sizeof(*recv_word),
++			.flags = I2C_MSG_READ | I2C_MSG_RESTART,
++		},
++		{
++			.buf = &received_pec,
++			.len = sizeof(received_pec),
++			.flags = I2C_MSG_READ,
++		},
++	};
+ 
+-	result = i2c_write_read(config->i2c_dev, periph_addr, buffer, ARRAY_SIZE(buffer), recv_word,
+-				sizeof(*recv_word));
+-	*recv_word = sys_le16_to_cpu(*recv_word);
++	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
++
++	int res = i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
++	if (res != 0) {
++		return res;
++	}
+ 
+-	return result;
++	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
+ }
+ 
  static int smbus_stm32_block_write(const struct device *dev, uint16_t periph_addr, uint8_t command,
  				   uint8_t count, uint8_t *buf)
  {
--	const struct smbus_stm32_config *config = dev->config;
--	struct i2c_msg messages[] = {
 +	uint8_t pec;
-+	uint8_t num_msgs;
-+	struct i2c_msg msgs[] = {
+ 	const struct smbus_stm32_config *config = dev->config;
+ 	struct i2c_msg messages[] = {
  		{
- 			.buf = &command,
- 			.len = sizeof(command),
-@@ -246,18 +380,28 @@ static int smbus_stm32_block_write(const struct device *dev, uint16_t periph_add
+@@ -246,10 +461,17 @@ static int smbus_stm32_block_write(const struct device *dev, uint16_t periph_add
  			.buf = buf,
  			.len = count,
  			.flags = I2C_MSG_WRITE,
@@ -270,29 +387,24 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_WRITE,
 +		},
  	};
-+	struct smbus_stm32_data *data = dev->data;
-+	const struct smbus_stm32_config *config = dev->config;
  
 -	return i2c_transfer(config->i2c_dev, messages, ARRAY_SIZE(messages), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	smbus_write_prepare_pec(data->config, periph_addr, msgs, ARRAY_SIZE(msgs));
-+	return i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
++	uint8_t num_msgs = prepare_write_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
++
++	return i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
  }
  
  static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr, uint8_t command,
- 				  uint8_t *count, uint8_t *buf)
+@@ -257,6 +479,8 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
  {
--	const struct smbus_stm32_config *config = dev->config;
--
--	struct i2c_msg messages[] = {
-+	int ret;
-+	uint8_t num_msgs;
+ 	const struct smbus_stm32_config *config = dev->config;
+ 
 +	uint8_t received_pec;
-+	struct i2c_msg msgs[] = {
++
+ 	struct i2c_msg messages[] = {
  		{
  			.buf = &command,
- 			.len = sizeof(command),
-@@ -272,20 +416,35 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
+@@ -272,7 +496,12 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
  			.buf = buf,
  			.len = 0, /* written by previous message! */
  			.flags = I2C_MSG_READ,
@@ -304,391 +416,25 @@ index c421c1c4504a..c127ccb50468 100644
 +			.flags = I2C_MSG_READ,
 +		},
  	};
-+	struct smbus_stm32_data *data = dev->data;
-+	const struct smbus_stm32_config *config = dev->config;
  
  	/* Count is read in msg 1 and stored in the len of msg 2.
- 	 * This works because the STM I2C driver processes each message serially.
- 	 * The addressing math assumes little-endian.
+@@ -281,11 +510,17 @@ static int smbus_stm32_block_read(const struct device *dev, uint16_t periph_addr
  	 */
--	messages[1].buf = (uint8_t *)&messages[2].len;
-+	msgs[1].buf = (uint8_t *)&msgs[2].len;
+ 	messages[1].buf = (uint8_t *)&messages[2].len;
  
 -	int res = i2c_transfer(config->i2c_dev, messages, ARRAY_SIZE(messages), periph_addr);
-+	num_msgs = smbus_pec_num_msgs(data->config, ARRAY_SIZE(msgs));
-+	ret = i2c_transfer(config->i2c_dev, msgs, num_msgs, periph_addr);
-+	if (ret < 0) {
-+		return ret;
-+	}
++	uint8_t num_msgs = prepare_read_pec(dev, messages, ARRAY_SIZE(messages));
++
++	int res = i2c_transfer(config->i2c_dev, messages, num_msgs, periph_addr);
  
--	*count = messages[2].len;
-+	*count = msgs[2].len;
-+	ret = smbus_read_check_pec(data->config, periph_addr, msgs, num_msgs);
-+	if (ret < 0) {
-+		return ret;
-+	}
+ 	*count = messages[2].len;
  
 -	return res;
-+	return 0;
++	if (res != 0) {
++		return res;
++	}
++
++	return check_read_pec(dev, periph_addr, messages, ARRAY_SIZE(messages));
  }
  
  static DEVICE_API(smbus, smbus_stm32_api) = {
-diff --git a/drivers/smbus/smbus_utils.c b/drivers/smbus/smbus_utils.c
-index 5ff3076da9e1..cd44db938db2 100644
---- a/drivers/smbus/smbus_utils.c
-+++ b/drivers/smbus/smbus_utils.c
-@@ -7,6 +7,9 @@
- #include "smbus_utils.h"
- 
- #include <zephyr/logging/log.h>
-+#include <zephyr/sys/__assert.h>
-+#include <zephyr/sys/crc.h>
-+#include <zephyr/sys/util.h>
- 
- LOG_MODULE_REGISTER(smbus_utils, CONFIG_SMBUS_LOG_LEVEL);
- 
-@@ -41,3 +44,71 @@ void smbus_loop_alert_devices(const struct device *dev, sys_slist_t *callbacks)
- 		smbus_fire_callbacks(callbacks, dev, address);
- 	}
- }
-+
-+uint8_t smbus_pec_num_msgs(uint32_t flags, uint8_t num_msgs)
-+{
-+	__ASSERT_NO_MSG(num_msgs != 0);
-+
-+	if ((flags & SMBUS_MODE_PEC) == 0) {
-+		return num_msgs - 1;
-+	}
-+
-+	return num_msgs;
-+}
-+
-+uint8_t smbus_pec(uint16_t addr, const struct i2c_msg *msgs, uint8_t num_msgs)
-+{
-+	uint8_t pec = 0;
-+	uint8_t prior_direction = 0;
-+	uint8_t addr8 = addr & BIT_MASK(7);
-+
-+	for (uint8_t i = 0; i < num_msgs; i++) {
-+		/* When direction changes, there is a repeated start byte. */
-+		uint8_t start_byte;
-+		uint8_t direction = msgs[i].flags & I2C_MSG_RW_MASK;
-+
-+		if ((i == 0) || (direction != prior_direction)) {
-+			prior_direction = direction;
-+			start_byte = (addr8 << 1) | direction;
-+			pec = crc8_ccitt(pec, &start_byte, sizeof(start_byte));
-+		}
-+
-+		pec = crc8_ccitt(pec, msgs[i].buf, msgs[i].len);
-+	}
-+
-+	return pec;
-+}
-+
-+void smbus_write_prepare_pec(uint32_t flags, uint16_t addr, struct i2c_msg *msgs, uint8_t num_msgs)
-+{
-+	if ((flags & SMBUS_MODE_PEC) == 0) {
-+		return;
-+	}
-+
-+	__ASSERT_NO_MSG(msgs != NULL);
-+	__ASSERT_NO_MSG(num_msgs != 0);
-+	__ASSERT_NO_MSG(msgs[num_msgs - 1].buf != NULL);
-+
-+	msgs[num_msgs - 1].buf[0] = smbus_pec(addr, msgs, num_msgs - 1);
-+}
-+
-+int smbus_read_check_pec(uint32_t flags, uint16_t addr, const struct i2c_msg *msgs,
-+			 uint8_t num_msgs)
-+{
-+	if ((flags & SMBUS_MODE_PEC) == 0) {
-+		return 0;
-+	}
-+
-+	__ASSERT_NO_MSG(num_msgs != 0);
-+	__ASSERT_NO_MSG(msgs != NULL);
-+	__ASSERT_NO_MSG(msgs[num_msgs - 1].buf != NULL);
-+
-+	uint8_t reported_pec = msgs[num_msgs - 1].buf[0];
-+	uint8_t computed_pec = smbus_pec(addr, msgs, num_msgs - 1);
-+
-+	if (reported_pec != computed_pec) {
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-diff --git a/drivers/smbus/smbus_utils.h b/drivers/smbus/smbus_utils.h
-index a4f7ecd0c729..56b6713a997e 100644
---- a/drivers/smbus/smbus_utils.h
-+++ b/drivers/smbus/smbus_utils.h
-@@ -7,8 +7,11 @@
- #ifndef ZEPHYR_DRIVERS_SMBUS_SMBUS_UTILS_H_
- #define ZEPHYR_DRIVERS_SMBUS_SMBUS_UTILS_H_
- 
-+#include <errno.h>
- #include <stdint.h>
-+
- #include <zephyr/device.h>
-+#include <zephyr/drivers/i2c.h>
- #include <zephyr/drivers/smbus.h>
- #include <zephyr/sys/slist.h>
- 
-@@ -107,4 +110,82 @@ static inline void smbus_init_callback(struct smbus_callback *callback,
-  */
- void smbus_loop_alert_devices(const struct device *dev, sys_slist_t *callbacks);
- 
-+/**
-+ * @brief Compute the number of messages required for an SMBus transaction
-+ *
-+ * If @p flags indicates that the transaction requires packet error checking (PEC),
-+ * the number of messages is equal to @p num_msgs, otherwise the number of messages
-+ * required is @p num_msgs - 1, since a PEC byte is not required.
-+ *
-+ * Callers are expected to allocated an array of @ref i2c_msg objects to hold a number of
-+ * i2c messages, including one message dedicated to the a PEC byte, whether or not PEC is
-+ * being used.
-+ *
-+ * @note This function is intended for SMBus drivers that do not have hardware PEC support and
-+ * therefore must rely on software PEC calculation.
-+ *
-+ * @param flags SMBus flags.
-+ * @param num_msgs Number of allocated messages.
-+ * @return The number of required messages.
-+ */
-+uint8_t smbus_pec_num_msgs(uint32_t flags, uint8_t num_msgs);
-+
-+/**
-+ * @brief Compute the packet error checking (PEC) byte for an SMBus transaction
-+ *
-+ * @note This function is intended for SMBus drivers that do not have hardware PEC support and
-+ * therefore must rely on software PEC calculation.
-+ *
-+ * @note At this time, only 7-bit addresses are supported in @p addr.
-+ *
-+ * @param addr The address of the target device.
-+ * @param msgs Array of @ref i2c_msg that make up the transaction.
-+ * @param num_msgs Number of messages in the transaction.
-+ * @return the computed PEC byte.
-+ */
-+uint8_t smbus_pec(uint16_t addr, const struct i2c_msg *msgs, uint8_t num_msgs);
-+
-+/**
-+ * @brief Prepare the packet error checking (PEC) byte for an SMBus write transaction
-+ *
-+ * If the @p flags bitmask contains @ref SMBUS_MODE_PEC (i.e. PEC is enabled), the number of
-+ * messages is equal to @p num_msgs, otherwise the number of messages required is @p num_msgs - 1,
-+ * since a PEC byte is not required.
-+ *
-+ * @note This function is intended for SMBus drivers that do not have hardware PEC support and
-+ * therefore must rely on software PEC calculation.
-+ *
-+ * @note At this time, only 7-bit addresses are supported in @p addr.
-+ *
-+ * @param flags SMBus flags.
-+ * @param addr The address of the target device.
-+ * @param messages Array of @ref i2c_msg objects that make up the transaction.
-+ * @param num_msgs Number of messages in the transaction.
-+ */
-+void smbus_write_prepare_pec(uint32_t flags, uint16_t addr, struct i2c_msg *msgs, uint8_t num_msgs);
-+
-+/**
-+ * @brief Check the packet error checking (PEC) byte for an SMBus read transaction
-+ *
-+ * If the @p flags bitmask contains @ref SMBUS_MODE_PEC (i.e. PEC is enabled), the number of
-+ * messages is equal to @p num_msgs, otherwise the number of messages required is
-+ * @p num_msgs - 1, since a PEC byte is not required.
-+ *
-+ * When PEC is not enabled, this function returns 0.
-+ *
-+ * @note This function is intended for SMBus drivers that do not have hardware PEC support and
-+ * therefore must rely on software PEC calculation.
-+ *
-+ * @note At this time, only 7-bit addresses are supported in @p addr.
-+ *
-+ * @param flags SMBus flags.
-+ * @param addr The address of the target device.
-+ * @param messages Array of @ref i2c_msg objects that make up the transaction.
-+ * @param num_msgs Number of messages in the transaction.
-+ * @retval 0 on success.
-+ * @retval -EIO if the PEC byte does not match the computed value.
-+ */
-+int smbus_read_check_pec(uint32_t flags, uint16_t addr, const struct i2c_msg *msgs,
-+			 uint8_t num_msgs);
-+
- #endif /*  ZEPHYR_DRIVERS_SMBUS_SMBUS_UTILS_H_ */
-diff --git a/tests/drivers/smbus/smbus_pec/CMakeLists.txt b/tests/drivers/smbus/smbus_pec/CMakeLists.txt
-new file mode 100644
-index 000000000000..c23f2b644532
---- /dev/null
-+++ b/tests/drivers/smbus/smbus_pec/CMakeLists.txt
-@@ -0,0 +1,10 @@
-+# Copyright (c) 2025 Tenstorrent AI ULC
-+# SPDX-License-Identifier: Apache-2.0
-+
-+cmake_minimum_required(VERSION 3.20.0)
-+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-+project(smbus_pec)
-+
-+target_include_directories(app PRIVATE ${ZEPHYR_BASE}/drivers/smbus)
-+
-+target_sources(app PRIVATE src/main.c)
-diff --git a/tests/drivers/smbus/smbus_pec/prj.conf b/tests/drivers/smbus/smbus_pec/prj.conf
-new file mode 100644
-index 000000000000..3072471bfddc
---- /dev/null
-+++ b/tests/drivers/smbus/smbus_pec/prj.conf
-@@ -0,0 +1,3 @@
-+CONFIG_ZTEST=y
-+
-+CONFIG_SMBUS=y
-diff --git a/tests/drivers/smbus/smbus_pec/src/main.c b/tests/drivers/smbus/smbus_pec/src/main.c
-new file mode 100644
-index 000000000000..e55908e5b948
---- /dev/null
-+++ b/tests/drivers/smbus/smbus_pec/src/main.c
-@@ -0,0 +1,133 @@
-+/*
-+ * Copyright (c) 2025 Tenstorrent AI ULC
-+ *
-+ * SPDX-License-Identifier: Apache-2.0
-+ */
-+
-+#include <zephyr/ztest.h>
-+#include <zephyr/sys/util.h>
-+
-+#include <smbus_utils.h>
-+
-+ZTEST(smbus_pec, test_smbus_pec)
-+{
-+	uint8_t addr = 0x42;
-+	/* Write Block with PEC (SMBus spec v3.1, Section 6.5.7) */
-+	uint8_t write_data[] = {
-+		0x73, /* command */
-+		4, /* len */
-+		0xde, 0xad, 0xbe, 0xef, /* data */
-+	};
-+	struct i2c_msg msgs[] = {
-+		{
-+			.buf = write_data,
-+			.len = sizeof(write_data),
-+			.flags = I2C_MSG_WRITE | I2C_MSG_STOP,
-+		},
-+		/* driver would add a PEC message here */
-+	};
-+
-+	uint8_t actual_pec = smbus_pec(addr, msgs, ARRAY_SIZE(msgs));
-+	uint8_t expected_pec = 0x12;
-+
-+	zexpect_equal(expected_pec, actual_pec, "expected: %02x actual: %02x",
-+		      expected_pec, actual_pec);
-+}
-+
-+ZTEST(smbus_pec, test_smbus_read_check_pec)
-+{
-+	uint8_t addr = 0xa;
-+
-+	{
-+		/* Read Byte with PEC (SMBus spec v3.1, Section 6.5.5) */
-+		uint8_t data[] = {
-+			0x10, /* command */
-+			0x05, /* data */
-+			0x90, /* PEC */
-+		};
-+		struct i2c_msg msgs[] = {
-+			{
-+				.buf = &data[0], /* command */
-+				.len = 1,
-+				.flags = I2C_MSG_WRITE,
-+			},
-+			{
-+				.buf = &data[1], /* data */
-+				.len = 1,
-+				.flags = I2C_MSG_READ,
-+			},
-+			{
-+				.buf = &data[2], /* PEC */
-+				.len = 1,
-+				.flags = I2C_MSG_READ,
-+			},
-+		};
-+
-+		zexpect_ok(smbus_read_check_pec(SMBUS_MODE_PEC, addr, msgs, ARRAY_SIZE(msgs)));
-+	}
-+
-+	{
-+		/* Read Word with PEC (SMBus spec v3.1, Section 6.5.5) */
-+		uint8_t data[] = {
-+			0x10, /* command */
-+			0x05, /* data byte (low) */
-+			0x0a, /* data byte (high) */
-+			0xcf, /* PEC */
-+		};
-+		struct i2c_msg msgs[] = {
-+			{
-+				.buf = &data[0], /* command */
-+				.len = 1,
-+				.flags = I2C_MSG_WRITE,
-+			},
-+			{
-+				.buf = &data[1], /* data */
-+				.len = 2,
-+				.flags = I2C_MSG_READ,
-+			},
-+			{
-+				.buf = &data[3], /* PEC */
-+				.len = 1,
-+				.flags = I2C_MSG_READ,
-+			},
-+		};
-+
-+		zexpect_ok(smbus_read_check_pec(SMBUS_MODE_PEC, addr, msgs, ARRAY_SIZE(msgs)));
-+	}
-+
-+	{
-+		/* Block read (SMBus spec v3.1, Section 6.5.7) */
-+		uint8_t data[] = {
-+			0x10,                               /* command */
-+			0x06,                               /* block count */
-+			0x05, 0x00, 0x00, 0x00, 0x00, 0x00, /* data */
-+			0x99,                               /* PEC */
-+		};
-+		struct i2c_msg msgs[] = {
-+			{
-+				.buf = &data[0], /* command */
-+				.len = 1,
-+				.flags = I2C_MSG_WRITE,
-+			},
-+			{
-+				.buf = &data[1], /* block count */
-+				.len = 1,
-+				.flags = I2C_MSG_READ | I2C_MSG_RESTART,
-+			},
-+			{
-+				.buf = &data[2], /* data */
-+				.len = data[1],
-+				.flags = I2C_MSG_READ,
-+			},
-+			{
-+				.buf = &data[2] + data[1], /* PEC */
-+				.len = 1,
-+				.flags = I2C_MSG_READ,
-+			},
-+		};
-+
-+		zexpect_ok(smbus_read_check_pec(SMBUS_MODE_PEC, addr, msgs, ARRAY_SIZE(msgs)));
-+	}
-+}
-+
-+ZTEST_SUITE(smbus_pec, NULL, NULL, NULL, NULL, NULL);
-diff --git a/tests/drivers/smbus/smbus_pec/testcase.yaml b/tests/drivers/smbus/smbus_pec/testcase.yaml
-new file mode 100644
-index 000000000000..81c1fcd06f84
---- /dev/null
-+++ b/tests/drivers/smbus/smbus_pec/testcase.yaml
-@@ -0,0 +1,4 @@
-+common:
-+  tags: smbus
-+tests:
-+  drivers.smbus.pec: {}

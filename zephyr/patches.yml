@@ -8,7 +8,7 @@ patches:
     comments: |
       Support multilevel interrupt priority on ARC cores.
   - path: zephyr/check-compliance.patch
-    sha256sum: dc78ea04be55acc74544e9cb4426413e0545cb581994653d1283852f7754eb08
+    sha256sum: 6dba8fade73d86b8d07e73599b326f89355d0d6806a1bef55508d631d505e0c3
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -52,6 +52,18 @@ patches:
       that functionality, with the exception of reading drive strength.
       Update: some minor changes requested on this PR that required ordering another part
       that belongs to the same gpio expander product family. Should be merged before 4.3.0.
+  - path: zephyr/pwm-api-tests-skip-zero-duty-cycle-config.patch
+    sha256sum: a89daeb64fb3db5f876e7ee3ff0a6a62c6cba11a87949341466de2cca19a80d9
+    module: zephyr
+    author: Alexander Lay
+    email: alexanderlay@tenstorrent.com
+    date: 2025-06-18
+    upstreamable: false
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/92188
+    comments: |
+      Add a boolean Kconfig option to skip setting zero duty cycle in pwm api tests.
+      This change was rejected as-is. However, I think it can be reworked to be out-of-tree
+      only by making the upstream test more flexible via Kconfig.
   - path: zephyr/mspi-dw.patch
     sha256sum: 5e75f668d6b74773c766292020d86e7e4829cb4641044c571a6221404d06e9e8
     module: zephyr
@@ -81,14 +93,20 @@ patches:
     upstreamable: false
     comments: |
       Add k_busy_wait_ns() helper for nanosecond busy wait support.
+  - path: zephyr/drivers-i2c-i2c-stm32-v2-stability-improvements.patch
+    sha256sum: 3e46f31ad757ef94c8b260326a2b145aa64304d14b7d8c1fe9a12bd88c977f4a
+    module: zephyr
+    author: Hidden
+    email: hidden@github.com
+    date: 2025-05-05
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/89501
   - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: bd6e48cdeeb729b4c9c49c581a868230b24d9e74bd0c3373c87a0bec62d1e15a
+    sha256sum: 6f3990f30437ff992cf2e52da656d1690180dcae15dfa4e7dbace02d28a4b852
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com
     date: 2025-07-24
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96691
     comments: |
       SMBus controller PEC for smbus_stm32
   - path: zephyr/scripts-pylib-pytest-twister-harness-ensure-serial.patch
@@ -122,13 +140,11 @@ patches:
     comments: |
       Make zversion html take project/version settings from conf.py
   - path: zephyr/stm32-bwbr.patch
-    sha256sum: 123e9cc2b7b1fd2c6833ac6ff5e654ea277f1d179d9d30954375bd49c54ec9c6
+    sha256sum: 2412831ca1430db92f05a84f81f5000cb879748831fe2d5084839572905ee21d
     module: zephyr
     author: James Growden
     email: jgrowden@tenstorrent.com
     date: 2025-09-18
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97188
     comments: |
       Add support for BWBR smbus32 pcalls
   - path: zephyr/jedec-spi-nor-erase-block-size.patch
@@ -143,7 +159,7 @@ patches:
       Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
       does not complain about slot1_size not being defined.
   - path: zephyr/smbus-cancel.patch
-    sha256sum: 0908fe5105fb654254340d173d937f13faf51f1fbd72f62e9a0869618672d4f4
+    sha256sum: 70a823aa801ce3e19aa1489eb1c5500387f1028d57ec977926f248066ce5f407
     module: zephyr
     author: Andrew Lewycky
     email: alewycky@tenstorrent.com

@@ -156,5 +156,5 @@
 };
 
 &spi_flash {
-	#include "tt_blackhole_partitions.dtsi"
+	#include "tt_blackhole_fixed_partitions.dtsi"
 };

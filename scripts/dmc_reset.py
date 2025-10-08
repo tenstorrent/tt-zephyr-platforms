@@ -171,9 +171,10 @@ def reset_dmc(args):
             "stderr": subprocess.DEVNULL,
         }
 
+    logger.debug("running command: " + " ".join(openocd_cmd))
+
     proc = subprocess.run(openocd_cmd, **openocd_kwargs)
     if proc.returncode != 0:
-        logger.error("command failed: " + " ".join(openocd_cmd))
         logger.error(f"Failed to reset DMC: {proc.stderr}")
         return os.EX_SOFTWARE
 
@@ -187,6 +188,7 @@ def wait_for_smc_boot(timeout):
     """
     remaining = timeout
     delay = 1
+    print(f"Waiting {timeout} seconds for SMC to complete boot")
     # First stage- rescan pcie
     while True:
         try:
@@ -194,22 +196,25 @@ def wait_for_smc_boot(timeout):
         except PermissionError:
             return os.EX_OSERR
         if Path("/dev/tenstorrent/0").exists():
+            print("Card detected on PCIe")
             break
+        print(".", end="", flush=True)
         time.sleep(delay)
         remaining -= delay
         if timeout == 0:
-            logger.error(f"Card did not enumerate after {timeout} seconds")
+            print(f"Card did not reappear after {timeout} seconds)")
             return os.EX_UNAVAILABLE
     # Second stage- is the card firmware working?
     if not pyluwen_found:
-        logger.warning(
-            "without pyluwen this script can't verify if the SMC firmware is fully working"
+        print(
+            "Warning, without pyluwen this script can't verify if the SMC firmware is fully working"
         )
         return os.EX_OK
     # Try to detect the card using pyluwen- this indicates ARC has booted
     while True:
         try:
             chips = pyluwen.detect_chips()
+            print("SMC init complete")
             chip = chips[0]
             # Wait for chip to populate telemetry
             telemetry = chip.get_telemetry()
@@ -219,26 +224,29 @@ def wait_for_smc_boot(timeout):
             pass
         remaining -= delay
         time.sleep(delay)
+        print(".", end="", flush=True)
         if remaining == 0:
-            logger.error(f"SMC failed to initialize after {timeout} seconds")
+            print(f"Card did not reappear after {timeout} seconds)")
             return os.EX_UNAVAILABLE
     # Check if the SMC ping will work
     if telemetry.m3_app_fw_version < 0x40000:
-        logger.warning("DMC firmware is too old, no support for SMC ping")
+        print("Warning: DMC firmware is too old, no support for SMC ping")
         return os.EX_OK
     # Try to verify that the SMC can ping the DMC
     while True:
         try:
             rsp = chip.arc_msg(0xC0, True, True, 1, 0)
             if rsp[0] == 1:
+                print("SMC can communicate with DMC")
                 break
         except Exception:
             # Just decrement timeout, which we do below
             pass
         remaining -= delay
         time.sleep(delay)
+        print(".", end="", flush=True)
         if remaining == 0:
-            logger.error(f"SMC unable to communicate with DMC after {timeout} seconds")
+            print(f"Card did not reappear after {timeout} seconds)")
             return os.EX_UNAVAILABLE
     return os.EX_OK
 

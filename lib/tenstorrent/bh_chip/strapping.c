@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "bh_arc_priv.h"
+
 #include <tenstorrent/bh_chip.h>
 
 #include <zephyr/drivers/gpio.h>

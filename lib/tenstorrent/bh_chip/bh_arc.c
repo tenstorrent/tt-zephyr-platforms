@@ -31,27 +31,107 @@ int bharc_disable_i2cbus(const struct bh_arc *dev)
 
 int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count, uint8_t *output)
 {
-	return smbus_block_read(dev->smbus.bus, dev->smbus.addr, cmd, count, output);
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_block_read(dev->smbus.bus, dev->smbus.addr, cmd, count, output);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
 }
 
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input)
 {
-	return smbus_block_write(dev->smbus.bus, dev->smbus.addr, cmd, count, input);
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_block_write(dev->smbus.bus, dev->smbus.addr, cmd, count, input);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
 }
 
 int bharc_smbus_block_write_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t snd_count,
 				       uint8_t *send_buf, uint8_t *rcv_count, uint8_t *rcv_buf)
 {
-	return smbus_block_pcall(dev->smbus.bus, dev->smbus.addr, cmd, snd_count, send_buf,
-				 rcv_count, rcv_buf);
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_block_pcall(dev->smbus.bus, dev->smbus.addr, cmd, snd_count, send_buf,
+				rcv_count, rcv_buf);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
 }
 
 int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t word)
 {
-	return smbus_word_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_word_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
 }
 
 int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word)
 {
-	return smbus_byte_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
+	int ret;
+
+	ret = bharc_enable_i2cbus(dev);
+	if (ret != 0) {
+		bharc_disable_i2cbus(dev);
+		return ret;
+	}
+
+	ret = smbus_byte_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
+
+	int newret = bharc_disable_i2cbus(dev);
+
+	if (ret == 0) {
+		return newret;
+	}
+
+	return ret;
 }

@@ -7,7 +7,7 @@ chip_limits {
   vdd_max: 900
   vdd_min: 700
   voltage_margin: 50
-  tdp_limit: 158
+  tdp_limit: 500
   tdc_limit: 500
   thm_limit: 90
   tdc_fast_limit: 320

@@ -482,11 +482,9 @@ static void handle_perst(void)
 			 */
 			bh_chip_cancel_bus_transfer_clear(chip);
 
-			bharc_disable_i2cbus(&chip->config.arc);
 			jtag_bootrom_reset_asic(chip);
 			jtag_bootrom_soft_reset_arc(chip);
 			jtag_bootrom_teardown(chip);
-			bharc_enable_i2cbus(&chip->config.arc);
 
 			/*
 			 * Set the bus cancel following the logic of (reset_triggered &&
@@ -675,12 +673,7 @@ int main(void)
 				return ret;
 			}
 
-
-			bharc_disable_i2cbus(&chip->config.arc);
-
 			ret = jtag_bootrom_reset_sequence(chip, false);
-			/* Always enable I2C bus */
-			bharc_enable_i2cbus(&chip->config.arc);
 			if (ret != 0) {
 				LOG_ERR("%s() failed: %d", "jtag_bootrom_reset", ret);
 				return ret;

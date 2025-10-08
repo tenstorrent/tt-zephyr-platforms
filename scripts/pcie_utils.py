@@ -1,7 +1,6 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import os
 import subprocess
 import time
@@ -9,8 +8,6 @@ import time
 from pathlib import Path
 
 TT_PCIE_VID = "0x1e52"
-
-logger = logging.getLogger(Path(__file__).stem)
 
 
 def find_tt_devs():
@@ -34,6 +31,7 @@ def rescan_pcie():
     # First, we must find the PCIe card to power it off
     devs = find_tt_devs()
     for dev in devs:
+        print(f"Powering off device at {dev}")
         remove_path = Path(dev) / "remove"
         try:
             with open(remove_path, "w") as f:
@@ -44,7 +42,7 @@ def rescan_pcie():
                     f"echo 1 | sudo tee {remove_path} > /dev/null", shell=True
                 )
             except Exception as e:
-                logger.error("this script must be run with elevated permissions")
+                print("Error, this script must be run with elevated permissions")
                 raise e
 
     # Now, rescan the bus
@@ -58,5 +56,5 @@ def rescan_pcie():
             subprocess.call(f"echo 1 | sudo tee {rescan_path} > /dev/null", shell=True)
             time.sleep(1)
         except Exception as e:
-            logger.error("this script must be run with elevated permissions")
+            print("Error, this script must be run with elevated permissions")
             raise e

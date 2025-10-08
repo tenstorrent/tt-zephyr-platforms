@@ -301,7 +301,13 @@ static void write_static_telemetry(uint32_t app_version)
 	 * UpdateTelemetryNocTranslation.
 	 */
 
-	telemetry[TAG_ASIC_LOCATION] = tt_bh_fwtable_get_asic_location(fwtable_dev);
+	if (tt_bh_fwtable_get_pcb_type(fwtable_dev) == PcbTypeP300) {
+		/* For the p300 a value of 1 is the left asic and 0 is the right */
+		telemetry[TAG_ASIC_LOCATION] = tt_bh_fwtable_get_asic_location(fwtable_dev);
+	} else {
+		/* For all other supported boards this value is 0 */
+		telemetry[TAG_ASIC_LOCATION] = 0;
+	}
 }
 
 static void update_telemetry(void)
