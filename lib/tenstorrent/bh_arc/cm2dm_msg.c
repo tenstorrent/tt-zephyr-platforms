@@ -26,6 +26,7 @@
 #include "status_reg.h"
 #include "fan_ctrl.h"
 #include "telemetry.h"
+#include "dvfs.h"
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -314,6 +315,8 @@ int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 	if (size != 2) {
 		return -1;
 	}
+
+	AdjustDVFSTimer();
 
 	power = sys_get_le16(data) +
 		tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.additional_board_power;
