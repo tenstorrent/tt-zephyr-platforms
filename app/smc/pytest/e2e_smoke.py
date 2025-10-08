@@ -13,11 +13,31 @@ from pathlib import Path
 
 import pyluwen
 import pytest
-from twister_harness import DeviceAdapter
-from twister_harness.exceptions import (
-    TwisterHarnessException,
-    TwisterHarnessTimeoutException,
-)
+
+try:
+    from twister_harness import DeviceAdapter
+    from twister_harness.exceptions import (
+        TwisterHarnessException,
+        TwisterHarnessTimeoutException,
+    )
+except ImportError:
+    # Fallback if twister_harness is not available
+    print("Warning: twister_harness module not found. Using fallback harness")
+
+    class TwisterHarnessException(Exception):
+        pass
+
+    class TwisterHarnessTimeoutException(Exception):
+        pass
+
+    class DeviceAdapter:
+        def launch(self):
+            logger.warning("Twister harness not found, skipping flash")
+
+    @pytest.fixture(scope="session")
+    def unlaunched_dut():
+        return DeviceAdapter()
+
 
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
 from pcie_utils import rescan_pcie
