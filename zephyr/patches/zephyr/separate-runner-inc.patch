@@ -1,0 +1,33 @@
+From 7090d38b60728107edccc769fa9069c43daf0b27 Mon Sep 17 00:00:00 2001
+From: James Growden <jgrowden@tenstorrent.com>
+Date: Wed, 8 Oct 2025 12:35:44 -0400
+Subject: [PATCH] scripts: Use different module IDs per runner module
+
+If we have multiple runners listed under a module,
+Each runner py file will individually overload and overwrite the
+prior module loaded, because it is using the same module name.
+
+Signed-off-by: James Growden <jgrowden@tenstorrent.com>
+---
+ scripts/west_commands/run_common.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/west_commands/run_common.py b/scripts/west_commands/run_common.py
+index 2989c8698eb..baf19223b5b 100644
+--- a/scripts/west_commands/run_common.py
++++ b/scripts/west_commands/run_common.py
+@@ -239,8 +239,10 @@ def do_run_common(command, user_args, user_runner_args, domain_file=None):
+     for module in zephyr_module.parse_modules(ZEPHYR_BASE, command.manifest):
+         runners_ext = module.meta.get("runners", [])
+         for runner in runners_ext:
++            module_name = module.meta.get("name", "runners_ext") + "." + runner["file"]
++
+             import_from_path(
+-                module.meta.get("name", "runners_ext"), Path(module.project) / runner["file"]
++                module_name, Path(module.project) / runner["file"]
+             )
+ 
+     build_dir = get_build_dir(user_args)
+-- 
+2.34.1
+
