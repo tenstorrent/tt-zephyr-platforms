@@ -5,6 +5,6 @@
 
 / {
 	aliases {
-		pwm-test = &max6639_pwm;
+		pwm-0 = &max6639_pwm;
 	};
 };
