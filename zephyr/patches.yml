@@ -155,3 +155,15 @@ patches:
       and rejects all future transfers until cancellation is reversed.
 
       Implementations are included for STM32 I2C and SMBus.
+  - path: zephyr/separate-runner-inc.patch
+    sha256sum: f82485d473dfd1b46f8bb808f592129a5515514adbad1ba997f6ceead5b9e3a9
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-10-8
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97213
+    comments: |
+      The module includes for our runners get overwritten whenever we load a new python
+      runner file, leading to flaky behaviour when west tries to access our runners. This
+      corrects the module load by placing each py file loaded in a different sys.module.
