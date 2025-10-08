@@ -99,14 +99,6 @@ runs:
       run: |
         west -v patch apply
 
-    - name: Install modinfo
-      shell: bash
-      run: |
-        if ! command -v modinfo &> /dev/null ; then
-          apt-get update
-          apt-get install -y kmod
-        fi
-
     - name: Log system state
       shell: bash
       run: |
@@ -120,5 +112,4 @@ runs:
         echo "Cargo: $( which cargo ) $( cargo --version )"
         echo "PIP packages:"
         pip3 freeze
-        echo "tt-kmd version:"
-        modinfo tenstorrent
+        echo "tt-kmd version: $(cat /sys/module/tenstorrent/version)"

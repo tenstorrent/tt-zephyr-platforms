@@ -34,7 +34,6 @@ jobs:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
-        - /lib/modules:/lib/modules
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     steps:
       - name: Cleanup State
