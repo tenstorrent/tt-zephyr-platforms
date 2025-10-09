@@ -1,0 +1,10 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DEVICE_TEST
+	bool "Enable device test"
+	default n
+	help
+	  Enable this option to build the device test application.
+
+source "Kconfig.zephyr"
