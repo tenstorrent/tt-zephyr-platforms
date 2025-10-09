@@ -82,7 +82,8 @@ runs:
     - name: Verify binary blobs
       shell: bash
       run: |
-        west blobs fetch
+        # verify blobs (for tt-zephyr-platforms only - we do not depend on other blobs)
+        west blobs fetch tt-zephyr-platforms
 
     - name: Apply patches
       shell: bash
