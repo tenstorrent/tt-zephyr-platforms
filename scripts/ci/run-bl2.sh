@@ -17,8 +17,9 @@ TT_Z_P_ROOT=$(realpath $(dirname $(realpath $0))/../..)
 ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
 
 function print_help {
-	echo "Usage: $0 [-p <pcie_index>] [-t test_set] <board_name> -- [additional twister args]"
-	echo "Example: $0 -p 0 -t bl2 p150a -- --clobber-output"
+	echo -n "Usage: $0 [-p <pcie_index>] [-t test_set] [-k <keyfile>] "
+	echo "<board_name> -- [additional twister args]"
+	echo "Example: $0 -p 0 -t bl2 -k /tmp/test-key.pem p150a -- --clobber-output"
 }
 
 if [ $# -lt 1 ]; then
@@ -28,8 +29,9 @@ fi
 
 ASIC_ID=0
 
-while getopts "p:t:h" opt; do
+while getopts "k:p:t:h" opt; do
 	case "$opt" in
+		k) KEYFILE=$OPTARG ;;
 		p) ASIC_ID=$OPTARG ;;
 		t) TEST_SET=$TEST_SET:$OPTARG ;;
 		h) print_help; exit 0 ;;
@@ -53,6 +55,15 @@ export CONSOLE_DEV
 
 if [ -z "$TEST_SET" ]; then
     TEST_SET=":bl2"
+fi
+
+if [ -z "$KEYFILE" ]; then
+    # Generate a temporary key file that will be deleted on exit
+    echo "No signing key file provided, generating temporary key"
+    KEYFILE=$(mktemp)
+    echo "Generating key file at $KEYFILE"
+    trap 'rm -f "$KEYFILE"' EXIT
+    openssl genrsa -out "$KEYFILE" 2048
 fi
 
 echo "Using firmware root: $TT_Z_P_ROOT, Zephyr base: $ZEPHYR_BASE"
@@ -92,6 +103,7 @@ if [[ "$TEST_SET" == *"bl2"* ]]; then
 		--failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
 		--flash-before \
 		--outdir $ZEPHYR_BASE/twister-e2e-bl2 \
+		--extra-args=SB_CONFIG_BL2_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
 		$@
 	# Restore a stable DMFW, since the copy flashed by BL2 tests will
 	# leave the DMC flash in a different state than other tests expect
