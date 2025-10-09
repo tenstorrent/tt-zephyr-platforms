@@ -177,9 +177,22 @@ jobs:
         run: |
           tt-zephyr-platforms/scripts/ci/run-e2e.sh -p $ASIC_ID ${{ matrix.config.board }}
 
+      - name: Check signing key
+        shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -lt 42 ]; then
+            echo "No valid signing key found, using temporary key"
+            openssl genrsa -out "$SIGNATURE_KEY_FILE" 2048
+          fi
+          echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+
       - name: run-e2e-bl2-test
         run: |
-          tt-zephyr-platforms/scripts/ci/run-bl2.sh -p $ASIC_ID ${{ matrix.config.board }}
+          tt-zephyr-platforms/scripts/ci/run-bl2.sh -k $SIGNATURE_KEY_FILE \
+            -p $ASIC_ID ${{ matrix.config.board }}
 
       - name: Upload E2E Test results
         if: ${{ always() }}

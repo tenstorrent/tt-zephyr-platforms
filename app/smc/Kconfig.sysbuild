@@ -16,3 +16,10 @@ config DMC_BOARD
 
 config BL2
 	bool "Use next-gen bootloader scheme (BL2)"
+
+config BL2_SIGNATURE_KEY_FILE
+	string "BL2 Signature Key File"
+	help
+	  Path to the private key file used to sign the BL2 image, and used
+	  by MCUBoot to verify the image signature. If this is not set, the BL2
+	  image will be built with default test keys
