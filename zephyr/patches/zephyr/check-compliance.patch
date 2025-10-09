@@ -37,6 +37,14 @@ index 13a2b4839e9..99aeda03600 100755
          "IPC_SERVICE_ICMSG_BOND_NOTIFY_REPEAT_TO_MS", # Used in ICMsg tests for intercompatibility
                                                        # with older versions of the ICMsg.
          "LIBGCC_RTLIB",
+@@ -1325,6 +1327,7 @@ flagged.
+         "SHIFT",
+         "SINGLE_APPLICATION_SLOT", # Used in sysbuild for MCUboot configuration
+         "SINGLE_APPLICATION_SLOT_RAM_LOAD", # Used in sysbuild for MCUboot configuration
++        "SKIP_ZERO_DUTY_CYCLE_TEST",
+         "SOC_SDKNG_UNSUPPORTED", # Used in modules/hal_nxp/mcux/CMakeLists.txt
+         "SOC_SERIES_", # Used as regex in scripts/utils/board_v1_to_v2.py
+         "SOC_WATCH",  # Issue 13749
 @@ -1412,6 +1415,7 @@ class SysbuildKconfigCheck(KconfigCheck):
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
