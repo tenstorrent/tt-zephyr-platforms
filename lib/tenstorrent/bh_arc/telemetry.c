@@ -112,6 +112,7 @@ static struct telemetry_table telemetry_table = {
 		[56] = {TAG_AICLK_LIMIT_MAX, TELEM_OFFSET(TAG_AICLK_LIMIT_MAX)},
 		[57] = {TAG_TDC_LIMIT_MAX, TELEM_OFFSET(TAG_TDC_LIMIT_MAX)},
 		[58] = {TAG_THM_LIMIT_THROTTLE, TELEM_OFFSET(TAG_THM_LIMIT_THROTTLE)},
+		[59] = {TAG_TDP_LIMIT_MAX, TELEM_OFFSET(TAG_TDP_LIMIT_MAX)},
 	},
 };
 /* clang-format on */
@@ -253,6 +254,7 @@ static void write_static_telemetry(uint32_t app_version)
 	telemetry[TAG_THM_LIMIT_SHUTDOWN] = T_J_SHUTDOWN;
 	telemetry[TAG_THM_LIMIT_THROTTLE] = fw_table->chip_limits.thm_limit;
 	telemetry[TAG_TDC_LIMIT_MAX] = fw_table->chip_limits.tdc_limit;
+	telemetry[TAG_TDP_LIMIT_MAX] = fw_table->chip_limits.tdp_limit;
 
 	/* Get the static values */
 	telemetry[TAG_BOARD_ID_HIGH] =
