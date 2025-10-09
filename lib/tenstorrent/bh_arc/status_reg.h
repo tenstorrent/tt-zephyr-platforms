@@ -32,7 +32,21 @@
 #define STATUS_MSG_Q_ERR_FLAGS_REG_ADDR      RESET_UNIT_SCRATCH_RAM_REG_ADDR(9)
 #define SPI_BUFFER_INFO_REG_ADDR             RESET_UNIT_SCRATCH_RAM_REG_ADDR(10)
 #define STATUS_MSG_Q_INFO_REG_ADDR           RESET_UNIT_SCRATCH_RAM_REG_ADDR(11)
+/**
+ * @ingroup telemetry
+ * @brief Register address pointing to the telemetry data buffer.
+ *
+ * This register holds the address of the telemetry data buffer, which contains
+ * dynamically updated telemetry values.
+ */
 #define TELEMETRY_DATA_REG_ADDR              RESET_UNIT_SCRATCH_RAM_REG_ADDR(12)
+/**
+ * @ingroup telemetry
+ * @brief Register address pointing to the telemetry table.
+ *
+ * This register holds the address of the global telemetry table, which contains
+ * metadata and telemetry data.
+ */
 #define TELEMETRY_TABLE_REG_ADDR             RESET_UNIT_SCRATCH_RAM_REG_ADDR(13)
 #define PCIE_INIT_CPL_TIME_REG_ADDR          RESET_UNIT_SCRATCH_RAM_REG_ADDR(14)
 #define CMFW_START_TIME_REG_ADDR             RESET_UNIT_SCRATCH_RAM_REG_ADDR(15)

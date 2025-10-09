@@ -7,3 +7,4 @@ Firmware Services
    :maxdepth: 1
 
    tracing/index.rst
+   telemetry/index.rst

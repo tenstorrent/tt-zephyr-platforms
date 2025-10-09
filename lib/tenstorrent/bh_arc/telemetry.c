@@ -38,19 +38,68 @@ static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
 static const struct device *const pll_dev_4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
 
+/**
+ * @defgroup telemetry_table Telemetry Table
+ * @ingroup telemetry
+ * @brief Telemetry data structures and functions.
+ * @{
+ */
+
+/**
+ * @brief Represents an entry in the telemetry table.
+ */
 struct telemetry_entry {
+	/**
+	 * @brief The tag identifier for the telemetry entry.
+	 */
 	uint16_t tag;
+
+	/**
+	 * @brief The offset of the telemetry data in the table.
+	 */
 	uint16_t offset;
 };
 
+/**
+ * @brief Represents the telemetry table containing telemetry data and metadata.
+ */
 struct telemetry_table {
+	/**
+	 * @brief The version of the telemetry table.
+	 */
 	uint32_t version;
+
+	/**
+	 * @brief The number of entries in the telemetry table.
+	 */
 	uint32_t entry_count;
+
+	/**
+	 * @brief The table mapping telemetry tags to their offsets.
+	 */
 	struct telemetry_entry tag_table[TAG_COUNT];
+
+	/**
+	 * @brief The telemetry data corresponding to the tags.
+	 */
 	uint32_t telemetry[TAG_COUNT];
 };
 
 /* Global variables */
+
+/**
+ * @brief Documentation for telemetry table variables.
+ *
+ * This page contains detailed documentation for the telemetry table and its associated buffer.
+ */
+
+/**
+ * @brief Global telemetry table containing metadata and telemetry data.
+ *
+ * This table is used to store telemetry information, including tag mappings and data values.
+ * The address of this table is published in the @ref TELEMETRY_TABLE_REG_ADDR register.
+ */
+
 /* clang-format off */
 static struct telemetry_table telemetry_table = {
 	.tag_table = {
@@ -115,8 +164,16 @@ static struct telemetry_table telemetry_table = {
 		[59] = {TAG_TDP_LIMIT_MAX, TELEM_OFFSET(TAG_TDP_LIMIT_MAX)},
 	},
 };
-/* clang-format on */
+
+/**
+ * @brief Pointer to the telemetry data buffer.
+ *
+ * This buffer contains dynamically updated telemetry values. The address of this buffer
+ * is published in the @ref TELEMETRY_DATA_REG_ADDR register.
+ */
 static uint32_t *telemetry = &telemetry_table.telemetry[0];
+
+/** @} */ /* end of telemetry_table group */
 
 static struct k_timer telem_update_timer;
 static struct k_work telem_update_worker;
