@@ -12,14 +12,14 @@
 
 set -e # Exit on error
 
-TT_Z_P_ROOT=$(realpath $(dirname $(realpath $0))/../..)
+TT_Z_P_ROOT=$(realpath "$(dirname "$(realpath "$0")")"/../..)
 # Prefer Zephyr base from environment, otherwise use the one in this repo
-ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
+ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath "$TT_Z_P_ROOT"/../zephyr)}
 
 function print_help {
-	echo -n "Usage: $(basename $0) [-p <pcie_index>] [-t test_set] <board_name> -- "
+	echo -n "Usage: $(basename "$0") [-p <pcie_index>] [-t test_set] <board_name> -- "
     echo "[additional twister args]"
-	echo "Example: $(basename $0) -p 0 -t e2e-stress p150a -- --clobber-output"
+	echo "Example: $(basename "$0") -p 0 -t e2e-stress p150a -- --clobber-output"
 }
 
 if [ $# -lt 1 ]; then
@@ -59,16 +59,15 @@ fi
 echo "Using firmware root: $TT_Z_P_ROOT, Zephyr base: $ZEPHYR_BASE"
 echo "Running stress tests on board: $BOARD, device: $CONSOLE_DEV, test set: ${TEST_SET}"
 if [ $# -ne 0 ]; then
-	echo "Additional twister args: $@"
+	echo "Additional twister args: $*"
 fi
 
-# Get SMC and DMC board names
-SMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD smc)
-DMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD dmc)
+# Get SMC board name
+SMC_BOARD=$("$TT_Z_P_ROOT"/scripts/rev2board.sh "$BOARD" smc)
 
 # Start by building tt-console, so we can access the device
 echo "Building tt-console..."
-make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
+make -C "$TT_Z_P_ROOT"/scripts/tooling -j"$(nproc)"
 
 if [[ "$TEST_SET" == *"e2e-stress"* ]]; then
 	# Run the DMC tests
@@ -76,14 +75,14 @@ if [[ "$TEST_SET" == *"e2e-stress"* ]]; then
     # Reset the card first. If this fails tt-flash won't work either
     tt-smi -r
     # Run a full stress test, using tt-flash as the runner
-    $ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
-        --tag e2e-stress -T $TT_Z_P_ROOT/app \
+    "$ZEPHYR_BASE/scripts/twister" -i -p "$SMC_BOARD" \
+        --tag e2e-stress -T "$TT_Z_P_ROOT/app" \
         --west-flash="--force" \
         --west-runner tt_flash \
         --device-testing -c \
         --device-flash-timeout 120 \
         --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -p -d $CONSOLE_DEV" \
         --flash-before \
-        --outdir $ZEPHYR_BASE/twister-e2e-stress \
-        $@
+        --outdir "$ZEPHYR_BASE/twister-e2e-stress" \
+        "$@"
 fi

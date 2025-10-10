@@ -13,14 +13,14 @@
 
 set -e # Exit on error
 
-TT_Z_P_ROOT=$(realpath $(dirname $(realpath $0))/../..)
+TT_Z_P_ROOT=$(realpath "$(dirname "$(realpath "$0")")"/../..)
 # Prefer Zephyr base from environment, otherwise use the one in this repo
-ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
+ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath "$TT_Z_P_ROOT"/../zephyr)}
 
 function print_help {
-	echo -n "Usage: $(basename $0) [-p <pcie_index>] [-t test_set] <board_name> -- "
+	echo -n "Usage: $(basename "$0") [-p <pcie_index>] [-t test_set] <board_name> -- "
 	echo "[additional twister args]"
-	echo "Example: $(basename $0) -p 0 -t dmc -t smc p150a -- --clobber-output"
+	echo "Example: $(basename "$0") -p 0 -t dmc -t smc p150a -- --clobber-output"
 }
 
 if [ $# -lt 1 ]; then
@@ -60,37 +60,37 @@ fi
 echo "Using firmware root: $TT_Z_P_ROOT, Zephyr base: $ZEPHYR_BASE"
 echo "Running smoke tests on board: $BOARD, device: $CONSOLE_DEV, test set: ${TEST_SET}"
 if [ $# -ne 0 ]; then
-	echo "Additional twister args: $@"
+	echo "Additional twister args: $*"
 fi
 
 # Get SMC and DMC board names
-SMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD smc)
-DMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD dmc)
+SMC_BOARD=$("$TT_Z_P_ROOT"/scripts/rev2board.sh "$BOARD" smc)
+DMC_BOARD=$("$TT_Z_P_ROOT"/scripts/rev2board.sh "$BOARD" dmc)
 
 # Start by building tt-console, so we can access the device
 echo "Building tt-console..."
-make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
+make -C "$TT_Z_P_ROOT"/scripts/tooling -j"$(nproc)"
 
 # Build the tt-bootstrap flash loading algorithms
 echo "Building tt-bootstrap flash loading algorithms..."
-$TT_Z_P_ROOT/scripts/tooling/blackhole_recovery/data/bh_flm/build-flm.sh
+"$TT_Z_P_ROOT"/scripts/tooling/blackhole_recovery/data/bh_flm/build-flm.sh
 
 if [[ "$TEST_SET" == *"dmc"* ]]; then
 	# Run the DMC tests
 	echo "Running DMC tests..."
 	# Run tests tagged with "smoke"
-	$ZEPHYR_BASE/scripts/twister -i \
-		-p $DMC_BOARD --device-testing \
+	"$ZEPHYR_BASE"/scripts/twister -i \
+		-p "$DMC_BOARD" --device-testing \
 		--west-flash \
-		--device-serial-pty $TT_Z_P_ROOT/scripts/dmc_rtt.py \
+		--device-serial-pty "$TT_Z_P_ROOT/scripts/dmc_rtt.py" \
 		--flash-before \
 		--tag smoke \
-		--alt-config-root $TT_Z_P_ROOT/test-conf/samples \
-		--alt-config-root $TT_Z_P_ROOT/test-conf/tests \
-		-T $ZEPHYR_BASE/samples -T $ZEPHYR_BASE/tests -T $TT_Z_P_ROOT/tests \
-		-T $TT_Z_P_ROOT/samples \
-		--outdir $ZEPHYR_BASE/twister-dmc-smoke \
-		$@
+		--alt-config-root "$TT_Z_P_ROOT/test-conf/samples" \
+		--alt-config-root "$TT_Z_P_ROOT/test-conf/tests" \
+		-T "$ZEPHYR_BASE/samples" -T "$ZEPHYR_BASE/tests" -T "$TT_Z_P_ROOT/tests" \
+		-T "$TT_Z_P_ROOT/samples" \
+		--outdir "$ZEPHYR_BASE/twister-dmc-smoke" \
+		"$@"
 fi
 
 if [[ "$TEST_SET" == *"smc"* ]]; then
@@ -98,19 +98,19 @@ if [[ "$TEST_SET" == *"smc"* ]]; then
 	echo "Running SMC tests..."
 	# Flash the DMFW app back onto the DMC. Otherwise the flash device
 	# will not be muxed to the SMC, and flash tests will fail
-	$ZEPHYR_BASE/scripts/twister -i \
+	"$ZEPHYR_BASE/scripts/twister" -i \
 		--tag e2e \
-		-p $DMC_BOARD --device-testing \
-		--device-serial-pty $TT_Z_P_ROOT/scripts/dmc_rtt.py \
+		-p "$DMC_BOARD" --device-testing \
+		--device-serial-pty "$TT_Z_P_ROOT/scripts/dmc_rtt.py" \
 		--west-flash \
 		--flash-before \
-		-T $TT_Z_P_ROOT/app \
-		--outdir $ZEPHYR_BASE/twister-dmc-e2e \
-		$@
+		-T "$TT_Z_P_ROOT/app" \
+		--outdir "$ZEPHYR_BASE/twister-dmc-e2e" \
+		"$@"
 
 	  # Run tests tagged with "smoke"
-	$ZEPHYR_BASE/scripts/twister -i \
-		-p $SMC_BOARD --device-testing \
+	"$ZEPHYR_BASE/scripts/twister" -i \
+		-p "$SMC_BOARD" --device-testing \
 		--device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV" \
 		--failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
 		--flash-before \
@@ -118,10 +118,10 @@ if [[ "$TEST_SET" == *"smc"* ]]; then
 		--west-runner tt_bootstrap \
 		--device-flash-timeout 120 \
 		--tag smoke \
-		--alt-config-root $TT_Z_P_ROOT/test-conf/samples \
-		--alt-config-root $TT_Z_P_ROOT/test-conf/tests \
-		-T $ZEPHYR_BASE/samples -T $ZEPHYR_BASE/tests \
-		-T $TT_Z_P_ROOT/tests -T $TT_Z_P_ROOT/samples \
-		--outdir $ZEPHYR_BASE/twister-smc-smoke \
-		$@
+		--alt-config-root "$TT_Z_P_ROOT/test-conf/samples" \
+		--alt-config-root "$TT_Z_P_ROOT/test-conf/tests" \
+		-T "$ZEPHYR_BASE/samples" -T "$ZEPHYR_BASE/tests" \
+		-T "$TT_Z_P_ROOT/tests" -T "$TT_Z_P_ROOT/samples" \
+		--outdir "$ZEPHYR_BASE/twister-smc-smoke" \
+		"$@"
 fi
