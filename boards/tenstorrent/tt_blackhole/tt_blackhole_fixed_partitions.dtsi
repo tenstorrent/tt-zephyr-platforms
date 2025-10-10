@@ -67,7 +67,7 @@ partitions {
 	recovery_valid: partition@b3000 {
 		label = "safetail";
 		reg = <0xb3000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_confirmed.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_confirmed.bin";
 	};
 
 	/*
@@ -220,7 +220,7 @@ partitions {
 	main_test: partition@31d000{
 		label = "maintail";
 		reg = <0x31d000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_test.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_test.bin";
 	};
 
 	/* Leave some space for future fixed partitions, if needed. */
