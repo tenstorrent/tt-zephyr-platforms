@@ -199,7 +199,7 @@ partitions {
 	dmfw_tail: partition@29d000 {
 		label = "dmfwtail";
 		reg = <0x29d000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_test.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_test.bin";
 	};
 
 	/*
