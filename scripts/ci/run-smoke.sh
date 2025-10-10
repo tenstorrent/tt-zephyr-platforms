@@ -18,8 +18,9 @@ TT_Z_P_ROOT=$(realpath $(dirname $(realpath $0))/../..)
 ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
 
 function print_help {
-	echo "Usage: $0 [-p <pcie_index>] [-t test_set] <board_name> -- [additional twister args]"
-	echo "Example: $0 -p 0 -t dmc -t smc p150a -- --clobber-output"
+	echo -n "Usage: $(basename $0) [-p <pcie_index>] [-t test_set] <board_name> -- "
+	echo "[additional twister args]"
+	echo "Example: $(basename $0) -p 0 -t dmc -t smc p150a -- --clobber-output"
 }
 
 if [ $# -lt 1 ]; then
