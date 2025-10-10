@@ -7,3 +7,4 @@ Firmware Development
    :maxdepth: 1
 
    getting_started/index.rst
+   testing/index.rst
