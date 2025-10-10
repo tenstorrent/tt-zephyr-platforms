@@ -61,11 +61,13 @@ if(CONFIG_ARM)
   include(${ZEPHYR_BASE}/boards/common/stm32cubeprogrammer.board.cmake)
 endif()
 
+if(CONFIG_SOC_TT_BLACKHOLE_SMC)
+  board_set_debugger_ifnset(tt_pyluwen)
+  board_finalize_runner_args(tt_pyluwen)
+endif()
+
 board_set_flasher_ifnset(tt_flash)
 board_finalize_runner_args(tt_flash)
 
 board_set_flasher_ifnset(tt_bootstrap)
 board_finalize_runner_args(tt_bootstrap --board-name ${CONFIG_BOARD_REVISION})
-
-board_set_debugger(tt_pyluwen)
-board_finalize_runner_args(tt_pyluwen)
