@@ -4,39 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "tt_blackhole_smc_partitions.dtsi"
 #include "tt_blackhole_tt_blackhole_smc.overlay"
 
-&spi_flash {
-	/delete-node/ partitions;
-	#include "../../boards/tenstorrent/tt_blackhole/tt_blackhole_fixed_partitions.dtsi"
-};
-
-/*
- * For now, we want to skip the SMC recovery image. We also don't have MCUBoot
- * for the SMC yet, so we will just use the CMFW image as a boot image.
- */
-
-&cmfw {
-	binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
-};
-
-&boot_fallback {
-	binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
-};
-
-/* Remove SMC main image and recovery image from binary */
-&smc_main_image {
-	/delete-property/ binary-path;
-};
-
-&main_test {
-	/delete-property/ binary-path;
-};
-
-&smc_recovery {
-	/delete-property/ binary-path;
-};
-
-&recovery_valid {
-	/delete-property/ binary-path;
+/ {
+	chosen {
+		zephyr,sram = &csm_app;
+	};
 };
