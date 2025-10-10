@@ -183,6 +183,7 @@ patches:
     date: 2025-10-8
     upstreamable: true
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97213
+    merge-date: 2025-10-10
     comments: |
       The module includes for our runners get overwritten whenever we load a new python
       runner file, leading to flaky behaviour when west tries to access our runners. This
