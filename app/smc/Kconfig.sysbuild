@@ -13,3 +13,9 @@ config DMC_BOARD
 	default "tt_blackhole@p300a/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300a"
 	default "tt_blackhole@p300b/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300b"
 	default "tt_blackhole@p300c/tt_blackhole/dmc" if $(BOARD_REVISION) = "p300c"
+
+config USE_MCUBOOT
+	bool "Use mcuboot"
+	help
+	  Use mcuboot to boot the CMFW. This does not affect the DMC FW, which
+	  uses MCUBoot by default.
