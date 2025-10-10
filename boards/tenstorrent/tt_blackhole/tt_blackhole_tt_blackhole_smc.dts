@@ -19,6 +19,9 @@
 		zephyr,sram = &csm;
 		zephyr,console = &vuart0;
 		zephyr,shell-uart = &vuart0;
+		/* Not used for setting flash base address, but required by mcuboot */
+		zephyr,flash = &spi_flash;
+		zephyr,flash-controller = &spi_flash;
 	};
 
 	aliases {
@@ -39,6 +42,8 @@
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";
+		write-block-size = <1>;
+		erase-block-size = <4096>;
 	};
 };
 
