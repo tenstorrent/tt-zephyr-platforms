@@ -9,4 +9,5 @@ west
 pyluwen>=0.7.11
 tt-flash>=3.4.2
 tt-smi>=3.0.23
+tt-tools-common==1.4.27
 # zephyr-keep-sorted-stop

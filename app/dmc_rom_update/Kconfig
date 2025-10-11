@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# Offset image 0x5000 bytes. First 0x4000 (16 KB) will be used for
+# new MCUBoot image. Next 0x200 (512 bytes) is where the new slot0 header
+# would reside. By erasing this, we ensure that MCUBoot will bootstrap from
+# slot1 (the new image) on next reboot.
+# We offset 0x5000 because the flash page size is 0x1000 (4 KB)
+config ROM_START_OFFSET
+	default 0x5000
+
+source "Kconfig.zephyr"

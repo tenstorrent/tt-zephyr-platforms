@@ -71,6 +71,18 @@ tests:
       pytest_args:
         - "--dut-scope=session"
         - "--asic-id=1"
+  app.bl2:
+    tags: bl2
+    timeout: 240 # 4 minutes
+    harness: pytest
+    harness_config:
+      pytest_root:
+        - pytest/bl2.py
+      pytest_args:
+        - "--dut-scope=session"
+    sysbuild: true
+    extra_args:
+      - FILE_SUFFIX=bl2
   # demonstrates pinctrl driver, macros, etc, compile
   app.e2e_smoke.pinctrl:
     tags: e2e

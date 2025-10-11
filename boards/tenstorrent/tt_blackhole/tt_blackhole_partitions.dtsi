@@ -18,6 +18,7 @@ partitions {
 		label = "cmfwcfg";
 		reg = <0x14000 DT_SIZE_K(4)>;
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -25,19 +26,24 @@ partitions {
 		label = "origcfg";
 		reg = <0x15000 DT_SIZE_K(4)>;
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/fw_table.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
 	cmfw: partition@10000000 {
 		label = "cmfw";
 		reg = <0x10000000 DT_SIZE_K(106)>;
+		offset = <0x10000000>;
 		binary-path = "$BUILD_DIR/smc/zephyr/zephyr.bin";
+		source = "$AUTO";
+		executable;
 	};
 
 	ethfwcfg: partition@30000 {
 		label = "ethfwcfg";
 		reg = <0x30000 DT_SIZE_K(4)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_erisc_params.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -45,13 +51,15 @@ partitions {
 		label = "ethfw";
 		reg = <0x31000 DT_SIZE_K(64)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_erisc.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
 	memfwcfg: partition@41000 {
 		label = "memfwcfg";
 		reg = <0x41000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$PROD_NAME.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -59,6 +67,7 @@ partitions {
 		label = "memfw";
 		reg = <0x42000 DT_SIZE_K(16)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_init.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -66,6 +75,7 @@ partitions {
 		label = "ethsdreg";
 		reg = <0x46000 DT_SIZE_K(4)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fwreg.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -73,13 +83,16 @@ partitions {
 		label = "ethsdfw";
 		reg = <0x47000 DT_SIZE_K(20)>;
 		binary-path = "$BLOBS_DIR/tt_blackhole_serdes_eth_fw.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
 	bmfw: partition@4c000 {
 		label = "bmfw";
 		reg = <0x4c000 DT_SIZE_K(68)>;
+		padto = <DT_SIZE_K(68)>;
 		binary-path = "$BUILD_DIR/dmc/zephyr/zephyr.signed.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -88,6 +101,7 @@ partitions {
 		reg = <0x59000 DT_SIZE_K(4)>;
 		binary-path =
 			"$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/flash_info.bin";
+		source = "$AUTO";
 		read-only;
 	};
 
@@ -95,6 +109,8 @@ partitions {
 		label = "boardcfg";
 		reg = <0x5a000 DT_SIZE_K(4)>;
 		binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
+		source = "$END - 0x1000";
+		provisioning-only;
 		read-only;
 	};
 
@@ -108,7 +124,8 @@ partitions {
 	failover: failover_partition@10000000 {
 		label = "failover";
 		reg = <0x10000000 DT_SIZE_K(76)>;
+		offset = <0x10000000>;
+		source = "$AUTO";
 		binary-path = "$BUILD_DIR/recovery/zephyr/zephyr.bin";
-		read-only;
 	};
 };

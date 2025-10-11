@@ -1,0 +1,11 @@
+sample:
+  name: dmc-rom-update
+tests:
+  dmc-rom-update.app:
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/dmc
+      - tt_blackhole@p150a/tt_blackhole/dmc
+      - tt_blackhole@p300a/tt_blackhole/dmc
+    # Runtime tests will be conducted wih the SMC firmware and tt-flash,
+    # and this app will be pulled in via sysbuild.
+    build_only: true
