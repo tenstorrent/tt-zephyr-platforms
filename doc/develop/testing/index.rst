@@ -14,7 +14,8 @@ A development environment should be set up following
 :ref:`Getting Started<ttzp_getting_started>`
 
 A device under test (DUT) should be connected to your system, with
-the following attached
+the following attached:
+
 * Blackhole debug board
 * ST-Link debug probe
 * JLink debug probe
@@ -23,8 +24,9 @@ Test Types
 ----------
 
 The following tests are executed on hardware:
-* end-to-end system integration tests
-* self-contained unit tests
+
+* End-to-end system integration tests
+* Self-contained unit tests
 
 All tests are executed using Zephyr's test manager, twister. Custom shell
 scripts are defined to invoke twister for each test.
