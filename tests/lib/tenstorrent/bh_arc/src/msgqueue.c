@@ -9,18 +9,21 @@
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include "asic_state.h"
+#include "clock_wave.h"
 
 #include "reg_mock.h"
 
 /* Custom fake for ReadReg to simulate timer progression */
 #define RESET_UNIT_REFCLK_CNT_LO_REG_ADDR 0x800300E0
-#define READ_VOUT_ADDR                    0x8003008B /* Example address for voltage read */
+#define PLL_CNTL_WRAPPER_CLOCK_WAVE_CNTL_REG_ADDR 0x80020038
 static uint32_t timer_counter;
 static uint8_t i2c_read_buf_emul[256] = {0};
 static uint8_t i2c_read_buf_idx;
 
 static uint8_t i2c_write_buf_emul[256] = {0};
 static uint8_t i2c_write_buf_idx;
+
+static uint32_t clock_wave_value;
 
 static uint32_t ReadReg_msgqueue_fake(uint32_t addr)
 {
@@ -51,6 +54,10 @@ static void WriteReg_msgqueue_fake(uint32_t addr, uint32_t value)
 	 */
 	if (addr == 0x80090010) {
 		i2c_write_buf_emul[i2c_write_buf_idx++] = value;
+	}
+
+	if (addr == PLL_CNTL_WRAPPER_CLOCK_WAVE_CNTL_REG_ADDR) {
+		clock_wave_value = value;
 	}
 }
 
@@ -155,6 +162,32 @@ ZTEST(msgqueue, test_msg_type_switch_vout_control)
 	zexpect_equal(i2c_write_buf_emul[3], 0x12); /* transition_control and command_source high*/
 }
 
+ZTEST(msgqueue, test_msg_type_switch_clk_scheme)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Reset timer counter and set up the fake */
+	timer_counter = 0;
+
+	req.data[0] = TT_SMC_MSG_SWITCH_CLK_SCHEME;
+	req.data[1] = ClockWave; /* clock scheme ClockWave */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+	zassert_equal(clock_wave_value, 2U);
+
+	req.data[1] = ZeroSkewClk; /* clock scheme ZeroSkewClk */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+	zassert_equal(clock_wave_value, 1U);
+}
+
 static void test_setup(void *ctx)
 {
 	(void)ctx;
@@ -163,6 +196,7 @@ static void test_setup(void *ctx)
 	timer_counter = 0U;
 	i2c_read_buf_idx = 0U;
 	i2c_write_buf_idx = 0U;
+	clock_wave_value = 0U;
 	memset(i2c_read_buf_emul, 0, sizeof(i2c_read_buf_emul));
 	memset(i2c_write_buf_emul, 0, sizeof(i2c_write_buf_emul));
 }
