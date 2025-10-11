@@ -13,6 +13,7 @@ toolchain:
 supported:
   - smp
   - gpio
+  - dma
   - bh_2x
 testing:
   ignore_tags:
