@@ -62,8 +62,9 @@ def convert_proto_txt_to_bin_file(
     message_type,
     prepend_checksum: bool,
     override: Optional[dict] = None,
+    suffix="",
 ):
-    proto_txt_table = f"{board_cfg_path}/{in_folder}/{message_name}.txt"
+    proto_txt_table = f"{board_cfg_path}/{in_folder}/{message_name}{suffix}.txt"
     with open(proto_txt_table, "r") as file:
         template = file.read()
 
@@ -129,6 +130,15 @@ def main():
         required=True,
         help="Firmware bundle version to encode",
     )
+    parser.add_argument(
+        "--message-suffix",
+        type=str,
+        default="",
+        help=(
+            "Optional suffix to use custom data tables. When set, tables "
+            "named <message_name>_<suffix>.txt will be used."
+        ),
+    )
     args = parser.parse_args()
     build_folder = os.path.join(args.build_dir, "zephyr/python_proto_files")
     if not os.path.exists(build_folder):
@@ -154,6 +164,7 @@ def main():
         fw_table_pb2.FwTable,
         False,
         override={"fw_bundle_version": bundle_version_int},
+        suffix=args.message_suffix,
     )
     convert_proto_txt_to_bin_file(
         BOARD_TXT_CONFIG_PATH,
@@ -162,6 +173,7 @@ def main():
         "flash_info",
         flash_info_pb2.FlashInfoTable,
         False,
+        suffix=args.message_suffix,
     )
     convert_proto_txt_to_bin_file(
         BOARD_TXT_CONFIG_PATH,
@@ -170,6 +182,7 @@ def main():
         "read_only",
         read_only_pb2.ReadOnly,
         False,
+        suffix=args.message_suffix,
     )
 
 
