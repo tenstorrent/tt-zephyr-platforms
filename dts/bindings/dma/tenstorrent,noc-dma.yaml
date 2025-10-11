@@ -1,0 +1,17 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,noc-dma"
+
+description: |
+  Tenstorrent Network-on-Chip (NOC) DMA Controller
+
+  The NOC DMA controller provides high-performance DMA transfers
+  between memory regions and peripherals on the Tenstorrent chip.
+
+include: [base.yaml]
+
+properties:
+  reg:
+    required: true
+    description: Register base address and size
