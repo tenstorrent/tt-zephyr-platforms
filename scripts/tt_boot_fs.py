@@ -22,6 +22,7 @@ import json
 import shutil
 import tarfile
 import tempfile
+from intelhex import IntelHex
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -417,22 +418,24 @@ class BootFs:
         for write in self.writes:
             tracker.add(write[1], write[1] + len(write[2]), None)
 
-    def to_binary(self) -> bytes:
+    def to_binary(self, all_sections) -> bytes:
         write = bytearray()
         last_addr = 0
         for always_write, addr, data in self.writes:
-            if not always_write:
+            if not (always_write or all_sections):
                 continue
             write.extend([0xFF] * (addr - last_addr))
             write.extend(data)
             last_addr = addr + len(data)
         return bytes(write)
 
-    def to_intel_hex(self) -> bytes:
+    def to_intel_hex(self, all_sections) -> bytes:
         output = ""
         current_segment = -1  # Track the current 16-bit segment
 
-        for _, address, data in self.writes:
+        for always_write, address, data in self.writes:
+            if not (always_write or all_sections):
+                continue
             end_address = address + len(data)
 
             # Process data in chunks that stay within segment boundaries
@@ -711,14 +714,14 @@ def cksum(data: bytes):
     return calculated_checksum
 
 
-def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False) -> bytes:
+def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False, all_sections=False) -> bytes:
     fi = None
     try:
         fi = FileImage.load(path, env)
         if hex:
-            return fi.to_boot_fs().to_intel_hex()
+            return fi.to_boot_fs().to_intel_hex(all_sections)
         else:
-            return fi.to_boot_fs().to_binary()
+            return fi.to_boot_fs().to_binary(all_sections)
     except Exception as e:
         _logger.error(f"Exception: {e}")
     return None
@@ -727,7 +730,13 @@ def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False) -> bytes:
 def fsck(path: Path, alignment: int = 0x1000) -> bool:
     fs = None
     try:
-        fs = BootFs.from_binary(open(path, "rb").read(), alignment=alignment)
+        if path.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(path))
+            data = ih.tobinarray()
+        else:
+            data = open(path, "rb").read()
+        fs = BootFs.from_binary(data, alignment=alignment)
     except Exception as e:
         _logger.error(f"Exception: {e}")
     return fs is not None
@@ -771,11 +780,25 @@ def ls(
     fds = []
 
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = bytes(0)
+            # Pad with 0x0 between offsets
+            with open(bootfs, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("@"):
+                        # This is an address line, pad data to this point
+                        offset = int(line[1:], 10)
+                        data += bytes([0xFF] * (offset - len(data)))  # Pad with 0x0
+                    else:
+                        # This is a data line, decode and append
+                        data += base64.b16decode(line.strip())
+        elif bootfs.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(bootfs))
+            data = ih.tobinarray()
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         if verbose >= 0 and not output_json:
@@ -829,11 +852,25 @@ def ls(
 
 def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
     try:
-        data = (
-            base64.b16decode(open(bootfs, "r").read())
-            if input_base64
-            else open(bootfs, "rb").read()
-        )
+        if input_base64:
+            data = bytes(0)
+            # Pad with 0x0 between offsets
+            with open(bootfs, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("@"):
+                        # This is an address line, pad data to this point
+                        offset = int(line[1:], 10)
+                        data += bytes([0xFF] * (offset - len(data)))  # Pad with 0x0
+                    else:
+                        # This is a data line, decode and append
+                        data += base64.b16decode(line.strip())
+        elif bootfs.suffix == ".hex":
+            # Read hex file and convert to binary
+            ih = IntelHex(str(bootfs))
+            data = ih.tobinarray()
+        else:
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         entry_data = None
@@ -874,11 +911,22 @@ def mkbundle(
             mapping = []
             with open(board_dir / "mapping.json", "w") as file:
                 file.write(json.dumps(mapping))
-            with open(image, "rb") as img:
-                binary = img.read()
-                # Convert image to base16 encoded ascii to conform to
-                # tt-flash format
-                b16out = b16encode(binary).decode("ascii")
+            if image.suffix == ".hex":
+                # Encode offsets using @addr format tt-flash supports
+                ih = IntelHex(str(image))
+                b16out = ""
+                for off, end in ih.segments():
+                    b16out += f"@{off}\n"
+                    b16out += b16encode(
+                        ih.tobinarray(start=off, size=end - off)
+                    ).decode("ascii")
+                    b16out += "\n"
+            else:
+                with open(image, "rb") as img:
+                    binary = img.read()
+                    # Convert image to base16 encoded ascii to conform to
+                    # tt-flash format
+                    b16out = b16encode(binary).decode("ascii")
             with open(board_dir / "image.bin", "w") as img:
                 img.write(b16out)
 
@@ -1058,9 +1106,9 @@ def invoke_mkfs(args):
         return os.EX_DATAERR
     if args.build_dir and args.build_dir.exists():
         env = {"$ROOT": str(ROOT), "$BUILD_DIR": str(args.build_dir)}
-        data = mkfs(args.specification, env, args.hex)
+        data = mkfs(args.specification, env, args.hex, args.all)
     else:
-        data = mkfs(args.specification, hex=args.hex)
+        data = mkfs(args.specification, hex=args.hex, all_sections=args.all)
     if data is None:
         return os.EX_DATAERR
     with open(args.output_file, "wb") as file:
@@ -1171,6 +1219,11 @@ def parse_args():
     )
     mkfs_parser.add_argument(
         "--hex", action="store_true", help="Generate intel hex file"
+    )
+    mkfs_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Include all bootfs sections, including provisioning only",
     )
     mkfs_parser.set_defaults(func=invoke_mkfs)
 
