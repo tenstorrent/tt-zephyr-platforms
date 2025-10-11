@@ -67,7 +67,7 @@ partitions {
 	recovery_valid: partition@b3000 {
 		label = "safetail";
 		reg = <0xb3000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_confirmed.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_confirmed.bin";
 	};
 
 	/*
@@ -135,7 +135,7 @@ partitions {
 	memfwcfg: partition@1f9000 {
 		label = "memfwcfg";
 		reg = <0x1f9000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$BOARD_REV.bin";
+		binary-path = "$BLOBS_DIR/tt_blackhole_gddr_params_$PROD_NAME.bin";
 		read-only;
 	};
 
@@ -199,7 +199,7 @@ partitions {
 	dmfw_tail: partition@29d000 {
 		label = "dmfwtail";
 		reg = <0x29d000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_test.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_test.bin";
 	};
 
 	/*
@@ -220,7 +220,7 @@ partitions {
 	main_test: partition@31d000{
 		label = "maintail";
 		reg = <0x31d000 DT_SIZE_K(4)>;
-		binary-path = "$BLOBS_DIR/mcuboot_magic_test.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_test.bin";
 	};
 
 	/* Leave some space for future fixed partitions, if needed. */

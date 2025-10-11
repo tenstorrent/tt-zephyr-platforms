@@ -584,3 +584,43 @@ def test_aiclk(arc_chip_dut, asic_id):
         aiclk = arc_chip.arc_msg(ARC_MSG_TYPE_GET_AICLK)[0]
         assert aiclk == clk, f"Failed to set clock to {clk} MHz"
         logger.info(f"AICLK set to {aiclk} MHz successfully")
+
+
+@pytest.mark.mcuboot
+def test_mcuboot(arc_chip_dut, asic_id):
+    """
+    Validates that the SMC falls back to the recovery image
+    when the main image is not valid. Only testable when mcuboot is enabled.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    MCUBOOT_HEADER_ADDR = 0x29E000
+    MCUBOOT_MAGIC = 0x96F3B83D
+    # First, validate we are running the base image. A good way to check this is
+    # to see that telemetry data is available
+    try:
+        arc_chip.get_telemetry()
+    except Exception as e:
+        assert False, f"Failed to get telemetry data: {e}"
+    # Check that the MCUBOOT header magic is present
+    buf = bytes(4)
+    arc_chip.as_bh().spi_read(MCUBOOT_HEADER_ADDR, buf)
+    magic = int.from_bytes(buf, "little")
+    assert magic == MCUBOOT_MAGIC, (
+        f"MCUBOOT magic not found at {MCUBOOT_HEADER_ADDR:#010x}"
+    )
+    logger.info(f"MCUBOOT magic found in main image header: 0x{magic:#010x}")
+    # Now, erase the header of the main image, so that the SMC will fall
+    # back to the recovery image
+    logger.info("Erasing main image header to trigger recovery fallback")
+    buf = bytes([0xFF] * 0x1000)
+    arc_chip.as_bh().spi_write(MCUBOOT_HEADER_ADDR, buf)
+    # Reset the SMC to trigger the fallback
+    smi_reset_cmd = "tt-smi -r"
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    ).returncode
+    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    # Validate that the SMC has booted into the recovery image
+    with pytest.raises(Exception):
+        arc_chip.get_telemetry()
+    logger.info("SMC telemetry data not available, as expected in recovery mode")
