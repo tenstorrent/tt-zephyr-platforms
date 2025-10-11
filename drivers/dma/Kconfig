@@ -1,0 +1,37 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Direct Memory Access (DMA) Drivers"
+
+config TT_BH_ARC_DMA
+	bool "Tenstorrent BH ARC DMA driver"
+	depends on ARC
+	help
+	  Enable support for Tenstorrent BH ARC DMA controller.
+
+if TT_BH_ARC_DMA
+
+config DMA_TT_BH_ARC_CHANNELS
+	int "Number of DMA channels"
+	default 16
+	range 1 32
+	help
+	  Number of DMA channels supported by the TT BH ARC DMA controller.
+
+config TT_BH_ARC_DMA_LOG_LEVEL
+	int "TT BH ARC DMA log level"
+	depends on LOG
+	default 3
+	range 0 4
+	help
+	  Sets log level for TT BH ARC DMA driver.
+	  Levels are:
+	  0 OFF, do not write
+	  1 ERROR, only write LOG_ERR
+	  2 WARNING, write LOG_WRN in addition to previous level
+	  3 INFO, write LOG_INF in addition to previous levels
+	  4 DEBUG, write LOG_DBG in addition to previous levels
+
+endif # TT_BH_ARC_DMA
+
+endmenu
