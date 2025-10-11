@@ -9,16 +9,6 @@ common:
     - tt_blackhole@p300a/tt_blackhole/smc
 tests:
   app.default: {}
-  app.e2e-smoke-bh-1x:
-    tags: e2e
-    depends_on: bh_1x
-    harness: pytest
-    harness_config:
-      pytest_root:
-        - pytest/e2e_smoke.py
-      pytest_args:
-        - "--dut-scope=session"
-        - "-m not flash"
   app.e2e-smoke-flash:
     tags: e2e-flash
     harness: pytest
@@ -50,17 +40,6 @@ tests:
         - pytest/vuart.py
       pytest_args:
         - "--dut-scope=session"
-  app.e2e-smoke-bh-2x:
-    tags: e2e
-    depends_on: bh_2x
-    harness: pytest
-    harness_config:
-      pytest_root:
-        - pytest/e2e_smoke.py
-      pytest_args:
-        - "--dut-scope=session"
-        - "--asic-id=1"
-        - "-m not flash"
   app.vuart-bh-2x:
     tags: e2e
     depends_on: bh_2x

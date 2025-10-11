@@ -39,6 +39,8 @@ if os.environ.get("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION") != "python":
     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 from encode_spirom_bins import convert_proto_txt_to_bin_file
 
+TT_Z_P_ROOT = Path(__file__).parents[1]
+
 try:
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
@@ -64,7 +66,15 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
     """
 
     def __init__(
-        self, cfg, board_id, board_name, fw_bundle, bootfs_hex, asic_id, adapter_id
+        self,
+        cfg,
+        board_id,
+        board_name,
+        fw_bundle,
+        bootfs_hex,
+        asic_id,
+        adapter_id,
+        no_prompt,
     ):
         super().__init__(cfg)
         self.build_dir = Path(cfg.build_dir)
@@ -72,9 +82,11 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         self.board_id = board_id
         self.board_name = board_name
         self.adapter_id = adapter_id
+        self.no_prompt = no_prompt
         self.pyocd_path = (
             Path(__file__).parent / "tooling/blackhole_recovery/data/bh_flm"
         )
+        self.should_rescan = False
         if self.board_name not in BOARD_ID_MAP:
             raise ValueError(
                 f"Unknown board name: {self.board_name}. Supported names: "
@@ -90,7 +102,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         # We support flashing hex or binary files directly. Otherwise, we will
         # extract the firmware from fwbundle
         if bootfs_hex:
-            logger.info(
+            self.logger.info(
                 "Hex file provided, using this directly (board ID argument ignored)"
             )
             # Load the hex file as data to write
@@ -100,13 +112,20 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
                 ]
             except FileNotFoundError as e:
                 raise RuntimeError(f"Hex file {bootfs_hex} does not exist") from e
+        elif fw_bundle:
+            self.flash_data = self.parse_fwbundle(fw_bundle)
+            self.should_rescan = True
+        elif (Path(cfg.build_dir).parent / "update.fwbundle").exists():
+            self.flash_data = self.parse_fwbundle(
+                str(Path(cfg.build_dir).parent / "update.fwbundle")
+            )
         else:
-            if fw_bundle:
-                self.flash_data = self.parse_fwbundle(fw_bundle)
-            else:
-                self.flash_data = self.parse_fwbundle(
-                    str(Path(cfg.build_dir).parent / "update.fwbundle")
-                )
+            # Use the binary file, and wrap it in a tt-boot-fs structure
+            # so the bootrom will execute it correctly
+            self.logger.warning(
+                "No firmware bundle provided, looking for binary file in build directory"
+            )
+            self.flash_data = self.parse_bin(cfg.bin_file, asic_id)
 
     @classmethod
     def name(cls):
@@ -139,6 +158,12 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             type=str,
             help="Adapter ID for the ST-Link device used in recovery",
         )
+        parser.add_argument(
+            "--no-prompt",
+            default=False,
+            help="Do not prompt for adapter if none is provided, use first available",
+            action="store_true",
+        )
 
     @classmethod
     def do_create(cls, cfg, args):
@@ -150,7 +175,89 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             args.bootfs_hex,
             args.asic_id,
             args.adapter_id,
+            args.no_prompt,
         )
+
+    def parse_bin(self, bin_file, asic_id):
+        """
+        Parses a binary file and wraps it in a bootfs structure for flashing.
+        """
+        # First address for data
+        offset = 0x14000  # After SPI training word
+        cfg = BOARD_ID_MAP[self.board_name][asic_id]
+        # We *really* should not need all these files to be present to run
+        # applications, but the BH_ARC library has a broad set of dependencies
+        file_paths = {
+            "boardcfg": self.build_dir
+            / "generated_board_cfg"
+            / cfg["protobuf-name"]
+            / "read_only.bin",
+            "flshinfo": self.build_dir
+            / "generated_board_cfg"
+            / cfg["protobuf-name"]
+            / "flash_info.bin",
+            "cmfwcfg": self.build_dir
+            / "generated_board_cfg"
+            / cfg["protobuf-name"]
+            / "fw_table.bin",
+            "ethfw": TT_Z_P_ROOT / "zephyr" / "blobs" / "tt_blackhole_erisc.bin",
+            "ethfwcfg": TT_Z_P_ROOT
+            / "zephyr"
+            / "blobs"
+            / "tt_blackhole_erisc_params.bin",
+            "memfw": TT_Z_P_ROOT / "zephyr" / "blobs" / "tt_blackhole_gddr_init.bin",
+            "memfwcfg": TT_Z_P_ROOT
+            / "zephyr"
+            / "blobs"
+            / f"tt_blackhole_gddr_params_{self.board_name.upper()}.bin",
+            "ethsdreg": TT_Z_P_ROOT
+            / "zephyr"
+            / "blobs"
+            / "tt_blackhole_serdes_eth_fwreg.bin",
+            "ethsdfw": TT_Z_P_ROOT
+            / "zephyr"
+            / "blobs"
+            / "tt_blackhole_serdes_eth_fw.bin",
+        }
+        # CMFW should be first entry, so the bootrom finds it and jumps to
+        # it before copying other tags to invalid ICCM addresses.
+        order = ["cmfw"] + list(file_paths.keys())
+        try:
+            with open(bin_file, "rb") as f:
+                data = f.read()
+        except FileNotFoundError as e:
+            raise RuntimeError(f"Binary file {bin_file} does not exist") from e
+
+        # Create cmfw entry
+        bootfs_entries = {
+            "cmfw": tt_boot_fs.FsEntry(False, "cmfw", data, offset, 0x10000000, True)
+        }
+        # Update offset, round up to 0x1000 boundary
+        offset += (len(data) + 0xFFF) & ~0xFFF
+        # Create entries for the required config files
+        for path, name in zip(file_paths.values(), file_paths.keys()):
+            if not Path(path).exists():
+                raise RuntimeError(f"Required file {name} not found at {path}")
+            with open(path, "rb") as f:
+                file_data = f.read()
+                bootfs_entries[name] = tt_boot_fs.FsEntry(
+                    False, name, file_data, offset, 0x0, False
+                )
+                offset += (len(file_data) + 0xFFF) & ~0xFFF
+        # Pull the board configuration files into the tt-boot-fs image
+        # Create empty failover entry at 0x5000 (in recovery image region)
+        failover = tt_boot_fs.FsEntry(False, "failover", b"", 0x5000, 0x10000000, True)
+        bootfs = tt_boot_fs.BootFs(order, bootfs_entries, failover)
+        # Write out the bootfs binary for debugging
+        with open(self.build_dir / "bootfs.bin", "wb") as f:
+            self.logger.debug("Writing bootfs binary to build directory")
+            f.write(bootfs.to_binary())
+        operations = [
+            FlashOperation(
+                bootfs.to_intel_hex(), self.pyocd_path / Path(cfg["pyocd-config"])
+            )
+        ]
+        return operations
 
     def parse_fwbundle(self, fw_bundle):
         """
@@ -240,20 +347,33 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             raise ValueError(f"Unsupported command: {command}")
         for flash_op in self.flash_data:
             if self.adapter_id is None:
-                print(
-                    "No adapter ID provided, please select the debugger "
-                    "attached to STM32 if prompted"
-                )
-                session = ConnectHelper.session_with_chosen_probe(
-                    target_override=PYOCD_TARGET,
-                    user_script=flash_op.pyocd_config,
-                )
+                # Check if we have a TTY for user interaction
+                if not sys.stdin.isatty() or self.no_prompt:
+                    self.logger.info(
+                        "No adapter ID provided and no TTY available, selecting first available debug probe"
+                    )
+                    session = ConnectHelper.session_with_chosen_probe(
+                        target_override=PYOCD_TARGET,
+                        user_script=flash_op.pyocd_config,
+                        return_first=True,
+                    )
+                else:
+                    self.logger.info(
+                        "No adapter ID provided, please select the debugger "
+                        "attached to STM32 if prompted"
+                    )
+                    session = ConnectHelper.session_with_chosen_probe(
+                        target_override=PYOCD_TARGET,
+                        user_script=flash_op.pyocd_config,
+                    )
             else:
                 session = ConnectHelper.session_with_chosen_probe(
                     target_override=PYOCD_TARGET,
                     user_script=flash_op.pyocd_config,
                     unique_id=self.adapter_id,
                 )
+            if session is None:
+                raise RuntimeError("Failed to connect to the debug probe")
             session.open()
             target = session.board.target
             # Program the flash with the provided data
@@ -270,20 +390,21 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             target.reset_and_halt()
             target.resume()
             session.close()
+        # If flashing a firmware bundle, we may need to wait for DMC update.
+        if self.should_rescan:
             # Rescan PCIe bus
             self.logger.info(
                 "Waiting up to 60 seconds for the DMC to complete the update"
             )
             timeout = 60  # Timeout in seconds
             start_time = time.time()
-            while True:
+            while time.time() - start_time > timeout:
                 pcie_utils.rescan_pcie()
                 if len(pcie_utils.find_tt_devs()) == len(self.flash_data):
                     # All devices found, exit loop and flash next ASIC
                     self.logger.info("Device reappeared after rescan")
                     break
-                if time.time() - start_time > timeout:
-                    self.logger.error("Timeout expired while waiting for PCIe rescan.")
-                    break
                 # Throttle rescan attempts
                 time.sleep(1)
+            if time.time() - start_time > timeout:
+                raise RuntimeError("Timeout waiting for device to reappear after flash")
