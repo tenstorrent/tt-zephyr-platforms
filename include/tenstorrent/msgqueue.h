@@ -168,6 +168,20 @@ struct switch_vout_control_rqst {
 	uint32_t source;
 };
 
+/** @brief Host request to switch clock scheme
+ * @details Messages of this type are processed by @ref switch_clk_scheme_handler
+ */
+struct switch_clk_scheme_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SWITCH_CLK_SCHEME */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief @ref ClockingScheme "Clock scheme" to switch to*/
+	uint32_t scheme;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -195,6 +209,9 @@ union request {
 
 	/** @brief A switch VOUT control request */
 	struct switch_vout_control_rqst switch_vout_control;
+
+	/** @brief A switch clock scheme request */
+	struct switch_clk_scheme_rqst switch_clk_scheme;
 };
 
 /** @} */
