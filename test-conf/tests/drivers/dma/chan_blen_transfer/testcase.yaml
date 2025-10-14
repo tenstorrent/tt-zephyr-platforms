@@ -10,7 +10,7 @@ tests:
       - dma
     tags:
       - dma
-    tags: smoke
+      - smoke
     platform_allow:
       - tt_blackhole@p100a/tt_blackhole/smc
       - tt_blackhole@p150a/tt_blackhole/smc

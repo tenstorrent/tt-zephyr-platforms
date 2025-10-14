@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_ARC_HS
+	bool "ARC DMA driver"
+	default y
+	depends on DT_HAS_SNPS_DESIGNWARE_DMA_ARC_ENABLED && DMA
+	help
+	  DMA driver for ARC MCUs.

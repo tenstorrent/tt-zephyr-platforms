@@ -722,11 +722,6 @@
 		tst_dma0: dma0: dma@d00 {
 			compatible = "snps,designware-dma-arc";
 			reg = <0xd00 0x100>;
-			dma-channels = <1>;
-			dma-descriptors = <32>;
-			max-burst-size = <16>;
-			max-pending-transactions = <4>;
-			buffer-size = <16>;
 			#dma-cells = <1>;
 			status = "okay";
 		};

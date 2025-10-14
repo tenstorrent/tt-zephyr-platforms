@@ -14,7 +14,99 @@
 #include <zephyr/irq.h>
 #include <zephyr/sys/atomic.h>
 
-#include "dma_arc_hs_cluster.h"
+/* ARC DMA Auxiliary Register Definitions */
+#define DMA_AUX_BASE     (0xd00)
+#define DMA_C_CTRL_AUX   (0xd00 + 0x0)
+#define DMA_C_CHAN_AUX   (0xd00 + 0x1)
+#define DMA_C_SRC_AUX    (0xd00 + 0x2)
+#define DMA_C_SRC_HI_AUX (0xd00 + 0x3)
+#define DMA_C_DST_AUX    (0xd00 + 0x4)
+#define DMA_C_DST_HI_AUX (0xd00 + 0x5)
+#define DMA_C_ATTR_AUX   (0xd00 + 0x6)
+#define DMA_C_LEN_AUX    (0xd00 + 0x7)
+#define DMA_C_HANDLE_AUX (0xd00 + 0x8)
+#define DMA_C_STAT_AUX   (0xd00 + 0xc)
+
+#define DMA_S_CTRL_AUX      (0xd00 + 0x10)
+#define DMA_S_BASEC_AUX(ch) (0xd00 + 0x83 + (ch))
+#define DMA_S_LASTC_AUX(ch) (0xd00 + 0x84 + (ch))
+#define DMA_S_STATC_AUX(ch) (0xd00 + 0x86 + (ch))
+#define DMA_S_DONESTATD_AUX(d)                                                                     \
+	(0xd00 + 0x20 + (d)) /* Descriptor selection. Each D stores descriptors d*32 +: 32 */
+#define DMA_S_DONESTATD_CLR_AUX(d) (0xd00 + 0x40 + (d))
+
+/* ARC DMA Attribute Flags */
+#define ARC_DMA_NP_ATTR       (1 << 3) /* Enable non posted writes */
+#define ARC_DMA_SET_DONE_ATTR (1 << 0) /* Set done without triggering interrupt */
+
+/* ARC Auxiliary Register Access Functions */
+static inline void arc_write_aux(uint32_t reg, uint32_t val)
+{
+	__asm__ volatile("sr %0, [%1]" : : "r"(val), "r"(reg) : "memory");
+}
+
+static inline uint32_t arc_read_aux(uint32_t reg)
+{
+	uint32_t val;
+
+	__asm__ volatile("lr %0, [%1]" : "=r"(val) : "r"(reg) : "memory");
+	return val;
+}
+
+/* Low-level ARC DMA Functions */
+static inline void dma_arc_hs_config_hw(void)
+{
+	uint32_t reg = 0;
+
+	reg = (0xf << 4);                   /* Set LBU read transaction limit to max */
+	reg |= (0x4 << 8);                  /* Set max burst length to 16 (max supported) */
+	arc_write_aux(DMA_S_CTRL_AUX, reg); /* Apply settings above */
+}
+
+static inline void dma_arc_hs_init_channel_hw(uint32_t dma_ch, uint32_t base, uint32_t last)
+{
+	arc_write_aux(DMA_S_BASEC_AUX(dma_ch), base);
+	arc_write_aux(DMA_S_LASTC_AUX(dma_ch), last);
+	arc_write_aux(DMA_S_STATC_AUX(dma_ch), 0x1); /* Enable dma_ch */
+}
+
+static inline void dma_arc_hs_start_hw(uint32_t dma_ch, const void *p_src, void *p_dst,
+				       uint32_t len, uint32_t attr)
+{
+	arc_write_aux(DMA_C_CHAN_AUX, dma_ch);
+	arc_write_aux(DMA_C_SRC_AUX, (uint32_t)p_src);
+	arc_write_aux(DMA_C_DST_AUX, (uint32_t)p_dst);
+	arc_write_aux(DMA_C_ATTR_AUX, attr);
+	arc_write_aux(DMA_C_LEN_AUX, len);
+}
+
+static inline uint32_t dma_arc_hs_get_handle_hw(void)
+{
+	return arc_read_aux(DMA_C_HANDLE_AUX);
+}
+
+static inline uint32_t dma_arc_hs_poll_busy_hw(void)
+{
+	return arc_read_aux(DMA_C_STAT_AUX);
+}
+
+static inline void dma_arc_hs_clear_done_hw(uint32_t handle)
+{
+	uint32_t d = handle >> 5;
+	uint32_t b = (1 << (handle & 0x1f));
+
+	arc_write_aux(DMA_S_DONESTATD_CLR_AUX(d), b);
+}
+
+static inline uint32_t dma_arc_hs_get_done_hw(uint32_t handle)
+{
+	uint32_t d = handle >> 5;
+	uint32_t b = handle & 0x1f;
+
+	uint32_t volatile state = (arc_read_aux(DMA_S_DONESTATD_AUX(d & 0x7))) >> b;
+
+	return state & 0x1;
+}
 
 #define DT_DRV_COMPAT snps_designware_dma_arc
 
@@ -57,7 +149,7 @@ struct arc_dma_data {
 	K_KERNEL_STACK_MEMBER(completion_stack, 1024);
 };
 
-static int arc_dma_config(const struct device *dev, uint32_t channel, struct dma_config *config)
+static int dma_arc_hs_config(const struct device *dev, uint32_t channel, struct dma_config *config)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -107,7 +199,7 @@ static int arc_dma_config(const struct device *dev, uint32_t channel, struct dma
 	return 0;
 }
 
-static int arc_dma_start(const struct device *dev, uint32_t channel)
+static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -151,10 +243,10 @@ static int arc_dma_start(const struct device *dev, uint32_t channel)
 	LOG_INF("Starting HW transfer: ch=%u, src=0x%x, dst=0x%x, size=%u", channel,
 		(uint32_t)block->source_address, (uint32_t)block->dest_address, block->block_size);
 
-	arc_dma_start_hw(channel, (const void *)block->source_address, (void *)block->dest_address,
-			 block->block_size, attr);
+	dma_arc_hs_start_hw(channel, (const void *)block->source_address,
+			    (void *)block->dest_address, block->block_size, attr);
 
-	chan->handle = arc_dma_get_handle_hw();
+	chan->handle = dma_arc_hs_get_handle_hw();
 	chan->active = true;
 
 	LOG_INF("HW transfer started: ch=%u, handle=%u", channel, chan->handle);
@@ -166,7 +258,7 @@ static int arc_dma_start(const struct device *dev, uint32_t channel)
 	return 0;
 }
 
-static int arc_dma_stop(const struct device *dev, uint32_t channel)
+static int dma_arc_hs_stop(const struct device *dev, uint32_t channel)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -197,7 +289,7 @@ static int arc_dma_stop(const struct device *dev, uint32_t channel)
 	hw_key = k_spin_lock(&chan->hw_lock);
 
 	chan->active = false;
-	arc_dma_clear_done_hw(chan->handle);
+	dma_arc_hs_clear_done_hw(chan->handle);
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
 	k_spin_unlock(&data->lock, key);
@@ -206,7 +298,7 @@ static int arc_dma_stop(const struct device *dev, uint32_t channel)
 	return 0;
 }
 
-static void arc_dma_check_completion(const struct device *dev, uint32_t channel)
+static void dma_arc_hs_check_completion(const struct device *dev, uint32_t channel)
 {
 	struct arc_dma_data *data = dev->data;
 	struct arc_dma_channel *chan;
@@ -224,12 +316,12 @@ static void arc_dma_check_completion(const struct device *dev, uint32_t channel)
 	/* Lock hardware access for this channel */
 	hw_key = k_spin_lock(&chan->hw_lock);
 
-	done_status = arc_dma_get_done_hw(chan->handle);
+	done_status = dma_arc_hs_get_done_hw(chan->handle);
 
 	if (done_status != 0) {
 		LOG_INF("Channel %u transfer completed, clearing done status", channel);
 		chan->active = false;
-		arc_dma_clear_done_hw(chan->handle);
+		dma_arc_hs_clear_done_hw(chan->handle);
 
 		if (chan->callback) {
 			LOG_INF("Calling callback for channel %u", channel);
@@ -241,7 +333,8 @@ static void arc_dma_check_completion(const struct device *dev, uint32_t channel)
 	k_spin_unlock(&data->lock, key);
 }
 
-static int arc_dma_get_status(const struct device *dev, uint32_t channel, struct dma_status *stat)
+static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
+				 struct dma_status *stat)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -273,7 +366,7 @@ static int arc_dma_get_status(const struct device *dev, uint32_t channel, struct
 		/* Lock hardware access for this channel */
 		hw_key = k_spin_lock(&chan->hw_lock);
 
-		done_status = arc_dma_get_done_hw(chan->handle);
+		done_status = dma_arc_hs_get_done_hw(chan->handle);
 		LOG_INF("Channel %u status check: handle=%u, done_status=%u", channel, chan->handle,
 			done_status);
 
@@ -286,7 +379,7 @@ static int arc_dma_get_status(const struct device *dev, uint32_t channel, struct
 		} else {
 			LOG_INF("Channel %u transfer completed, clearing done status", channel);
 			chan->active = false;
-			arc_dma_clear_done_hw(chan->handle);
+			dma_arc_hs_clear_done_hw(chan->handle);
 
 			if (chan->callback) {
 				LOG_INF("Calling callback for channel %u", channel);
@@ -303,7 +396,7 @@ static int arc_dma_get_status(const struct device *dev, uint32_t channel, struct
 	return 0;
 }
 
-static bool arc_dma_chan_filter(const struct device *dev, int channel, void *filter_param)
+static bool dma_arc_hs_chan_filter(const struct device *dev, int channel, void *filter_param)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -336,7 +429,7 @@ static bool arc_dma_chan_filter(const struct device *dev, int channel, void *fil
 	return result;
 }
 
-static void arc_dma_chan_release(const struct device *dev, uint32_t channel)
+static void dma_arc_hs_chan_release(const struct device *dev, uint32_t channel)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -355,7 +448,7 @@ static void arc_dma_chan_release(const struct device *dev, uint32_t channel)
 		hw_key = k_spin_lock(&chan->hw_lock);
 
 		chan->active = false;
-		arc_dma_clear_done_hw(chan->handle);
+		dma_arc_hs_clear_done_hw(chan->handle);
 
 		k_spin_unlock(&chan->hw_lock, hw_key);
 	}
@@ -372,7 +465,7 @@ static void arc_dma_chan_release(const struct device *dev, uint32_t channel)
 	LOG_DBG("Released channel %u", channel);
 }
 
-static int arc_dma_get_attribute(const struct device *dev, uint32_t type, uint32_t *value)
+static int dma_arc_hs_get_attribute(const struct device *dev, uint32_t type, uint32_t *value)
 {
 	switch (type) {
 	case DMA_ATTR_BUFFER_ADDRESS_ALIGNMENT:
@@ -394,7 +487,7 @@ static int arc_dma_get_attribute(const struct device *dev, uint32_t type, uint32
 	return 0;
 }
 
-static void arc_dma_completion_thread(void *arg1, void *arg2, void *arg3)
+static void dma_arc_hs_completion_thread(void *arg1, void *arg2, void *arg3)
 {
 	const struct device *dev = (const struct device *)arg1;
 	const struct arc_dma_config *config = dev->config;
@@ -409,7 +502,7 @@ static void arc_dma_completion_thread(void *arg1, void *arg2, void *arg3)
 	while (data->completion_thread_running) {
 		/* Check all channels for completion */
 		for (i = 0; i < config->channels; i++) {
-			arc_dma_check_completion(dev, i);
+			dma_arc_hs_check_completion(dev, i);
 		}
 
 		/* Sleep for 10ms between checks - similar to old polling interval */
@@ -419,17 +512,17 @@ static void arc_dma_completion_thread(void *arg1, void *arg2, void *arg3)
 	LOG_DBG("DMA completion thread stopped");
 }
 
-static const struct dma_driver_api arc_dma_api = {
-	.config = arc_dma_config,
-	.start = arc_dma_start,
-	.stop = arc_dma_stop,
-	.get_status = arc_dma_get_status,
-	.chan_filter = arc_dma_chan_filter,
-	.chan_release = arc_dma_chan_release,
-	.get_attribute = arc_dma_get_attribute,
+static const struct dma_driver_api dma_arc_hs_api = {
+	.config = dma_arc_hs_config,
+	.start = dma_arc_hs_start,
+	.stop = dma_arc_hs_stop,
+	.get_status = dma_arc_hs_get_status,
+	.chan_filter = dma_arc_hs_chan_filter,
+	.chan_release = dma_arc_hs_chan_release,
+	.get_attribute = dma_arc_hs_get_attribute,
 };
 
-static int arc_dma_init(const struct device *dev)
+static int dma_arc_hs_init(const struct device *dev)
 {
 	const struct arc_dma_config *config = dev->config;
 	struct arc_dma_data *data = dev->data;
@@ -451,17 +544,17 @@ static int arc_dma_init(const struct device *dev)
 		/* Spinlocks are zero-initialized by default in Zephyr */
 	}
 
-	arc_dma_config_hw();
+	dma_arc_hs_config_hw();
 
 	for (i = 0; i < config->channels; i++) {
-		arc_dma_init_channel_hw(i, 0, config->descriptors - 1);
+		dma_arc_hs_init_channel_hw(i, 0, config->descriptors - 1);
 	}
 
 	/* Start completion checking thread */
 	data->completion_thread_running = true;
 	data->completion_thread_id = k_thread_create(
 		&data->completion_thread, data->completion_stack,
-		K_KERNEL_STACK_SIZEOF(data->completion_stack), arc_dma_completion_thread,
+		K_KERNEL_STACK_SIZEOF(data->completion_stack), dma_arc_hs_completion_thread,
 		(void *)dev, NULL, NULL, K_PRIO_COOP(7), /* High priority thread */
 		0, K_NO_WAIT);
 
@@ -471,7 +564,7 @@ static int arc_dma_init(const struct device *dev)
 	return 0;
 }
 
-static int arc_dma_cleanup(const struct device *dev)
+static int dma_arc_hs_cleanup(const struct device *dev)
 {
 	struct arc_dma_data *data = dev->data;
 
@@ -485,26 +578,26 @@ static int arc_dma_cleanup(const struct device *dev)
 	return 0;
 }
 
-__maybe_unused static int arc_dma_cleanup_wrapper(const struct device *dev)
+__maybe_unused static int dma_arc_hs_cleanup_wrapper(const struct device *dev)
 {
-	return arc_dma_cleanup(dev);
+	return dma_arc_hs_cleanup(dev);
 }
 
 #define ARC_DMA_INIT(inst)                                                                         \
 	static const struct arc_dma_config arc_dma_config_##inst = {                               \
 		.base = DT_INST_REG_ADDR(inst),                                                    \
-		.channels = DT_INST_PROP_OR(inst, dma_channels, 2),                                \
+		.channels = DT_INST_PROP(inst, dma_channels),                                      \
 		.descriptors = DT_INST_PROP_OR(inst, dma_descriptors, 32),                         \
 		.max_burst_size = DT_INST_PROP_OR(inst, max_burst_size, 4),                        \
 		.max_pending_transactions = DT_INST_PROP_OR(inst, max_pending_transactions, 4),    \
 		.buffer_size = DT_INST_PROP_OR(inst, buffer_size, 16),                             \
-		.coherency_support = DT_INST_PROP_OR(inst, coherency_support, false),              \
+		.coherency_support = DT_INST_PROP(inst, coherency_support),                        \
 	};                                                                                         \
                                                                                                    \
 	static struct arc_dma_data arc_dma_data_##inst;                                            \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(inst, arc_dma_init, arc_dma_cleanup_wrapper, &arc_dma_data_##inst,   \
-			      &arc_dma_config_##inst, POST_KERNEL, CONFIG_DMA_INIT_PRIORITY,       \
-			      &arc_dma_api);
+	DEVICE_DT_INST_DEFINE(inst, dma_arc_hs_init, dma_arc_hs_cleanup_wrapper,                   \
+			      &arc_dma_data_##inst, &arc_dma_config_##inst, POST_KERNEL,           \
+			      CONFIG_DMA_INIT_PRIORITY, &dma_arc_hs_api);
 
 DT_INST_FOREACH_STATUS_OKAY(ARC_DMA_INIT)
