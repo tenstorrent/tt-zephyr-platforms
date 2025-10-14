@@ -141,7 +141,15 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
 	if (FLASH_DATA(dev).jedec_cmds->read.force_single) {
 		rc = dev_cfg_apply(dev, &dev_config->mspi_nor_init_cfg);
 	} else {
-		rc = dev_cfg_apply(dev, &FLASH_DATA(dev).dev_cfg);
+		if (IS_ENABLED(CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE) &&
+		    dev_config->mspi_nor_read_freq != 0) {
+			/* Use different frequency for read*/
+			FLASH_DATA(dev).dev_cfg.freq = dev_config->mspi_nor_read_freq;
+			rc = dev_cfg_apply(dev, &FLASH_DATA(dev).dev_cfg);
+			FLASH_DATA(dev).dev_cfg.freq = dev_config->mspi_nor_init_cfg.freq;
+		} else {
+			rc = dev_cfg_apply(dev, &FLASH_DATA(dev).dev_cfg);
+		}
 	}
 
 	if (rc < 0) {
@@ -917,6 +925,7 @@ BUILD_ASSERT((FLASH_SIZE_INST(inst) % CONFIG_FLASH_MSPI_NOR_LAYOUT_PAGE_SIZE) ==
 	static const struct flash_mspi_nor_config dev##inst##_config = {	\
 		.bus = DEVICE_DT_GET(DT_INST_BUS(inst)),			\
 		.mspi_id = MSPI_DEVICE_ID_DT_INST(inst),			\
+		.mspi_nor_read_freq = DT_INST_PROP_OR(inst, mspi_nor_read_frequency, 0), \
 		.mspi_nor_init_cfg = FLASH_INITIAL_CONFIG(inst),		\
 		.mspi_nor_cfg_mask = DT_PROP(DT_INST_BUS(inst),			\
 					 software_multiperipheral)		\
