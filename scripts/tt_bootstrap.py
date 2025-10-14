@@ -170,7 +170,18 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
                     board_name = cfg["name"]
                     try:
                         with open(Path(temp_dir) / board_name / "image.bin", "r") as f:
-                            data = base64.b16decode(f.read().strip())
+                            data = bytes(0)
+                            lines = f.readlines()
+                            for line in lines:
+                                if line.startswith("@"):
+                                    # This is an address line, pad data to this point
+                                    offset = int(line[1:], 10)
+                                    data += bytes(
+                                        [0xFF] * (offset - len(data))
+                                    )  # Pad with 0x0
+                                else:
+                                    # This is a data line, decode and append
+                                    data += base64.b16decode(line.strip())
                             cfg["bootfs"] = data
                     except FileNotFoundError as e:
                         raise RuntimeError(
@@ -220,7 +231,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             )
             cfg["bootfs"] = tt_boot_fs.BootFs(
                 order, bootfs_entries, failover
-            ).to_intel_hex()
+            ).to_intel_hex(True)
 
         # Now, create FlashOperation objects for each ASIC on board
         operations = []
