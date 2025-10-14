@@ -251,10 +251,10 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         # Write out the bootfs binary for debugging
         with open(self.build_dir / "bootfs.bin", "wb") as f:
             self.logger.debug("Writing bootfs binary to build directory")
-            f.write(bootfs.to_binary())
+            f.write(bootfs.to_binary(True))
         operations = [
             FlashOperation(
-                bootfs.to_intel_hex(), self.pyocd_path / Path(cfg["pyocd-config"])
+                bootfs.to_intel_hex(True), self.pyocd_path / Path(cfg["pyocd-config"])
             )
         ]
         return operations
