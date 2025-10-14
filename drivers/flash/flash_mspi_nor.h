@@ -39,6 +39,7 @@ struct flash_mspi_nor_config {
 	struct mspi_dev_id mspi_id;
 	struct mspi_dev_cfg mspi_nor_init_cfg;
 	enum mspi_dev_cfg_mask mspi_nor_cfg_mask;
+	uint32_t mspi_nor_read_freq;
 #if defined(CONFIG_MSPI_XIP)
 	struct mspi_xip_cfg xip_cfg;
 #endif

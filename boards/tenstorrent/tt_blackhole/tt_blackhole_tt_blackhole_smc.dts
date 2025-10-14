@@ -36,9 +36,13 @@
 		compatible = "jedec,mspi-nor";
 		reg = <0>;
 		status = "okay";
-		/* Programming has experimentally been reliable up to 17 MHz, use 15 to be safe */
 		size = <DT_SIZE_M(512)>;
+		/* Programming has experimentally been reliable up to 17 MHz, use 15 to be safe */
 		mspi-max-frequency = <DT_FREQ_M(15)>;
+		/* Reading can operate at higher frequencies.
+		 * Reliable up to 50MHz, use 40 to be safe.
+		 */
+		mspi-nor-read-frequency = <DT_FREQ_M(40)>;
 		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";

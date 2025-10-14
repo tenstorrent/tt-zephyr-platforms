@@ -22,3 +22,10 @@ properties:
     type: int
     description: |
       Minimum time, in nanoseconds, the flash chip needs to recover after reset.
+
+  mspi-nor-read-frequency:
+    type: int
+    description: |
+      Frequency, in Hz, to use for read operations. If not specified, the same
+      frequency as defined by mspi-max-frequency will be used. Only applicable
+      when CONFIG_FLASH_MSPI_NOR_RUNTIME_PROBE is enabled.
