@@ -28,9 +28,9 @@
 #define DMA_C_STAT_AUX   (0xd00 + 0xc)
 
 #define DMA_S_CTRL_AUX      (0xd00 + 0x10)
-#define DMA_S_BASEC_AUX(ch) (0xd00 + 0x83 + (ch))
-#define DMA_S_LASTC_AUX(ch) (0xd00 + 0x84 + (ch))
-#define DMA_S_STATC_AUX(ch) (0xd00 + 0x86 + (ch))
+#define DMA_S_BASEC_AUX(ch) (0xd00 + 0x83 + ((ch) * 8))
+#define DMA_S_LASTC_AUX(ch) (0xd00 + 0x84 + ((ch) * 8))
+#define DMA_S_STATC_AUX(ch) (0xd00 + 0x86 + ((ch) * 8))
 #define DMA_S_DONESTATD_AUX(d)                                                                     \
 	(0xd00 + 0x20 + (d)) /* Descriptor selection. Each D stores descriptors d*32 +: 32 */
 #define DMA_S_DONESTATD_CLR_AUX(d) (0xd00 + 0x40 + (d))
