@@ -26,6 +26,7 @@
 
 	aliases {
 		dmc-vuart = &vuart2;
+		dma0 = &dma0;
 	};
 };
 
