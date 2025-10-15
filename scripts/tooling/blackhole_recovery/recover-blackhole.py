@@ -111,7 +111,7 @@ def set_board_serial(hex_file, board_name, board_id):
     bootfs_entries["boardcfg"] = tt_boot_fs.FsEntry(
         False, "boardcfg", protobuf_bin, boardcfg.spi_addr, 0x0, False
     )
-    bootfs_data = tt_boot_fs.BootFs(order, bootfs_entries, failover).to_intel_hex()
+    bootfs_data = tt_boot_fs.BootFs(order, bootfs_entries, failover).to_intel_hex(True)
     with open(work_dir / "new_serial.hex", "wb") as f:
         f.write(bootfs_data)
     original = IntelHex(hex_file)
