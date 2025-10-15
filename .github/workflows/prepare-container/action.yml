@@ -86,6 +86,8 @@ runs:
     - name: Update python packages
       shell: bash
       run: |
+        # Remove tt packages, we are getting them from vcs
+        pip uninstall -y tt-flash tt-tools-common pyluwen
         west packages pip --install
 
     - name: Verify binary blobs
