@@ -86,7 +86,6 @@ runs:
     - name: Update python packages
       shell: bash
       run: |
-        pip uninstall -y pyluwen # Needed since we are installing from VCS
         west packages pip --install
 
     - name: Verify binary blobs
