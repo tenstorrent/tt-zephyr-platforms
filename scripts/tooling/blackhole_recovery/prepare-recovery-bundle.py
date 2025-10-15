@@ -107,7 +107,7 @@ def generate_recovery_assets(boardname, board_data, outdir):
             # Extract the DMFW from the bootfs. We will use this DMFW in recovery, so that
             # the DMFW loaded into the DMC does not attempt to update itself to the copy in EEPROM
             with open(bootfs_hex, "wb") as f:
-                f.write(bootfs.to_intel_hex())
+                f.write(bootfs.to_intel_hex(True))
             # Now build the full hex image.
             ih = IntelHex()
             # At 0x0, place the tt-boot-fs. This will be written to eeprom.
