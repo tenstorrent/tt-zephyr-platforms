@@ -10,9 +10,16 @@ import re
 import sys
 import time
 from pathlib import Path
+from urllib.request import urlretrieve
 
 import pyluwen
 import pytest
+
+
+def strip_ansi_codes(s):
+    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+    return ansi_escape.sub("", s)
+
 
 try:
     from twister_harness import DeviceAdapter
@@ -31,18 +38,27 @@ except ImportError:
         pass
 
     class DeviceAdapter:
+        def __init__(self, fwbundle=None):
+            self.fwbundle = fwbundle
+
         def launch(self):
-            logger.warning("Twister harness not found, skipping flash")
+            result = subprocess.run(
+                ["tt-flash", "flash", str(self.fwbundle), "--force"],
+                capture_output=True,
+                text=True,
+            )
+
+            assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
 
     @pytest.fixture(scope="session")
-    def unlaunched_dut():
-        return DeviceAdapter()
+    def unlaunched_dut(fwbundle):
+        return DeviceAdapter(fwbundle)
 
 
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
-from pcie_utils import rescan_pcie
-import smc_test_recovery
-import dmc_reset
+from pcie_utils import rescan_pcie  # noqa: E402
+import smc_test_recovery  # noqa: E402
+import dmc_reset  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -583,3 +599,59 @@ def test_aiclk(arc_chip_dut, asic_id):
         aiclk = arc_chip.arc_msg(ARC_MSG_TYPE_GET_AICLK)[0]
         assert aiclk == clk, f"Failed to set clock to {clk} MHz"
         logger.info(f"AICLK set to {aiclk} MHz successfully")
+
+
+def upgrade_from_version_test(tmp_path: Path, board_name, unlaunched_dut, version):
+    if board_name is None:
+        pytest.skip("Upgrade test requires --board set, skipping upgrade test")
+
+    RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
+
+    tar_recovery = tmp_path / "recovery.tar.gz"
+    urlretrieve(RECOVERY_URL, tar_recovery)
+    recovery_py = str(
+        Path(__file__).parents[3]
+        / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
+    )
+    # versions we want to check upgrading from
+
+    # flash recovery first
+    try:
+        subprocess.check_call(
+            [
+                "python3",
+                recovery_py,
+                tar_recovery,
+                board_name,
+                "--force",
+                "--select-first",
+            ]
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"blackhole_recovery.py failed with error: {e}")
+        assert False
+
+    # flash Firmware to update from
+    URL = f"https://github.com/tenstorrent/tt-firmware/releases/download/v{version}/fw_pack-{version}.fwbundle"
+    targz = tmp_path / "fw_pack.tar.gz"
+
+    urlretrieve(URL, targz)
+    try:
+        result = subprocess.run(
+            ["tt-flash", "flash", "--fw-tar", str(targz), "--force"],
+            capture_output=True,
+            text=True,
+        )
+
+        assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}")
+        assert False
+
+    # flash firmware to update-to
+    unlaunched_dut.launch()
+
+
+def test_upgrade_from_18_10(tmp_path: Path, board_name, unlaunched_dut):
+    upgrade_from_version_test(tmp_path, board_name, unlaunched_dut, "18.10.0")
