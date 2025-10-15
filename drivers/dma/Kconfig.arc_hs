@@ -4,6 +4,6 @@
 config DMA_ARC_HS
 	bool "ARC DMA driver"
 	default y
-	depends on DT_HAS_SNPS_DESIGNWARE_DMA_ARC_HS_ENABLED && DMA
+	depends on DT_HAS_SNPS_DESIGNWARE_DMA_ARC_HS_ENABLED
 	help
 	  DMA driver for ARC MCUs.

@@ -4,7 +4,7 @@ common:
     - dma
   depends_on: dma
 tests:
-  drivers.dma.chan_link_transfer:
+  drivers.dma.scatter_gather:
     min_ram: 16
     tags:
       - dma
@@ -16,14 +16,14 @@ tests:
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
       - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
         boards/tt_blackhole_tt_blackhole_smc.overlay"
       - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
         boards/tt_blackhole_tt_blackhole_smc.overlay"
       - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
         boards/tt_blackhole_tt_blackhole_smc.overlay"
       - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
         boards/tt_blackhole_tt_blackhole_smc.overlay"

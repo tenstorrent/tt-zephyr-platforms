@@ -35,3 +35,7 @@
 		zephyr,sram = &csm_app;
 	};
 };
+
+&dma0 {
+	dma-channels = <1>;
+};
