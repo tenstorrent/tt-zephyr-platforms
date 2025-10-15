@@ -43,6 +43,7 @@ def test_arc_update(unlaunched_dut: DeviceAdapter):
     DMC_BL2_VERSION = get_int_version_from_file(
         SCRIPT_DIR.parents[2] / "app" / "dmc" / "VERSION"
     )
+    DMC_BL2_VERSION &= 0xFFFFFFF0  # Mask off any rc bits, they won't be reported
     print(f"Expecting DMC version {DMC_BL2_VERSION:x}")
 
     # Download the firmware file
