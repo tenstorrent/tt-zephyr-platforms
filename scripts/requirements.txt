@@ -7,8 +7,8 @@ west
 # zephyr-keep-sorted-stop
 
 # zephyr-keep-sorted-start
-pyluwen>=0.7.11
-tt-flash>=3.4.2
+pyluwen
+tt-flash @ git+https://github.com/danieldegrasse/tt-flash.git@6508e7244e1d0694b280f71e6b29a6a72c2a0a59
 tt-smi>=3.0.23
-tt-tools-common==1.4.27
+tt-tools-common
 # zephyr-keep-sorted-stop
