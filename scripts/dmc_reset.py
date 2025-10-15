@@ -215,8 +215,11 @@ def wait_for_smc_boot(timeout):
             telemetry = chip.get_telemetry()
             break
         except Exception:
-            # Just decrement timeout, which we do below
-            pass
+            # Rescan PCIe again, in case the card disappeared
+            rescan_pcie()
+        except BaseException:
+            # Rescan PCIe again, in case the card disappeared
+            rescan_pcie()
         remaining -= delay
         time.sleep(delay)
         if remaining == 0:
