@@ -4,9 +4,15 @@
  */
 
 /*
- * DTS overlay to expose the ARC DMA controller to the loop_transfer test
+ * DTS overlay to expose the ARC DMA controller to the scatter_gather test
  * on the Tenstorrent Blackhole SMC platform.
  */
+
+/ {
+	aliases {
+		dma0 = &dma0;
+	};
+};
 
 &dma0 {
 	status = "okay";

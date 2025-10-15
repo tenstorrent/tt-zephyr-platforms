@@ -6,8 +6,6 @@ common:
 tests:
   drivers.dma.chan_blen_transfer:
     min_ram: 16
-    depends_on:
-      - dma
     tags:
       - dma
       - smoke

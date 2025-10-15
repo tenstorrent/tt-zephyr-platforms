@@ -529,10 +529,11 @@
 		#size-cells = <0>;
 		compatible = "simple-bus";
 
-		tst_dma0: dma0: dma@d00 {
+		dma0: dma@0 {
 			compatible = "snps,designware-dma-arc-hs";
-			reg = <0xd00 0x100>;
+			reg = <0>;
 			#dma-cells = <1>;
+			status = "disabled";
 		};
 	};
 
