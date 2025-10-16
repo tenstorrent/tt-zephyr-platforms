@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 import os
 import time
+import re
 
 import requests
 import pyluwen
@@ -21,30 +22,63 @@ SCRIPT_DIR = Path(__file__).parent
 ARC_MSG_TYPE_PING_DM = 0xC0
 
 
-# This test must be first, as it updates the firmware
-def test_arc_update(unlaunched_dut: DeviceAdapter):
-    """
-    Validates that the ARC firmware can be updated to BL2 scheme.
-    First performs a firmware downgrade to a known good version,
-    then performs an upgrade to the BL2 scheme.
-    """
-    # Wait for the chip to be ready. At entry of this test, the DMFW
-    # may be in the process of updating, so wait a bit.
-    chip = wait_arc_boot(0, timeout=60)
-    # Make sure we can ping the DMC
-    response = chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
-    assert response[0] == 1, "DMC did not respond to ping from SMC"
-    assert response[1] == 0, "SMC response invalid"
+def flash_recovery_firmware(recovery_url, platform_name):
+    # Download the firmware file
+    try:
+        response = requests.get(recovery_url, stream=True, timeout=10)
+    except requests.exceptions.Timeout as e:
+        logger.error("Request timed out: %s", e)
+        raise e
+    response.raise_for_status()
 
+    match = re.search(r".*@(\w\d+\w)\/.*", platform_name)
+    # Extract board name from platform string
+    if match:
+        board_name = match.group(1)
+        logger.info("Board name: %s", board_name)
+    else:
+        raise ValueError(
+            f"Could not extract board name from platform string: {platform_name}"
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_firmware:
+        for chunk in response.iter_content(chunk_size=8192):
+            temp_firmware.write(chunk)
+        temp_firmware.close()
+        # Flash the firmware using recovery scripting
+        try:
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(
+                        SCRIPT_DIR.parents[2]
+                        / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
+                    ),
+                    temp_firmware.name,
+                    board_name,
+                    "--force",
+                    "--no-prompt",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            print("Recovery flash failed")
+            print("Return code:", e.returncode)
+            print("Output:", e.output)
+            print("Error:", e.stderr)
+            raise e
+        finally:
+            os.unlink(temp_firmware.name)  # Clean up the temp file
+        logger.info("Recovery flash output: %s", result.stdout)
+
+
+def flash_stable_fw(url, expected_version):
     # URL of the firmware file to download
-    firmware_url = "https://github.com/tenstorrent/tt-firmware/raw/e63d1f79371986678ce16738edc74b3d582be956/fw_pack-18.11.0.fwbundle"
+    firmware_url = url
     # Expected initial DMC version after downgrade
-    DMC_VERSION_INITIAL = (14 << 16) | (0 << 8) | 0  # 14.0.0
-    DMC_BL2_VERSION = get_int_version_from_file(
-        SCRIPT_DIR.parents[2] / "app" / "dmc" / "VERSION"
-    )
-    DMC_BL2_VERSION &= 0xFFFFFFF0  # Mask off any rc bits, they won't be reported
-    print(f"Expecting DMC version {DMC_BL2_VERSION:x}")
+    DMC_VERSION_INITIAL = expected_version
 
     # Download the firmware file
     try:
@@ -82,7 +116,6 @@ def test_arc_update(unlaunched_dut: DeviceAdapter):
         if "Error" in result.stdout:
             raise RuntimeError(f"Firmware flash failed {result.stdout}")
         logger.info("Firmware flash output: %s", result.stdout)
-
     # Firmware flash complete. Now verify that we have the right DMC version.
     chip = pyluwen.detect_chips()[0]
     version = chip.get_telemetry().m3_app_fw_version
@@ -99,6 +132,38 @@ def test_arc_update(unlaunched_dut: DeviceAdapter):
     response = chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
     assert response[0] == 1, "DMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
+
+
+# This test must be first, as it updates the firmware
+def test_arc_update(unlaunched_dut: DeviceAdapter):
+    """
+    Validates that the ARC firmware can be updated to new bootloader scheme.
+    First performs a firmware downgrade to a legacy version,
+    then performs an upgrade to the new bootloader scheme.
+    """
+    recovery_url = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
+    stable_url = "https://github.com/tenstorrent/tt-firmware/raw/e63d1f79371986678ce16738edc74b3d582be956/fw_pack-18.11.0.fwbundle"
+    DMC_VERSION_INITIAL = (14 << 16) | (0 << 8) | 0  # 14.0.0
+    # Flash a recovery firmware to downgrade to legacy scheme
+    flash_recovery_firmware(recovery_url, unlaunched_dut.device_config.platform)
+    # Wait for the chip to be ready. At entry of this test, the DMFW
+    # may be in the process of updating, so wait a bit.
+    chip = wait_arc_boot(0, timeout=60)
+    # Make sure we can ping the DMC
+    response = chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+    assert response[0] == 1, "DMC did not respond to ping from SMC"
+    assert response[1] == 0, "SMC response invalid"
+    flash_stable_fw(
+        stable_url,
+        (14 << 16) | (0 << 8) | 0,  # 14.0.0
+    )
+
+    DMC_BL2_VERSION = get_int_version_from_file(
+        SCRIPT_DIR.parents[2] / "app" / "dmc" / "VERSION"
+    )
+    DMC_BL2_VERSION &= 0xFFFFFFF0  # Mask off any rc bits, they won't be reported
+    print(f"Expecting DMC version {DMC_BL2_VERSION:x}")
+
     # Now perform the upgrade to BL2 scheme
     unlaunched_dut.launch()
     chip = wait_arc_boot(0, timeout=60)
