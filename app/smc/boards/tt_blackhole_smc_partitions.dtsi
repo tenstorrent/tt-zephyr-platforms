@@ -6,14 +6,8 @@
 
 /*
  * This file defines divisions of the CSM SRAM for the Blackhole SMC board,
- * as well as partitions used by mcuboot and tt-boot-fs.
  * It should be included by the MCUBoot image as well as the application image.
  */
-
-&spi_flash {
-	/delete-node/ partitions; /* Remove any existing partitions */
-	#include "../../../boards/tenstorrent/tt_blackhole/tt_blackhole_fixed_partitions.dtsi"
-};
 
 /* Assign the partition labels MCUBoot expects */
 mcuboot: &cmfw {};
