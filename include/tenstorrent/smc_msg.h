@@ -117,10 +117,6 @@ enum tt_smc_msg {
 	TT_SMC_MSG_EFUSE_BURN = 0xBF,
 	TT_SMC_MSG_PING_DM = 0xC0,
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
-	/** @brief Flash write unlock request */
-	TT_SMC_MSG_FLASH_UNLOCK = 0xC2,
-	/** @brief Flash write lock request */
-	TT_SMC_MSG_FLASH_LOCK = 0xC3,
 };
 
 /** @} */
