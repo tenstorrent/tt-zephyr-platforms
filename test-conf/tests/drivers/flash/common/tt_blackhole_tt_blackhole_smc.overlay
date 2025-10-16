@@ -5,14 +5,6 @@
 
 #include <mem.h>
 
-&spi_flash {
-	status = "okay";
-	partitions {
-		storage_partition: partition@2000000 {
-			label = "storage";
-			reg = <0x2008000 DT_SIZE_K(64)>;
-			/* binary-path is a required property, but we don't care what it contains */
-			binary-path = "$BUILD_DIR/smc/generated_board_cfg/$BOARD_REV/read_only.bin";
-		};
-	};
+storage_partition: &storage {
+	reg = <0x500000 DT_SIZE_K(64)>;
 };

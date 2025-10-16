@@ -190,33 +190,32 @@
 };
 
 &flash0 {
-	/* TODO:
-	 * Move slot1_partition to spi flash.
-	 * Ensure main flash erase size agrees with minimal subsector erase size of SPI flash,
-	 * i.e. 4096 bytes. Currently sectors are 2048 bytes on stm32g071rb and this value is
-	 * likely hard-coded in several places.
-	 */
-	/* erase-block-size = <4096>; */
+	#address-cells = <1>;
+	#size-cells = <1>;
 
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
+	flash_wrapper@8000000 {
+		compatible = "tenstorrent,stm32-flash-wrapper";
+		flash-device = <&flash>;
+		reg = <0x8000000 DT_SIZE_K(512)>;
+		page-size = <4096>;
+		erase-block-size = <4096>;
+		write-block-size = <8>;
 
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 DT_SIZE_K(48)>;
-			read-only;
-		};
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-		slot0_partition: partition@c000 {
-			label = "image-0";
-			reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
-		};
+			boot_partition: partition@0 {
+				label = "mcuboot";
+				reg = <0x00000000 DT_SIZE_K(64)>;
+				read-only;
+			};
 
-		slot1_partition: partition@46000 {
-			label = "image-1";
-			reg = <0x00046000 (DT_SIZE_K(230))>;
+			slot0_partition: partition@10000 {
+				label = "image-0";
+				reg = <0x00010000 DT_SIZE_K(448)>;
+			};
 		};
 	};
 };
@@ -364,5 +363,8 @@
 };
 
 &nv_flash {
-	#include "tt_blackhole_partitions.dtsi"
+	#include "tt_blackhole_fixed_partitions.dtsi"
 };
+
+/* Define the DMC firmware partition for MCUBoot */
+slot1_partition: &dmfw {};

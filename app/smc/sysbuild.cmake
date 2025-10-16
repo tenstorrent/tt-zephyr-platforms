@@ -62,57 +62,45 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   )
 endif()
 
-if (SB_CONFIG_BL2)
-  # Make sure MCUBoot is build only
-  set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
+# Make sure MCUBoot is build only
+set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
 
-  # This is quite a hack- in order to get the mcuboot hook file we need to override
-  # image verification (which allows us to skip signature checks) into the mcuboot
-  # build, we need to create a tiny Zephyr module in the source directory, and
-  # tell sysbuild to include that module with mcuboot
-  set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
-endif()
+# This is quite a hack- in order to get the mcuboot hook file we need to override
+# image verification (which allows us to skip signature checks) into the mcuboot
+# build, we need to create a tiny Zephyr module in the source directory, and
+# tell sysbuild to include that module with mcuboot
+set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
 
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
-if (SB_CONFIG_BL2)
-  # Generates mcuboot trailers image
-  set (TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)
-  set (TRAILER_OUTPUT_CONFIRMED ${CMAKE_BINARY_DIR}/mcuboot_magic_confirmed.bin)
-  add_custom_command(
-      OUTPUT ${TRAILER_OUTPUT}
-      COMMAND ${PYTHON_EXECUTABLE}
-        ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT}
-  )
-  add_custom_command(
-      OUTPUT ${TRAILER_OUTPUT_CONFIRMED}
-      COMMAND ${PYTHON_EXECUTABLE}
-        ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
-  )
-  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
-  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
-  set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
-else()
-  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
-  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
-endif()
+# Generates mcuboot trailers image
+set (TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)
+set (TRAILER_OUTPUT_CONFIRMED ${CMAKE_BINARY_DIR}/mcuboot_magic_confirmed.bin)
+add_custom_command(
+    OUTPUT ${TRAILER_OUTPUT}
+    COMMAND ${PYTHON_EXECUTABLE}
+      ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT}
+)
+add_custom_command(
+    OUTPUT ${TRAILER_OUTPUT_CONFIRMED}
+    COMMAND ${PYTHON_EXECUTABLE}
+      ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
+)
+set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
+set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
+set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
 
 if (PROD_NAME MATCHES "^GALAXY")
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
 else()
-  if (SB_CONFIG_BL2)
-    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}
-       ${TRAILER_OUTPUT} ${TRAILER_OUTPUT_CONFIRMED})
-  else()
-    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
-  endif()
+  set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}
+     ${TRAILER_OUTPUT} ${TRAILER_OUTPUT_CONFIRMED})
 endif()
 
-# BL2 images
-if (SB_CONFIG_BL2 AND NOT "${BOARD_REVISION}" STREQUAL "galaxy")
-  # BL2 requires additional firmware images to complete update process
+if (NOT "${BOARD_REVISION}" STREQUAL "galaxy")
+  # Add DMC ROM update and BL2 images to the bootfs if we have a DMC
   ExternalZephyrProject_Add(
     APPLICATION dmc-rom-update
     SOURCE_DIR  ${APP_DIR}/../dmc_rom_update
@@ -125,11 +113,11 @@ if (SB_CONFIG_BL2 AND NOT "${BOARD_REVISION}" STREQUAL "galaxy")
     BOARD       ${SB_CONFIG_DMC_BOARD}
     BUILD_ONLY 1
   )
-  if (SB_CONFIG_BL2_SIGNATURE_KEY_FILE STREQUAL "")
-    message(WARNING "No BL2 signature key file set, using default test keys")
+  if (SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE STREQUAL "")
+    message(WARNING "No bootloader signature key file set, using default test keys")
   else()
-    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
-    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
+    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
+    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
   endif()
   # Generate mcuboot trailer for DMC image
   set (TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)

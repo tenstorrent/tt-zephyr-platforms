@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2024 Tenstorrent AI ULC
+ * Copyright (c) 2024-2025 Tenstorrent AI ULC
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "tt_blackhole_smc_partitions.dtsi"
+
 &i2c1 {
 	status = "disabled";
 };
@@ -26,4 +28,10 @@
 &fwtable {
 	flash-dev = <&spi_flash>;
 	status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,sram = &csm_app;
+	};
 };
