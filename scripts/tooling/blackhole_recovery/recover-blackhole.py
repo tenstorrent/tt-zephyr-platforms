@@ -257,11 +257,16 @@ def main():
             time.sleep(2)
             pcie_utils.rescan_pcie()
             time.sleep(2)
-        # Now, check if all asics are functional
-        if not check_card_status(BOARD_ID_MAP[args.board]):
-            raise RuntimeError("Card did not recover successfully, try a reboot?")
-
-        print("Card recovered successfully")
+        timeout = 10  # seconds
+        timeout_ts = time.time() + timeout
+        while time.time() < timeout_ts:
+            if check_card_status(BOARD_ID_MAP[args.board]):
+                print("Card recovered successfully")
+                return
+            # Wait a bit and try again
+            time.sleep(1)
+        # If we get here, the card did not recover
+        raise RuntimeError("Card did not recover successfully, try a reboot?")
 
 
 if __name__ == "__main__":
