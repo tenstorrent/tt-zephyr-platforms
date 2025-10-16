@@ -60,7 +60,13 @@ def test_arc_update(unlaunched_dut: DeviceAdapter):
         # Flash the firmware using tt-flash
         try:
             result = subprocess.run(
-                ["tt-flash", "flash", "--fw-tar", temp_firmware.name, "--force"],
+                [
+                    "tt-flash",
+                    "flash",
+                    temp_firmware.name,
+                    "--force",
+                    "--allow-major-downgrades",
+                ],
                 capture_output=True,
                 text=True,
                 check=True,
