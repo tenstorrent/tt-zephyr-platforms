@@ -7,7 +7,7 @@ west
 # zephyr-keep-sorted-stop
 
 # zephyr-keep-sorted-start
-pyluwen @ git+https://github.com/danieldegrasse/luwen.git@c0369940183f99c31b0e19f2b5088f9d0f400b7b#subdirectory=crates/pyluwen
+pyluwen @ git+https://github.com/danieldegrasse/luwen.git@bc3654d880c5fa9d9c02b1e5678abf6e99bd6ea9#subdirectory=crates/pyluwen
 tt-flash>=3.4.2
 tt-smi>=3.0.23
 tt-tools-common==1.4.27
