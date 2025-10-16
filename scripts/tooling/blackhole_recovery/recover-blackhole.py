@@ -71,6 +71,11 @@ def parse_args():
         action="store_true",
         help="Forcibly recover the card, even if sanity checks pass",
     )
+    parser.add_argument(
+        "--no-prompt",
+        action="store_true",
+        help="Don't prompt for adapter if multiple are found",
+    )
     return parser.parse_args()
 
 
@@ -152,7 +157,7 @@ def check_card_status(board_config):
         return True
 
 
-def get_session(asic, adapter_id, temp_dir):
+def get_session(asic, adapter_id, temp_dir, no_prompt):
     if adapter_id is None:
         print(
             "No adapter ID provided, please select the debugger "
@@ -161,6 +166,7 @@ def get_session(asic, adapter_id, temp_dir):
         session = ConnectHelper.session_with_chosen_probe(
             target_override=PYOCD_TARGET,
             user_script=Path(temp_dir) / asic["pyocd-config"],
+            return_first=no_prompt,
         )
     else:
         session = ConnectHelper.session_with_chosen_probe(
@@ -198,7 +204,7 @@ def main():
 
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
-            session = get_session(asic, args.adapter_id, temp_dir)
+            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
             session.open()
             # First, reset the DMC and see if we can reach the card
             session.board.target.reset_and_halt()
@@ -215,7 +221,7 @@ def main():
         # First, erase the flash on all ASICs
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
-            session = get_session(asic, args.adapter_id, temp_dir)
+            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
             session.open()
             # Erase the flash
             print(f"Erasing flash on ASIC {idx}...")
@@ -239,7 +245,7 @@ def main():
             recovery_hex = set_board_serial(
                 str(recovery_hex), asic["protobuf-name"], board_id
             )
-            session = get_session(asic, args.adapter_id, temp_dir)
+            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
             session.open()
             # Program the recovery hex
             print(f"Flashing {recovery_hex} to ASIC {idx}...")
