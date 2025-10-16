@@ -52,6 +52,12 @@ ExternalZephyrProject_Add(
 	BUILD_ONLY 1
 )
 
+# Pass boot signature key file to recovery if specified
+if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
+  set_config_string(recovery CONFIG_MCUBOOT_SIGNATURE_KEY_FILE
+    "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
+endif()
+
 # galaxy does not have dmc image in SPI
 if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   ExternalZephyrProject_Add(
@@ -62,87 +68,68 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
   )
 endif()
 
-if (SB_CONFIG_BL2)
-  # Make sure MCUBoot is build only
-  set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
+# Make sure MCUBoot is build only
+set_target_properties(mcuboot PROPERTIES BUILD_ONLY 1)
 
-  # This is quite a hack- in order to get the mcuboot hook file we need to override
-  # image verification (which allows us to skip signature checks) into the mcuboot
-  # build, we need to create a tiny Zephyr module in the source directory, and
-  # tell sysbuild to include that module with mcuboot
-  set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
-  set_config_string(mcuboot CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
-endif()
+# This is quite a hack- in order to get the mcuboot hook file we need to override
+# image verification (which allows us to skip signature checks) into the mcuboot
+# build, we need to create a tiny Zephyr module in the source directory, and
+# tell sysbuild to include that module with mcuboot
+set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
+set_config_string(mcuboot CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
 
 # ======== Defines for filesystem generation ========
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
-if (SB_CONFIG_BL2)
-  # Generates mcuboot trailers image
-  set (TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)
-  set (TRAILER_OUTPUT_CONFIRMED ${CMAKE_BINARY_DIR}/mcuboot_magic_confirmed.bin)
-  add_custom_command(
-      OUTPUT ${TRAILER_OUTPUT}
-      COMMAND ${PYTHON_EXECUTABLE}
-        ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT}
-  )
-  add_custom_command(
-      OUTPUT ${TRAILER_OUTPUT_CONFIRMED}
-      COMMAND ${PYTHON_EXECUTABLE}
-        ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
-  )
-  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
-  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
-  set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
-else()
-  set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.bin)
-  set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.bin)
-endif()
+set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
+set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
+set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
+set(TRAILER_OUTPUT_CONFIRMED ${CMAKE_BINARY_DIR}/mcuboot_magic_confirmed.bin)
 
-if (PROD_NAME MATCHES "^GALAXY")
-  set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
-else()
-  if (SB_CONFIG_BL2)
-    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}
-       ${TRAILER_OUTPUT} ${TRAILER_OUTPUT_CONFIRMED})
-  else()
-    set(BOOTFS_DEPS ${DMC_OUTPUT_BIN} ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN})
-  endif()
-endif()
+set(TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)
+add_custom_command(
+    OUTPUT ${TRAILER_OUTPUT}
+    COMMAND ${PYTHON_EXECUTABLE}
+      ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT}
+)
+add_custom_command(
+    OUTPUT ${TRAILER_OUTPUT_CONFIRMED}
+    COMMAND ${PYTHON_EXECUTABLE}
+      ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
+)
 
-# BL2 images
-if (SB_CONFIG_BL2 AND NOT "${BOARD_REVISION}" STREQUAL "galaxy")
-  # BL2 requires additional firmware images to complete update process
+if(PROD_NAME MATCHES "^GALAXY")
+  set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN} ${TRAILER_OUTPUT}
+    ${TRAILER_OUTPUT_CONFIRMED})
+else()
+  # Non-galaxy boards have a DMC
+
+  set(ROM_UPDATE_BIN ${CMAKE_BINARY_DIR}/dmc-rom-update/zephyr/zephyr.signed.bin)
   ExternalZephyrProject_Add(
     APPLICATION dmc-rom-update
     SOURCE_DIR  ${APP_DIR}/../dmc_rom_update
     BOARD       ${SB_CONFIG_DMC_BOARD}
     BUILD_ONLY 1
   )
+
+  set(MCUBOOT_BL2_BIN ${CMAKE_BINARY_DIR}/mcuboot-bl2/zephyr/zephyr.bin)
   ExternalZephyrProject_Add(
     APPLICATION mcuboot-bl2
     SOURCE_DIR  ${ZEPHYR_MCUBOOT_MODULE_DIR}/boot/zephyr
     BOARD       ${SB_CONFIG_DMC_BOARD}
     BUILD_ONLY 1
   )
-  if (SB_CONFIG_BL2_SIGNATURE_KEY_FILE STREQUAL "")
-    message(WARNING "No BL2 signature key file set, using default test keys")
+  if (SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE STREQUAL "")
+    message(WARNING "No bootloader signature key file set, using default test keys")
   else()
-    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
-    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
+    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
+    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
   endif()
-  # Generate mcuboot trailer for DMC image
-  set (TRAILER_OUTPUT ${CMAKE_BINARY_DIR}/mcuboot_magic_test.bin)
-  # Generates mcuboot trailer for DMC image
-  add_custom_command(
-      OUTPUT ${TRAILER_OUTPUT}
-      COMMAND ${PYTHON_EXECUTABLE}
-        ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT}
-  )
-  set(ROM_UPDATE_BIN ${CMAKE_BINARY_DIR}/dmc-rom-update/zephyr/zephyr.signed.bin)
-  set(MCUBOOT_BL2_BIN ${CMAKE_BINARY_DIR}/mcuboot-bl2/zephyr/zephyr.bin)
-  set(BOOTFS_DEPS ${BOOTFS_DEPS} ${ROM_UPDATE_BIN} ${MCUBOOT_BL2_BIN} ${TRAILER_OUTPUT})
+
+  set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}
+     ${DMC_OUTPUT_BIN} ${ROM_UPDATE_BIN} ${MCUBOOT_BL2_BIN} ${TRAILER_OUTPUT}
+     ${TRAILER_OUTPUT_CONFIRMED})
 endif()
 
 # ======== Generate filesystem ========
