@@ -1,0 +1,25 @@
+name: Auto Rebase Pull Requests
+
+env:
+  AUTO_REBASE_LABEL: "auto-rebase 🤖"
+
+on:
+  schedule:
+    # Run daily at 3:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch: {} # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/rebase@v3
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          exclude-drafts: true
+          include-labels: ${{ env.AUTO_REBASE_LABEL }}
