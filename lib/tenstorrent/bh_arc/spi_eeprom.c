@@ -37,7 +37,6 @@ static uint8_t spi_page_buf[SPI_BUFFER_SIZE];
 /* Global buffer for SPI programming */
 static uint8_t spi_global_buffer[SPI_BUFFER_SIZE];
 static struct flash_pages_info page_info;
-static bool flash_locked = true;
 
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 
@@ -199,11 +198,6 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	uint32_t num_bytes = request->data[2];
 	uint8_t *csm_addr = (uint8_t *)request->data[3];
 
-	if (flash_locked) {
-		/* Flash is locked; cannot write */
-		return 2;
-	}
-
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
 		return 1;
@@ -221,22 +215,8 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	return SpiSmartWrite(spi_address, csm_addr, num_bytes);
 }
 
-static uint8_t flash_lock_handler(const union request *request, struct response *response)
-{
-	flash_locked = true;
-	return 0;
-}
-
-static uint8_t flash_unlock_handler(const union request *request, struct response *response)
-{
-	flash_locked = false;
-	return 0;
-}
-
 REGISTER_MESSAGE(TT_SMC_MSG_READ_EEPROM, read_eeprom_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_WRITE_EEPROM, write_eeprom_handler);
-REGISTER_MESSAGE(TT_SMC_MSG_FLASH_LOCK, flash_lock_handler);
-REGISTER_MESSAGE(TT_SMC_MSG_FLASH_UNLOCK, flash_unlock_handler);
 
 static int InitSpiFS(void)
 {
