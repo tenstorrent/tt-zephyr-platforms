@@ -17,9 +17,10 @@ except ImportError:
 class TTFlashRunner(ZephyrBinaryRunner):
     """Runner for the tt_flash command"""
 
-    def __init__(self, cfg, force, tt_flash):
+    def __init__(self, cfg, force, allow_major_downgrades, tt_flash):
         super().__init__(cfg)
         self.force = force
+        self.allow_major_downgrades = allow_major_downgrades
         # If file is passed, flash that. Otherwise flash update.fwbundle
         # in build dir
         if cfg.file:
@@ -39,11 +40,21 @@ class TTFlashRunner(ZephyrBinaryRunner):
     @classmethod
     def do_add_parser(cls, parser):
         parser.add_argument("--force", action="store_true", help="Force flash")
+        parser.add_argument(
+            "--allow-major-downgrades",
+            action="store_true",
+            help="Allow major downgrades",
+        )
         parser.add_argument("--tt-flash", default="tt-flash", help="Path to tt-flash")
 
     @classmethod
     def do_create(cls, cfg, args):
-        return cls(cfg, force=args.force, tt_flash=args.tt_flash)
+        return cls(
+            cfg,
+            force=args.force,
+            allow_major_downgrades=args.allow_major_downgrades,
+            tt_flash=args.tt_flash,
+        )
 
     def do_run(self, command, **kwargs):
         # Prior to flashing, check to make sure that device is present and we can
@@ -60,8 +71,10 @@ class TTFlashRunner(ZephyrBinaryRunner):
         self.tt_flash = self.require(self.tt_flash)
         if not self.file.exists():
             raise RuntimeError(f"File {self.file} does not exist")
-        cmd = [self.tt_flash, "flash", "--fw-tar", str(self.file)]
+        cmd = [self.tt_flash, "flash", str(self.file)]
         if self.force:
             cmd.append("--force")
+        if self.allow_major_downgrades:
+            cmd.append("--allow-major-downgrades")
         self.logger.debug(f"Running {cmd}")
         self.check_call(cmd)
