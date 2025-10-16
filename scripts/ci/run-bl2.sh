@@ -95,7 +95,7 @@ if [[ "$TEST_SET" == *"bl2"* ]]; then
 	# Run a full flash test, using tt-flash as the runner
 	$ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
 		--tag bl2 -T $TT_Z_P_ROOT/app \
-		--west-flash="--force" \
+		--west-flash="--force,--allow-major-downgrades" \
 		--west-runner tt_flash \
 		--device-testing -c \
 		--device-flash-timeout 240 \

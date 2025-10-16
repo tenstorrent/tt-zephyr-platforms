@@ -89,9 +89,10 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
     # Run a full flash test, using tt-flash as the runner
     "$ZEPHYR_BASE"/scripts/twister -i -p "$SMC_BOARD" \
         --tag e2e-flash -T "$TT_Z_P_ROOT"/app \
-        --west-flash="--force" \
+        --west-flash="--force,--allow-major-downgrades" \
         --west-runner tt_flash \
         --device-testing -c \
+        --device-flash-timeout 90 \
         --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV -p" \
         --failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
         --flash-before \
