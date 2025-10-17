@@ -1,0 +1,48 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Synopsys Designware ARC DMA Controller
+
+compatible: "snps,designware-dma-arc-hs"
+
+include: [dma-controller.yaml]
+
+properties:
+  "#dma-cells":
+    const: 1
+
+  dma-channels:
+    type: int
+    default: 1
+    description: |
+      Number of DMA channels supported by the DMA server.
+
+  dma-descriptors:
+    type: int
+    default: 32
+    description: |
+      Number of DMA descriptors supported by the DMA server.
+
+  max-burst-size:
+    type: int
+    default: 4
+    description: |
+      Maximum burst size supported by the DMA server.
+
+  max-pending-transactions:
+    type: int
+    default: 4
+    description: |
+      Maximum number of pending bus transactions supported by the DMA server.
+
+  buffer-size:
+    type: int
+    default: 16
+    description: |
+      DMA server data buffer size in word entries.
+
+  coherency-support:
+    type: boolean
+    description: |
+      Enable coherency check for all L1 caches within the cluster by hardware.

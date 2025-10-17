@@ -27,3 +27,8 @@
 	flash-dev = <&spi_flash>;
 	status = "okay";
 };
+
+&dma0 {
+	dma-channels = <1>;
+};
+
