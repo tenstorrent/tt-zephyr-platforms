@@ -14,6 +14,7 @@ from urllib.request import urlretrieve
 
 import pyluwen
 import pytest
+import get_ttzp_version
 
 
 def strip_ansi_codes(s):
@@ -55,7 +56,8 @@ except ImportError:
         return DeviceAdapter(fwbundle)
 
 
-sys.path.append(str(Path(__file__).parents[3] / "scripts"))
+TTZP = Path(__file__).parents[3]
+sys.path.append(str(TTZP / "scripts"))
 from pcie_utils import rescan_pcie  # noqa: E402
 import smc_test_recovery  # noqa: E402
 import dmc_reset  # noqa: E402
@@ -74,6 +76,7 @@ PCIE_INIT_CPL_TIME_REG_ADDR = 0x80030438
 CMFW_START_TIME_REG_ADDR = 0x8003043C
 ARC_START_TIME_REG_ADDR = 0x80030440
 ARC_HANG_PC_REG_ADDR = 0x80030454
+TELEMETRY_DATA_REG_ADDR = 0x80030430
 
 # ARC messages
 ARC_MSG_TYPE_REINIT_TENSIX = 0x20
@@ -83,6 +86,21 @@ ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
 ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
+
+# Telemetry tags
+TAG_CM_FW_VERSION = 29
+TAG_DM_APP_FW_VERSION = 26
+
+
+def read_telem(asic_id, telem_idx):
+    chip = pyluwen.detect_chips()[asic_id]
+
+    table_addr = chip.axi_read32(TELEMETRY_DATA_REG_ADDR)
+    telem = chip.axi_read32(table_addr + telem_idx * 4)
+
+    del chip
+
+    return telem
 
 
 @pytest.fixture(scope="session")
@@ -155,6 +173,86 @@ def arc_chip_dut(launched_arc_dut, asic_id):
     chip = wait_arc_boot(asic_id, timeout=15)
     del chip  # So we don't hold stale file descriptors
     return launched_arc_dut
+
+
+def upgrade_from_version_test(
+    arc_chip_dut,
+    tmp_path: Path,
+    board_name,
+    unlaunched_dut,
+    version,
+    dmfw_version_base,
+    cmfw_version_base,
+):
+    if board_name is None:
+        pytest.skip("Upgrade test requires --board set, skipping upgrade test")
+
+    RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
+
+    tar_recovery = tmp_path / "recovery.tar.gz"
+    urlretrieve(RECOVERY_URL, tar_recovery)
+    recovery_py = str(
+        Path(__file__).parents[3]
+        / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
+    )
+    # versions we want to check upgrading from
+
+    # flash recovery first
+    try:
+        subprocess.check_call(
+            [
+                "python3",
+                recovery_py,
+                tar_recovery,
+                board_name,
+                "--force",
+                "--no-prompt",
+            ]
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"blackhole_recovery.py failed with error: {e}")
+        assert False
+
+    # flash "base" firmware to update from
+    URL = f"https://github.com/tenstorrent/tt-firmware/releases/download/v{version}/fw_pack-{version}.fwbundle"
+    targz = tmp_path / "fw_pack.tar.gz"
+
+    urlretrieve(URL, targz)
+    try:
+        result = subprocess.run(
+            ["tt-flash", "flash", "--fw-tar", str(targz), "--force"],
+            capture_output=True,
+            text=True,
+        )
+
+        assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
+
+    except subprocess.CalledProcessError as e:
+        logger.error(
+            f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}\n{result.stdout}"
+        )
+        assert False
+
+    time.sleep(0.5)
+    assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
+    assert cmfw_version_base == read_telem(0, TAG_CM_FW_VERSION)
+
+    # flash firmware to update to
+    unlaunched_dut.launch()
+
+    time.sleep(0.5)
+    assert get_ttzp_version.get_ttzp_version_u32(
+        TTZP / "app/dmc/VERSION"
+    ) == read_telem(0, TAG_DM_APP_FW_VERSION)
+    assert get_ttzp_version.get_ttzp_version_u32(
+        TTZP / "app/smc/VERSION"
+    ) == read_telem(0, TAG_CM_FW_VERSION)
+
+
+def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", (13 << 16), (19 << 16)
+    )
 
 
 def test_arc_msg(arc_chip_dut, asic_id):
@@ -599,59 +697,3 @@ def test_aiclk(arc_chip_dut, asic_id):
         aiclk = arc_chip.arc_msg(ARC_MSG_TYPE_GET_AICLK)[0]
         assert aiclk == clk, f"Failed to set clock to {clk} MHz"
         logger.info(f"AICLK set to {aiclk} MHz successfully")
-
-
-def upgrade_from_version_test(tmp_path: Path, board_name, unlaunched_dut, version):
-    if board_name is None:
-        pytest.skip("Upgrade test requires --board set, skipping upgrade test")
-
-    RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
-
-    tar_recovery = tmp_path / "recovery.tar.gz"
-    urlretrieve(RECOVERY_URL, tar_recovery)
-    recovery_py = str(
-        Path(__file__).parents[3]
-        / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
-    )
-    # versions we want to check upgrading from
-
-    # flash recovery first
-    try:
-        subprocess.check_call(
-            [
-                "python3",
-                recovery_py,
-                tar_recovery,
-                board_name,
-                "--force",
-                "--select-first",
-            ]
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error(f"blackhole_recovery.py failed with error: {e}")
-        assert False
-
-    # flash Firmware to update from
-    URL = f"https://github.com/tenstorrent/tt-firmware/releases/download/v{version}/fw_pack-{version}.fwbundle"
-    targz = tmp_path / "fw_pack.tar.gz"
-
-    urlretrieve(URL, targz)
-    try:
-        result = subprocess.run(
-            ["tt-flash", "flash", "--fw-tar", str(targz), "--force"],
-            capture_output=True,
-            text=True,
-        )
-
-        assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}")
-        assert False
-
-    # flash firmware to update-to
-    unlaunched_dut.launch()
-
-
-def test_upgrade_from_18_10(tmp_path: Path, board_name, unlaunched_dut):
-    upgrade_from_version_test(tmp_path, board_name, unlaunched_dut, "18.10.0")
