@@ -31,6 +31,7 @@ zephyr_library_sources_ifndef(
   vf_curve.c
   voltage.c
   power.c
+  hotload.c
 )
 
 zephyr_library_sources(
