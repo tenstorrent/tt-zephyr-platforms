@@ -71,6 +71,7 @@ if (SB_CONFIG_BL2)
   # build, we need to create a tiny Zephyr module in the source directory, and
   # tell sysbuild to include that module with mcuboot
   set(mcuboot_EXTRA_ZEPHYR_MODULES "${CMAKE_CURRENT_LIST_DIR}/mcuboot_module" CACHE INTERNAL "mcuboot_module directory")
+  set_config_string(mcuboot CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BL2_SIGNATURE_KEY_FILE}")
 endif()
 
 # ======== Defines for filesystem generation ========
