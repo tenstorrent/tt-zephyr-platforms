@@ -21,7 +21,7 @@ from e2e_smoke import (
 
 # Needed to keep ruff from complaining about this "unused import"
 # ruff: noqa: F811
-from e2e_smoke import arc_chip_dut, launched_arc_dut  # noqa: F401
+from e2e_smoke import arc_chip_dut, launched_arc_dut, unlaunched_dut  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -221,8 +221,15 @@ def test_dmc_ping(arc_chip_dut, asic_id):
     assert fail_count == 0, "DMC ping test failed a non-zero number of times."
 
 
-def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut):
-    versions = ["18.10.0", "18.11.0", "18.12.0"]
+def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_dut):
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", (13 << 16), (19 << 16)
+    )
 
-    for version in versions:
-        upgrade_from_version_test(tmp_path, board_name, unlaunched_dut, version)
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.11.0", (14 << 16), (20 << 16)
+    )
+
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.12.0", (15 << 16), (21 << 16)
+    )

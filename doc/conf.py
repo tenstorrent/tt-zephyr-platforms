@@ -23,7 +23,7 @@ from get_ttzp_version import get_ttzp_version  # noqa: E402
 project = "TT Zephyr Platforms"
 copyright = "2025, Tenstorrent AI ULC"
 author = "Tenstorrent AI ULC"
-release = get_ttzp_version()
+release = get_ttzp_version(TTZP / "VERSION")
 extensions = [
     "myst_parser",
     "sphinx.ext.intersphinx",
