@@ -8,6 +8,7 @@ west
 
 # zephyr-keep-sorted-start
 pyluwen>=0.7.11
+tt-burnin>=0.2.4
 tt-flash>=3.4.2
 tt-smi>=3.0.23
 tt-tools-common==1.4.27
