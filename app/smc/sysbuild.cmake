@@ -54,8 +54,11 @@ ExternalZephyrProject_Add(
 
 # Pass boot signature key file to recovery if specified
 if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
-  set_config_string(recovery CONFIG_MCUBOOT_SIGNATURE_KEY_FILE
-    "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
+  set_config_bool(recovery CONFIG_MCUBOOT_GENERATE_UNSIGNED_IMAGE n)
+  set_config_string(recovery CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
+
+  set_config_bool(smc CONFIG_MCUBOOT_GENERATE_UNSIGNED_IMAGE n)
+  set_config_string(smc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
 endif()
 
 # galaxy does not have dmc image in SPI
@@ -99,7 +102,7 @@ add_custom_command(
       ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
 )
 
-if(PROD_NAME MATCHES "^GALAXY")
+if("${BOARD_REVISION}" STREQUAL "galaxy")
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN} ${TRAILER_OUTPUT}
     ${TRAILER_OUTPUT_CONFIRMED})
 else()
@@ -120,11 +123,13 @@ else()
     BOARD       ${SB_CONFIG_DMC_BOARD}
     BUILD_ONLY 1
   )
-  if (SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE STREQUAL "")
-    message(WARNING "No bootloader signature key file set, using default test keys")
-  else()
-    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
-    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE}")
+
+  # Pass boot signature key file to dmc and mcuboot-bl2 if specified
+  if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
+    set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE
+      "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
+    set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE
+      "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
   endif()
 
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}

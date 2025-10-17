@@ -92,7 +92,7 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 		--failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
 		--flash-before \
 		--outdir $ZEPHYR_BASE/twister-e2e-flash \
-		--extra-args=SB_CONFIG_BOOTLOADER_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
+		--extra-args=SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
 		$@
 	# Restore a stable DMFW, since the copy flashed by BL2 tests will
 	# leave the DMC flash in a different state than other tests expect
