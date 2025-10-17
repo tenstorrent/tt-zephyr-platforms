@@ -937,7 +937,7 @@ def mkbundle(
 
         # Update the manifest last, so we can specify the bundle_version
         manifest = {
-            "version": "1.0.0",  # manifest file version
+            "version": "2.0.0",  # manifest file version
             "bundle_version": {
                 "fwId": version[0],
                 "releaseId": version[1],
