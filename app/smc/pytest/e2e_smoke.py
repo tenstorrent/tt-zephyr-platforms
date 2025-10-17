@@ -85,6 +85,17 @@ ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
 
 
+def read_telem(asic_id, telem_idx):
+    chip = pyluwen.detect_chips()[asic_id]
+
+    table_addr = chip.axi_read32(0x80030400 + 4 * 12)
+    telem = chip.axi_read32(table_addr + telem_idx * 4)
+
+    del chip
+
+    return telem
+
+
 @pytest.fixture(scope="session")
 def launched_arc_dut(unlaunched_dut: DeviceAdapter):
     """
@@ -601,10 +612,20 @@ def test_aiclk(arc_chip_dut, asic_id):
         logger.info(f"AICLK set to {aiclk} MHz successfully")
 
 
-def upgrade_from_version_test(tmp_path: Path, board_name, unlaunched_dut, version):
+def upgrade_from_version_test(
+    arc_chip_dut,
+    tmp_path: Path,
+    board_name,
+    unlaunched_dut,
+    version,
+    dmfw_version_base,
+    cmfw_version_base,
+):
     if board_name is None:
         pytest.skip("Upgrade test requires --board set, skipping upgrade test")
 
+    dm_fw_version_under_test = read_telem(0, 26)
+    cm_fw_version_under_test = read_telem(0, 29)
     RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
 
     tar_recovery = tmp_path / "recovery.tar.gz"
@@ -631,7 +652,7 @@ def upgrade_from_version_test(tmp_path: Path, board_name, unlaunched_dut, versio
         logger.error(f"blackhole_recovery.py failed with error: {e}")
         assert False
 
-    # flash Firmware to update from
+    # flash "base" firmware to update from
     URL = f"https://github.com/tenstorrent/tt-firmware/releases/download/v{version}/fw_pack-{version}.fwbundle"
     targz = tmp_path / "fw_pack.tar.gz"
 
@@ -646,12 +667,24 @@ def upgrade_from_version_test(tmp_path: Path, board_name, unlaunched_dut, versio
         assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}")
+        logger.error(
+            f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}\n{result.stdout}"
+        )
         assert False
 
-    # flash firmware to update-to
+    time.sleep(0.5)
+    assert dmfw_version_base == read_telem(0, 26)
+    assert cmfw_version_base == read_telem(0, 29)
+
+    # flash firmware to update to
     unlaunched_dut.launch()
 
+    time.sleep(0.5)
+    assert dm_fw_version_under_test == read_telem(0, 26)
+    assert cm_fw_version_under_test == read_telem(0, 29)
 
-def test_upgrade_from_18_10(tmp_path: Path, board_name, unlaunched_dut):
-    upgrade_from_version_test(tmp_path, board_name, unlaunched_dut, "18.10.0")
+
+def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", 0xD0000, 0x130000
+    )
