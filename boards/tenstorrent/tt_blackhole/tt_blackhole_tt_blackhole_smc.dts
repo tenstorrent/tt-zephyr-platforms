@@ -58,10 +58,10 @@
 
 &i2c0 {
 	status = "okay";
-	smbus_target0: smbus@0A {
+	smbus_target0: smbus@a {
 		status = "okay";
 		compatible = "zephyr,smbus_target";
-		reg = <0x0A>;
+		reg = <0xa>;
 	};
 };
 
