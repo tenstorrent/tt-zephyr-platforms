@@ -215,8 +215,17 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	return SpiSmartWrite(spi_address, csm_addr, num_bytes);
 }
 
+/* Challenge message issued from tt-flash to confirm a firmware update. */
+static uint8_t confirm_flashed_spi_handler(const union request *request,
+				     struct response *response)
+{
+	response->data[1] = request->data[1];
+	return 0;
+}
+
 REGISTER_MESSAGE(TT_SMC_MSG_READ_EEPROM, read_eeprom_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_WRITE_EEPROM, write_eeprom_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_CONFIRM_FLASHED_SPI, confirm_flashed_spi_handler);
 
 static int InitSpiFS(void)
 {

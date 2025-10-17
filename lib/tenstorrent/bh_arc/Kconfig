@@ -18,7 +18,7 @@ if TT_BH_ARC
 
 config TT_BH_ARC_NUM_MSG_CODES
 	int "Number of message codes"
-	default 194
+	default 197
 	help
 	  The number of message codes
 
