@@ -63,8 +63,7 @@ jobs:
           BOARD="$(./scripts/rev2board.sh "${{ matrix.board }}")"
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
 
-      - name: Check signing key
-        shell: bash
+      - shell: bash
         run: |
           SIGNATURE_KEY_FILE="$(mktemp)"
           echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
@@ -81,15 +80,34 @@ jobs:
             exit 1
           fi
 
+          EXTRA_ARGS="--"
+          EXTRA_ARGS+=" -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y"
+          if [ -n "$SIGNATURE_KEY_FILE" ]; then
+            EXTRA_ARGS+=" -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\""
+          fi
+
           west build \
             -d build-${{ matrix.board }} \
             --sysbuild \
             -p \
             -b $BOARD \
             tt-zephyr-platforms/app/smc \
-            -- \
-              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
-              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\"
+            $EXTRA_ARGS
+
+      - name: Verify firmware signature
+        shell: bash
+        run: |
+          if [ -z "$SIGNATURE_KEY_FILE" ]; then
+            echo "SIGNATURE_KEY_FILE is not set, skipping signature verification"
+          else
+            # verify that built images for smc and dmc fw are signed
+            # imgtool returns a non-zero exit code if the image is not signed
+            if [ "${{ matrix.board }}" != "galaxy" ]; then
+              imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/dmc/zephyr/zephyr.signed.bin
+            fi
+            imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/recovery/zephyr/zephyr.signed.bin
+            imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/smc/zephyr/zephyr.signed.bin
+          fi
 
       - name: Upload firmware assets
         uses: actions/upload-artifact@v4
@@ -118,17 +136,44 @@ jobs:
         with:
           app-path: tt-zephyr-platforms
 
+      - shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -gt 42 ]; then
+            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          fi
+
       - name: Build recovery firmware
         shell: bash
         run: |
+
+          EXTRA_ARGS="--"
+          EXTRA_ARGS+=" -DEXTRA_CONF_FILE=sysbuild/recovery.conf"
+          EXTRA_ARGS+=" -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y"
+          if [ -n "$SIGNATURE_KEY_FILE" ]; then
+            EXTRA_ARGS+=" -DCONFIG_MCUBOOT_GENERATE_UNSIGNED_IMAGE=n"
+            EXTRA_ARGS+=" -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\""
+          fi
+
           west build \
             -d build-recovery \
-            -p auto \
+            -p \
             -b tt_blackhole@p100a/tt_blackhole/smc \
             tt-zephyr-platforms/app/smc \
-            -- \
-              -DEXTRA_CONF_FILE=recovery.conf \
-              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y
+            $EXTRA_ARGS
+
+      - name: Verify recovery signature
+        shell: bash
+        run: |
+          if [ -z "$SIGNATURE_KEY_FILE" ]; then
+            echo "SIGNATURE_KEY_FILE is not set, skipping signature verification"
+          else
+            # verify that built images for smc and dmc fw are signed
+            # imgtool returns a non-zero exit code if the image is not signed
+            imgtool verify --key "$SIGNATURE_KEY_FILE" build-recovery/zephyr/zephyr.signed.bin
+          fi
 
       - name: Upload recovery assets
         uses: actions/upload-artifact@v4
@@ -143,6 +188,7 @@ jobs:
             build-recovery/**/zephyr.hex
             build-recovery/**/zephyr.map
             build-recovery/**/zephyr.stat
+            build-recovery/**/zephyr.signed.bin
 
   build-assembly-test:
     runs-on: ubuntu-24.04
@@ -171,12 +217,29 @@ jobs:
           esac
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
 
+      - shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -gt 42 ]; then
+            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          fi
+
       - name: Build assembly firmware
         shell: bash
         run: |
           if [ "$BOARD" = "" ]; then
             echo "BOARD is not set"
             exit 1
+          fi
+
+          EXTRA_ARGS="--"
+          EXTRA_ARGS+=" -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y"
+          EXTRA_ARGS+=" -DCONFIG_TT_ASSEMBLY_TEST=y"
+          if [ -n "$SIGNATURE_KEY_FILE" ]; then
+            EXTRA_ARGS+=" -DCONFIG_MCUBOOT_GENERATE_UNSIGNED_IMAGE=n"
+            EXTRA_ARGS+=" -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\""
           fi
 
           west build \
@@ -186,10 +249,15 @@ jobs:
             -p \
             -b $BOARD \
             tt-zephyr-platforms/app/dmc \
-            -- \
-              -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y \
-              -DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"\$SIGNATURE_KEY_FILE\" \
-              -DCONFIG_TT_ASSEMBLY_TEST=y
+            $EXTRA_ARGS
+
+      - name: Verify firmware signature
+        if: ${{ github.env.SIGNATURE_KEY_FILE != '' }}
+        shell: bash
+        run: |
+          # verify that built images for smc and dmc fw are signed
+          # imgtool returns a non-zero exit code if the image is not signed
+          imgtool verify --key "$SIGNATURE_KEY_FILE" build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.signed.bin
 
       - name: Sanitize Ref Name
         id: sanitize
