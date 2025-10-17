@@ -78,6 +78,10 @@ int main(void)
 
 	Dm2CmReadyRequest();
 
+	if (CONFIG_SRAM_BASE_ADDRESS != 0x10000000) {
+		printk("We hotloaded!\n");
+	}
+
 #ifdef CONFIG_BOOTLOADER_MCUBOOT
 	int rc;
 
