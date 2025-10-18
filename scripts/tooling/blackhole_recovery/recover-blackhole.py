@@ -253,16 +253,17 @@ def main():
             session.board.target.reset_and_halt()
             session.board.target.resume()
             session.close()
-            # Delay a moment for ASIC boot
-            time.sleep(2)
-            pcie_utils.rescan_pcie()
-            time.sleep(2)
-        timeout = 10  # seconds
+        # DMFW will always update, so delay for 20 seconds to allow for that
+        print("Waiting 20 seconds for DMFW to update...")
+        pcie_utils.rescan_pcie()
+        timeout = 20  # seconds
         timeout_ts = time.time() + timeout
         while time.time() < timeout_ts:
             if check_card_status(BOARD_ID_MAP[args.board]):
                 print("Card recovered successfully")
                 return
+            # Otherwise, try rescanning the PCIe bus
+            pcie_utils.rescan_pcie()
             # Wait a bit and try again
             time.sleep(1)
         # If we get here, the card did not recover
