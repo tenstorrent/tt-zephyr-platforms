@@ -51,6 +51,9 @@ jobs:
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
+          build-args: |
+            REPO_REV=${{ github.ref_name }}
+            REPO_URL=${{ github.server_url }}/${{ github.repository }}
           context: .github
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -97,11 +100,32 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      - name: Check signing key
+        shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -lt 42 ]; then
+            echo "No valid signing key found, using temporary key"
+            openssl genrsa -out "$SIGNATURE_KEY_FILE" 2048
+          fi
+          # This delimiter syntax will break if the signing key includes
+          # the string "EOF", but this is unlikely.
+          echo "SIGNATURE_KEY<<EOF" >> "$GITHUB_ENV"
+          cat "$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
+
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: scripts/tooling/blackhole_recovery
+          build-args: |
+            REPO_REV=${{ github.ref_name }}
+            REPO_URL=${{ github.server_url }}/${{ github.repository }}
+          secrets: |
+            "signing_key=${{ env.SIGNATURE_KEY }}"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
