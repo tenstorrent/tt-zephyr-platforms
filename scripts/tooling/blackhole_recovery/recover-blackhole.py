@@ -253,10 +253,10 @@ def main():
             session.board.target.reset_and_halt()
             session.board.target.resume()
             session.close()
-            # Delay a moment for ASIC boot
-            time.sleep(2)
-            pcie_utils.rescan_pcie()
-            time.sleep(2)
+        # DMFW will always update, so delay for 20 seconds to allow for that
+        print("Waiting 20 seconds for DMFW to update...")
+        time.sleep(20)
+        pcie_utils.rescan_pcie()
         # Now, check if all asics are functional
         if not check_card_status(BOARD_ID_MAP[args.board]):
             raise RuntimeError("Card did not recover successfully, try a reboot?")
