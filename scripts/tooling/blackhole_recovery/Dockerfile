@@ -19,6 +19,10 @@ ARG REPO_URL=https://github.com/tenstorrent/tt-zephyr-platforms
 
 ENV ZEPHYR_BASE=/tt-zephyr/zephyr
 
+# Parse signing key secret
+RUN --mount=type=secret,id=signing_key \
+    cat /run/secrets/signing_key | base64 -d > /signing_key.pem
+
 # Clone the tt-zephyr-platforms repo and install dependencies
 RUN pip install west && \
     west init -m ${REPO_URL} --mr ${REPO_REV} /tt-zephyr && \
@@ -27,9 +31,11 @@ RUN pip install west && \
     west packages pip --install
 
 # Build the blackhole recovery image
-RUN cd /tt-zephyr/tt-zephyr-platforms && \
+RUN --mount=type=secret,id=signing_key \
+    cd /tt-zephyr/tt-zephyr-platforms && \
     west patch apply && \
-    python3 ./scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py /recovery.tar.gz
+    python3 ./scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py /recovery.tar.gz \
+        --signing-key /signing_key.pem
 
 # Start a new stage, and copy the built recovery bundle
 FROM ubuntu:24.04

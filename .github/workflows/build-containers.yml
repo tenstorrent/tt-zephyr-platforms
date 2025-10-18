@@ -51,6 +51,9 @@ jobs:
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
+          build-args: |
+            REPO_REV=${{ github.ref_name }}
+            REPO_URL=${{ github.server_url }}/${{ github.repository }}
           context: .github
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -102,6 +105,11 @@ jobs:
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: scripts/tooling/blackhole_recovery
+          build-args: |
+            REPO_REV=${{ github.ref_name }}
+            REPO_URL=${{ github.server_url }}/${{ github.repository }}
+          secrets: |
+            "signing_key=${{ secrets.SIGNATURE_KEY }}"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
