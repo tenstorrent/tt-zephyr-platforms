@@ -16,11 +16,12 @@ from e2e_smoke import (
     smi_reset_test,
     arc_watchdog_test,
     pcie_fw_load_time_test,
+    upgrade_from_version_test,
 )
 
 # Needed to keep ruff from complaining about this "unused import"
 # ruff: noqa: F811
-from e2e_smoke import arc_chip_dut, launched_arc_dut  # noqa: F401
+from e2e_smoke import arc_chip_dut, launched_arc_dut, unlaunched_dut  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -218,3 +219,17 @@ def test_dmc_ping(arc_chip_dut, asic_id):
     )
     report_results("DMC ping test", fail_count, total_tries)
     assert fail_count == 0, "DMC ping test failed a non-zero number of times."
+
+
+def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_dut):
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", 0xD0000, 0x130000
+    )
+
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.11.0", 0xE0000, 0x140000
+    )
+
+    upgrade_from_version_test(
+        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.12.0", 0xF0000, 0x150000
+    )

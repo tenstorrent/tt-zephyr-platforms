@@ -13,6 +13,7 @@ tests:
     tags: e2e-flash
     harness: pytest
     sysbuild: true
+    timeout: 300
     harness_config:
       pytest_root:
         - pytest/e2e_smoke.py

@@ -48,9 +48,10 @@ fi
 
 CONSOLE_DEV="/dev/tenstorrent/$ASIC_ID"
 
-# Export ASIC_ID and console dev as environment variables for use by scripts
+# Export ASIC_ID, BOARD, and console dev as environment variables for use by scripts
 export ASIC_ID
 export CONSOLE_DEV
+export BOARD
 
 if [ -z "$TEST_SET" ]; then
     TEST_SET=":e2e-stress"
