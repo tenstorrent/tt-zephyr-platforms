@@ -165,10 +165,6 @@ jobs:
         run: |
           echo "ASIC_ID=0" >> "$GITHUB_ENV"
 
-      - name: run-e2e-tests
-        run: |
-          tt-zephyr-platforms/scripts/ci/run-e2e.sh -p $ASIC_ID ${{ matrix.config.board }}
-
       - name: Check signing key
         shell: bash
         run: |
@@ -181,9 +177,9 @@ jobs:
           fi
           echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
 
-      - name: run-e2e-bl2-test
+      - name: run-e2e-tests
         run: |
-          tt-zephyr-platforms/scripts/ci/run-bl2.sh -k $SIGNATURE_KEY_FILE \
+          tt-zephyr-platforms/scripts/ci/run-e2e.sh -k $SIGNATURE_KEY_FILE \
             -p $ASIC_ID ${{ matrix.config.board }}
 
       - name: Upload E2E Test results

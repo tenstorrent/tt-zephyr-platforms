@@ -27,9 +27,11 @@ RUN pip install west && \
     west packages pip --install
 
 # Build the blackhole recovery image
-RUN cd /tt-zephyr/tt-zephyr-platforms && \
+RUN --mount=type=secret,id=signing_key \
+    cd /tt-zephyr/tt-zephyr-platforms && \
     west patch apply && \
-    python3 ./scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py /recovery.tar.gz
+    python3 ./scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py /recovery.tar.gz \
+        --signing-key /run/secrets/signing_key
 
 # Start a new stage, and copy the built recovery bundle
 FROM ubuntu:24.04

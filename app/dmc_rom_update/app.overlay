@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "../../boards/tenstorrent/tt_blackhole/tt_blackhole_dmc_bl2.dtsi"
-
 /* Use slot0 partition definition from legacy bootloader */
 &slot0_partition {
 	reg = <0x0000c000 (DT_SIZE_K(230) + DT_SIZE_K(2))>;
