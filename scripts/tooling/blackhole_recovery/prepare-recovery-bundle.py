@@ -53,10 +53,14 @@ def parse_args():
         "bundle_out",
         help="Output filename for recovery bundle",
     )
+    parser.add_argument(
+        "--signing-key",
+        help="Path to signing key to use when building images",
+    )
     return parser.parse_args()
 
 
-def generate_recovery_assets(boardname, board_data, outdir):
+def generate_recovery_assets(boardname, board_data, outdir, signing_key):
     """
     Generates recovery assets for a given board, and writes them to
     the output directory
@@ -81,6 +85,8 @@ def generate_recovery_assets(boardname, board_data, outdir):
             "--sysbuild",
             str(app_dir / "dmc"),
         ]
+        if signing_key:
+            cmd += ['-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE="' + str(signing_key) + '"']
         print(f"Building for DMC on {boardname}: {' '.join(cmd)}")
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         smc_build_dir = Path(temp_dir) / "smc_build"
@@ -95,6 +101,8 @@ def generate_recovery_assets(boardname, board_data, outdir):
             "--sysbuild",
             str(app_dir / "smc"),
         ]
+        if signing_key:
+            cmd += ['-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE="' + str(signing_key) + '"']
         print(f"Building for SMC on {boardname}: {' '.join(cmd)}")
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         env = {"$ROOT": str(TT_Z_P_ROOT), "$BUILD_DIR": str(smc_build_dir)}
@@ -112,14 +120,14 @@ def generate_recovery_assets(boardname, board_data, outdir):
             ih = IntelHex()
             # At 0x0, place the tt-boot-fs. This will be written to eeprom.
             ih.loadfile(bootfs_hex, format="hex")
-            if "bmfw" in bootfs.entries:
-                dmfw = bootfs.entries["bmfw"].data
+            if "dmfwimg" in bootfs.entries:
+                dmfw = bootfs.entries["dmfwimg"].data
                 # Place mcuboot at 0x800_0000, which is the start of DMC flash
                 ih.loadfile(
                     dmc_build_dir / "mcuboot" / "zephyr" / "zephyr.hex", format="hex"
                 )
-                # Place DMFW at 0x800_c000, which is the start of slot0
-                ih.frombytes(dmfw, 0x800C000)
+                # Place DMFW at 0x801_0000, which is the start of slot0
+                ih.frombytes(dmfw, 0x8010000)
                 # Write file out to 'recovery.hex'
             with open(outdir / f"{asic['bootfs-name']}_recovery.hex", "w") as f:
                 ih.write_hex_file(f)
@@ -133,7 +141,9 @@ def main():
     args = parse_args()
     with tempfile.TemporaryDirectory() as temp_dir:
         for board in BOARD_ID_MAP:
-            generate_recovery_assets(board, BOARD_ID_MAP[board], Path(temp_dir) / board)
+            generate_recovery_assets(
+                board, BOARD_ID_MAP[board], Path(temp_dir) / board, args.signing_key
+            )
         # Build the pyocd flash algorithms, so we can include them in the bundle
         cmd = [
             "cmake",
