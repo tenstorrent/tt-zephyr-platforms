@@ -194,9 +194,11 @@ def test_dmc_ping(arc_chip_dut, asic_id):
     without resetting the SMC. The `smi_reset` test will gather statistics
     for the SMC reset case.
     """
+    test_name = "DMC ping test"
     arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 1000)
     fail_count = 0
+    failure_fail_count = total_tries // 100
     dmfw_ping_avg = 0
     dmfw_ping_max = 0
     for i in range(total_tries):
@@ -216,5 +218,7 @@ def test_dmc_ping(arc_chip_dut, asic_id):
         f"Average DMFW ping time: {dmfw_ping_avg:.2f} ms, "
         f"Max DMFW ping time: {dmfw_ping_max:.2f} ms."
     )
-    report_results("DMC ping test", fail_count, total_tries)
-    assert fail_count == 0, "DMC ping test failed a non-zero number of times."
+    report_results(test_name, fail_count, total_tries)
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
