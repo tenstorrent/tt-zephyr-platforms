@@ -339,7 +339,7 @@ def arc_watchdog_test(asic_id):
     if hang_pc == 0:
         logger.error("ARC core was not reset, but PCIe device re-enumerated?")
         return False
-    logger.info(f"ARC was reset, hang PC 0x{hang_pc:08X}")
+    # good value of hang_pc value is something like 0x100045B4
     # Make sure ARC can still ping the DMC
     response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
     if response[0] != 1:
@@ -348,7 +348,6 @@ def arc_watchdog_test(asic_id):
     if response[1] != 0:
         logger.warning("SMC response invalid after reset")
         return False
-    logger.info('DMC ping message response "%d"', response[0])
     return True
 
 
