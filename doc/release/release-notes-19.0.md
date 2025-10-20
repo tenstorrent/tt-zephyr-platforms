@@ -62,6 +62,8 @@ Major enhancements with this release include:
   * Moved auto retraining outside of link_status_check into its own link check state machine, controlled via DYNAMIC_LINK_STATE_CHECK feature enable flag
   * Added link flap check based on resend and un-cor words
   * Added eth_reinit state machine to handle fail case when port is up
+* PVT Sensor
+  * correct PVT RTIO buffer size and frame count for decode
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
