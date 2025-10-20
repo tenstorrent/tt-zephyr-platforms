@@ -39,7 +39,7 @@ Major enhancements with this release include:
   * ETH msg CABLE_CHECK: checks whether a cables exists or not
   * ETH msg TELEMETRY_EVENT: handles specific telemetry exchange events over the link
   * ETH msg REMOTE_ALIVE: send packet to check if remote side is alive
-  * ETH msg PORT_SPEED: re-initializes the port to a differen speed
+  * ETH msg PORT_SPEED: re-initializes the port to a different speed
 
 <!-- External Project Collaboration Efforts, if applicable -->
 
@@ -47,7 +47,7 @@ Major enhancements with this release include:
 
 * Update Blackhole ERISC FW to v1.7.0
   * Fix snapshot reading bug in eth_runtime where the upper 32 bits of a preceding metric read is picked up by the following metric read
-  * Remove interrupt enablement as current implementation can cause infinte loops
+  * Remove interrupt enablement as current implementation can cause infinite loops
   * Changed logical_eth_id calculation using new enabled_eth param to address SYS-2064
   * Added ASIC ID in chip_info and param table to address SYS-2065
   * Changed manual EQ TX-FIRs for ASIC 8 Retimer ports to address SYS-2096
@@ -59,7 +59,7 @@ Major enhancements with this release include:
   * inline icache flush function for SYS-2267
   * Fix for reset skew where one tt-smi reset should make other side up
   * Added interrupt enablement again, controlled via INTERRUPT_CHECK feature enable flag
-  * Moved auto retraining outside of link_status_check into its own link check state mechine, controlled via DYNAMIC_LINK_STATE_CHECK feature enable flag
+  * Moved auto retraining outside of link_status_check into its own link check state machine, controlled via DYNAMIC_LINK_STATE_CHECK feature enable flag
   * Added link flap check based on resend and un-cor words
   * Added eth_reinit state machine to handle fail case when port is up
 
