@@ -15,9 +15,7 @@ tests:
     harness: pytest
     sysbuild: true
     harness_config:
-      # Order is important here, update.py must run before e2e_smoke.py
       pytest_root:
-        - pytest/update.py
         - pytest/e2e_smoke.py
       pytest_args:
         - "--dut-scope=session"
