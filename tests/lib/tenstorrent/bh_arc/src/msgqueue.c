@@ -188,6 +188,24 @@ ZTEST(msgqueue, test_msg_type_switch_clk_scheme)
 	zassert_equal(clock_wave_value, 1U);
 }
 
+ZTEST(msgqueue, test_msg_type_debug_noc_translation)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.data[0] = TT_SMC_MSG_DEBUG_NOC_TRANSLATION | (1U << 8U) /* Enable translation*/
+		      | (1U << 9U)                                  /* PCIE Instance  = 1*/
+		      | (0U << 10U)                                 /*PCIE instance override*/
+		      | (0b1001U << 16U)                            /*Bad tensix columns 0 and 3*/
+		;
+	req.data[1] = (8U << 0U)/* Bad GDDR 3 */| (0b1010U << 8U) /*skip eth 1 and 3*/;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+}
+
 static void test_setup(void *ctx)
 {
 	(void)ctx;
