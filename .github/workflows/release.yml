@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       boards: ${{ steps.genboards.outputs.boards }}
+      recovery_boards: ${{ steps.genboards.outputs.recovery_boards }}
     steps:
       - id: set_vars
         run: ${{ env.SET_VARS_CMDS }}
@@ -36,6 +37,7 @@ jobs:
           BOARDS="$(jq -r -c ".[]" .github/boards.json)"
           BOARDS="${BOARDS//$'\n'/ }" # Remove embedded newlines
           echo "boards=$BOARDS" | tee -a $GITHUB_OUTPUT
+          echo "recovery_boards=$(jq -c 'map(select(. != "galaxy"))' .github/boards.json)" | tee -a $GITHUB_OUTPUT
       - id: check_relnotes_file
         run: |
           relnotes_file="${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}"
@@ -63,6 +65,43 @@ jobs:
           name: ${{ steps.set_vars.outputs.RELEASE_NOTES }}
           path: ${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}
 
+  build-recovery-bundle:
+    runs-on: ubuntu-24.04
+    needs: prepare-release
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJson(needs.prepare-release.outputs.recovery_boards) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+      - shell: bash
+        run: |
+          SIGNATURE_KEY_FILE="$(mktemp)"
+          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
+          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
+          if [ $SZ -gt 42 ]; then
+            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
+          fi
+      - name: Build Recovery Bundle
+        shell: bash
+        run: |
+          python3 tt-zephyr-platforms/scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py \
+            --board ${{ matrix.board }} \
+            --signing-key "$SIGNATURE_KEY_FILE" \
+            fw-pack-${{ github.ref_name }}-${{ matrix.board }}-recovery.tar.gz
+
+      - name: Upload Recovery Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-recovery-${{ matrix.board }}
+          path: |
+            fw-pack-${{ github.ref_name }}-${{ matrix.board }}-recovery.tar.gz
+
   build-release:
     needs: [prepare-release]
     uses: ./.github/workflows/build-fw.yml
@@ -70,7 +109,7 @@ jobs:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
   publish-release:
-    needs: [build-release, prepare-release]
+    needs: [build-release, prepare-release, build-recovery-bundle]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -108,6 +147,16 @@ jobs:
             mv $REV/update.fwbundle $REV.fwbundle
           done
 
+          # Combine recovery bundles
+          mkdir firmware-recovery-${{ github.ref_name }}
+          for REV in ${BOARD_REVS[@]}; do
+            if [[ "$REV" == "galaxy" ]]; then
+              continue
+            fi
+            tar xf firmware-recovery-$REV/fw-pack-${{ github.ref_name }}-$REV-recovery.tar.gz -C firmware-recovery-${{ github.ref_name }}
+          done
+          tar zcf fw-pack-${{ github.ref_name }}-recovery.tar.gz -C firmware-recovery-${{ github.ref_name }} .
+
           zip -r -9 tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]}
 
       - name: Create Release
@@ -120,6 +169,7 @@ jobs:
           prerelease: true
           fail_on_unmatched_files: true
           files: |
+            fw-pack-${{ github.ref_name }}-recovery.tar.gz
             *.fwbundle
             tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip
             tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
