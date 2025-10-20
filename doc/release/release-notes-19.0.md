@@ -4,7 +4,17 @@
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.0.0 🥳🎉.
 
+> [!IMPORTANT]
+> As this is a major release, downgrades below this release (19.x -> 18.x)
+> are not supported. This release also requires tt-flash 3.4.7 or later to
+> flash onto a card.
+
 Major enhancements with this release include:
+
+- New bootloader scheme for CMFW and DMFW. This will improve update reliability
+  for both firmware binaries
+- If firmware flash fails, CMFW will now revert to recovery mode. From this mode
+  tt-flash can be used to restore a working firmware.
 
 ## What's Changed
 
