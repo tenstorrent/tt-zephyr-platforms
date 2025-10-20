@@ -57,6 +57,9 @@ def parse_args():
         "--signing-key",
         help="Path to signing key to use when building images",
     )
+    parser.add_argument(
+        "--board", help="Board to build for (default: all boards)", default="all"
+    )
     return parser.parse_args()
 
 
@@ -140,10 +143,21 @@ def generate_recovery_assets(boardname, board_data, outdir, signing_key):
 def main():
     args = parse_args()
     with tempfile.TemporaryDirectory() as temp_dir:
-        for board in BOARD_ID_MAP:
+        if args.board != "all":
+            if args.board not in BOARD_ID_MAP:
+                print(f"Error: board '{args.board}' is not recognized")
+                sys.exit(1)
             generate_recovery_assets(
-                board, BOARD_ID_MAP[board], Path(temp_dir) / board, args.signing_key
+                args.board,
+                BOARD_ID_MAP[args.board],
+                Path(temp_dir) / args.board,
+                args.signing_key,
             )
+        else:
+            for board in BOARD_ID_MAP:
+                generate_recovery_assets(
+                    board, BOARD_ID_MAP[board], Path(temp_dir) / board, args.signing_key
+                )
         # Build the pyocd flash algorithms, so we can include them in the bundle
         cmd = [
             "cmake",
