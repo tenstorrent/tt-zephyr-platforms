@@ -73,6 +73,20 @@ tested, this is possible with the following command:
 
    pytest $TT_Z_P_BASE/app/smc/pytest/e2e_smoke.py
 
+Pytest additionally supports running a single test instead of all, for example:
+
+.. code-block:: shell
+
+   pytest $TT_Z_P_BASE/app/smc/pytest/e2e_smoke.py::test_upgrade_from_18_10
+
+Some tests might require additional parameters and might be skipped if these are not provided.
+For example, ``--board`` is required for some tests to run. You can get a list of the test options
+tenstorrent exposes by looking under ``Custom options:`` of the output of the ``--help``.
+
+.. code-block:: shell
+
+   pytest $TT_Z_P_BASE/app/smc/pytest/e2e_smoke.py --help
+
 Stress Tests
 ************
 
