@@ -3,6 +3,7 @@ cmsis-pack-manager>=0.6.0
 devicetree
 grpcio-tools
 protobuf
+pytest-repeat
 west
 # zephyr-keep-sorted-stop
 
