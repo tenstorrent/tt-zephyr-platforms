@@ -30,6 +30,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx_tabs.tabs",
     "zephyr.application",
+    "sphinx.ext.graphviz",
 ]
 templates_path = [str(ZEPHYR_BASE / "doc/_templates")]
 exclude_patterns = ["_build_sphinx", "_doxygen/main.md", "Thumbs.db", ".DS_Store"]

@@ -7,6 +7,7 @@ Welcome to TT Zephyr Platforms!
    :maxdepth: 1
    :caption: Contents
 
+   architecture/index.rst
    develop/index.rst
    services/index.rst
    boards/index.rst

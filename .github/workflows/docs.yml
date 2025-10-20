@@ -177,6 +177,8 @@ jobs:
       - name: Build
         working-directory: tt-zephyr-platforms
         run: |
+          # Install any additional packages needed for doc build
+          sudo apt-get install -y graphviz
           cd doc
 
           # IMPORTANT: symlink directories here that are needed during the sphinx build
