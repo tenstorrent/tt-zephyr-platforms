@@ -223,13 +223,31 @@ def test_dmc_ping(arc_chip_dut, asic_id):
 
 def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_dut):
     upgrade_from_version_test(
-        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", (13 << 16), (19 << 16)
+        arc_chip_dut,
+        tmp_path,
+        board_name,
+        unlaunched_dut,
+        "18.10.0",
+        (13 << 16),
+        (19 << 16),
     )
 
     upgrade_from_version_test(
-        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.11.0", (14 << 16), (20 << 16)
+        arc_chip_dut,
+        tmp_path,
+        board_name,
+        unlaunched_dut,
+        "18.11.0",
+        (14 << 16),
+        (20 << 16),
     )
 
     upgrade_from_version_test(
-        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.12.0", (15 << 16), (21 << 16)
+        arc_chip_dut,
+        tmp_path,
+        board_name,
+        unlaunched_dut,
+        "18.12.0",
+        (15 << 16),
+        (21 << 16),
     )
