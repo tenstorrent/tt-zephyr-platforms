@@ -28,7 +28,7 @@ def pytest_addoption(parser):
         "--fwbundle",
         action="store",
         default="build/update.fwbundle",
-        help="Board name to use for testing",
+        help="The FW bundle to use for flashing with no twister harness",
     )
 
 
