@@ -1,3 +1,42 @@
+# v18.12.1
+
+We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.1 🥳🎉.
+
+This is a point release to ensure that users are able to test with the latest ERISC firmware while
+v19.0 is going through additional testing.
+
+## Major Highlights
+
+* Update Blackhole ERISC FW to v1.7.0
+  * ETH msg PORT_RETRAIN: force a link to retrain
+  * ETH msg PORT_REINIT: asks a failed port to redo initialization
+  * ETH msg PORT_LOOPBACK: allows putting the port in internal or external loopback
+  * ETH msg INTERRUPT: enables or disables interrupts to the ERISC
+  * ETH msg PORT_ACTION: force the link to be up or down via the MAC
+  * ETH msg CABLE_CHECK: checks whether a cables exists or not
+  * ETH msg TELEMETRY_EVENT: handles specific telemetry exchange events over the link
+  * ETH msg REMOTE_ALIVE: send packet to check if remote side is alive
+  * ETH msg PORT_SPEED: re-initializes the port to a different speed
+
+## Stability Improvements
+
+* Fix snapshot reading bug in eth_runtime where the upper 32 bits of a preceding metric read is picked up by the following metric read
+* Remove interrupt enablement as current implementation can cause infinte loops
+* Changed logical_eth_id calculation using new enabled_eth param to address SYS-2064
+* Added ASIC ID in chip_info and param table to address SYS-2065
+* Changed manual EQ TX-FIRs for ASIC 8 Retimer ports to address SYS-2096
+* Only trigger retraining if check_link_up polls link down for 5ms
+* Removed BIST check in training sequence, improves stability a bit
+* Send chip_info packet on retrain completion, which along with BIST disabled allows for a single chip with an active link to be reset and allow the link come back up
+* Set manual TX FIR parameters for warp cable connections on P300 to 1/3/4/45/2 for PCB-1997
+* increase stack size to 2048 for SYS-2266
+* inline icache flush function for SYS-2267
+* Fix for reset skew where one tt-smi reset should make other side up
+* Added interrupt enablement again, controlled via INTERRUPT_CHECK feature enable flag
+* Moved auto retraining outside of link_status_check into its own link check state mechine, controlled via DYNAMIC_LINK_STATE_CHECK feature enable flag
+* Added link flap check based on resend and un-cor words
+* Added eth_reinit state machine to handle fail case when port is up
+
 # v18.12.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.0 🥳🎉.
