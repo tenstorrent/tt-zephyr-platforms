@@ -34,9 +34,16 @@ PING_DMFW_DURATION_REG_ADDR = 0x80030448
 ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
+ARC_MSG_TYPE_READ_TS = 0x1B
+ARC_MSG_TYPE_READ_PD = 0x1C
+ARC_MSG_TYPE_READ_VM = 0x1D
 
 # Lower this number if testing local changes, so that tests run faster.
 MAX_TEST_ITERATIONS = 1000
+
+NUM_PD = 16
+NUM_VM = 8
+NUM_TS = 8
 
 
 def report_results(test_name, fail_count, total_tries):
@@ -79,9 +86,9 @@ def test_arc_watchdog(arc_chip_dut, asic_id):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert (
+        fail_count <= failure_fail_count
+    ), f"{test_name} failed {fail_count}/{total_tries} times."
 
 
 def test_pcie_fw_load_time(arc_chip_dut, asic_id):
@@ -110,9 +117,9 @@ def test_pcie_fw_load_time(arc_chip_dut, asic_id):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert (
+        fail_count <= failure_fail_count
+    ), f"{test_name} failed {fail_count}/{total_tries} times."
 
 
 def test_smi_reset(arc_chip_dut, asic_id):
@@ -152,9 +159,9 @@ def test_smi_reset(arc_chip_dut, asic_id):
     )
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert (
+        fail_count <= failure_fail_count
+    ), f"{test_name} failed {fail_count}/{total_tries} times."
 
 
 def test_dirty_reset():
@@ -183,9 +190,9 @@ def test_dirty_reset():
             time.sleep(0.5)
 
     report_results(test_name, fail_count, total_tries)
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert (
+        fail_count <= failure_fail_count
+    ), f"{test_name} failed {fail_count}/{total_tries} times."
 
 
 def test_dmc_ping(arc_chip_dut, asic_id):
@@ -250,4 +257,102 @@ def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_d
         "18.12.0",
         (15 << 16),
         (21 << 16),
+    )
+
+
+def test_temperature_sensors(arc_chip_dut, asic_id):
+    test_name = "Temperature sensor test"
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    total_tries = min(MAX_TEST_ITERATIONS, 100)
+    fail_count = 0
+
+    for _ in range(total_tries):
+        for sensor_id in range(NUM_TS):
+            response = arc_chip.arc_msg(
+                ARC_MSG_TYPE_READ_TS, True, False, sensor_id, 0, 5000
+            )
+
+            temp = response[2]
+            if temp < 40 or temp > 70:
+                fail_count += 1
+
+    report_results(test_name, fail_count, total_tries)
+    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
+
+
+def test_process_detectors(arc_chip_dut, asic_id):
+    test_name = "Process detector test"
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    total_tries = min(MAX_TEST_ITERATIONS, 50)
+    fail_count = 0
+
+    delay_chains = [19, 20, 21]
+
+    for _ in range(total_tries):
+        for delay_chain in delay_chains:
+            for sensor_id in range(NUM_PD):
+                response = arc_chip.arc_msg(
+                    ARC_MSG_TYPE_READ_PD, True, False, delay_chain, sensor_id, 5000
+                )
+
+                freq = response[1]
+                if freq < 1600 or freq > 1700:
+                    fail_count += 1
+
+    report_results(test_name, fail_count, total_tries)
+    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
+
+
+def test_voltage_monitors(arc_chip_dut, asic_id):
+    test_name = "Voltage monitor test"
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    total_tries = min(MAX_TEST_ITERATIONS, 100)
+    fail_count = 0
+
+    for _ in range(total_tries):
+        for sensor_id in range(NUM_VM):
+            response = arc_chip.arc_msg(
+                ARC_MSG_TYPE_READ_VM, True, False, sensor_id, 0, 5000
+            )
+
+            voltage = response[2]
+            if voltage < 700 or voltage > 800:
+                fail_count += 1
+
+    report_results(test_name, fail_count, total_tries)
+    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
+
+
+def test_pvt_comprehensive(arc_chip_dut, asic_id):
+    test_name = "Comprehensive PVT test"
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    total_tries = min(MAX_TEST_ITERATIONS, 20)
+    fail_count = 0
+
+    for _ in range(total_tries):
+        test_sensors = [
+            (ARC_MSG_TYPE_READ_TS, 0),
+            (ARC_MSG_TYPE_READ_PD, 19),
+            (ARC_MSG_TYPE_READ_VM, 0),
+        ]
+
+        for msg_type, sensor_param in test_sensors:
+            response = arc_chip.arc_msg(msg_type, True, False, sensor_param, 0, 5000)
+
+            if response[0] != 1:
+                fail_count += 1
+
+    report_results(test_name, fail_count, total_tries)
+    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
     )
