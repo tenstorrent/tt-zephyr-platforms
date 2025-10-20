@@ -251,7 +251,13 @@ def upgrade_from_version_test(
 
 def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
     upgrade_from_version_test(
-        arc_chip_dut, tmp_path, board_name, unlaunched_dut, "18.10.0", (13 << 16), (19 << 16)
+        arc_chip_dut,
+        tmp_path,
+        board_name,
+        unlaunched_dut,
+        "18.10.0",
+        (13 << 16),
+        (19 << 16),
     )
 
 
