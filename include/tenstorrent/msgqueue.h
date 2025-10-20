@@ -211,7 +211,7 @@ struct get_voltage_curve_from_freq_rqst {
 };
 
 /** @brief Host request for debug NOC translation
- * @details Messages of this type are processed by @ref DebugNocTranslationHandler
+ * @details Messages of this type are processed by @ref debug_noc_translation_handler
  */
 struct debug_noc_translation_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_DEBUG_NOC_TRANSLATION */
@@ -228,13 +228,10 @@ struct debug_noc_translation_rqst {
 	 */
 	uint8_t pcie_instance_override: 1;
 
-	/** @brief Two bytes of padding*/
-	uint8_t pad[2];
-
 	/** @brief Bitmask of bad tensix columns */
 	uint16_t bad_tensix_cols;
 
-	/** @brief Bitmask of bad GDDR */
+	/** @brief Instance number of the bad GDDR. 0xFF if all GDDR are good */
 	uint8_t bad_gddr;
 
 	/** @brief low byte of skip_eth field*/
@@ -280,6 +277,9 @@ union request {
 
 	/** @brief A get voltage curve from frequency request */
 	struct get_voltage_curve_from_freq_rqst get_voltage_curve_from_freq;
+
+	/** @brief A debug NOC translation request */
+	struct debug_noc_translation_rqst debug_noc_translation;
 };
 
 /** @} */
