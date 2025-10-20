@@ -210,6 +210,40 @@ struct get_voltage_curve_from_freq_rqst {
 	uint32_t input_freq_mhz;
 };
 
+/** @brief Host request for debug NOC translation
+ * @details Messages of this type are processed by @ref DebugNocTranslationHandler
+ */
+struct debug_noc_translation_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_DEBUG_NOC_TRANSLATION */
+	uint8_t command_code;
+
+	/** @brief Enable or disable NOC translation*/
+	uint8_t enable_translation: 1;
+
+	/** @brief The PCIE instance */
+	uint8_t pcie_instance: 1;
+
+	/** @brief Set to 1 to use pcie instance from the  @ref pcie_instance field, or 0 to
+	 *         get the pcie instance from FW table
+	 */
+	uint8_t pcie_instance_override: 1;
+
+	/** @brief Two bytes of padding*/
+	uint8_t pad[2];
+
+	/** @brief Bitmask of bad tensix columns */
+	uint16_t bad_tensix_cols;
+
+	/** @brief Bitmask of bad GDDR */
+	uint8_t bad_gddr;
+
+	/** @brief low byte of skip_eth field*/
+	uint8_t skip_eth_low;
+
+	/** @brief hi byte of skip_eth field*/
+	uint8_t skip_eth_hi;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
