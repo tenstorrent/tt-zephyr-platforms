@@ -6,24 +6,56 @@
 
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
-#include "noc_init.h"
 
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+
+#include "noc_init.h"
 #include "aiclk_ppm.h"
 #include "gddr.h"
 
 LOG_MODULE_REGISTER(power, CONFIG_TT_APP_LOG_LEVEL);
+static const struct device *pll4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
 
 enum power_bit_flags_e {
 	power_bit_flag_aiclk,
 	power_bit_flag_mrisc,
 	power_bit_flag_tensix,
+	power_bit_flag_l2cpu,
 	power_bit_flag_max
 };
 
 enum power_settings_e {
 	power_settings_max
 };
+
+int32_t set_l2cpu_enable(bool enable)
+{
+	int32_t ret = 0;
+
+	if (enable) {
+		ret = clock_control_on(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0);
+		ret = clock_control_on(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1);
+		ret = clock_control_on(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2);
+		ret = clock_control_on(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3);
+	} else {
+		ret = clock_control_off(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0);
+		ret = clock_control_off(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1);
+		ret = clock_control_off(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2);
+		ret = clock_control_off(
+			pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3);
+	}
+
+	return ret;
+}
 
 static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
@@ -39,6 +71,10 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 
 	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
 		ret = set_tensix_enable(power_setting->power_flags_bitfield.tensix_enable);
+	}
+
+	if (power_setting->power_flags_valid > power_bit_flag_l2cpu) {
+		ret = set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
 	}
 
 	return ret;
