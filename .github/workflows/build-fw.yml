@@ -352,7 +352,7 @@ jobs:
       - name: Build Combined Firmware Bundle
         shell: bash
         run: |
-          pip install pykwalify intelhex
+          pip install pykwalify intelhex imgtool
           BUNDLE_TEMP_PREFIX="$PWD/tt-zephyr-platforms/firmware-" \
             ./tt-zephyr-platforms/scripts/build-combined-fwbundle.sh
 
