@@ -69,6 +69,12 @@ if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
     BOARD       ${SB_CONFIG_DMC_BOARD}
     BUILD_ONLY 1
   )
+  # We need to make sure the first slot of the DMC image visable to mcuboot
+  # is padded with 4KB of 0x00 bytes to allow for swap using offset.
+  # Generate that padding file here
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/dmc-slot-padding.bin
+    COMMAND dd if=/dev/zero bs=4096 count=1 of=${CMAKE_BINARY_DIR}/dmc-slot-padding.bin
+  )
 endif()
 
 # Make sure MCUBoot is build only
@@ -85,6 +91,7 @@ set_config_string(mcuboot CONFIG_BOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNA
 set(OUTPUT_FWBUNDLE ${CMAKE_BINARY_DIR}/update.fwbundle)
 
 set(DMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/dmc/zephyr/zephyr.bin)
+set(DMC_SLOT_BIN ${CMAKE_BINARY_DIR}/dmc-slot-padding.bin)
 set(SMC_OUTPUT_BIN ${CMAKE_BINARY_DIR}/${DEFAULT_IMAGE}/zephyr/zephyr.signed.bin)
 set(RECOVERY_OUTPUT_BIN ${CMAKE_BINARY_DIR}/recovery/zephyr/zephyr.signed.bin)
 set(MCUBOOT_OUTPUT_BIN ${CMAKE_BINARY_DIR}/mcuboot/zephyr/zephyr.bin)
@@ -134,7 +141,7 @@ else()
 
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN}
      ${DMC_OUTPUT_BIN} ${ROM_UPDATE_BIN} ${MCUBOOT_BL2_BIN} ${TRAILER_OUTPUT}
-     ${TRAILER_OUTPUT_CONFIRMED})
+     ${TRAILER_OUTPUT_CONFIRMED} ${DMC_SLOT_BIN})
 endif()
 
 # ======== Generate filesystem ========

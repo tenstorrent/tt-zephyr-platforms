@@ -5,4 +5,5 @@
  */
 
 /delete-node/ &blupdate;
+/delete-node/ &dmfw;
 /delete-node/ &dmfwimg;
