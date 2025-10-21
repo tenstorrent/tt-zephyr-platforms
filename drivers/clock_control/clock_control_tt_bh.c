@@ -156,6 +156,8 @@ struct clock_control_tt_bh_config {
 };
 
 struct clock_control_tt_bh_data {
+	struct tt_bh_pll_settings settings;
+
 	struct k_spinlock lock;
 };
 
@@ -312,6 +314,7 @@ static uint32_t clock_control_tt_bh_get_freq(const struct clock_control_tt_bh_co
 }
 
 static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *config,
+				       struct clock_control_tt_bh_data *data,
 				       const struct tt_bh_pll_settings *settings)
 {
 	union tt_bh_pll_cntl_0_reg pll_cntl_0;
@@ -351,16 +354,48 @@ static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *
 	clock_control_tt_bh_write_reg(config, PLL_CNTL_0_OFFSET, pll_cntl_0.val);
 
 	k_busy_wait_ns(300);
+
+	data->settings = *settings;
 }
 
+static int clock_control_tt_bh_enable(const struct device *dev, clock_control_subsys_t sys,
+				      uint8_t enable)
+{
+	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
+	struct clock_control_tt_bh_config *config =
+		(struct clock_control_tt_bh_config *)dev->config;
+	struct clock_control_tt_bh_data *data = (struct clock_control_tt_bh_data *)dev->data;
+	struct tt_bh_pll_settings settings = data->settings;
+
+	switch (clock) {
+	case CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0:
+		settings.pll_cntl_5.f.postdiv0 = enable;
+		break;
+	case CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1:
+		settings.pll_cntl_5.f.postdiv1 = enable;
+		break;
+	case CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2:
+		settings.pll_cntl_5.f.postdiv2 = enable;
+		break;
+	case CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3:
+		settings.pll_cntl_5.f.postdiv3 = enable;
+		break;
+
+	default:
+		return -ENOSYS;
+	}
+
+	clock_control_tt_bh_update(config, data, &settings);
+	return 0;
+}
 static int clock_control_tt_bh_on(const struct device *dev, clock_control_subsys_t sys)
 {
-	return -ENOSYS;
+	return clock_control_tt_bh_enable(dev, sys, 1U);
 }
 
 static int clock_control_tt_bh_off(const struct device *dev, clock_control_subsys_t sys)
 {
-	return -ENOSYS;
+	return clock_control_tt_bh_enable(dev, sys, 0U);
 }
 
 static int clock_control_tt_bh_async_on(const struct device *dev, clock_control_subsys_t sys,
@@ -441,7 +476,7 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
 
 	if (clock == CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK) {
-		struct tt_bh_pll_settings settings = config->init_settings;
+		struct tt_bh_pll_settings settings = data->settings;
 		uint32_t fbdiv = clock_control_tt_bh_calculate_fbdiv(
 			config->refclk_rate, (uint32_t)rate, settings.pll_cntl_1,
 			settings.pll_cntl_5, settings.use_postdiv, 0);
@@ -458,7 +493,7 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 			return -ERANGE;
 		}
 
-		clock_control_tt_bh_update(config, &settings);
+		clock_control_tt_bh_update(config, data, &settings);
 	} else if (clock == CLOCK_CONTROL_TT_BH_CLOCK_AICLK) {
 		uint32_t target_fbdiv;
 		union tt_bh_pll_cntl_1_reg pll_cntl_1;
@@ -485,7 +520,7 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 	} else if (clock == CLOCK_CONTROL_TT_BH_INIT_STATE) {
 		struct tt_bh_pll_settings settings = config->init_settings;
 
-		clock_control_tt_bh_update(config, &settings);
+		clock_control_tt_bh_update(config, data, &settings);
 		clock_control_enable_clk_counters(config);
 	} else {
 		k_spin_unlock(&data->lock, key);
@@ -544,6 +579,7 @@ static int clock_control_tt_bh_init(const struct device *dev)
 		return -EBUSY;
 	}
 
+	data->settings = config->init_settings;
 	union tt_bh_pll_cntl_0_reg pll_cntl_0;
 
 	/* Before turning off PLL, bypass PLL so glitch free mux has no chance to switch */
