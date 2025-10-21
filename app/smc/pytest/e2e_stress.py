@@ -86,9 +86,9 @@ def test_arc_watchdog(arc_chip_dut, asic_id):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert (
-        fail_count <= failure_fail_count
-    ), f"{test_name} failed {fail_count}/{total_tries} times."
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
 
 
 def test_pcie_fw_load_time(arc_chip_dut, asic_id):
@@ -117,9 +117,9 @@ def test_pcie_fw_load_time(arc_chip_dut, asic_id):
             fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    assert (
-        fail_count <= failure_fail_count
-    ), f"{test_name} failed {fail_count}/{total_tries} times."
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
 
 
 def test_smi_reset(arc_chip_dut, asic_id):
@@ -159,9 +159,9 @@ def test_smi_reset(arc_chip_dut, asic_id):
     )
 
     report_results(test_name, fail_count, total_tries)
-    assert (
-        fail_count <= failure_fail_count
-    ), f"{test_name} failed {fail_count}/{total_tries} times."
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
 
 
 def test_dirty_reset():
@@ -190,9 +190,9 @@ def test_dirty_reset():
             time.sleep(0.5)
 
     report_results(test_name, fail_count, total_tries)
-    assert (
-        fail_count <= failure_fail_count
-    ), f"{test_name} failed {fail_count}/{total_tries} times."
+    assert fail_count <= failure_fail_count, (
+        f"{test_name} failed {fail_count}/{total_tries} times."
+    )
 
 
 def test_dmc_ping(arc_chip_dut, asic_id):
