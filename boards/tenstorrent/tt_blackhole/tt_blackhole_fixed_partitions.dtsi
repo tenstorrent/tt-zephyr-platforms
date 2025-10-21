@@ -180,6 +180,7 @@ partitions {
 	dmfw: partition@22d000 {
 		label = "dmfw";
 		reg = <0x22d000 DT_SIZE_K(452)>;
+		binary-path = "$BUILD_DIR/dmc-slot-padding.bin";
 	};
 
 	/*
