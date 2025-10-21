@@ -809,7 +809,7 @@ def ls(
         if verbose >= 0 and not output_json:
             hdr = "spi_addr\timage_tag\tsize   \tcopy_dest\tdata_crc\tflags   \tfd_crc"
             print(hdr)
-            bar = "-" * (len(hdr.replace("\t", "")) + 8 * hdr.count("\t"))
+            bar = "-" * len(hdr.expandtabs())
             print(bar)
 
         order: list[(int, str)] = []
