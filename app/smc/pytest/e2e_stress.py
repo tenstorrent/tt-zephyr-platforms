@@ -21,7 +21,13 @@ from e2e_smoke import (
 
 # Needed to keep ruff from complaining about this "unused import"
 # ruff: noqa: F811
-from e2e_smoke import arc_chip_dut, launched_arc_dut, unlaunched_dut  # noqa: F401
+from e2e_smoke import arc_chip_dut, launched_arc_dut  # noqa: F401
+
+try:
+    from e2e_smoke import unlaunched_dut  # noqa: F401
+except ImportError:
+    pass  # we should have it from twister
+
 
 logger = logging.getLogger(__name__)
 
