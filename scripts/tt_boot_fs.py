@@ -23,6 +23,7 @@ import shutil
 import tarfile
 import tempfile
 from intelhex import IntelHex
+import imgtool.image as imgtool_image
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -807,7 +808,7 @@ def ls(
         fs = BootFs.from_binary(data)
 
         if verbose >= 0 and not output_json:
-            hdr = "spi_addr\timage_tag\tsize   \tcopy_dest\tdata_crc\tflags   \tfd_crc"
+            hdr = "spi_addr\timage_tag\tsize\tcopy_dest\tdata_crc\tflags\t\tfd_crc\t\tdigest"
             print(hdr)
             bar = "-" * len(hdr.expandtabs())
             print(bar)
@@ -822,6 +823,20 @@ def ls(
             entry = fs.entries[tag]
             fd = entry.get_descriptor()
 
+            img_digest_str = "N/A"
+            if len(entry.data) >= 4:
+                magic = int.from_bytes(entry.data[:4], "little")
+                if magic == imgtool_image.IMAGE_MAGIC:
+                    # imgtool methods for verifying image expect a file, so create a temp file
+                    with tempfile.NamedTemporaryFile() as temp_file:
+                        temp_file.write(entry.data)
+                        temp_file.flush()
+                        ret, _, digest, _ = imgtool_image.Image.verify(
+                            temp_file.name, None
+                        )
+                        if ret == imgtool_image.VerifyResult.OK:
+                            img_digest_str = digest.hex()
+
             obj = {
                 "spi_addr": fd.spi_addr,
                 "image_tag": tag,
@@ -830,6 +845,7 @@ def ls(
                 "data_crc": fd.data_crc,
                 "flags": fd.flags.val,
                 "fd_crc": fd.fd_crc,
+                "digest": img_digest_str,
             }
             fds.append(obj)
 
@@ -840,7 +856,7 @@ def ls(
             if not output_json:
                 print(
                     f"{fd.spi_addr:08x}\t{tag:<8}\t{len(entry.data)}\t{fd.copy_dest:08x}\t"
-                    f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}"
+                    f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}\t{img_digest_str:.10}"
                 )
 
                 if verbose >= 2:
