@@ -64,6 +64,9 @@ Major enhancements with this release include:
   * Added eth_reinit state machine to handle fail case when port is up
 * PVT Sensor
   * correct PVT RTIO buffer size and frame count for decode
+* Update Wormhole FW blob
+  * ERISC 6.7.2.0
+  * Add support to trigger retraining on failed training ethernet ports
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
