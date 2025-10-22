@@ -286,6 +286,16 @@ int32_t Dm2CmPingHandler(const uint8_t *data, uint8_t size)
 	return 0;
 }
 
+int32_t Dm2CmPingV2(uint8_t *data, uint8_t *size)
+{
+	*size = 2;
+
+	data[0] = 0xA5;
+	data[1] = 0xA5;
+	k_sem_give(&dmfw_ping_sem);
+	return 0;
+}
+
 int32_t Dm2CmSendPowerHandler(const uint8_t *data, uint8_t size)
 {
 	if (size != 2) {
