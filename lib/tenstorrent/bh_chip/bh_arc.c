@@ -51,6 +51,11 @@ int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t
 	return smbus_word_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);
 }
 
+int bharc_smbus_word_data_read(const struct bh_arc *dev, uint16_t cmd, uint16_t *word)
+{
+	return smbus_word_data_read(dev->smbus.bus, dev->smbus.addr, cmd, word);
+}
+
 int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word)
 {
 	return smbus_byte_data_write(dev->smbus.bus, dev->smbus.addr, cmd, word);

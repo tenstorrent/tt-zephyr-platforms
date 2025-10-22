@@ -75,6 +75,7 @@ typedef struct cm2dmMessageRet {
 int bharc_smbus_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t *count, uint8_t *output);
 int bharc_smbus_block_write(const struct bh_arc *dev, uint8_t cmd, uint8_t count, uint8_t *input);
 int bharc_smbus_word_data_write(const struct bh_arc *dev, uint16_t cmd, uint16_t word);
+int bharc_smbus_word_data_read(const struct bh_arc *dev, uint16_t cmd, uint16_t *word);
 int bharc_smbus_byte_data_write(const struct bh_arc *dev, uint8_t cmd, uint8_t word);
 int bharc_smbus_block_write_block_read(const struct bh_arc *dev, uint8_t cmd, uint8_t snd_count,
 				       uint8_t *send_buf, uint8_t *rcv_count, uint8_t *rcv_buf);
