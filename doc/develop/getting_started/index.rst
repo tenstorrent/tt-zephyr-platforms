@@ -46,7 +46,7 @@ Follow these steps to set up your TT Zephyr Platforms development environment:
    west sdk install
 
    # Step 8: Download binary blobs (firmware components)
-   west blobs fetch
+   west blobs fetch tt-zephyr-platforms
 
    # Step 9: Apply TT-specific patches
    west patch apply

@@ -277,7 +277,7 @@
     #   ansible.builtin.shell: |
     #     cd tenstorrent &&
     #     . .venv/bin/activate &&
-    #     west blobs fetch
+    #     west blobs fetch tt-zephyr-platforms
 
     # - name: Apply west patches
     #   ansible.builtin.shell: |
