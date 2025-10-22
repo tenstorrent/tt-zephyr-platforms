@@ -202,9 +202,11 @@ static const SmbusCmdDef smbus_test_read_block_cmd_def = {.pec = 1U,
 							  .trans_type = kSmbusTransBlockRead,
 							  .send_handler = &BlockReadTest};
 
-static const SmbusCmdDef smbus_test_write_block_cmd_def = {.pec = 1U,
-							   .trans_type = kSmbusTransBlockWrite,
-							   .rcv_handler = &BlockWriteTest};
+static const SmbusCmdDef smbus_test_write_block_cmd_def = {
+	.pec = 1U, .trans_type = kSmbusTransBlockWrite, .rcv_handler = &BlockWriteTest};
+
+static const SmbusCmdDef smbus_ping_v2_cmd_def = {
+	.pec = 1U, .trans_type = kSmbusTransReadWord, .send_handler = &Dm2CmPingV2};
 
 static int InitSmbusTarget(void)
 {
@@ -261,6 +263,9 @@ static int InitSmbusTarget(void)
 				  &smbus_test_write_block_cmd_def);
 	smbus_target_register_cmd(smbus_target, CMFW_SMBUS_TEST_WRITE_BLOCK_READ_BLOCK,
 				  &smbus_block_write_block_read_test);
+
+	smbus_target_register_cmd(smbus_target, CMFW_SMBUS_PING_V2,
+				  &smbus_ping_v2_cmd_def);
 	return 0;
 }
 SYS_INIT_APP(InitSmbusTarget);
