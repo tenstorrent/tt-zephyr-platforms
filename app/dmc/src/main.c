@@ -167,7 +167,16 @@ static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 static bool process_ping(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
 	/* Respond to ping request from CMFW */
-	bharc_smbus_word_data_write(&chip->config.arc, CMFW_SMBUS_PING, 0xA5A5);
+	int32_t ret;
+	uint32_t retries = 0;
+
+	do {
+		uint16_t data;
+
+		ret = bharc_smbus_word_data_read(&chip->config.arc, CMFW_SMBUS_PING_V2, &data);
+		retries++;
+	} while (ret != 0U && retries < 10);
+
 	return false;
 }
 
