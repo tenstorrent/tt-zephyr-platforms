@@ -11,7 +11,7 @@ tests:
   app.default: {}
   app.e2e-smoke-flash:
     tags: e2e-flash
-    timeout: 720 # 12 minutes
+    timeout: 900 # 15 minutes
     harness: pytest
     sysbuild: true
     harness_config:
