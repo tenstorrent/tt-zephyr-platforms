@@ -10,11 +10,21 @@ alignment:
 images:
 
   - name: cmfw
-    binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+    binary: $BUILD_DIR/mcuboot/zephyr/zephyr.bin
     executable: true
     offset: 0x10000000
 
+  # Recovery image, loaded by mcuboot
+  - name: recovery
+    binary: $BUILD_DIR/recovery/zephyr/zephyr.signed.bin
+    source: '212992'
+
+  # Trailer for recovery image indicating it can be booted
+  - name: imgtail
+    binary: $BUILD_DIR/mcuboot_magic_confirmed.bin
+    source: '733184'
+
 fail_over_image:
   name: failover
-  binary: $BUILD_DIR/recovery/zephyr/zephyr.bin
+  binary: $BUILD_DIR/mcuboot/zephyr/zephyr.bin
   offset: 0x10000000
