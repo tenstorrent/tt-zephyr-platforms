@@ -62,7 +62,9 @@ tests:
     extra_overlay_confs:
       - pinctrl.conf
   app.stress-test:
-    timeout: 5400 # 90 minutes
+    # Budget 3 hours for stress testing. Any more and we should consider reducing test coverage
+    # nightly, as CI machines might not be available for PR efforts
+    timeout: 10800
     tags: e2e-stress
     harness: pytest
     sysbuild: true
