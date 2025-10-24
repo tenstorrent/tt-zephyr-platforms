@@ -5,6 +5,7 @@
 
 import logging
 import os
+import sys
 import time
 import subprocess
 from pathlib import Path
@@ -266,6 +267,15 @@ def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_d
     )
 
 
+def convert_telemetry_to_float(value):
+    INT32_MIN = -2147483648
+
+    if value == INT32_MIN:
+        return sys.float_info.max
+    else:
+        return value / 65536.0
+
+
 def test_temperature_sensors(arc_chip_dut, asic_id):
     test_name = "Temperature sensor test"
     arc_chip = pyluwen.detect_chips()[asic_id]
@@ -278,7 +288,7 @@ def test_temperature_sensors(arc_chip_dut, asic_id):
                 ARC_MSG_TYPE_READ_TS, True, False, sensor_id, 0, 5000
             )
 
-            temp = response[2]
+            temp = convert_telemetry_to_float(response[0])
             if temp < 40 or temp > 70:
                 fail_count += 1
 
@@ -304,8 +314,8 @@ def test_process_detectors(arc_chip_dut, asic_id):
                     ARC_MSG_TYPE_READ_PD, True, False, delay_chain, sensor_id, 5000
                 )
 
-                freq = response[1]
-                if freq < 1600 or freq > 1700:
+                freq = convert_telemetry_to_float(response[0])
+                if freq < 100 or freq > 240:
                     fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
@@ -327,8 +337,8 @@ def test_voltage_monitors(arc_chip_dut, asic_id):
                 ARC_MSG_TYPE_READ_VM, True, False, sensor_id, 0, 5000
             )
 
-            voltage = response[2]
-            if voltage < 700 or voltage > 800:
+            voltage = convert_telemetry_to_float(response[0])
+            if voltage < 0 or voltage > 1:
                 fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
@@ -354,7 +364,7 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
         for msg_type, sensor_param in test_sensors:
             response = arc_chip.arc_msg(msg_type, True, False, sensor_param, 0, 5000)
 
-            if response[0] != 1:
+            if response[0] == 0:
                 fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
