@@ -3,7 +3,7 @@
 
 chip_limits {
   asic_fmax: 1000
-  asic_fmin: 800
+  asic_fmin: 500
   vdd_max: 900
   vdd_min: 700
   voltage_margin: 50
