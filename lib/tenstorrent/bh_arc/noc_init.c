@@ -669,15 +669,31 @@ void ClearNocTranslation(void)
 	noc_translation_enabled = false;
 }
 
-static uint8_t DebugNocTranslationHandler(const union request *req, struct response *rsp)
+/**
+ * @brief Handler for @ref TT_SMC_MSG_DEBUG_NOC_TRANSLATION messages
+ *
+ * @details Re-programs NOC (Network on Chip) coordinate translation for debug and testing purposes.
+ *          NOC translation is used to route around defective tiles (e.g. Tensix columns, ETH tiles,
+ *          GDDR tiles).
+ *
+ * @param req Pointer to the host request message. use @ref request::debug_noc_translation for
+ *            structured access
+ * @param rsp Pointer to the response message to be sent back to host
+ *
+ * @return 0 on success
+ * @return non-zero on error
+ * @see debug_noc_translation_rqst
+ */
+static uint8_t debug_noc_translation_handler(const union request *req, struct response *rsp)
 {
-	bool enable_translation = FIELD_GET(GENMASK(8, 8), req->data[0]);
-	unsigned int pcie_instance = FIELD_GET(GENMASK(9, 9), req->data[0]);
-	bool pcie_instance_override = FIELD_GET(GENMASK(10, 10), req->data[0]);
-	uint16_t bad_tensix_cols = FIELD_GET(GENMASK(31, 16), req->data[0]);
+	bool enable_translation = req->debug_noc_translation.enable_translation;
+	unsigned int pcie_instance = req->debug_noc_translation.pcie_instance;
+	bool pcie_instance_override = req->debug_noc_translation.pcie_instance_override;
+	uint16_t bad_tensix_cols = req->debug_noc_translation.bad_tensix_cols;
 
-	uint8_t bad_gddr = FIELD_GET(GENMASK(7, 0), req->data[1]);
-	uint16_t skip_eth = FIELD_GET(GENMASK(23, 8), req->data[1]);
+	uint8_t bad_gddr = req->debug_noc_translation.bad_gddr;
+	uint16_t skip_eth = req->debug_noc_translation.skip_eth_low |
+			    ((uint16_t)req->debug_noc_translation.skip_eth_hi << 8U);
 
 	ClearNocTranslation();
 
@@ -700,7 +716,7 @@ static uint8_t DebugNocTranslationHandler(const union request *req, struct respo
 	return 0;
 }
 
-REGISTER_MESSAGE(TT_SMC_MSG_DEBUG_NOC_TRANSLATION, DebugNocTranslationHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_DEBUG_NOC_TRANSLATION, debug_noc_translation_handler);
 
 void GetEnabledTensix(uint8_t *x, uint8_t *y)
 {

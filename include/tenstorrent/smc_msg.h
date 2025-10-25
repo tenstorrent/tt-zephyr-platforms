@@ -37,6 +37,8 @@ enum tt_smc_msg {
 
 	/** @brief @ref switch_clk_scheme_rqst "Switch clock scheme request" */
 	TT_SMC_MSG_SWITCH_CLK_SCHEME = 0x14,
+
+	/** @brief @ref debug_noc_translation_rqst "Debug NOC translation request" */
 	TT_SMC_MSG_DEBUG_NOC_TRANSLATION = 0x15,
 	TT_SMC_MSG_REPORT_SCRATCH_ONLY = 0x16,
 	TT_SMC_MSG_SEND_PCIE_MSI = 0x17,
