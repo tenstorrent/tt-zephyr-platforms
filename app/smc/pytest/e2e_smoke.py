@@ -190,7 +190,8 @@ def upgrade_from_version_test(
     RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz"
 
     tar_recovery = tmp_path / "recovery.tar.gz"
-    urlretrieve(RECOVERY_URL, tar_recovery)
+    if not tar_recovery.exists():
+        urlretrieve(RECOVERY_URL, tar_recovery)
     recovery_py = str(
         Path(__file__).parents[3]
         / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
@@ -259,6 +260,60 @@ def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched
         (13 << 16),
         (19 << 16),
     )
+
+
+def test_upgrade_from_19_00(board_name, unlaunched_dut):
+    recovery_py = str(
+        Path(__file__).parents[3]
+        / "scripts/tooling/blackhole_recovery/recover-blackhole.py"
+    )
+    # flash custom recovery bundle
+    try:
+        subprocess.check_call(
+            [
+                "python3",
+                recovery_py,
+                str(TTZP / "zephyr/blobs/recovery-19.0-custom.tar.gz"),
+                board_name,
+                "--force",
+                "--no-prompt",
+            ]
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"blackhole_recovery.py failed with error: {e}")
+        assert False
+    time.sleep(0.5)
+    assert (15 << 16) == read_telem(0, TAG_DM_APP_FW_VERSION)
+    assert (21 << 16) == read_telem(0, TAG_CM_FW_VERSION)
+
+    # We now need to workaround the copy of MCUBoot in the recovery image using
+    # a different signature from the image we have built in the test. To do this,
+    # flash the mcuboot-bl2 image from our build directory directly using west
+    try:
+        subprocess.check_call(
+            [
+                "west",
+                "flash",
+                "--skip-rebuild",
+                "-d",
+                str(unlaunched_dut.device_config.app_build_dir.parent / "mcuboot-bl2"),
+            ]
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"west flash failed with error: {e}")
+        assert False
+    # Wait for the ARC chip to boot
+    wait_arc_boot(0, timeout=20)
+
+    # flash firmware to update to
+    unlaunched_dut.launch()
+    time.sleep(0.5)
+    assert get_ttzp_version.get_ttzp_version_u32(
+        TTZP / "app/dmc/VERSION"
+    ) == read_telem(0, TAG_DM_APP_FW_VERSION)
+    assert get_ttzp_version.get_ttzp_version_u32(
+        TTZP / "app/smc/VERSION"
+    ) == read_telem(0, TAG_CM_FW_VERSION)
 
 
 def test_arc_msg(arc_chip_dut, asic_id):
