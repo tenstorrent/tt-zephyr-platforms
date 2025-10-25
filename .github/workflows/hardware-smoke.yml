@@ -125,13 +125,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        iterations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         config:
-          - board: p100a
-            runs-on:
-              - p100a-jtag
-          - board: p150a
-            runs-on:
-              - p150a-jtag
           - board: p300a
             runs-on:
               - p300a-jtag
@@ -186,7 +181,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: E2E test results (${{ matrix.config.board }})
+          name: E2E test results (${{ matrix.config.board }}) (iteration ${{ matrix.iterations }})
           include-hidden-files: true
           path: |
             zephyr/twister-*e2e*/**/handler.log
