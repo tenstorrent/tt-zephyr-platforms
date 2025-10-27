@@ -79,16 +79,16 @@ ARC_HANG_PC_REG_ADDR = 0x80030454
 TELEMETRY_DATA_REG_ADDR = 0x80030430
 
 # ARC messages
-ARC_MSG_TYPE_REINIT_TENSIX = 0x20
-ARC_MSG_TYPE_FORCE_AICLK = 0x33
-ARC_MSG_TYPE_GET_AICLK = 0x34
-ARC_MSG_TYPE_TEST = 0x90
-ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
-ARC_MSG_TYPE_PING_DM = 0xC0
-ARC_MSG_TYPE_SET_WDT = 0xC1
-ARC_MSG_TYPE_READ_TS = 0x1B
-ARC_MSG_TYPE_READ_PD = 0x1C
-ARC_MSG_TYPE_READ_VM = 0x1D
+TT_SMC_MSG_REINIT_TENSIX = 0x20
+TT_SMC_MSG_FORCE_AICLK = 0x33
+TT_SMC_MSG_GET_AICLK = 0x34
+TT_SMC_MSG_TEST = 0x90
+TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF
+TT_SMC_MSG_PING_DM = 0xC0
+TT_SMC_MSG_SET_WDT = 0xC1
+TT_SMC_MSG_READ_TS = 0x1B
+TT_SMC_MSG_READ_PD = 0x1C
+TT_SMC_MSG_READ_VM = 0x1D
 
 # Telemetry tags
 TAG_CM_FW_VERSION = 29
@@ -269,9 +269,9 @@ def pvt_comprehensive_test(arc_chip_dut, asic_id):
     fail_count = 0
     arc_chip = pyluwen.detect_chips()[asic_id]
     test_sensors = [
-        (ARC_MSG_TYPE_READ_TS, 0),
-        (ARC_MSG_TYPE_READ_PD, 19),
-        (ARC_MSG_TYPE_READ_VM, 0),
+        (TT_SMC_MSG_READ_TS, 0),
+        (TT_SMC_MSG_READ_PD, 19),
+        (TT_SMC_MSG_READ_VM, 0),
     ]
 
     for msg_type, sensor_param in test_sensors:
@@ -287,9 +287,7 @@ def voltage_monitors_test(arc_chip_dut, asic_id):
     fail_count = 0
 
     for sensor_id in range(NUM_VM):
-        response = arc_chip.arc_msg(
-            ARC_MSG_TYPE_READ_VM, True, False, sensor_id, 0, 5000
-        )
+        response = arc_chip.arc_msg(TT_SMC_MSG_READ_VM, True, False, sensor_id, 0, 5000)
 
         voltage = convert_telemetry_to_float(response[0])
         if voltage < 0 or voltage > 1 or response[1] != 0:
@@ -306,7 +304,7 @@ def process_detectors_test(arc_chip_dut, asic_id):
     for delay_chain in delay_chains:
         for sensor_id in range(NUM_PD):
             response = arc_chip.arc_msg(
-                ARC_MSG_TYPE_READ_PD, True, False, delay_chain, sensor_id, 5000
+                TT_SMC_MSG_READ_PD, True, False, delay_chain, sensor_id, 5000
             )
 
             freq = convert_telemetry_to_float(response[0])
@@ -321,9 +319,7 @@ def temperature_sensors_test(arc_chip_dut, asic_id):
     fail_count = 0
 
     for sensor_id in range(NUM_TS):
-        response = arc_chip.arc_msg(
-            ARC_MSG_TYPE_READ_TS, True, False, sensor_id, 0, 5000
-        )
+        response = arc_chip.arc_msg(TT_SMC_MSG_READ_TS, True, False, sensor_id, 0, 5000)
 
         temp = convert_telemetry_to_float(response[0])
         if temp < 40 or temp > 70 or response[1] != 0:
@@ -350,7 +346,7 @@ def test_arc_msg(arc_chip_dut, asic_id):
     """
     # Send a test message. We expect response to be incremented by 1
     arc_chip = pyluwen.detect_chips()[asic_id]
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 20, 0, 1000)
+    response = arc_chip.arc_msg(TT_SMC_MSG_TEST, True, False, 20, 0, 1000)
     assert response[0] == 21, "SMC did not respond to test message"
     assert response[1] == 0, "SMC response invalid"
     logger.info('SMC ping message response "%d"', response[0])
@@ -365,7 +361,7 @@ def test_dmc_msg(arc_chip_dut, asic_id):
     """
     # Send an ARC message to ping the DMC, and validate that it is online
     arc_chip = pyluwen.detect_chips()[asic_id]
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+    response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
     assert response[0] == 1, "DMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
     logger.info('DMC ping message response "%d"', response[0])
@@ -477,10 +473,10 @@ def arc_watchdog_test(asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     wdt_timeout = 1000
     # Setup ARC watchdog for a 1000ms timeout
-    arc_chip.arc_msg(ARC_MSG_TYPE_SET_WDT, True, False, wdt_timeout, 0, 1000)
+    arc_chip.arc_msg(TT_SMC_MSG_SET_WDT, True, False, wdt_timeout, 0, 1000)
     # Sleep 1500, make sure we can still ping arc
     time.sleep(1.5)
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_TEST, True, False, 1, 0, 1000)
+    response = arc_chip.arc_msg(TT_SMC_MSG_TEST, True, False, 1, 0, 1000)
     if response[0] != 2:
         logger.warning("SMC did not respond to test message")
         return False
@@ -544,7 +540,7 @@ def arc_watchdog_test(asic_id):
         return False
     logger.info(f"ARC was reset, hang PC 0x{hang_pc:08X}")
     # Make sure ARC can still ping the DMC
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+    response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
     if response[0] != 1:
         logger.warning("DMC did not respond to ping after reset")
         return False
@@ -715,15 +711,15 @@ def tensix_reset_sequence(arc_chip):
     SOFT_RESET_DATA = 0x47800
 
     # Force AICLK to safe frequency
-    arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, arg0=250, arg1=0)
+    arc_chip.arc_msg(TT_SMC_MSG_FORCE_AICLK, arg0=250, arg1=0)
     # Clear RISC reset registers
     for addr in TENSIX_RISC_RESET_ADDR:
         arc_chip.axi_write32(addr, 0)
 
     # The tensix reset message
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_TOGGLE_TENSIX_RESET)
+    response = arc_chip.arc_msg(TT_SMC_MSG_TOGGLE_TENSIX_RESET)
     assert response[1] == 0, "SMC response invalid to toggle tensix reset message"
-    response = arc_chip.arc_msg(ARC_MSG_TYPE_REINIT_TENSIX)
+    response = arc_chip.arc_msg(TT_SMC_MSG_REINIT_TENSIX)
     assert response[1] == 0, "SMC response invalid to reinit tensix message"
 
     # Set soft reset registers inside Tensix
@@ -734,7 +730,7 @@ def tensix_reset_sequence(arc_chip):
         arc_chip.axi_write32(addr, 0xFFFFFFFF)
 
     # Unforce AICLK
-    arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, arg0=0, arg1=0)
+    arc_chip.arc_msg(TT_SMC_MSG_FORCE_AICLK, arg0=0, arg1=0)
 
 
 def test_tensix_reset(arc_chip_dut, asic_id):
@@ -780,10 +776,10 @@ def test_aiclk(arc_chip_dut, asic_id):
     ]
 
     for clk in TARGET_AICLKS:
-        arc_chip.arc_msg(ARC_MSG_TYPE_FORCE_AICLK, True, False, clk, 0, 1000)
+        arc_chip.arc_msg(TT_SMC_MSG_FORCE_AICLK, True, False, clk, 0, 1000)
         # Delay to allow AICLK to settle
         time.sleep(0.1)
-        aiclk = arc_chip.arc_msg(ARC_MSG_TYPE_GET_AICLK)[0]
+        aiclk = arc_chip.arc_msg(TT_SMC_MSG_GET_AICLK)[0]
         assert aiclk == clk, f"Failed to set clock to {clk} MHz"
         logger.info(f"AICLK set to {aiclk} MHz successfully")
 

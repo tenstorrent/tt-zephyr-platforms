@@ -40,8 +40,8 @@ SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 PING_DMFW_DURATION_REG_ADDR = 0x80030448
 
 # ARC messages
-ARC_MSG_TYPE_PING_DM = 0xC0
-ARC_MSG_TYPE_READ_TS = 0x1B
+TT_SMC_MSG_PING_DM = 0xC0
+TT_SMC_MSG_READ_TS = 0x1B
 
 # Lower this number if testing local changes, so that tests run faster.
 MAX_TEST_ITERATIONS = 1000
@@ -150,7 +150,7 @@ def test_smi_reset(arc_chip_dut, asic_id):
             continue
 
         arc_chip = pyluwen.detect_chips()[asic_id]
-        response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+        response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
         if response[0] != 1 or response[1] != 0:
             logger.warning(f"Ping failed on iteration {i}")
             fail_count += 1
@@ -213,7 +213,7 @@ def test_dmc_ping(arc_chip_dut, asic_id):
     dmfw_ping_avg = 0
     dmfw_ping_max = 0
     for i in range(total_tries):
-        response = arc_chip.arc_msg(ARC_MSG_TYPE_PING_DM, True, False, 0, 0, 1000)
+        response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
         if response[0] != 1 or response[1] != 0:
             logger.warning(f"Ping failed on iteration {i}")
             fail_count += 1
@@ -325,7 +325,7 @@ def test_power_virus(arc_chip_dut, asic_id):
     def read_ts_once(chip, sensor_idx: int):
         # ARC handler expects sensor id; returns status in response[1]
         for i in range(NUM_TS):
-            rsp = chip.arc_msg(ARC_MSG_TYPE_READ_TS, True, False, i, 0, 1000)
+            rsp = chip.arc_msg(TT_SMC_MSG_READ_TS, True, False, i, 0, 1000)
         # Best-effort logging; exact response layout is FW-defined
         logger.info(f"READ_TS idx={sensor_idx} rsp={rsp}")
         # If status is present as second field, ensure success
