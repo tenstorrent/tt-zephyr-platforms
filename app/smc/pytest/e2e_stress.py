@@ -5,7 +5,6 @@
 
 import logging
 import os
-import sys
 import time
 import subprocess
 from pathlib import Path
@@ -17,6 +16,10 @@ from e2e_smoke import (
     arc_watchdog_test,
     pcie_fw_load_time_test,
     upgrade_from_version_test,
+    pvt_comprehensive_test,
+    voltage_monitors_test,
+    process_detectors_test,
+    temperature_sensors_test,
 )
 
 # Needed to keep ruff from complaining about this "unused import"
@@ -37,12 +40,8 @@ SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 PING_DMFW_DURATION_REG_ADDR = 0x80030448
 
 # ARC messages
-ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_PING_DM = 0xC0
-ARC_MSG_TYPE_SET_WDT = 0xC1
 ARC_MSG_TYPE_READ_TS = 0x1B
-ARC_MSG_TYPE_READ_PD = 0x1C
-ARC_MSG_TYPE_READ_VM = 0x1D
 
 # Lower this number if testing local changes, so that tests run faster.
 MAX_TEST_ITERATIONS = 1000
@@ -266,30 +265,13 @@ def test_upgrade_from_18x(tmp_path: Path, board_name, unlaunched_dut, arc_chip_d
     )
 
 
-def convert_telemetry_to_float(value):
-    INT32_MIN = -2147483648
-
-    if value == INT32_MIN:
-        return sys.float_info.max
-    else:
-        return value / 65536.0
-
-
 def test_temperature_sensors(arc_chip_dut, asic_id):
     test_name = "Temperature sensor test"
-    arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 100)
     fail_count = 0
 
     for _ in range(total_tries):
-        for sensor_id in range(NUM_TS):
-            response = arc_chip.arc_msg(
-                ARC_MSG_TYPE_READ_TS, True, False, sensor_id, 0, 5000
-            )
-
-            temp = convert_telemetry_to_float(response[0])
-            if temp < 40 or temp > 70:
-                fail_count += 1
+        fail_count += temperature_sensors_test(arc_chip_dut, asic_id)
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
@@ -297,22 +279,11 @@ def test_temperature_sensors(arc_chip_dut, asic_id):
 
 def test_process_detectors(arc_chip_dut, asic_id):
     test_name = "Process detector test"
-    arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 50)
     fail_count = 0
 
-    delay_chains = [19, 20, 21]
-
     for _ in range(total_tries):
-        for delay_chain in delay_chains:
-            for sensor_id in range(NUM_PD):
-                response = arc_chip.arc_msg(
-                    ARC_MSG_TYPE_READ_PD, True, False, delay_chain, sensor_id, 5000
-                )
-
-                freq = convert_telemetry_to_float(response[0])
-                if freq < 100 or freq > 240:
-                    fail_count += 1
+        fail_count += process_detectors_test(arc_chip_dut, asic_id)
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
@@ -320,41 +291,23 @@ def test_process_detectors(arc_chip_dut, asic_id):
 
 def test_voltage_monitors(arc_chip_dut, asic_id):
     test_name = "Voltage monitor test"
-    arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 100)
     fail_count = 0
 
     for _ in range(total_tries):
-        for sensor_id in range(NUM_VM):
-            response = arc_chip.arc_msg(
-                ARC_MSG_TYPE_READ_VM, True, False, sensor_id, 0, 5000
-            )
-
-            voltage = convert_telemetry_to_float(response[0])
-            if voltage < 0 or voltage > 1:
-                fail_count += 1
+        fail_count += voltage_monitors_test(arc_chip_dut, asic_id)
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
+
 def test_pvt_comprehensive(arc_chip_dut, asic_id):
     test_name = "Comprehensive PVT test"
-    arc_chip = pyluwen.detect_chips()[asic_id]
     total_tries = min(MAX_TEST_ITERATIONS, 20)
     fail_count = 0
 
     for _ in range(total_tries):
-        test_sensors = [
-            (ARC_MSG_TYPE_READ_TS, 0),
-            (ARC_MSG_TYPE_READ_PD, 19),
-            (ARC_MSG_TYPE_READ_VM, 0),
-        ]
-
-        for msg_type, sensor_param in test_sensors:
-            response = arc_chip.arc_msg(msg_type, True, False, sensor_param, 0, 5000)
-
-            if response[0] == 0:
-                fail_count += 1
+        fail_count += pvt_comprehensive_test(arc_chip_dut, asic_id)
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
