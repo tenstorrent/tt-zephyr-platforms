@@ -195,7 +195,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # FIXME: use board revisions from boards.json and filter those that support assembly tests
         board:
           - p150
           - p300
@@ -208,7 +207,6 @@ jobs:
           app-path: tt-zephyr-platforms
 
       - name: Generate BOARD
-        # FIXME: use board revisions from boards.json and filter those that support assembly tests
         shell: bash
         run: |
           case "${{ matrix.board }}" in
