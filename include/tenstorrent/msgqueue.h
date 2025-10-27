@@ -241,6 +241,21 @@ struct debug_noc_translation_rqst {
 	uint8_t skip_eth_hi;
 };
 
+
+/** @brief Host request to ping DMC
+ * @details Messages of this type are processed by @ref ping_dm_handler
+ */
+struct dmc_ping_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_PING_DM */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Use legacy ping mode */
+	bool legacy_ping;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -280,6 +295,9 @@ union request {
 
 	/** @brief A debug NOC translation request */
 	struct debug_noc_translation_rqst debug_noc_translation;
+
+	/** @brief A dmc ping request */
+	struct dmc_ping_rqst dmc_ping;
 };
 
 /** @} */

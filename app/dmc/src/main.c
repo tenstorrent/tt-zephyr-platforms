@@ -120,9 +120,15 @@ static bool process_ping(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data
 	uint32_t retries = 0;
 
 	do {
-		uint16_t data;
+		uint16_t data = 0xA5A5;
 
-		ret = bharc_smbus_word_data_read(&chip->config.arc, CMFW_SMBUS_PING_V2, &data);
+		if (msg_data == 0) {
+			ret = bharc_smbus_word_data_read(&chip->config.arc,
+							 CMFW_SMBUS_PING_V2, &data);
+		} else {
+			ret = bharc_smbus_word_data_write(&chip->config.arc,
+							  CMFW_SMBUS_PING, data);
+		}
 		retries++;
 	} while (ret != 0U && retries < 10);
 
