@@ -195,6 +195,17 @@ static uint8_t reset_dm_handler(const union request *request, struct response *r
 
 REGISTER_MESSAGE(TT_SMC_MSG_TRIGGER_RESET, reset_dm_handler);
 
+/**
+ * @brief Handler for host request to ping DMC
+ *
+ * Handler for a host request to ping the DMC. This request is used to test
+ * SMBUS stability.
+ * @param[in] request The request, of type @ref dmc_ping_rqst, with command code
+ *	@ref TT_SMC_MSG_PING_DM to ping the DMC. If @ref dmc_ping_rqst::legacy_ping is
+ *	false, The SMC requests a block read; otherwise, the SMC requests a block write.
+ * @param[out] response The response to the host. Set to 1 if DMC is alive, 0 otherwise.
+ * @return 0
+ */
 static uint8_t ping_dm_handler(const union request *request, struct response *response)
 {
 	int ret;
@@ -202,7 +213,7 @@ static uint8_t ping_dm_handler(const union request *request, struct response *re
 
 	/* Send a ping to the dmfw */
 	k_sem_reset(&dmfw_ping_sem);
-	PostCm2DmMsg(kCm2DmMsgIdPing, 0);
+	PostCm2DmMsg(kCm2DmMsgIdPing, request->dmc_ping.legacy_ping);
 	/* Delay to allow DMFW to respond */
 	timestamp = k_uptime_get();
 	ret = k_sem_take(&dmfw_ping_sem, K_MSEC(CONFIG_TT_BH_ARC_DMFW_PING_TIMEOUT));

@@ -117,6 +117,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_SET_LAST_SERIAL = 0xBE,
 	/** @brief eFuse burn request (not supported) */
 	TT_SMC_MSG_EFUSE_BURN = 0xBF,
+	/** @brief Ping DMC request */
 	TT_SMC_MSG_PING_DM = 0xC0,
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
 	/** @brief Flash write unlock request */
