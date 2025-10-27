@@ -126,6 +126,8 @@ jobs:
       - id: mkdir-home-user-tt-metal
         run: |
           mkdir -p $HOME
+          chown -R $(whoami):$(whoami) $HOME || true
+          chmod 755 /__w/_temp || true
       - name: Download the latest firmware bundle
         uses: actions/download-artifact@v4
         with:
