@@ -1,4 +1,4 @@
-name: Hardware Long Tests
+name: Metal Tests 🤘
 
 # Run long tests once nightly, at 00:00
 on:
@@ -16,24 +16,25 @@ jobs:
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
+  gen-config:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: gen-config
+        shell: bash
+        run: |
+          # Output the entire compact JSON matrix config on one line
+          MATRIX_CONFIG="$(jq -c "." .github/ci_boards.json)"
+          echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
+
   metal-test:
     needs: build-fw-artifact
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - board: p300a
-            runs-on:
-              - p300a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.62.0-dev20251015-5-g0cf6eeb32e
-          - board: p100a
-            runs-on:
-              - p100a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251015-5-g0cf6eeb32e
-          - board: p150a
-            runs-on:
-              - p150a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251012-1-gf7e5cb3d10
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ${{ matrix.config.metal-image }}
