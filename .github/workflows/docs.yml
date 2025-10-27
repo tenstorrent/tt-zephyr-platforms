@@ -16,10 +16,22 @@ env:
   DOXYGEN_VERSION: 1.14.0
 
 jobs:
+  gen-config:
+    runs-on: ubuntu-24.04
+    outputs:
+      ci-boards: ${{ steps.gen-config.outputs.ci-boards }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: gen-config
+        shell: bash
+        run: |
+          echo "ci-boards=$(jq -c "[ .[] | .board ]" .github/ci_boards.json)" | tee -a $GITHUB_OUTPUT
+
   ci-stats:
+    needs: [gen-config]
     strategy:
       matrix:
-        board: [p100a, p150a, p300a]
+        board: ${{ fromJson(needs.gen-config.outputs.ci-boards) }}
     runs-on: ubuntu-22.04
     permissions:
       actions: read
@@ -152,7 +164,7 @@ jobs:
 
   build:
     runs-on: ubuntu-22.04
-    needs: ci-stats
+    needs: [ci-stats, gen-config]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -214,7 +226,12 @@ jobs:
 
       - name: Copy CI Results
         run: |
-          for board in p100a p150a p300a; do
+          CI_BOARDS="$(jq -r -c ".[]" <<< '${{ needs.gen-config.outputs.ci-boards }}')"
+          # Substitute '\n' with ' ' to make a space-separated list for a Bash array
+          CI_BOARDS="${CI_BOARDS//$'\n'/ }"
+          CI_BOARD_REVS=($CI_BOARDS)
+
+          for board in ${CI_BOARD_REVS[@]}; do
             cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
               tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
           done
