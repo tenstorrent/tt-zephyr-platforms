@@ -9,7 +9,6 @@ import sys
 import time
 import subprocess
 from pathlib import Path
-
 import pyluwen
 
 from e2e_smoke import (
@@ -293,10 +292,7 @@ def test_temperature_sensors(arc_chip_dut, asic_id):
                 fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
 
 def test_process_detectors(arc_chip_dut, asic_id):
@@ -319,10 +315,7 @@ def test_process_detectors(arc_chip_dut, asic_id):
                     fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
 
 def test_voltage_monitors(arc_chip_dut, asic_id):
@@ -342,11 +335,7 @@ def test_voltage_monitors(arc_chip_dut, asic_id):
                 fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
-
+    assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
 def test_pvt_comprehensive(arc_chip_dut, asic_id):
     test_name = "Comprehensive PVT test"
@@ -368,10 +357,7 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
                 fail_count += 1
 
     report_results(test_name, fail_count, total_tries)
-    failure_fail_count = total_tries // 1000  # Allow 0.1% failure rate
-    assert fail_count <= failure_fail_count, (
-        f"{test_name} failed {fail_count}/{total_tries} times."
-    )
+    assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
 
 def test_power_virus(arc_chip_dut, asic_id):
