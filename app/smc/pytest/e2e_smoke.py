@@ -86,10 +86,17 @@ ARC_MSG_TYPE_TEST = 0x90
 ARC_MSG_TYPE_TOGGLE_TENSIX_RESET = 0xAF
 ARC_MSG_TYPE_PING_DM = 0xC0
 ARC_MSG_TYPE_SET_WDT = 0xC1
+ARC_MSG_TYPE_READ_TS = 0x1B
+ARC_MSG_TYPE_READ_PD = 0x1C
+ARC_MSG_TYPE_READ_VM = 0x1D
 
 # Telemetry tags
 TAG_CM_FW_VERSION = 29
 TAG_DM_APP_FW_VERSION = 26
+
+NUM_PD = 16
+NUM_VM = 8
+NUM_TS = 8
 
 
 def read_telem(asic_id, telem_idx):
@@ -101,6 +108,15 @@ def read_telem(asic_id, telem_idx):
     del chip
 
     return telem
+
+
+def convert_telemetry_to_float(value):
+    INT32_MIN = -2147483648
+
+    if value == INT32_MIN:
+        return sys.float_info.max
+    else:
+        return value / 65536.0
 
 
 @pytest.fixture(scope="session")
@@ -247,6 +263,73 @@ def upgrade_from_version_test(
     assert get_ttzp_version.get_ttzp_version_u32(
         TTZP / "app/smc/VERSION"
     ) == read_telem(0, TAG_CM_FW_VERSION)
+
+
+def pvt_comprehensive_test(arc_chip_dut, asic_id):
+    fail_count = 0
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    test_sensors = [
+        (ARC_MSG_TYPE_READ_TS, 0),
+        (ARC_MSG_TYPE_READ_PD, 19),
+        (ARC_MSG_TYPE_READ_VM, 0),
+    ]
+
+    for msg_type, sensor_param in test_sensors:
+        response = arc_chip.arc_msg(msg_type, True, False, sensor_param, 0, 5000)
+
+        if response[0] == 0 or response[1] != 0:
+            fail_count += 1
+    return fail_count
+
+
+def voltage_monitors_test(arc_chip_dut, asic_id):
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    fail_count = 0
+
+    for sensor_id in range(NUM_VM):
+        response = arc_chip.arc_msg(
+            ARC_MSG_TYPE_READ_VM, True, False, sensor_id, 0, 5000
+        )
+
+        voltage = convert_telemetry_to_float(response[0])
+        if voltage < 0 or voltage > 1 or response[1] != 0:
+            fail_count += 1
+
+    return fail_count
+
+
+def process_detectors_test(arc_chip_dut, asic_id):
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    fail_count = 0
+
+    delay_chains = [19, 20, 21]
+    for delay_chain in delay_chains:
+        for sensor_id in range(NUM_PD):
+            response = arc_chip.arc_msg(
+                ARC_MSG_TYPE_READ_PD, True, False, delay_chain, sensor_id, 5000
+            )
+
+            freq = convert_telemetry_to_float(response[0])
+            if freq < 100 or freq > 240 or response[1] != 0:
+                fail_count += 1
+
+    return fail_count
+
+
+def temperature_sensors_test(arc_chip_dut, asic_id):
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    fail_count = 0
+
+    for sensor_id in range(NUM_TS):
+        response = arc_chip.arc_msg(
+            ARC_MSG_TYPE_READ_TS, True, False, sensor_id, 0, 5000
+        )
+
+        temp = convert_telemetry_to_float(response[0])
+        if temp < 40 or temp > 70 or response[1] != 0:
+            fail_count += 1
+
+    return fail_count
 
 
 def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
@@ -757,3 +840,43 @@ def test_mcuboot(unlaunched_dut, asic_id):
     buf = bytes(4)
     arc_chip.as_bh().spi_read(MCUBOOT_HEADER_ADDR, buf)
     magic = int.from_bytes(buf, "little")
+
+
+def test_temperature_sensors(arc_chip_dut, asic_id):
+    """
+    Validates that the temperature sensor messages work and relay responses within reasonable bounds
+
+    The message tested is READ_TS.
+    The expectation is that the temperature returned is between 40 and 70
+    """
+    assert 0 == temperature_sensors_test(arc_chip_dut, asic_id)
+
+
+def test_process_detectors(arc_chip_dut, asic_id):
+    """
+    Validates that the voltage monitor messages work and relay responses within reasonable bounds
+
+    The message tested is READ_PD.
+    The expectation is that the frequency returned is between 100 and 240
+    """
+    assert 0 == process_detectors_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
+
+
+def test_voltage_monitors(arc_chip_dut, asic_id):
+    """
+    Validates that the voltage monitor messages work and relay responses within reasonable bounds
+
+    The message tested is READ_VM.
+    The expectation is that the voltage returned is between 0 and 1.
+    """
+    assert 0 == voltage_monitors_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
+
+
+def test_pvt_comprehensive(arc_chip_dut, asic_id):
+    """
+    Validates that the PVT messages work and relay responses within reasonable bounds
+
+    The messages tested are READ_TS, READ_PD, and READ_VM.
+    The expectation is that the SMC response to these messages is 0.
+    """
+    assert 0 == pvt_comprehensive_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
