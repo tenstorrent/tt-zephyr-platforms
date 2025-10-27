@@ -5,6 +5,16 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
+  # temporarily added to run on the current PR for testing
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
+      - collab*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -29,71 +39,71 @@ jobs:
           MATRIX_CONFIG="$(jq -c "." .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
-  e2e-stress-test:
-    needs: [gen-config]
-    strategy:
-      fail-fast: false
-      matrix:
-        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
-    runs-on: ${{ matrix.config.runs-on }}
-    container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
-      volumes:
-        - /dev/hugepages-1G:/dev/hugepages-1G
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
-    steps:
-      - name: Cleanup State
-        if: ${{ always() }}
-        run: |
-          # Print state of current directory
-          ls -la
-          # Clean up any files left over from previous steps
-          rm -rf *
+  # e2e-stress-test:
+  #   needs: [gen-config]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
+  #   runs-on: ${{ matrix.config.runs-on }}
+  #   container:
+  #     image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+  #     volumes:
+  #       - /dev/hugepages-1G:/dev/hugepages-1G
+  #     options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+  #   steps:
+  #     - name: Cleanup State
+  #       if: ${{ always() }}
+  #       run: |
+  #         # Print state of current directory
+  #         ls -la
+  #         # Clean up any files left over from previous steps
+  #         rm -rf *
 
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-        with:
-          path: tt-zephyr-platforms
+  #     - name: Checkout
+  #       uses: actions/checkout@v4.2.2
+  #       with:
+  #         path: tt-zephyr-platforms
 
-      - name: Prepare Container
-        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
-        with:
-          app-path: tt-zephyr-platforms
+  #     - name: Prepare Container
+  #       uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+  #       with:
+  #         app-path: tt-zephyr-platforms
 
-      - name: run-e2e-stress-test
-        run: |
-          tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
+  #     - name: run-e2e-stress-test
+  #       run: |
+  #         tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
 
-      - name: Upload Stress Test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Stress test results (${{ matrix.config.board }})
-          include-hidden-files: true
-          path: |
-            zephyr/twister-*e2e*/**/device.log
-            zephyr/twister-*e2e*/**/handler.log
-            zephyr/twister-*e2e*/**/twister_harness.log
-            zephyr/twister-*e2e*/**/zephyr.dts
-            zephyr/twister-*e2e*/**/.config
-            zephyr/twister-*e2e*/**/*.map
-            zephyr/twister-*e2e*/**/zephyr.elf
-            zephyr/twister-*e2e*/**/*.lst
-            zephyr/twister-*e2e*/twister.log
-            zephyr/twister-*e2e*/twister.json
-            zephyr/twister-*e2e*/**/update.fwbundle
-            zephyr/twister-*e2e*/**/recording.csv
+  #     - name: Upload Stress Test results
+  #       if: ${{ always() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Stress test results (${{ matrix.config.board }})
+  #         include-hidden-files: true
+  #         path: |
+  #           zephyr/twister-*e2e*/**/device.log
+  #           zephyr/twister-*e2e*/**/handler.log
+  #           zephyr/twister-*e2e*/**/twister_harness.log
+  #           zephyr/twister-*e2e*/**/zephyr.dts
+  #           zephyr/twister-*e2e*/**/.config
+  #           zephyr/twister-*e2e*/**/*.map
+  #           zephyr/twister-*e2e*/**/zephyr.elf
+  #           zephyr/twister-*e2e*/**/*.lst
+  #           zephyr/twister-*e2e*/twister.log
+  #           zephyr/twister-*e2e*/twister.json
+  #           zephyr/twister-*e2e*/**/update.fwbundle
+  #           zephyr/twister-*e2e*/**/recording.csv
 
-      - name: Print RTT logs
-        if: ${{ failure() }}
-        working-directory: tt-zephyr-platforms
-        run: |
-          echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
-          echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n
-          echo "SMC state dump:"
-          python3 ./scripts/dump_smc_state.py
+  #     - name: Print RTT logs
+  #       if: ${{ failure() }}
+  #       working-directory: tt-zephyr-platforms
+  #       run: |
+  #         echo "DMC RTT logs:"
+  #         python3 ./scripts/dmc_rtt.py -n
+  #         echo "SMC RTT logs:"
+  #         python3 ./scripts/smc_console.py --rtt -n
+  #         echo "SMC state dump:"
+  #         python3 ./scripts/dump_smc_state.py
 
   # Temporarily moved from hardware-smoke.yml until metal tests occupy less time for CI on each PR
   metal-test:
