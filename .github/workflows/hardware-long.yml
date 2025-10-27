@@ -15,26 +15,20 @@ jobs:
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
-
-  gen-ci-boards:
-    runs-on: ubuntu-24.04
-    outputs:
-      ci-boards: ${{ steps.gen-ci-boards.outputs.ci_boards }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: gen-ci-boards
-        shell: bash
-        run: |
-          CI_BOARDS="$(jq -r -c ".[].board" .github/ci_boards.json)"
-          CI_BOARDS="${CI_BOARDS//$'\n'/ }" # Remove embedded newlines
-          echo "ci_boards=$CI_BOARDS" | tee -a $GITHUB_OUTPUT
-
   e2e-stress-test:
-    needs: [gen-ci-boards]
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-ci-boards.outputs.ci-boards) }}
+        config:
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+          - board: p300a
+            runs-on:
+              - p300a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -97,11 +91,23 @@ jobs:
 
   # Temporarily moved from hardware-smoke.yml until metal tests occupy less time for CI on each PR
   metal-test:
-    needs: [gen-ci-boards, build-fw-artifact]
+    needs: build-fw-artifact
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-ci-boards.outputs.ci-boards) }}
+        config:
+          - board: p300a
+            runs-on:
+              - p300a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.62.0-dev20251015-5-g0cf6eeb32e
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251015-5-g0cf6eeb32e
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251012-1-gf7e5cb3d10
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ${{ matrix.config.metal-image }}
