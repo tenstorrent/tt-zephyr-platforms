@@ -96,6 +96,16 @@ float GetVcoreCurrent(void)
 	return ConvertLinear11ToFloat(iout);
 }
 
+float GetVcoreCurrentDump(void)
+{ //add a loop here
+	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
+	uint16_t iout;
+
+	I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
+		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
+	return ConvertLinear11ToFloat(iout);
+}
+
 /* The function returns the core power in W. */
 float GetVcorePower(void)
 {
@@ -369,9 +379,26 @@ static uint8_t switch_vout_control_handler(const union request *request, struct 
 	return 0;
 }
 
+static uint8_t get_vcore_current_dump_handler(const union request *request, struct response *response)
+{
+	uint32_t slave_addr = request->data[1];
+
+	switch (slave_addr) {
+	case P0V8_VCORE_ADDR:
+		response->data[1] = get_vcore();
+		return 0;
+	case P0V8_VCOREM_ADDR:
+		response->data[1] = get_vcorem();
+		return 0;
+	default:
+		return 1;
+	}
+}
+
 REGISTER_MESSAGE(TT_SMC_MSG_SET_VOLTAGE, set_voltage_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_GET_VOLTAGE, get_voltage_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_SWITCH_VOUT_CONTROL, switch_vout_control_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_GET_CURRENT_DUMP, get_vcore_current_dump_handler);
 
 static int regulator_init(void)
 {
