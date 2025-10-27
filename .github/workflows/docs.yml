@@ -16,24 +16,10 @@ env:
   DOXYGEN_VERSION: 1.14.0
 
 jobs:
-  gen-ci-boards:
-    runs-on: ubuntu-24.04
-    outputs:
-      ci-boards: ${{ steps.gen-ci-boards.outputs.ci_boards }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: gen-ci-boards
-        shell: bash
-        run: |
-          CI_BOARDS="$(jq -r -c ".[].board" .github/ci_boards.json)"
-          CI_BOARDS="${CI_BOARDS//$'\n'/ }" # Remove embedded newlines
-          echo "ci_boards=$CI_BOARDS" | tee -a $GITHUB_OUTPUT
-
   ci-stats:
-    needs: gen-ci-boards
     strategy:
       matrix:
-        board: ${{ fromJson(needs.gen-ci-boards.outputs.ci-boards) }}
+        board: [p100a, p150a, p300a]
     runs-on: ubuntu-22.04
     permissions:
       actions: read
@@ -166,7 +152,7 @@ jobs:
 
   build:
     runs-on: ubuntu-22.04
-    needs: [ci-stats, gen-ci-boards]
+    needs: ci-stats
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -228,9 +214,7 @@ jobs:
 
       - name: Copy CI Results
         run: |
-          CI_BOARD_REVS=(${{ needs.gen-ci-boards.outputs.ci-boards }})
-
-          for board in ${CI_BOARD_REVS[@]}; do
+          for board in p100a p150a p300a; do
             cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
               tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
           done

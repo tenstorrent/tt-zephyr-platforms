@@ -21,25 +21,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  gen-ci-boards:
-    runs-on: ubuntu-24.04
-    outputs:
-      ci-boards: ${{ steps.gen-ci-boards.outputs.ci_boards }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: gen-ci-boards
-        shell: bash
-        run: |
-          CI_BOARDS="$(jq -r -c ".[].board" .github/ci_boards.json)"
-          CI_BOARDS="${CI_BOARDS//$'\n'/ }" # Remove embedded newlines
-          echo "ci_boards=$CI_BOARDS" | tee -a $GITHUB_OUTPUT
-
   hardware-smoke-test:
-    needs: [gen-ci-boards]
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-ci-boards.outputs.ci-boards) }}
+        config:
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+          - board: p300a
+            runs-on:
+              - p300a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -127,11 +122,19 @@ jobs:
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-test:
-    needs: [gen-ci-boards]
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-ci-boards.outputs.ci-boards) }}
+        config:
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+          - board: p300a
+            runs-on:
+              - p300a-jtag
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
