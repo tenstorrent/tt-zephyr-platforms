@@ -1,0 +1,78 @@
+name: Hardware Long Tests
+
+# Run long tests once nightly, at 00:00
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build-fw-artifact:
+    uses: ./.github/workflows/build-fw.yml
+    secrets:
+      SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
+
+  metal-test:
+    needs: build-fw-artifact
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - board: p300a
+            runs-on:
+              - p300a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.62.0-dev20251015-5-g0cf6eeb32e
+          - board: p100a
+            runs-on:
+              - p100a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251015-5-g0cf6eeb32e
+          - board: p150a
+            runs-on:
+              - p150a-jtag
+            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251012-1-gf7e5cb3d10
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ${{ matrix.config.metal-image }}
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /dev/hugepages:/dev/hugepages
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    env:
+      ARCH_NAME: blackhole
+      HOME: /home/user/tt-metal
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.HOME }}
+    steps:
+      - id: mkdir-home-user-tt-metal
+        run: |
+          mkdir -p $HOME
+      - name: Download the latest firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
+          path: ${{ env.HOME }}
+      - name: Run the rescan-pcie.sh script
+        run: |
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/rescan-pcie.sh
+          source /tmp/rescan-pcie.sh
+      - name: Flash the firmware
+        run: |
+          mkdir -p $HOME/.cargo $HOME/.cache
+          python -m venv .env
+          source .env/bin/activate
+          pip install git+https://github.com/tenstorrent/tt-flash.git@v3.4.2
+          tt-flash --fw-tar $HOME/fw_pack-*.fwbundle --force
+      - name: Run Container Test
+        run: |
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+      - name: cleanup
+        if: ${{ always() }}
+        run: |
+          # Clean out metal
+          rm -f $HOME/fw_pack-*.fwbundle
