@@ -99,7 +99,7 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 	# leave the DMC flash in a different state than other tests expect
 	# We erase the DMC flash first to ensure no old image fragments remain
 	west build -p always -b $DMC_BOARD $TT_Z_P_ROOT/app/dmc -d $ZEPHYR_BASE/build-dmc \
-		--sysbuild -DCONFIG_TT_FWUPDATE=n
+		--sysbuild
 	west flash -d $ZEPHYR_BASE/build-dmc --domain mcuboot --erase \
 		--cmd-erase 'flash erase_sector 0 0 last'
 	west flash -d $ZEPHYR_BASE/build-dmc --domain dmc
