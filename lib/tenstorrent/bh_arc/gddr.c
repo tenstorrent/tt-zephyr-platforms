@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "arc_dma.h"
 #include "gddr.h"
 #include "harvesting.h"
 #include "init.h"
@@ -27,10 +26,12 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/dma.h>
 #include <zephyr/drivers/dma/dma_tt_bh_noc.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
+static const struct device *arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -104,10 +105,9 @@ static void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
 {
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	bool dma_pass = ArcDmaTransfer((const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-				       gddr_telemetry, sizeof(*gddr_telemetry));
-	if (!dma_pass) {
-		/* If DMA failed, can read 32b at a time via NOC2AXI */
+	if (dma_arc_hs_transfer(arc_dma_dev, 0,
+							(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
+							gddr_telemetry, sizeof(*gddr_telemetry)) < 0) {
 		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
 			((uint32_t *)gddr_telemetry)[i] =
 				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);

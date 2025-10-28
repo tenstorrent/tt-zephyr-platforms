@@ -124,16 +124,6 @@ static void dma_arc_hs_init_channel_hw(uint32_t dma_ch, uint32_t base, uint32_t 
 	z_arc_v2_aux_reg_write(DMA_S_STATC_AUX(dma_ch), 0x1); /* Enable dma_ch */
 }
 
-static void dma_arc_hs_start_hw(uint32_t dma_ch, const void *p_src, void *p_dst, uint32_t len,
-				uint32_t attr)
-{
-	z_arc_v2_aux_reg_write(DMA_C_CHAN_AUX, dma_ch);
-	z_arc_v2_aux_reg_write(DMA_C_SRC_AUX, (uint32_t)p_src);
-	z_arc_v2_aux_reg_write(DMA_C_DST_AUX, (uint32_t)p_dst);
-	z_arc_v2_aux_reg_write(DMA_C_ATTR_AUX, attr);
-	z_arc_v2_aux_reg_write(DMA_C_LEN_AUX, len);
-}
-
 /* Queue a transfer on the currently selected channel (for multi-block) */
 static void dma_arc_hs_next_hw(const void *p_src, void *p_dst, uint32_t len, uint32_t attr)
 {
@@ -142,6 +132,13 @@ static void dma_arc_hs_next_hw(const void *p_src, void *p_dst, uint32_t len, uin
 	z_arc_v2_aux_reg_write(DMA_C_DST_AUX, (uint32_t)p_dst);
 	z_arc_v2_aux_reg_write(DMA_C_ATTR_AUX, attr);
 	z_arc_v2_aux_reg_write(DMA_C_LEN_AUX, len);
+}
+
+static void dma_arc_hs_start_hw(uint32_t dma_ch, const void *p_src, void *p_dst, uint32_t len,
+				uint32_t attr)
+{
+	z_arc_v2_aux_reg_write(DMA_C_CHAN_AUX, dma_ch);
+	dma_arc_hs_next_hw(p_src, p_dst, len, attr);
 }
 
 static uint32_t dma_arc_hs_get_handle_hw(void)
@@ -932,6 +929,59 @@ static const struct dma_driver_api dma_arc_hs_api = {
 	.chan_release = dma_arc_hs_chan_release,
 	.get_attribute = dma_arc_hs_get_attribute,
 };
+
+int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
+			size_t len)
+{
+	struct dma_config cfg = {0};
+	struct dma_block_config blk = {0};
+	struct dma_status stat;
+	int rc;
+
+	if (!device_is_ready(dev)) {
+		LOG_ERR("DMA device not ready");
+		return -ENODEV;
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	if (((uintptr_t)src & 3) || ((uintptr_t)dst & 3)) {
+		LOG_ERR("src/dst not 4-byte aligned");
+		return -EINVAL;
+	}
+
+	if (channel >= ((const struct arc_dma_config *)dev->config)->channels) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
+	}
+
+	blk.source_address = (dma_addr_t)(uintptr_t)src;
+	blk.dest_address = (dma_addr_t)(uintptr_t)dst;
+	blk.block_size = len;
+
+	cfg.channel_direction = MEMORY_TO_MEMORY;
+	cfg.head_block = &blk;
+	cfg.block_count = 1;
+
+	rc = dma_config(dev, channel, &cfg);
+	if (rc < 0) {
+		return rc;
+	}
+
+	rc = dma_start(dev, channel);
+	if (rc < 0) {
+		return rc;
+	}
+
+	while (dma_get_status(dev, channel, &stat) == 0 && stat.busy) {
+		k_msleep(1);
+	}
+
+	dma_stop(dev, channel);
+	return 0;
+}
 
 static int dma_arc_hs_init(const struct device *dev)
 {

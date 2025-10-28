@@ -24,6 +24,7 @@
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/drivers/dma.h>
 #include <zephyr/drivers/dma/dma_tt_bh_noc.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -48,6 +49,7 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
+static const struct device *arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 typedef struct {
 	uint32_t sd_mode_sel_0: 1;
@@ -283,9 +285,8 @@ int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *buf, uint32_t eth_en
 	SetupEthTlb(eth_inst, ring, ETH_PARAM_ADDR);
 	volatile uint32_t *eth_tlb = GetTlbWindowAddr(ring, ETH_SETUP_TLB, ETH_PARAM_ADDR);
 
-	bool dma_pass = ArcDmaTransfer(buf, (void *)eth_tlb, image_size);
-
-	if (!dma_pass) {
+	if (dma_arc_hs_transfer(arc_dma_dev, 0, buf, (void *)eth_tlb, image_size) < 0) {
+		LOG_ERR("DMA transfer failed");
 		return -1;
 	}
 

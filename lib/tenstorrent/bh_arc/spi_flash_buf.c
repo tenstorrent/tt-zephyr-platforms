@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "arc_dma.h"
-
 #include <stdlib.h>
 
 #include <tenstorrent/spi_flash_buf.h>
@@ -13,8 +11,11 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 LOG_MODULE_REGISTER(spi_flash_buf, CONFIG_TT_APP_LOG_LEVEL);
+
+static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 int spi_transfer_by_parts(const struct device *dev, size_t spi_address, size_t image_size,
 			  uint8_t *buf, size_t buf_size, uint8_t *tlb_dst,
@@ -49,8 +50,8 @@ int spi_transfer_by_parts(const struct device *dev, size_t spi_address, size_t i
 
 static int arc_dma_transfer_wrapper(uint8_t *src, uint8_t *dst, size_t len)
 {
-	if (!ArcDmaTransfer(src, dst, len)) {
-		LOG_ERR("%s() failed: %d", "ArcDmaTransfer", -EIO);
+	if (dma_arc_hs_transfer(arc_dma_dev, 0, src, dst, len) < 0) {
+		LOG_ERR("%s() failed: %d", "dma_arc_hs_transfer", -EIO);
 		return -EIO;
 	}
 	return 0;
