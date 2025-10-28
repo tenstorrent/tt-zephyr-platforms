@@ -14,10 +14,5 @@ common:
 tests:
   sample.app:
     extra_configs:
-      - CONFIG_TT_FWUPDATE=n
       - CONFIG_DMC_RUN_SMBUS_TESTS=y
     tags: e2e
-  sample.app.fwupdate:
-    extra_configs:
-      - CONFIG_DMC_RUN_SMBUS_TESTS=y
-    tags: e2e-flash
