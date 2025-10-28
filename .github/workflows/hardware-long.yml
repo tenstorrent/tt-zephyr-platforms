@@ -5,6 +5,16 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
+  # temporarily added to run on the current PR for testing
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
+      - collab*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -15,99 +25,93 @@ jobs:
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
-  e2e-stress-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - board: p100a
-            runs-on:
-              - p100a-jtag
-          - board: p150a
-            runs-on:
-              - p150a-jtag
-          - board: p300a
-            runs-on:
-              - p300a-jtag
-    runs-on: ${{ matrix.config.runs-on }}
-    container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
-      volumes:
-        - /dev/hugepages-1G:/dev/hugepages-1G
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+
+  gen-config:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
     steps:
-      - name: Cleanup State
-        if: ${{ always() }}
+      - uses: actions/checkout@v4
+      - id: gen-config
+        shell: bash
         run: |
-          # Print state of current directory
-          ls -la
-          # Clean up any files left over from previous steps
-          rm -rf *
+          # Output the entire compact JSON matrix config on one line
+          MATRIX_CONFIG="$(jq -c "." .github/ci_boards.json)"
+          echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-        with:
-          path: tt-zephyr-platforms
+  # e2e-stress-test:
+  #   needs: [gen-config]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
+  #   runs-on: ${{ matrix.config.runs-on }}
+  #   container:
+  #     image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+  #     volumes:
+  #       - /dev/hugepages-1G:/dev/hugepages-1G
+  #     options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+  #   steps:
+  #     - name: Cleanup State
+  #       if: ${{ always() }}
+  #       run: |
+  #         # Print state of current directory
+  #         ls -la
+  #         # Clean up any files left over from previous steps
+  #         rm -rf *
 
-      - name: Prepare Container
-        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
-        with:
-          app-path: tt-zephyr-platforms
+  #     - name: Checkout
+  #       uses: actions/checkout@v4.2.2
+  #       with:
+  #         path: tt-zephyr-platforms
 
-      - name: run-e2e-stress-test
-        run: |
-          tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
+  #     - name: Prepare Container
+  #       uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+  #       with:
+  #         app-path: tt-zephyr-platforms
 
-      - name: Upload Stress Test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Stress test results (${{ matrix.config.board }})
-          include-hidden-files: true
-          path: |
-            zephyr/twister-*e2e*/**/device.log
-            zephyr/twister-*e2e*/**/handler.log
-            zephyr/twister-*e2e*/**/twister_harness.log
-            zephyr/twister-*e2e*/**/zephyr.dts
-            zephyr/twister-*e2e*/**/.config
-            zephyr/twister-*e2e*/**/*.map
-            zephyr/twister-*e2e*/**/zephyr.elf
-            zephyr/twister-*e2e*/**/*.lst
-            zephyr/twister-*e2e*/twister.log
-            zephyr/twister-*e2e*/twister.json
-            zephyr/twister-*e2e*/**/update.fwbundle
-            zephyr/twister-*e2e*/**/recording.csv
+  #     - name: run-e2e-stress-test
+  #       run: |
+  #         tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
 
-      - name: Print RTT logs
-        if: ${{ failure() }}
-        working-directory: tt-zephyr-platforms
-        run: |
-          echo "DMC RTT logs:"
-          python3 ./scripts/dmc_rtt.py -n
-          echo "SMC RTT logs:"
-          python3 ./scripts/smc_console.py --rtt -n
-          echo "SMC state dump:"
-          python3 ./scripts/dump_smc_state.py
+  #     - name: Upload Stress Test results
+  #       if: ${{ always() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Stress test results (${{ matrix.config.board }})
+  #         include-hidden-files: true
+  #         path: |
+  #           zephyr/twister-*e2e*/**/device.log
+  #           zephyr/twister-*e2e*/**/handler.log
+  #           zephyr/twister-*e2e*/**/twister_harness.log
+  #           zephyr/twister-*e2e*/**/zephyr.dts
+  #           zephyr/twister-*e2e*/**/.config
+  #           zephyr/twister-*e2e*/**/*.map
+  #           zephyr/twister-*e2e*/**/zephyr.elf
+  #           zephyr/twister-*e2e*/**/*.lst
+  #           zephyr/twister-*e2e*/twister.log
+  #           zephyr/twister-*e2e*/twister.json
+  #           zephyr/twister-*e2e*/**/update.fwbundle
+  #           zephyr/twister-*e2e*/**/recording.csv
+
+  #     - name: Print RTT logs
+  #       if: ${{ failure() }}
+  #       working-directory: tt-zephyr-platforms
+  #       run: |
+  #         echo "DMC RTT logs:"
+  #         python3 ./scripts/dmc_rtt.py -n
+  #         echo "SMC RTT logs:"
+  #         python3 ./scripts/smc_console.py --rtt -n
+  #         echo "SMC state dump:"
+  #         python3 ./scripts/dump_smc_state.py
 
   # Temporarily moved from hardware-smoke.yml until metal tests occupy less time for CI on each PR
   metal-test:
-    needs: build-fw-artifact
+    needs: [gen-config, build-fw-artifact]
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - board: p300a
-            runs-on:
-              - p300a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.62.0-dev20251015-5-g0cf6eeb32e
-          - board: p100a
-            runs-on:
-              - p100a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251015-5-g0cf6eeb32e
-          - board: p150a
-            runs-on:
-              - p150a-jtag
-            metal-image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251012-1-gf7e5cb3d10
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ${{ matrix.config.metal-image }}
@@ -118,30 +122,35 @@ jobs:
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
+      BUNDLE_PATH: /tmp
     defaults:
       run:
         shell: bash
         working-directory: ${{ env.HOME }}
     steps:
-      - id: mkdir-home-user-tt-metal
-        run: |
-          mkdir -p $HOME
       - name: Download the latest firmware bundle
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
-          path: ${{ env.HOME }}
+          path: ${{ env.BUNDLE_PATH }}
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/rescan-pcie.sh
           source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |
-          mkdir -p $HOME/.cargo $HOME/.cache
+          if [ ! -d "$HOME/.cargo" ]; then
+            echo "Creating $HOME/.cargo directory"
+            mkdir -p $HOME/.cargo || true
+          fi
+          if [ ! -d "$HOME/.cache" ]; then
+            echo "Creating $HOME/.cache directory"
+            mkdir -p $HOME/.cache || true
+          fi
           python -m venv .env
           source .env/bin/activate
           pip install git+https://github.com/tenstorrent/tt-flash.git@v3.4.2
-          tt-flash --fw-tar $HOME/fw_pack-*.fwbundle --force
+          tt-flash --fw-tar ${{ env.BUNDLE_PATH }}/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
           sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
@@ -149,4 +158,4 @@ jobs:
         if: ${{ always() }}
         run: |
           # Clean out metal
-          rm -f $HOME/fw_pack-*.fwbundle
+          rm -f ${{ env.BUNDLE_PATH }}/fw_pack-*.fwbundle
