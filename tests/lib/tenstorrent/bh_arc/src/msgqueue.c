@@ -198,12 +198,20 @@ ZTEST(msgqueue, test_msg_type_debug_noc_translation)
 		      | (0U << 10U)                                 /*PCIE instance override*/
 		      | (0b1001U << 16U)                            /*Bad tensix columns 0 and 3*/
 		;
-	req.data[1] = (8U << 0U)/* Bad GDDR 3 */| (0b1010U << 8U) /*skip eth 1 and 3*/;
+	req.data[1] = (8U << 0U)/* Bad GDDR 8 */| (0b1010U << 8U) /*skip eth 1 and 3*/;
 	msgqueue_request_push(0, &req);
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
 
-	zassert_equal(rsp.data[0], 0);
+	zassert_equal(rsp.data[0], 234); /* uin8_t EINVAL -> GDDR out of range*/
+
+	req.data[1] = (0xFFU << 0U)/* NO_BAD_GDDR */| (0b1010U << 8U) /*skip eth 1 and 3*/;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0); /*OK*/
 }
 
 static void test_setup(void *ctx)
