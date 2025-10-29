@@ -15,7 +15,7 @@
 #include "reg_mock.h"
 
 /* Custom fake for ReadReg to simulate timer progression */
-#define RESET_UNIT_REFCLK_CNT_LO_REG_ADDR 0x800300E0
+#define RESET_UNIT_REFCLK_CNT_LO_REG_ADDR         0x800300E0
 #define PLL_CNTL_WRAPPER_CLOCK_WAVE_CNTL_REG_ADDR 0x80020038
 static uint32_t timer_counter;
 static uint8_t i2c_read_buf_emul[256] = {0};
@@ -206,8 +206,7 @@ ZTEST(msgqueue, test_msg_type_debug_noc_translation)
 
 	zassert_equal(rsp.data[0], 234); /* uin8_t EINVAL -> GDDR out of range*/
 
-	req.data[1] =
-		NO_BAD_GDDR | ((BIT(1) | BIT(3)) << 8U) /*skip eth 1 and 3*/;
+	req.data[1] = NO_BAD_GDDR | ((BIT(1) | BIT(3)) << 8U) /*skip eth 1 and 3*/;
 
 	msgqueue_request_push(0, &req);
 	process_message_queues();
