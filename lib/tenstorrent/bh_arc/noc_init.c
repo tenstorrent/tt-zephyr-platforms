@@ -10,6 +10,7 @@
 #include "noc2axi.h"
 #include "reg.h"
 #include "telemetry.h"
+#include "gddr.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -695,6 +696,9 @@ static uint8_t debug_noc_translation_handler(const union request *req, struct re
 	uint16_t skip_eth = req->debug_noc_translation.skip_eth_low |
 			    ((uint16_t)req->debug_noc_translation.skip_eth_hi << 8U);
 
+	if (bad_gddr >= NUM_GDDR  && bad_gddr != NO_BAD_GDDR) {
+		return -EINVAL;
+	}
 	ClearNocTranslation();
 
 	ProgramBroadcastExclusion(bad_tensix_cols);
