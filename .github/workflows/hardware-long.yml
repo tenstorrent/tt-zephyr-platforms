@@ -2,6 +2,9 @@ name: Hardware Long Tests
 
 # Run long tests once nightly, at 00:00
 on:
+  pull_request:
+    types:
+      - labeled
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
@@ -11,12 +14,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  long-test-check:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name == 'schedule' ||  github.event.label.name == 'long-tests' }}
+    steps:
+      - name: Long Test Check
+        run: |
+          echo "Long tests are required."
+
   build-fw-artifact:
+    needs: long-test-check
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
   gen-config:
+    needs: long-test-check
     runs-on: ubuntu-24.04
     outputs:
       matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
