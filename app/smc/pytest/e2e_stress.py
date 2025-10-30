@@ -283,7 +283,10 @@ def test_process_detectors(arc_chip_dut, asic_id):
     fail_count = 0
 
     for _ in range(total_tries):
-        fail_count += process_detectors_test(arc_chip_dut, asic_id)
+        fc = process_detectors_test(arc_chip_dut, asic_id)
+        if fc > 0:
+            logger.error(f"Failed in iteration {_}")
+        fail_count += fc
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
@@ -295,7 +298,10 @@ def test_voltage_monitors(arc_chip_dut, asic_id):
     fail_count = 0
 
     for _ in range(total_tries):
-        fail_count += voltage_monitors_test(arc_chip_dut, asic_id)
+        fc = voltage_monitors_test(arc_chip_dut, asic_id)
+        if fc > 0:
+            logger.error(f"Failed in iteration {_}")
+        fail_count += fc
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
@@ -307,7 +313,10 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     fail_count = 0
 
     for _ in range(total_tries):
-        fail_count += pvt_comprehensive_test(arc_chip_dut, asic_id)
+        fc = pvt_comprehensive_test(arc_chip_dut, asic_id)
+        if fc > 0:
+            logger.error(f"Failed in iteration {_}")
+        fail_count += fc
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
