@@ -377,7 +377,9 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
 def test_power_virus(arc_chip_dut, asic_id):
     """
     - Run the power virus TTX workload (tt-burnin) for 180 seconds
-    - Verify TMON temperatures are within expected range while workload is running
+    - The expectations are:
+    -       TMON temperatures can be fetched from the device successfully
+    -       The tt-burnin command completes
     """
     arc_chip = pyluwen.detect_chips()[asic_id]
 
