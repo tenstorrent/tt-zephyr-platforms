@@ -23,6 +23,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_tt_bh_noc.h>
 
 LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
@@ -46,6 +48,7 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+static const struct device *dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
 
 typedef struct {
 	uint32_t sd_mode_sel_0: 1;
@@ -360,12 +363,37 @@ static void wipe_l1(void)
 
 	GetEnabledTensix(&tensix_x, &tensix_y);
 
+	struct tt_bh_dma_noc_coords coords =
+		tt_bh_dma_noc_coords_init(tensix_x, tensix_y, 0, 0);
+
+	struct dma_block_config block = {
+		.source_address = addr,
+		.dest_address = addr,
+		.block_size = ERISC_L1_SIZE,
+	};
+
+	struct dma_config config = {
+		.channel_direction = PERIPHERAL_TO_MEMORY,
+		.source_data_size = 1,
+		.dest_data_size = 1,
+		.source_burst_length = 1,
+		.dest_burst_length = 1,
+		.block_count = 1,
+		.head_block = &block,
+		.user_data = &coords,
+	};
+
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
 		if (tile_enable.eth_enabled & BIT(eth_inst)) {
 			uint8_t x, y;
 
 			GetEthNocCoords(eth_inst, noc_id, &x, &y);
-			noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, ERISC_L1_SIZE, true);
+
+			coords.dest_x = x;
+			coords.dest_y = y;
+
+			dma_config(dma_noc, 1, &config);
+			dma_start(dma_noc, 1);
 		}
 	}
 }
