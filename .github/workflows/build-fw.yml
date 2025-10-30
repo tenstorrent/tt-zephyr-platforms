@@ -41,11 +41,6 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
-    needs: genboards
-    strategy:
-      fail-fast: false
-      matrix:
-        board: ${{ fromJson(needs.genboards.outputs.boards) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,13 +48,6 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
-
-      - name: Generate BOARD
-        working-directory: tt-zephyr-platforms
-        shell: bash
-        run: |
-          BOARD="$(./scripts/rev2board.sh "${{ matrix.board }}")"
-          echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
 
       - shell: bash
         run: |
@@ -71,42 +59,80 @@ jobs:
           fi
 
       - name: Build firmware bundle
+        id: build-fw-bundles
         shell: bash
+        working-directory: tt-zephyr-platforms
         run: |
-          if [ "$BOARD" = "" ]; then
-            echo "BOARD is not set"
-            exit 1
-          fi
+          BOARDS="$(jq -r -c '.[]' .github/boards.json)"
+          BOARDS="${BOARDS//$'\n'/ }" # Remove embedded newlines
+          BOARDS=($BOARDS) # create a bash array
 
-          EXTRA_ARGS="--"
-          EXTRA_ARGS+=" -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y"
-          if [ -n "$SIGNATURE_KEY_FILE" ]; then
-            EXTRA_ARGS+=" -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\""
-          fi
+          for matrix_board in ${BOARDS[@]}; do
+            BOARD="$(./scripts/rev2board.sh "$matrix_board")"
+            echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
 
-          west build \
-            -d build-${{ matrix.board }} \
-            --sysbuild \
-            -p \
-            -b $BOARD \
-            tt-zephyr-platforms/app/smc \
-            $EXTRA_ARGS
-
-      - name: Verify firmware signature
-        shell: bash
-        run: |
-          if [ -z "$SIGNATURE_KEY_FILE" ]; then
-            echo "SIGNATURE_KEY_FILE is not set, skipping signature verification"
-          else
-            # verify that built images for smc and dmc fw are signed
-            # imgtool returns a non-zero exit code if the image is not signed
-            if [ "${{ matrix.board }}" != "galaxy" ]; then
-              imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/dmc/zephyr/zephyr.signed.bin
+            EXTRA_ARGS="--"
+            EXTRA_ARGS+=" -DCONFIG_COMPILER_WARNINGS_AS_ERRORS=y"
+            if [ -n "$SIGNATURE_KEY_FILE" ]; then
+              EXTRA_ARGS+=" -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$SIGNATURE_KEY_FILE\""
             fi
-            imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/recovery/zephyr/zephyr.signed.bin
-            imgtool verify --key "$SIGNATURE_KEY_FILE" build-${{ matrix.board }}/smc/zephyr/zephyr.signed.bin
-          fi
 
+            west build \
+              -d build-$matrix_board \
+              --sysbuild \
+              -p \
+              -b $BOARD \
+              app/smc \
+              $EXTRA_ARGS
+
+            if [ -z "$SIGNATURE_KEY_FILE" ]; then
+              echo "SIGNATURE_KEY_FILE is not set, skipping signature verification for $matrix_board"
+            else
+              echo "verifying signatures for $matrix_board .."
+              # verify that built images for smc and dmc fw are signed
+              # imgtool returns a non-zero exit code if the image is not signed
+              if [ "$matrix_board" != "galaxy" ]; then
+                echo "verifying signatures for $matrix_board/dmc"
+                imgtool verify --key "$SIGNATURE_KEY_FILE" build-$matrix_board/dmc/zephyr/zephyr.signed.bin
+              fi
+              echo "verifying signatures for $matrix_board/recovery"
+              imgtool verify --key "$SIGNATURE_KEY_FILE" build-$matrix_board/recovery/zephyr/zephyr.signed.bin
+              echo "verifying signatures for $matrix_board/smc"
+              imgtool verify --key "$SIGNATURE_KEY_FILE" build-$matrix_board/smc/zephyr/zephyr.signed.bin
+            fi
+          done
+
+      - name: Upload all firmware assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-all
+          path: |
+            build-*/update.fwbundle
+            build-*/**/.config
+            build-*/**/devicetree_generated.h
+            build-*/**/zephyr.bin
+            build-*/**/zephyr.dts
+            build-*/**/zephyr.elf
+            build-*/**/zephyr.hex
+            build-*/**/zephyr.map
+            build-*/**/zephyr.signed.bin
+            build-*/**/zephyr.signed.hex
+            build-*/**/zephyr.stat
+
+  upload-per-board:
+    runs-on: ubuntu-24.04
+    needs: [build, genboards]
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJson(needs.genboards.outputs.boards) }}
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-all
+          path: |
+            .
       - name: Upload firmware assets
         uses: actions/upload-artifact@v4
         with:
