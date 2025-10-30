@@ -9,7 +9,6 @@
 #include "harvesting.h"
 #include "init.h"
 #include "noc.h"
-#include "noc_dma.h"
 #include "noc_init.h"
 #include "noc2axi.h"
 #include "reg.h"
