@@ -386,6 +386,19 @@ def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched
     )
 
 
+def test_upgrade_from_19_00(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
+    upgrade_from_version_test(
+        arc_chip_dut,
+        tmp_path,
+        board_name,
+        unlaunched_dut,
+        "19.0.0",
+        (16 << 16),
+        (22 << 16),
+        replace_bootloader=True,
+    )
+
+
 def test_arc_msg(arc_chip_dut, asic_id):
     """
     Runs a smoke test to verify that the ARC firmware can receive ARC messages
