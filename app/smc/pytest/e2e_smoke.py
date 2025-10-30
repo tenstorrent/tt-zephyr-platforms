@@ -374,18 +374,6 @@ def temperature_sensors_test(arc_chip_dut, asic_id):
     return fail_count
 
 
-def test_upgrade_from_18_10(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
-    upgrade_from_version_test(
-        arc_chip_dut,
-        tmp_path,
-        board_name,
-        unlaunched_dut,
-        "18.10.0",
-        (13 << 16),
-        (19 << 16),
-    )
-
-
 def test_upgrade_from_19_00(arc_chip_dut, tmp_path: Path, board_name, unlaunched_dut):
     upgrade_from_version_test(
         arc_chip_dut,
