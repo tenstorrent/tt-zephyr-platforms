@@ -5,7 +5,6 @@
  */
 
 #include "noc2axi.h"
-#include "noc_dma.h"
 #include "noc_init.h"
 
 #include <stdint.h>
