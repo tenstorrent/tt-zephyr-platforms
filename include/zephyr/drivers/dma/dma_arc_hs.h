@@ -3,13 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#pragma once
 
 #include <zephyr/drivers/dma.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * @brief Blocking memory-to-memory transfer using ARC HS DMA
@@ -23,8 +18,4 @@ extern "C" {
  */
 
 int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
-                        size_t len);
-
-#ifdef __cplusplus
-}
-#endif
+						size_t len);

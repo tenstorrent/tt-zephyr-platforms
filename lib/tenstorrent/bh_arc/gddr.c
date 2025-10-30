@@ -106,8 +106,8 @@ int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_te
 {
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 	if (dma_arc_hs_transfer(arc_dma_dev, 0,
-							(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-							gddr_telemetry, sizeof(*gddr_telemetry)) < 0) {
+				(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
+				gddr_telemetry, sizeof(*gddr_telemetry)) < 0) {
 		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
 			((uint32_t *)gddr_telemetry)[i] =
 				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);

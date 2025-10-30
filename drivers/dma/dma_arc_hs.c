@@ -15,6 +15,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/arch/arc/v2/aux_regs.h>
 #include <zephyr/sys/__assert.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 #define DT_DRV_COMPAT snps_designware_dma_arc_hs
 
@@ -356,7 +357,7 @@ static int dma_arc_hs_stop(const struct device *dev, uint32_t channel)
 	}
 
 	if (!chan->active) {
-		LOG_WRN("Channel %u already stopped", channel);
+		LOG_DBG("Channel %u already stopped", channel);
 		k_spin_unlock(&data->lock, key);
 		return 0;
 	}
@@ -423,6 +424,13 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 
 	/* Lock hardware access for this channel */
 	hw_key = k_spin_lock(&chan->hw_lock);
+
+	/* Re-check active state after locking to prevent race with dma_stop */
+	if (!chan->active) {
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&data->lock, key);
+		return;
+	}
 
 	done_status = dma_arc_hs_get_done_hw(chan->handle);
 
@@ -560,6 +568,13 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 	if (chan->active) {
 		/* Lock hardware access for this channel */
 		hw_key = k_spin_lock(&chan->hw_lock);
+
+		/* Re-check active state after locking to prevent race with dma_stop */
+		if (!chan->active) {
+			k_spin_unlock(&chan->hw_lock, hw_key);
+			k_spin_unlock(&data->lock, key);
+			return 0;
+		}
 
 		done_status = dma_arc_hs_get_done_hw(chan->handle);
 		LOG_DBG("Channel %u status check: handle=%u, done_status=%u", channel, chan->handle,
