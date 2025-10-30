@@ -26,9 +26,12 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_tt_bh_noc.h>
 
 static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+static const struct device *dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0
@@ -283,6 +286,26 @@ static void wipe_l1(void)
 
 	GetEnabledTensix(&tensix_x, &tensix_y);
 
+	struct tt_bh_dma_noc_coords coords =
+		tt_bh_dma_noc_coords_init(tensix_x, tensix_y, 0, 0);
+
+	struct dma_block_config block = {
+		.source_address = addr,
+		.dest_address = addr,
+		.block_size = MRISC_L1_SIZE,
+	};
+
+	struct dma_config config = {
+		.channel_direction = PERIPHERAL_TO_MEMORY,
+		.source_data_size = 1,
+		.dest_data_size = 1,
+		.source_burst_length = 1,
+		.dest_burst_length = 1,
+		.block_count = 1,
+		.head_block = &block,
+		.user_data = &coords,
+	};
+
 	for (uint32_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
 			for (uint32_t noc2axi_port = 0; noc2axi_port < NUM_MRISC_NOC2AXI_PORT;
@@ -290,9 +313,13 @@ static void wipe_l1(void)
 				uint8_t x, y;
 
 				GetGddrNocCoords(gddr_inst, noc2axi_port, noc_id, &x, &y);
+
+				coords.dest_x = x;
+				coords.dest_y = y;
+
 				/* AXI enable must not be set, using MRISC address 0 */
-				noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, MRISC_L1_SIZE,
-					      true);
+				dma_config(dma_noc, 1, &config);
+				dma_start(dma_noc, 1);
 			}
 		}
 	}
