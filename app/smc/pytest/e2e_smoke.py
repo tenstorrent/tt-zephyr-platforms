@@ -38,9 +38,14 @@ except ImportError:
     class TwisterHarnessTimeoutException(Exception):
         pass
 
+    class DeviceConfig:
+        def __init__(self, fwbundle=None):
+            self.app_build_dir = Path(fwbundle).parent / "smc"
+
     class DeviceAdapter:
         def __init__(self, fwbundle=None):
             self.fwbundle = fwbundle
+            self.device_config = DeviceConfig(fwbundle)
 
         def launch(self):
             result = subprocess.run(
@@ -199,6 +204,7 @@ def upgrade_from_version_test(
     version,
     dmfw_version_base,
     cmfw_version_base,
+    replace_bootloader=False,
 ):
     if board_name is None:
         pytest.skip("Upgrade test requires --board set, skipping upgrade test")
@@ -248,6 +254,28 @@ def upgrade_from_version_test(
             f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}\n{result.stdout}"
         )
         assert False
+
+    if replace_bootloader:
+        # Newer firmware requires us to replace the production bootloader on the
+        # DMC with one that will accept a firmware signed using our temporary key
+        try:
+            subprocess.check_call(
+                [
+                    "west",
+                    "flash",
+                    "--skip-rebuild",
+                    "-d",
+                    str(
+                        unlaunched_dut.device_config.app_build_dir.parent
+                        / "mcuboot-bl2"
+                    ),
+                ]
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(f"west flash failed with error: {e}")
+            assert False
+        # Wait for the ARC chip to boot
+        wait_arc_boot(0, timeout=20)
 
     time.sleep(0.5)
     assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
