@@ -173,3 +173,13 @@ patches:
       and rejects all future transfers until cancellation is reversed.
 
       Implementations are included for STM32 I2C and SMBus.
+  - path: zephyr/drivers-i2c-i2c_dw-make-target-stop-callback-after-r.patch
+    sha256sum: f74129867892db21df4f328943ca8855f6fa5ca6a3780574fae6c730290dae8c
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-10-30
+    comments: |
+      Ensure that the I2C DesignWare target driver invokes the stop callback
+      after read operations complete. This ensures proper synchronization
+      for I2C target devices.
