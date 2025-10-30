@@ -188,3 +188,13 @@ patches:
       The module includes for our runners get overwritten whenever we load a new python
       runner file, leading to flaky behaviour when west tries to access our runners. This
       corrects the module load by placing each py file loaded in a different sys.module.
+  - path: zephyr/drivers-i2c-i2c_dw-make-target-stop-callback-after-r.patch
+    sha256sum: f74129867892db21df4f328943ca8855f6fa5ca6a3780574fae6c730290dae8c
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-10-30
+    comments: |
+      Ensure that the I2C DesignWare target driver invokes the stop callback
+      after read operations complete. This ensures proper synchronization
+      for I2C target devices.
