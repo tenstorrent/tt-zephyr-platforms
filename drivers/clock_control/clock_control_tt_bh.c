@@ -331,7 +331,7 @@ static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *
 	clock_control_tt_bh_config_vco(config, settings);
 
 	/* Power sequence requires PLLEN get asserted 1us after all inputs are stable. */
-	/* Wait 5x this time to be convervative */
+	/* Wait 5x this time to be conservative */
 	k_busy_wait(5);
 
 	/* Power up PLLs */
@@ -561,7 +561,7 @@ static int clock_control_tt_bh_init(const struct device *dev)
 	clock_control_tt_bh_config_vco(config, &config->init_settings);
 
 	/* Power sequence requires PLLEN get asserted 1us after all inputs are stable. */
-	/* Wait 5x this time to be convervative */
+	/* Wait 5x this time to be conservative */
 	k_busy_wait(5);
 
 	/* Power up PLLs */
