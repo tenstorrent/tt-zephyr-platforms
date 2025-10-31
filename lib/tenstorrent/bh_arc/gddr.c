@@ -300,13 +300,13 @@ static void wipe_l1(void)
 
 static int InitMrisc(void)
 {
-	wipe_l1();
-
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP9);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
 		return 0;
 	}
+
+	wipe_l1();
 
 	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
 
