@@ -53,7 +53,7 @@ patches:
       Update: some minor changes requested on this PR that required ordering another part
       that belongs to the same gpio expander product family. Should be merged before 4.3.0.
   - path: zephyr/mspi-dw.patch
-    sha256sum: 5e75f668d6b74773c766292020d86e7e4829cb4641044c571a6221404d06e9e8
+    sha256sum: da9b837c6054178e59b95a394e79dfe6b43a049987b9bc0110a84b1c5deca667
     module: zephyr
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
