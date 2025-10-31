@@ -161,14 +161,17 @@ static int flash_reset_init(void)
 
 static int flash_training_init(void)
 {
+	struct mspi_dw_timing_cfg timing_cfg;
 	/* To avoid false positive */
 	uint32_t spi_rx_buf = 0xDEADBEEF;
-	int rc, rx_delay = -1;
+	int rc;
 	int delay_lb, delay_ub;
 
 	if ((!device_is_ready(flash)) || (!device_is_ready(mspi_dev))) {
 		return -ENODEV;
 	}
+
+	timing_cfg.rx_sample_dly = 0;
 
 	/*
 	 * Perform flash training here. We need to train the RX sample delay
@@ -177,8 +180,7 @@ static int flash_training_init(void)
 
 	/* First, find the lower delay setting that works */
 	do {
-		rx_delay++;
-		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
+		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)&timing_cfg);
 		if (rc < 0) {
 			return rc;
 		}
@@ -186,12 +188,13 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
-	delay_lb = rx_delay;
+		timing_cfg.rx_sample_dly++;
+	} while ((spi_rx_buf != SPI_RX_TRAIN_DATA) &&
+		 (timing_cfg.rx_sample_dly < SSI_RX_DLY_SR_DEPTH));
+	delay_lb = timing_cfg.rx_sample_dly - 1;
 	/* Find the upper bound on the delay setting */
 	do {
-		rx_delay++;
-		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
+		rc = mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)&timing_cfg);
 		if (rc < 0) {
 			return rc;
 		}
@@ -199,12 +202,14 @@ static int flash_training_init(void)
 		if (rc < 0) {
 			return rc;
 		}
-	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) && (rx_delay < SSI_RX_DLY_SR_DEPTH));
-	delay_ub = rx_delay - 1;
+		timing_cfg.rx_sample_dly++;
+	} while ((spi_rx_buf == SPI_RX_TRAIN_DATA) &&
+		 (timing_cfg.rx_sample_dly < SSI_RX_DLY_SR_DEPTH));
+	delay_ub = timing_cfg.rx_sample_dly - 2;
 
 	/* Find midpoint of both delay settings */
-	rx_delay = (delay_ub - delay_lb) / 2 + delay_lb;
-	return mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)rx_delay);
+	timing_cfg.rx_sample_dly = (delay_ub - delay_lb) / 2 + delay_lb;
+	return mspi_timing_config(mspi_dev, NULL, MSPI_DW_RX_TIMING_CFG, (void *)&timing_cfg);
 }
 
 static int flash_training_pre_reclock(void)

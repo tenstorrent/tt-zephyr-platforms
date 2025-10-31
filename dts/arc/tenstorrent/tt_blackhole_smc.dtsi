@@ -723,7 +723,8 @@
 		};
 
 		spi0: spi@80070000 {
-			compatible = "snps,designware-ssi";
+			compatible = "snps,designware-ssi",
+				"snps,designware-ssi-v2";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x80070000 0x1000>;
@@ -733,6 +734,8 @@
 			fifo-depth = <15>;
 			rx-fifo-depth = <255>;
 			clocks = <&sysclk>;
+			packet-data-limit = <65536>;
+			op-mode = "MSPI_OP_MODE_CONTROLLER";
 		};
 
 		cdt0: cdt@80300000 {
