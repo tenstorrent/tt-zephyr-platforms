@@ -48,79 +48,79 @@ LOG_MODULE_REGISTER(clock_control_tt_bh);
 #define PLL_CNTL_WRAPPER_PLL_LOCK_REG_ADDR      0x80020040
 #define PLL_CNTL_WRAPPER_REFCLK_PERIOD_REG_ADDR 0x8002002C
 
-typedef struct {
+struct pll_cntl_wrapper_lock_fields {
 	uint32_t pll0_lock: 1;
 	uint32_t pll1_lock: 1;
 	uint32_t pll2_lock: 1;
 	uint32_t pll3_lock: 1;
 	uint32_t pll4_lock: 1;
-} pll_cntl_wrapper_lock_fields;
+};
 
-typedef union {
+union pll_cntl_wrapper_lock_reg {
 	uint32_t val;
-	pll_cntl_wrapper_lock_fields f;
-} pll_cntl_wrapper_lock_reg;
+	struct pll_cntl_wrapper_lock_fields f;
+};
 
-typedef struct {
+struct pll_cntl_0_fields {
 	uint32_t reset: 1;
 	uint32_t pd: 1;
 	uint32_t reset_lock: 1;
 	uint32_t pd_bandgap: 1;
 	uint32_t bypass: 1;
-} pll_cntl_0_fields;
+};
 
-typedef union {
+union pll_cntl_0_reg {
 	uint32_t val;
-	pll_cntl_0_fields f;
-} pll_cntl_0_reg;
+	struct pll_cntl_0_fields f;
+};
 
-typedef struct {
+struct pll_cntl_1_fields {
 	uint32_t refdiv: 8;
 	uint32_t postdiv: 8;
 	uint32_t fbdiv: 16;
-} pll_cntl_1_fields;
+};
 
-typedef union {
+union pll_cntl_1_reg {
 	uint32_t val;
-	pll_cntl_1_fields f;
-} pll_cntl_1_reg;
+	struct pll_cntl_1_fields f;
+};
 
-typedef struct {
+struct pll_cntl_2_fields {
 	uint32_t ctrl_bus1: 8;
 	uint32_t ctrl_bus2: 8;
 	uint32_t ctrl_bus3: 8;
 	uint32_t ctrl_bus4: 8;
-} pll_cntl_2_fields;
+};
 
-typedef union {
+union pll_cntl_2_reg {
 	uint32_t val;
-	pll_cntl_2_fields f;
-} pll_cntl_2_reg;
+	struct pll_cntl_2_fields f;
+};
 
-typedef struct {
+struct pll_cntl_3_fields {
 	uint32_t ctrl_bus5: 8;
 	uint32_t test_bus: 8;
 	uint32_t lock_detect1: 16;
-} pll_cntl_3_fields;
+};
 
-typedef union {
+union pll_cntl_3_reg {
 	uint32_t val;
-	pll_cntl_3_fields f;
-} pll_cntl_3_reg;
+	struct pll_cntl_3_fields f;
+};
 
-typedef struct {
+struct pll_cntl_5_fields {
 	uint32_t postdiv0: 8;
 	uint32_t postdiv1: 8;
 	uint32_t postdiv2: 8;
 	uint32_t postdiv3: 8;
-} pll_cntl_5_fields;
+};
 
-typedef union {
+union pll_cntl_5_reg {
 	uint32_t val;
-	pll_cntl_5_fields f;
-} pll_cntl_5_reg;
+	struct pll_cntl_5_fields f;
+};
 
-typedef struct {
+struct pll_use_postdiv_fields {
 	uint32_t pll_use_postdiv0: 1;
 	uint32_t pll_use_postdiv1: 1;
 	uint32_t pll_use_postdiv2: 1;
@@ -129,20 +129,20 @@ typedef struct {
 	uint32_t pll_use_postdiv5: 1;
 	uint32_t pll_use_postdiv6: 1;
 	uint32_t pll_use_postdiv7: 1;
-} pll_use_postdiv_fields;
+};
 
-typedef union {
+union pll_use_postdiv_reg {
 	uint32_t val;
-	pll_use_postdiv_fields f;
-} pll_use_postdiv_reg;
+	struct pll_use_postdiv_fields f;
+};
 
-typedef struct {
-	pll_cntl_1_reg pll_cntl_1;
-	pll_cntl_2_reg pll_cntl_2;
-	pll_cntl_3_reg pll_cntl_3;
-	pll_cntl_5_reg pll_cntl_5;
-	pll_use_postdiv_reg use_postdiv;
-} PLLSettings;
+struct pll_settings {
+	union pll_cntl_1_reg pll_cntl_1;
+	union pll_cntl_2_reg pll_cntl_2;
+	union pll_cntl_3_reg pll_cntl_3;
+	union pll_cntl_5_reg pll_cntl_5;
+	union pll_use_postdiv_reg use_postdiv;
+};
 
 struct clock_control_tt_bh_config {
 	uint8_t inst;
@@ -152,7 +152,7 @@ struct clock_control_tt_bh_config {
 	uintptr_t base;
 	size_t size;
 
-	PLLSettings init_settings;
+	struct pll_settings init_settings;
 };
 
 struct clock_control_tt_bh_data {
@@ -186,7 +186,7 @@ static void clock_control_enable_clk_counters(const struct clock_control_tt_bh_c
 }
 
 static void clock_control_tt_bh_config_vco(const struct clock_control_tt_bh_config *config,
-					   const PLLSettings *settings)
+					   const struct pll_settings *settings)
 {
 	/* refdiv, postdiv, fbdiv */
 	clock_control_tt_bh_write_reg(config, PLL_CNTL_1_OFFSET, settings->pll_cntl_1.val);
@@ -197,7 +197,7 @@ static void clock_control_tt_bh_config_vco(const struct clock_control_tt_bh_conf
 }
 
 static void clock_control_tt_bh_config_ext_postdivs(const struct clock_control_tt_bh_config *config,
-						    const PLLSettings *settings)
+						    const struct pll_settings *settings)
 {
 	/* Disable postdivs before changing postdivs */
 	clock_control_tt_bh_write_reg(config, PLL_USE_POSTDIV_OFFSET, 0x0);
@@ -209,7 +209,7 @@ static void clock_control_tt_bh_config_ext_postdivs(const struct clock_control_t
 
 static int clock_control_tt_bh_wait_lock(uint8_t inst)
 {
-	pll_cntl_wrapper_lock_reg pll_lock_reg;
+	union pll_cntl_wrapper_lock_reg pll_lock_reg;
 	uint64_t start = k_uptime_get();
 
 	do {
@@ -224,8 +224,8 @@ static int clock_control_tt_bh_wait_lock(uint8_t inst)
 }
 
 static uint32_t clock_control_tt_bh_get_ext_postdiv(uint8_t postdiv_index,
-						    pll_cntl_5_reg pll_cntl_5,
-						    pll_use_postdiv_reg use_postdiv)
+						    union pll_cntl_5_reg pll_cntl_5,
+						    union pll_use_postdiv_reg use_postdiv)
 {
 	uint32_t postdiv_value;
 	bool postdiv_enabled;
@@ -268,9 +268,9 @@ static uint32_t clock_control_tt_bh_get_ext_postdiv(uint8_t postdiv_index,
 }
 
 static uint32_t clock_control_tt_bh_calculate_fbdiv(uint32_t refclk_rate, uint32_t target_freq_mhz,
-						    pll_cntl_1_reg pll_cntl_1,
-						    pll_cntl_5_reg pll_cntl_5,
-						    pll_use_postdiv_reg use_postdiv,
+						    union pll_cntl_1_reg pll_cntl_1,
+						    union pll_cntl_5_reg pll_cntl_5,
+						    union pll_use_postdiv_reg use_postdiv,
 						    uint8_t postdiv_index)
 {
 	uint32_t eff_postdiv =
@@ -292,9 +292,9 @@ static uint32_t clock_control_tt_bh_calculate_fbdiv(uint32_t refclk_rate, uint32
 static uint32_t clock_control_tt_bh_get_freq(const struct clock_control_tt_bh_config *config,
 					     uint8_t postdiv_index)
 {
-	pll_cntl_1_reg pll_cntl_1;
-	pll_cntl_5_reg pll_cntl_5;
-	pll_use_postdiv_reg use_postdiv;
+	union pll_cntl_1_reg pll_cntl_1;
+	union pll_cntl_5_reg pll_cntl_5;
+	union pll_use_postdiv_reg use_postdiv;
 
 	pll_cntl_1.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_1_OFFSET);
 	pll_cntl_5.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_5_OFFSET);
@@ -312,9 +312,9 @@ static uint32_t clock_control_tt_bh_get_freq(const struct clock_control_tt_bh_co
 }
 
 static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *config,
-				       const PLLSettings *settings)
+				       const struct pll_settings *settings)
 {
-	pll_cntl_0_reg pll_cntl_0;
+	union pll_cntl_0_reg pll_cntl_0;
 
 	/* Before turning off PLL, bypass PLL so glitch free mux has no chance to switch */
 	pll_cntl_0.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_0_OFFSET);
@@ -441,29 +441,29 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
 
 	if (clock == CLOCK_CONTROL_TT_BH_CLOCK_GDDRMEMCLK) {
-		PLLSettings pll_settings = config->init_settings;
+		struct pll_settings settings = config->init_settings;
 		uint32_t fbdiv = clock_control_tt_bh_calculate_fbdiv(
-			config->refclk_rate, (uint32_t)rate, pll_settings.pll_cntl_1,
-			pll_settings.pll_cntl_5, pll_settings.use_postdiv, 0);
+			config->refclk_rate, (uint32_t)rate, settings.pll_cntl_1,
+			settings.pll_cntl_5, settings.use_postdiv, 0);
 		if (fbdiv == 0) {
 			k_spin_unlock(&data->lock, key);
 			return -EINVAL;
 		}
-		pll_settings.pll_cntl_1.f.fbdiv = fbdiv;
-		uint32_t vco_freq = (config->refclk_rate * pll_settings.pll_cntl_1.f.fbdiv) /
-				    pll_settings.pll_cntl_1.f.refdiv;
+		settings.pll_cntl_1.f.fbdiv = fbdiv;
+		uint32_t vco_freq = (config->refclk_rate * settings.pll_cntl_1.f.fbdiv) /
+				    settings.pll_cntl_1.f.refdiv;
 
 		if (!IN_RANGE(vco_freq, VCO_MIN_FREQ, VCO_MAX_FREQ)) {
 			k_spin_unlock(&data->lock, key);
 			return -ERANGE;
 		}
 
-		clock_control_tt_bh_update(config, &pll_settings);
+		clock_control_tt_bh_update(config, &settings);
 	} else if (clock == CLOCK_CONTROL_TT_BH_CLOCK_AICLK) {
 		uint32_t target_fbdiv;
-		pll_cntl_1_reg pll_cntl_1;
-		pll_cntl_5_reg pll_cntl_5;
-		pll_use_postdiv_reg use_postdiv;
+		union pll_cntl_1_reg pll_cntl_1;
+		union pll_cntl_5_reg pll_cntl_5;
+		union pll_use_postdiv_reg use_postdiv;
 
 		pll_cntl_1.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_1_OFFSET);
 		pll_cntl_5.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_5_OFFSET);
@@ -483,9 +483,9 @@ static int clock_control_tt_bh_set_rate(const struct device *dev, clock_control_
 			k_busy_wait_ns(100);
 		}
 	} else if (clock == CLOCK_CONTROL_TT_BH_INIT_STATE) {
-		PLLSettings pll_settings = config->init_settings;
+		struct pll_settings settings = config->init_settings;
 
-		clock_control_tt_bh_update(config, &pll_settings);
+		clock_control_tt_bh_update(config, &settings);
 		clock_control_enable_clk_counters(config);
 	} else {
 		k_spin_unlock(&data->lock, key);
@@ -511,7 +511,7 @@ static int clock_control_tt_bh_configure(const struct device *dev, clock_control
 	if ((enum clock_control_tt_bh_clock_config)option == CLOCK_CONTROL_TT_BH_CONFIG_BYPASS) {
 		/* No need to bypass refclk as it's not support */
 
-		pll_cntl_0_reg pll_cntl_0;
+		union pll_cntl_0_reg pll_cntl_0;
 
 		/* Bypass PLL to refclk */
 		pll_cntl_0.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_0_OFFSET);
@@ -544,7 +544,7 @@ static int clock_control_tt_bh_init(const struct device *dev)
 		return -EBUSY;
 	}
 
-	pll_cntl_0_reg pll_cntl_0;
+	union pll_cntl_0_reg pll_cntl_0;
 
 	/* Before turning off PLL, bypass PLL so glitch free mux has no chance to switch */
 	pll_cntl_0.val = clock_control_tt_bh_read_reg(config, PLL_CNTL_0_OFFSET);
