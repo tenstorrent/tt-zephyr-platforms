@@ -1,4 +1,4 @@
-name: Hardware Long Tests
+name: HW Soak
 
 # Run long tests once nightly, at 00:00
 on:

@@ -1,4 +1,4 @@
-name: Hardware Smoke Tests
+name: HW Smoke
 
 on:
   push:
