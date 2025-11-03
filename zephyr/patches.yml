@@ -151,17 +151,6 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97188
     comments: |
       Add support for BWBR smbus32 pcalls
-  - path: zephyr/jedec-spi-nor-erase-block-size.patch
-    sha256sum: 1d5b8698e8e9470e1aeeaed9b92712df6684e729d39081693ce69b0e9eaaf7b8
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-09-23
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96443
-    comments: |
-      Add an optional erase-block-size property to the jedec,spi-nor binding so that mcuboot
-      does not complain about slot1_size not being defined.
   - path: zephyr/smbus-cancel.patch
     sha256sum: 24fc88269fd8c534ef9c1318a1c989ff6d8d45b44d48d532995cee4e884e78b5
     module: zephyr
