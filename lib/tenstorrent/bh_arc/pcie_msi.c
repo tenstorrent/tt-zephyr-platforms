@@ -86,8 +86,8 @@ void SendPcieMsi(uint8_t pcie_inst, uint32_t vector_id)
  */
 static uint8_t send_pcie_msi_handler(const union request *request, struct response *response)
 {
-	uint8_t pcie_inst = (request->data[0] >> 8) & 0x1;
-	uint32_t vector_id = request->data[1];
+	uint8_t pcie_inst = request->send_pci_msi.pcie_inst;
+	uint32_t vector_id = request->send_pci_msi.vector_id;
 
 	SendPcieMsi(pcie_inst, vector_id);
 	return 0;
