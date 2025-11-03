@@ -241,7 +241,6 @@ struct debug_noc_translation_rqst {
 	uint8_t skip_eth_hi;
 };
 
-
 /** @brief Host request to ping DMC
  * @details Messages of this type are processed by @ref ping_dm_handler
  */
@@ -264,7 +263,7 @@ struct send_pcie_msi_rqst {
 	uint8_t command_code;
 
 	/** @brief The PCIE instance 0 or 1 */
-	uint8_t pcie_inst : 1;
+	uint8_t pcie_inst: 1;
 
 	/** @brief 2 bytes of padding */
 	uint8_t pad[2];
