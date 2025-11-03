@@ -41,6 +41,8 @@ enum tt_smc_msg {
 	/** @brief @ref debug_noc_translation_rqst "Debug NOC translation request" */
 	TT_SMC_MSG_DEBUG_NOC_TRANSLATION = 0x15,
 	TT_SMC_MSG_REPORT_SCRATCH_ONLY = 0x16,
+
+	/** @brief @ref send_pcie_msi_rqst "Send PCIe MSI request" */
 	TT_SMC_MSG_SEND_PCIE_MSI = 0x17,
 
 	/** @brief @ref switch_vout_control_rqst "Switch VOUT control request" */

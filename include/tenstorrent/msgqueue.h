@@ -256,6 +256,23 @@ struct dmc_ping_rqst {
 	bool legacy_ping;
 };
 
+/** @brief Host request to send PCIE MSI
+ * @details Messages of this type are processed by @ref send_pcie_msi_handler
+ */
+struct send_pcie_msi_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SEND_PCIE_MSI */
+	uint8_t command_code;
+
+	/** @brief The PCIE instance 0 or 1 */
+	uint8_t pcie_inst : 1;
+
+	/** @brief 2 bytes of padding */
+	uint8_t pad[2];
+
+	/** @brief MSI vector ID */
+	uint32_t vector_id;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -298,6 +315,9 @@ union request {
 
 	/** @brief A dmc ping request */
 	struct dmc_ping_rqst dmc_ping;
+
+	/** @brief A Send PCIE MSI request */
+	struct send_pcie_msi_rqst send_pci_msi;
 };
 
 /** @} */
