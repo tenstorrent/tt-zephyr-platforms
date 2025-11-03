@@ -25,6 +25,7 @@ static uint8_t i2c_write_buf_emul[256] = {0};
 static uint8_t i2c_write_buf_idx;
 
 static uint32_t clock_wave_value;
+static uint32_t noc_2_axi_last_write;
 
 static uint32_t ReadReg_msgqueue_fake(uint32_t addr)
 {
@@ -44,6 +45,12 @@ static uint32_t ReadReg_msgqueue_fake(uint32_t addr)
 	if (addr == RESET_UNIT_REFCLK_CNT_LO_REG_ADDR) {
 		return timer_counter++;
 	}
+
+	/*BH_PCIE_DWC_PCIE_USP_PF0_MSI_CAP_PCI_MSI_CAP_ID_NEXT_CTRL_REG_REG_ADDR*/
+	if (addr == 0xCE000050) {
+		return BIT(16) | BIT(20); /*pci_msi_enable | pci_msi_multiple_msg_en == 1*/
+	}
+
 	return 0;
 }
 
@@ -59,6 +66,10 @@ static void WriteReg_msgqueue_fake(uint32_t addr, uint32_t value)
 
 	if (addr == PLL_CNTL_WRAPPER_CLOCK_WAVE_CNTL_REG_ADDR) {
 		clock_wave_value = value;
+	}
+
+	if (addr == 0xC0000000) {
+		noc_2_axi_last_write = value;
 	}
 }
 
@@ -226,6 +237,31 @@ static void test_setup(void *ctx)
 	clock_wave_value = 0U;
 	memset(i2c_read_buf_emul, 0, sizeof(i2c_read_buf_emul));
 	memset(i2c_write_buf_emul, 0, sizeof(i2c_write_buf_emul));
+}
+
+ZTEST(msgqueue, test_msg_type_send_pcie_msi)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	noc_2_axi_last_write = 0xffffffffU;
+	req.data[0] = TT_SMC_MSG_SEND_PCIE_MSI | (BIT(0) << 8U) /*PCIe instance 1*/;
+	req.data[1] = 0x00; /* MSI number */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(noc_2_axi_last_write, 0);
+
+	req.data[1] = 0x01; /* MSI number */
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(noc_2_axi_last_write, 1);
 }
 
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
