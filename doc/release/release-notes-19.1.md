@@ -4,29 +4,39 @@
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.1.0 🥳🎉.
 
-Major enhancements with this release include:
+Major enhancements with this release include new DMA drivers and enhanced SMBus communication stability.
 
 ## What's Changed
 
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
+### Stability Improvements
 
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
-<!-- Security vulnerabilities fixed? -->
-<!-- API Changes, if applicable -->
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
-<!-- New Boards, if applicable -->
+  - Fixed a timing issue in Zephyr's `snps,designware-i2c` driver that caused intermittent loss of packet data
+  - Improved error rate from 1 in 10k to 0 in 2M
+
+### Drivers
+
+- **New DMA Support**: Added comprehensive DMA driver infrastructure
+  - New `dma_arc_hs` driver implementation
+  - NOC-to-NOC DMA driver with proper device tree bindings
+  - Full upstream DMA test configuration and support
+  - Removed deprecated `noc_dma` files and includes
+
+### Libraries
+
+- **SMBus Enhancements**:
+  - Improved DMC ping stability with better error handling
+  - Added legacy ping command support for backwards compatibility
+
+- **DMA Library Migration**:
+  - Replaced custom NOC DMA implementation with standard Zephyr DMA subsystem
+
+- **Removed APIs**:
+  - Removed deprecated `tenstorrent fwupdate` library
+
+### Documentation
+
+- **Architecture Documentation**: Added comprehensive documentation about the boot process for both SMC and DMC components
+- **Testing Documentation**: Updated pytest documentation with better usage examples and requirements
 
 ## Migration guide
 
