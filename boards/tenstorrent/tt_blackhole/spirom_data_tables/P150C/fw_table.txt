@@ -48,9 +48,9 @@ chip_harvesting_table {
 
 pci0_property_table {
   max_pcie_speed: 0
-  pcie_bar0_size: 0
-  pcie_bar2_size: 0
-  pcie_bar4_size: 0
+  pcie_bar0_size: 512
+  pcie_bar2_size: 1
+  pcie_bar4_size: 32768
   pcie_mode: EP
   num_serdes: 2
 }
