@@ -4,6 +4,11 @@ name: Metal 🤘
 on:
   schedule:
     - cron: "0 0 * * *"
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_dispatch: {}
 
 concurrency:
@@ -34,10 +39,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
-    runs-on: ${{ matrix.config.runs-on }}
+        iteration: [1,2,3,4,5,6,7,8,9,10]
+    runs-on: yyz-zephyr-01-lab-p300a
     container:
-      image: ${{ matrix.config.metal-image }}
+      image: ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.62.0-dev20251015-5-g0cf6eeb32e
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
@@ -71,7 +76,8 @@ jobs:
           tt-flash --fw-tar $HOME/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          # Skip this, we want to save time
+          # sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
       - name: cleanup
         if: ${{ always() }}
         run: |

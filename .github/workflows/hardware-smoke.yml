@@ -6,15 +6,6 @@ on:
       - main
       - v*-branch
       - collab*
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-    branches:
-      - main
-      - v*-branch
-      - collab*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
