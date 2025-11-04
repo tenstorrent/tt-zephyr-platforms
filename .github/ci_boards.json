@@ -11,7 +11,7 @@
   },
   {
     "board": "p300a",
-    "runs-on": "p300a-jtag",
+    "runs-on": "syseng-gh-13-lab-p300a",
     "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.62.0-dev20251015-5-g0cf6eeb32e"
   }
 ]
