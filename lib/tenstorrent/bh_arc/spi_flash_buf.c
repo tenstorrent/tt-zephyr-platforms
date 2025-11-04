@@ -11,6 +11,7 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/dma.h>
 #include <zephyr/drivers/dma/dma_arc_hs.h>
 
 LOG_MODULE_REGISTER(spi_flash_buf, CONFIG_TT_APP_LOG_LEVEL);

@@ -31,7 +31,7 @@
 static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
-static const struct device *arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
+static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
 #define MRISC_FW_NOC2AXI_PORT 0

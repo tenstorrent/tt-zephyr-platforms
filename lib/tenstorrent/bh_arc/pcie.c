@@ -20,6 +20,8 @@
 #include <tenstorrent/sys_init_defines.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
@@ -57,6 +59,7 @@
 LOG_MODULE_DECLARE(bh_arc);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 typedef struct {
 	uint32_t tlp_type: 5;
@@ -165,6 +168,15 @@ static inline void WriteSerdesCtrlReg(const uint8_t inst, const uint32_t addr, c
 	uint8_t tlb = (inst == 0) ? PCIE_SERDES0_CTRL_TLB : PCIE_SERDES1_CTRL_TLB;
 
 	NOC2AXIWrite32(noc_id, tlb, addr, data);
+}
+
+/* Wrapper for ARC DMA, used by libpciesd.a */
+bool ArcDmaTransfer(const void *src, void *dst, uint32_t len)
+{
+	if (arc_dma_dev == NULL) {
+		return false;
+	}
+	return dma_arc_hs_transfer(arc_dma_dev, 0, src, dst, len) == 0;
 }
 
 static inline void SetupDbiAccess(void)
