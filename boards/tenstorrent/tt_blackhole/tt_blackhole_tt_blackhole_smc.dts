@@ -20,7 +20,7 @@
 		zephyr,console = &vuart0;
 		zephyr,shell-uart = &vuart0;
 		/* Not used for setting flash base address, but required by mcuboot */
-		zephyr,flash = &spi_flash;
+		zephyr,flash = &nv_flash;
 		zephyr,flash-controller = &spi_flash;
 	};
 
@@ -46,12 +46,26 @@
 		/* Reading can operate at higher frequencies.
 		 * Reliable up to 50MHz, use 40 to be safe.
 		 */
-		mspi-nor-read-frequency = <DT_FREQ_M(40)>;
-		mspi-io-mode = "MSPI_IO_MODE_SINGLE";
+		read-frequency = <DT_FREQ_M(40)>;
+		mspi-io-mode = "MSPI_IO_MODE_QUAD_1_4_4";
+		mspi-data-rate = "MSPI_DATA_RATE_SINGLE";
+		use-4byte-addressing;
 		mspi-endian = "MSPI_BIG_ENDIAN";
 		quad-enable-requirements = "NONE";
-		write-block-size = <1>;
-		erase-block-size = <4096>;
+		read-command = <0xEC>;
+		rx-dummy = <10>;
+		write-command = <0x3E>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		transfer-timeout = <100>;
+
+		nv_flash: nv-flash@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x0 DT_SIZE_M(512)>;
+			write-block-size = <1>;
+			erase-block-size = <4096>;
+		};
 	};
 };
 
@@ -173,6 +187,6 @@
 	status = "okay";
 };
 
-&spi_flash {
+&nv_flash {
 	#include "tt_blackhole_fixed_partitions.dtsi"
 };

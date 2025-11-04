@@ -1,0 +1,98 @@
+From a43f307f257324a9a9fbd7a361f9762a9da011f6 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Mon, 3 Nov 2025 17:50:08 -0600
+Subject: [PATCH 2/2] drivers: flash: flash_mspi_nor: support custom read
+ frequency
+
+Many flash chips support a higher read frequency than other operations.
+Support specifying a custom read frequency to take advantage of the
+performance improvements available with this approach.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ drivers/flash/flash_mspi_nor.c       | 17 +++++++++++++++++
+ drivers/flash/flash_mspi_nor.h       |  1 +
+ dts/bindings/mtd/jedec,mspi-nor.yaml |  6 ++++++
+ 3 files changed, 24 insertions(+)
+
+diff --git a/drivers/flash/flash_mspi_nor.c b/drivers/flash/flash_mspi_nor.c
+index 03430401de0..e8df797c912 100644
+--- a/drivers/flash/flash_mspi_nor.c
++++ b/drivers/flash/flash_mspi_nor.c
+@@ -1317,6 +1333,7 @@ BUILD_ASSERT((FLASH_SIZE(inst) % CONFIG_FLASH_MSPI_NOR_LAYOUT_PAGE_SIZE) == 0, \
+ 		.reset_recovery_us = DT_INST_PROP_OR(inst, t_reset_recovery, 0)	\
+ 				   / 1000,					\
+ 		.transfer_timeout = DT_INST_PROP(inst, transfer_timeout),	\
++		.read_freq = DT_INST_PROP_OR(inst, read_frequency, 0),	        \
+ 		FLASH_PAGE_LAYOUT_DEFINE(inst)					\
+ 		.jedec_id = DT_INST_PROP_OR(inst, jedec_id, {0}),		\
+ 		.quirks = FLASH_QUIRKS(inst),					\
+diff --git a/drivers/flash/flash_mspi_nor.h b/drivers/flash/flash_mspi_nor.h
+index 86c824cf485..13f672f5b2b 100644
+--- a/drivers/flash/flash_mspi_nor.h
++++ b/drivers/flash/flash_mspi_nor.h
+@@ -87,6 +87,7 @@ struct flash_mspi_nor_config {
+ #endif
+ 	uint32_t reset_recovery_us;
+ 	uint32_t transfer_timeout;
++	uint32_t read_freq;
+ #if defined(CONFIG_FLASH_PAGE_LAYOUT)
+ 	struct flash_pages_layout layout;
+ #endif
+diff --git a/dts/bindings/mtd/jedec,mspi-nor.yaml b/dts/bindings/mtd/jedec,mspi-nor.yaml
+index 348e11cd983..e1966fbbddf 100644
+--- a/dts/bindings/mtd/jedec,mspi-nor.yaml
++++ b/dts/bindings/mtd/jedec,mspi-nor.yaml
+@@ -60,3 +60,9 @@ properties:
+     description: |
+       When set, the flash driver performs software reset of the flash chip
+       at initialization.
++
++  read-frequency:
++    type: int
++    description: |
++      Frequency, in Hz, to be used for read operations. If not specified,
++      the driver uses the same frequency as for other operations.
+--
+2.34.1
+--- a/drivers/flash/flash_mspi_nor.c
++++ b/drivers/flash/flash_mspi_nor.c
+@@ -354,6 +354,20 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
+ 		return rc;
+ 	}
+
++	if (dev_config->read_freq != 0) {
++		/* Set custom read frequency */
++		struct mspi_dev_cfg read_freq_cfg = {
++			.freq = dev_config->read_freq,
++		};
++
++		rc = mspi_dev_config(dev_config->bus, &dev_config->mspi_id,
++		                    MSPI_DEVICE_CONFIG_FREQUENCY, &read_freq_cfg);
++		if (rc < 0) {
++			LOG_ERR("Could not set read frequency: %d", rc);
++			goto release_and_exit;
++		}
++	}
++
+ 	while (size > 0) {
+ 		uint32_t to_read;
+
+@@ -375,6 +389,17 @@ static int api_read(const struct device *dev, off_t addr, void *dest,
+ 		size -= to_read;
+ 	}
+
++release_and_exit:
++	if (rc == 0 && dev_config->read_freq != 0) {
++		/* Restore normal frequency */
++		rc = mspi_dev_config(dev_config->bus, &dev_config->mspi_id,
++				     MSPI_DEVICE_CONFIG_FREQUENCY,
++				     &dev_config->mspi_nor_cfg);
++		if (rc < 0) {
++			LOG_ERR("Could not restore normal frequency: %d", rc);
++		}
++	}
++
+ 	release(dev);
+
+ 	if (rc < 0) {

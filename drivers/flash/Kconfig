@@ -5,10 +5,6 @@ if FLASH
 
 menu "Flash drivers"
 
-# zephyr-keep-sorted-start
-rsource "Kconfig.mspi"
-# zephyr-keep-sorted-stop
-
 config FLASH_TT_STM32_WRAPPER
 	bool "Tenstorrent STM32 Flash Wrapper"
 	default y
