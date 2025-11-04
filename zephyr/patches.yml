@@ -52,15 +52,6 @@ patches:
       that functionality, with the exception of reading drive strength.
       Update: some minor changes requested on this PR that required ordering another part
       that belongs to the same gpio expander product family. Should be merged before 4.3.0.
-  - path: zephyr/mspi-dw.patch
-    sha256sum: da9b837c6054178e59b95a394e79dfe6b43a049987b9bc0110a84b1c5deca667
-    module: zephyr
-    author: Daniel DeGrasse
-    email: ddegrasse@tenstorrent.com
-    date: 2025-04-16
-    comments: |
-      Skip building the upstream mspi-dw and flash-mspi-nor drivers while we have an
-      in-tree fork.
   - path: zephyr/dirty-hack-for-tt-hwinit.patch
     sha256sum: 8769469bcab0fda7b9c793dd8f67740fb18ce11c315871790e0c74494f16d71e
     module: zephyr
@@ -170,3 +161,12 @@ patches:
     merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/99128
     comments: |
       Post 4.3.0-rc3 fixes to the SMBus driver.
+  - path: zephyr/mspi-dw-nor-fixes.patch
+    sha256sum: c8d26eb9fc2ea6114c66d9e832b3fe487a504ce145b5d8bbbe43b1d904410253
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-11-3
+    comments: |
+      Add support for read-frequency property in jedec,spi-nor binding and
+      enable using the flash page layout API with the driver.
