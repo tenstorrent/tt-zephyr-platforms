@@ -315,8 +315,10 @@
 	dma1: noc_dma@ffb20000 {
 		compatible = "tenstorrent,noc-dma";
 		reg = <0xffb20000 0x20c>;
-		dma-channels = <4>;
+
 		#dma-cells = <1>;
+		dma-channels = <4>;
+		dma-buf-addr-alignment = <64>;
 	};
 
 	sysclk: system-clock {
