@@ -1,0 +1,63 @@
+From a52d187ca6250130b58fda7ae496241b1440c1a8 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Thu, 30 Oct 2025 17:11:25 -0500
+Subject: [PATCH] drivers: i2c: i2c_dw: make target stop callback after
+ read/write callbacks
+
+In target mode, issue the stop callback from the I2C DW driver after the
+read/write callbacks. This mirrors the behavior of other I2C target mode
+drivers, and allows target handler code to correctly service any pending
+read or write requests before it handles the stop condition.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ drivers/i2c/i2c_dw.c | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/i2c/i2c_dw.c b/drivers/i2c/i2c_dw.c
+index 09f3c7e2abe..4d040faa1f7 100644
+--- a/drivers/i2c/i2c_dw.c
++++ b/drivers/i2c/i2c_dw.c
+@@ -607,6 +607,15 @@ static void i2c_dw_isr(const struct device *port)
+ 				}
+ 			}
+ 		}
++
++		if (intr_stat.bits.stop_det) {
++			read_clr_stop_det(reg_base);
++			dw->state = I2C_DW_STATE_READY;
++			dw->read_in_progress = false;
++			if (slave_cb->stop) {
++				slave_cb->stop(dw->slave_cfg);
++			}
++		}
+ #endif
+ 	}
+
+@@ -1158,8 +1167,6 @@ static void i2c_dw_slave_read_clear_intr_bits(const struct device *dev)
+ 	union ic_interrupt_register intr_stat;
+ 	uint32_t reg_base = get_regs(dev);
+
+-	const struct i2c_target_callbacks *slave_cb = dw->slave_cfg->callbacks;
+-
+ 	intr_stat.raw = read_intr_stat(reg_base);
+
+ 	if (intr_stat.bits.tx_abrt) {
+@@ -1192,15 +1199,6 @@ static void i2c_dw_slave_read_clear_intr_bits(const struct device *dev)
+ 		dw->state = I2C_DW_STATE_READY;
+ 	}
+
+-	if (intr_stat.bits.stop_det) {
+-		read_clr_stop_det(reg_base);
+-		dw->state = I2C_DW_STATE_READY;
+-		dw->read_in_progress = false;
+-		if (slave_cb->stop) {
+-			slave_cb->stop(dw->slave_cfg);
+-		}
+-	}
+-
+ 	if (intr_stat.bits.start_det) {
+ 		read_clr_start_det(reg_base);
+ 		dw->state = I2C_DW_STATE_READY;
+--
+2.34.1
