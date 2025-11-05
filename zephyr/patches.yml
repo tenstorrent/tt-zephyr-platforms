@@ -8,7 +8,7 @@ patches:
     comments: |
       Support multilevel interrupt priority on ARC cores.
   - path: zephyr/check-compliance.patch
-    sha256sum: 3ab736fd3ea9ea690a7860048b5fd684bf3479b289aa85907624bee47395770f
+    sha256sum: fa20f70530a7685f4e415f26ffd9eb79dba6cf1f85d6d35446b97fea573a5148
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -167,3 +167,21 @@ patches:
       Ensure that the I2C DesignWare target driver invokes the stop callback
       after read operations complete. This ensures proper synchronization
       for I2C target devices.
+  - path: zephyr/tests-drivers-dma-link.patch
+    sha256sum: 83960bef4175af4fea37f1ae55f524a3fac492bbf41bcadf297f24f694f7d564
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-11-05
+    comments: |
+      Make data alignment in DMA link test configurable according to its DT property
+      dma-buf-addr-alignment.
+  - path: zephyr/tests-drivers-dma-sg.patch
+    sha256sum: 629f6b6bb2b23dd7a6e41882d47974929b5ed3f5ea8ba501ca4189df2e1be555
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-11-05
+    comments: |
+      Make data alignment in DMA SG test configurable according to its DT property
+      dma-buf-addr-alignment.

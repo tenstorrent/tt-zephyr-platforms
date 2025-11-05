@@ -1,5 +1,5 @@
 diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index a0fa1348bb6..cf325a55b3a 100755
+index a0fa1348bb6..2268e4517b6 100755
 --- a/scripts/ci/check_compliance.py
 +++ b/scripts/ci/check_compliance.py
 @@ -291,7 +291,7 @@ class CheckPatch(ComplianceTest):
@@ -20,17 +20,18 @@ index a0fa1348bb6..cf325a55b3a 100755
  
          if len(tmp_output) > 0:
              kconfigs += tmp_output + "\n"
-@@ -1254,7 +1254,9 @@ flagged.
+@@ -1254,7 +1254,10 @@ flagged.
          "COMPILER_RT_RTLIB",
          "CRC",  # Used in TI CC13x2 / CC26x2 SDK comment
          "DEEP_SLEEP",  # #defined by RV32M1 in ext/
 +        "DEFAULT_PWM_PORT",
          "DESCRIPTION",
 +        "DMC_RUN_SMBUS_TESTS",
++        "DMA_SG_XFER_SIZE",
          "ERR",
          "ESP_DIF_LIBRARY",  # Referenced in CMake comment
          "EXPERIMENTAL",
-@@ -1279,6 +1281,7 @@ flagged.
+@@ -1279,6 +1282,7 @@ flagged.
          "IAR_LIBCPP",
          "IAR_SEMIHOSTING",
          "IAR_ZEPHYR_INIT",
@@ -38,7 +39,7 @@ index a0fa1348bb6..cf325a55b3a 100755
          "IPC_SERVICE_ICMSG_BOND_NOTIFY_REPEAT_TO_MS", # Used in ICMsg tests for intercompatibility
                                                        # with older versions of the ICMsg.
          "LIBGCC_RTLIB",
-@@ -1415,6 +1418,7 @@ class SysbuildKconfigCheck(KconfigCheck):
+@@ -1415,6 +1419,7 @@ class SysbuildKconfigCheck(KconfigCheck):
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
          # zephyr-keep-sorted-start re(^\s+")
@@ -46,7 +47,7 @@ index a0fa1348bb6..cf325a55b3a 100755
          "FOO",
          "MY_IMAGE", # Used in sysbuild documentation as example
          "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example
-@@ -1585,17 +1589,25 @@ class LicenseAndCopyrightCheck(ComplianceTest):
+@@ -1585,17 +1590,25 @@ class LicenseAndCopyrightCheck(ComplianceTest):
              self.fmtd_failure(severity, title, rel_path, desc=desc or "", line=1)
  
      def run(self) -> None:
@@ -77,7 +78,7 @@ index a0fa1348bb6..cf325a55b3a 100755
  
          project = Project.from_directory(GIT_TOP)
          report = ProjectSubsetReport.generate(project, changed_files, multiprocessing=False)
-@@ -2020,6 +2032,11 @@ class KeepSorted(ComplianceTest):
+@@ -2020,6 +2033,11 @@ class KeepSorted(ComplianceTest):
          if not mime_type.startswith("text/"):
              return
  
