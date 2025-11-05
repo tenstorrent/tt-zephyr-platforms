@@ -50,9 +50,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
+          fetch-tags: true
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
+
+      # Fetch tags from repositories in manifest. Needed so that
+      # git describe functions correctly when creating a build.
+      # We can remove this once https://github.com/zephyrproject-rtos/action-zephyr-setup/issues/56
+      # is fixed.
+      - name: Fetch Tags
+        shell: bash
+        run: |
+          west forall -c 'git fetch --unshallow || true'
 
       - name: Generate BOARD
         working-directory: tt-zephyr-platforms
