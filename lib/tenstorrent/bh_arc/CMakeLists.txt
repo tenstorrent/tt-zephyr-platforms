@@ -5,6 +5,7 @@ zephyr_include_directories(.)
 zephyr_include_directories(${ZEPHYR_CURRENT_MODULE_DIR}/include)
 zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY
+# zephyr-keep-sorted-start
   aiclk_ppm.c
   clock_wave.c
   dvfs.c
@@ -19,6 +20,7 @@ zephyr_library_sources_ifndef(
   noc_init.c
   pcie_dma.c
   pcie_msi.c
+  power.c
   pvt.c
   regulator.c
   regulator_config.c
@@ -29,10 +31,11 @@ zephyr_library_sources_ifndef(
   throttler.c
   vf_curve.c
   voltage.c
-  power.c
+# zephyr-keep-sorted-stop
 )
 
 zephyr_library_sources(
+# zephyr-keep-sorted-start
   asic_state.c
   arc_dma.c
   avs.c
@@ -40,6 +43,7 @@ zephyr_library_sources(
   cm2dm_msg.c
   dw_apb_i2c.c
   harvesting.c
+  log.c
   msgqueue.c
   noc.c
   noc2axi.c
@@ -53,6 +57,7 @@ zephyr_library_sources(
   spi_flash_buf.c
   telemetry.c
   timer.c
+# zephyr-keep-sorted-stop
 )
 
 zephyr_library_sources_ifdef(CONFIG_TT_SHELL tt_shell.c)
