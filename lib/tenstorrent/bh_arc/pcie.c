@@ -21,7 +21,13 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/init.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+
+/* FIXME: should be done via devicetree */
+#define PCIE_BAR0_SIZE_DEFAULT_MB 512
+#define PCIE_BAR2_SIZE_DEFAULT_MB 1
+#define PCIE_BAR4_SIZE_DEFAULT_MB 32768
 
 #define PCIE_SERDES0_ALPHACORE_TLB 0
 #define PCIE_SERDES1_ALPHACORE_TLB 1
@@ -47,6 +53,8 @@
 #define PCIE_SII_A_NOC_TLB_DATA_0__REG_OFFSET        0x00000134
 #define PCIE_SII_A_APP_PCIE_CTL_REG_OFFSET           0x0000005C
 #define PCIE_SII_A_LTSSM_STATE_REG_OFFSET            0x00000128
+
+LOG_MODULE_DECLARE(bh_arc);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
@@ -172,6 +180,73 @@ static inline void SetupDbiAccess(void)
 	ReadSiiReg(PCIE_NOC_TLB_DATA_REG_OFFSET(DBI_PCIE_TLB_ID));
 }
 
+static void CntlInitV2ParamInit(uint8_t pcie_inst, const ReadOnly *rotable,
+				const FwTable_PciPropertyTable *pcitable,
+				struct CntlInitV2Param *param)
+{
+	/* Start with 32-bit bar size in MiB. Round up as needed. Final value is bar mask in B */
+	uint64_t bar_sizes[] = {
+		pcitable->pcie_bar0_size,
+		pcitable->pcie_bar2_size,
+		pcitable->pcie_bar4_size,
+	};
+
+	if (pcitable->pcie_bar0_size != PCIE_BAR0_SIZE_DEFAULT_MB) {
+		LOG_WRN("BAR%zu %s(%u -> size %llu MiB)", 0, "Fixed ", (uint32_t)bar_sizes[0],
+			(uint64_t)PCIE_BAR0_SIZE_DEFAULT_MB);
+		bar_sizes[0] = PCIE_BAR0_SIZE_DEFAULT_MB;
+	} else {
+		LOG_INF("BAR%zu %s(%u -> size %llu MiB)", 0, "", PCIE_BAR0_SIZE_DEFAULT_MB,
+			(uint64_t)PCIE_BAR0_SIZE_DEFAULT_MB);
+	}
+	/* convert to bytes and adjust by -1 to get the correct mask */
+	bar_sizes[0] *= MB(1);
+	bar_sizes[0] -= 1;
+
+	if (pcitable->pcie_bar2_size != PCIE_BAR2_SIZE_DEFAULT_MB) {
+		LOG_WRN("BAR%zu %s(%u -> size %llu MiB)", 2, "Fixed ", (uint32_t)bar_sizes[1],
+			(uint64_t)PCIE_BAR2_SIZE_DEFAULT_MB);
+		bar_sizes[1] = PCIE_BAR2_SIZE_DEFAULT_MB;
+	} else {
+		LOG_INF("BAR%zu %s(%u -> size %llu MiB)", 2, "", PCIE_BAR2_SIZE_DEFAULT_MB,
+			(uint64_t)PCIE_BAR2_SIZE_DEFAULT_MB);
+	}
+	/* convert to bytes and adjust by -1 to get the correct mask */
+	bar_sizes[1] *= MB(1);
+	bar_sizes[1] -= 1;
+
+	if ((uint32_t)bar_sizes[2] == 0) {
+		LOG_WRN("BAR%zu %s(%u -> size %llu MiB)", 4, "Disabled ", 0U, 0ULL);
+	} else {
+		if (!IS_POWER_OF_TWO(bar_sizes[2])) {
+			uint64_t nhpot = NHPOT(bar_sizes[2]);
+
+			LOG_WRN("BAR%zu %s(%u -> size %llu MiB)", 4, "Rounded-up ",
+				(uint32_t)bar_sizes[2], nhpot);
+			bar_sizes[2] = nhpot;
+		} else {
+			LOG_INF("BAR%zu %s(%u -> size %llu MiB)", 4, "", (uint32_t)bar_sizes[2],
+				bar_sizes[2]);
+		}
+		/* convert to bytes and adjust by -1 to get the correct mask */
+		bar_sizes[2] *= MB(1);
+		bar_sizes[2] -= 1;
+	}
+
+	*param = (struct CntlInitV2Param){
+		.board_id = rotable->board_id,
+		.vendor_id = rotable->vendor_id,
+		.serdes_inst = pcitable->num_serdes,
+		.max_pcie_speed = pcitable->max_pcie_speed,
+		.pcie_inst = pcie_inst,
+		/* pcie_mode - 1 to match with definition in pcie.h for PCIeDeviceType */
+		.device_type = pcitable->pcie_mode - 1,
+		.region0_mask = bar_sizes[0],
+		.region2_mask = bar_sizes[1],
+		.region4_mask = bar_sizes[2],
+	};
+}
+
 static void InitResetInterrupt(uint8_t pcie_inst)
 {
 #if CONFIG_ARC
@@ -274,21 +349,19 @@ static void SetupSii(void)
 	WriteSiiReg(PCIE_SII_A_APP_PCIE_CTL_REG_OFFSET, app_pcie_ctl.val);
 }
 
-static PCIeInitStatus PCIeInitComm(uint8_t pcie_inst, uint8_t num_serdes_instance,
-				   PCIeDeviceType device_type, uint8_t max_pcie_speed)
+static PCIeInitStatus PCIeInitComm(const struct CntlInitV2Param *param)
 {
-	ConfigurePCIeTlbs(pcie_inst);
+	ConfigurePCIeTlbs(param->pcie_inst);
 
-	PCIeInitStatus status = SerdesInit(pcie_inst, device_type, num_serdes_instance);
+	PCIeInitStatus status =
+		SerdesInit(param->pcie_inst, param->device_type, param->serdes_inst);
 
 	if (status != PCIeInitOk) {
 		return status;
 	}
 
 	SetupDbiAccess();
-	CntlInit(pcie_inst, num_serdes_instance, max_pcie_speed,
-		 tt_bh_fwtable_get_read_only_table(fwtable_dev)->board_id,
-		 tt_bh_fwtable_get_read_only_table(fwtable_dev)->vendor_id);
+	CntlInitV2(param);
 
 	SetupSii();
 	SetupOutboundTlbs(); /* pcie_inst is implied by ConfigurePCIeTlbs */
@@ -335,25 +408,19 @@ static PCIeInitStatus PollForLinkUp(uint8_t pcie_inst)
 	return PCIeInitOk;
 }
 
-PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_prop_table)
+static PCIeInitStatus PCIeInit(const struct CntlInitV2Param *param)
 {
-	uint8_t num_serdes_instance = pci_prop_table->num_serdes;
-	PCIeDeviceType device_type =
-		pci_prop_table->pcie_mode - 1; /* apply offset to match with definition in pcie.h */
-	uint8_t max_pcie_speed = pci_prop_table->max_pcie_speed;
-
-	if (device_type == RootComplex) {
+	if ((PCIeDeviceType)param->device_type == RootComplex) {
 		TogglePerst();
 	}
 
-	PCIeInitStatus status =
-		PCIeInitComm(pcie_inst, num_serdes_instance, device_type, max_pcie_speed);
+	PCIeInitStatus status = PCIeInitComm(param);
 	if (status != PCIeInitOk) {
 		return status;
 	}
 
-	if (device_type == RootComplex) {
-		status = PollForLinkUp(pcie_inst);
+	if ((PCIeDeviceType)param->device_type == RootComplex) {
+		status = PollForLinkUp(param->pcie_inst);
 		if (status != PCIeInitOk) {
 			return status;
 		}
@@ -362,7 +429,7 @@ PCIeInitStatus PCIeInit(uint8_t pcie_inst, const FwTable_PciPropertyTable *pci_p
 
 		/* re-initialize PCIe link */
 		TogglePerst();
-		status = PCIeInitComm(pcie_inst, num_serdes_instance, device_type, max_pcie_speed);
+		status = PCIeInitComm(param);
 	}
 
 	return status;
@@ -381,17 +448,25 @@ static int pcie_init(void)
 		return 0;
 	}
 
+	const ReadOnly *rotable = tt_bh_fwtable_get_read_only_table(fwtable_dev);
 	FwTable_PciPropertyTable pci0_property_table;
 	FwTable_PciPropertyTable pci1_property_table;
+	struct CntlInitV2Param param;
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		pci0_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
 			.num_serdes = 2,
+			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
+			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
+			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
 		};
 		pci1_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
 			.num_serdes = 2,
+			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
+			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
+			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
 		};
 	} else {
 		pci0_property_table = tt_bh_fwtable_get_fw_table(fwtable_dev)->pci0_property_table;
@@ -399,11 +474,13 @@ static int pcie_init(void)
 	}
 
 	if (pci0_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
-		PCIeInit(0, &pci0_property_table);
+		CntlInitV2ParamInit(0, rotable, &pci0_property_table, &param);
+		PCIeInit(&param);
 	}
 
 	if (pci1_property_table.pcie_mode != FwTable_PciPropertyTable_PcieMode_DISABLED) {
-		PCIeInit(1, &pci1_property_table);
+		CntlInitV2ParamInit(1, rotable, &pci1_property_table, &param);
+		PCIeInit(&param);
 	}
 
 	InitResetInterrupt(0);
