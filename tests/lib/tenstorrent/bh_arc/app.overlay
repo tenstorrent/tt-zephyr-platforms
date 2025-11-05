@@ -6,6 +6,12 @@ fwtable: fwtable
 		status = "okay";
 		flash-dev = <&flashcontroller0>;
 	};
+
+pll4: pll4
+	{
+		compatible = "zephyr,clock-control-emul";
+		status = "okay";
+	};
 };
 
 &i2c0 {

@@ -1,0 +1,14 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Clock control emulation driver for testing
+
+compatible: "tenstorrent,clock-control-emul"
+
+include: base.yaml
+
+properties:
+  default-rate:
+    type: int
+    default: 1000000000
+    description: Default clock rate in Hz (1 GHz default)
