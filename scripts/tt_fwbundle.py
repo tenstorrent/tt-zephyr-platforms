@@ -78,6 +78,27 @@ def bundle_metadata(bundle: Path, board: str = "") -> dict:
     return data
 
 
+def extract_bundle_binary(bundle: Path, board: str, tag: str, output: Path):
+    """
+    Extracts a specific binary from a firmware bundle based on board and image tag.
+    """
+    try:
+        with (
+            tarfile.open(bundle, "r:gz") as tar,
+            tempfile.TemporaryDirectory() as tempdir,
+        ):
+            tar.extract(f"./{board}/image.bin", path=tempdir, filter="data")
+            return tt_boot_fs.extract(
+                Path(tempdir) / f"./{board}/image.bin", tag, output, input_base64=True
+            )
+    except KeyError as e:
+        print(f"Firmware bundle missing expected file: {e}")
+        sys.exit(os.EX_DATAERR)
+    except FileNotFoundError:
+        print(f"Firmware bundle file not found: {bundle}")
+        sys.exit(os.EX_NOINPUT)
+
+
 def ls_fw_bundle(bundle: Path, board: str = "", output_json: bool = False):
     """
     Lists the contents of a firmware bundle file.
@@ -306,6 +327,13 @@ def invoke_diff_fw_bundles(args):
     return diff_fw_bundles(args.bundle1, args.bundle2)
 
 
+def invoke_extract_fw_bundle(args):
+    ret = extract_bundle_binary(args.bundle, args.board, args.tag, args.output)
+    if ret == os.EX_OK:
+        print(f"Extracted image '{args.tag}' for board '{args.board}' to {args.output}")
+    return ret
+
+
 def parse_args():
     """
     Parse command line arguments.
@@ -403,6 +431,39 @@ def parse_args():
         metavar="BUNDLE2",
         help="second bundle file to compare",
         type=Path,
+    )
+    # Extract a binary from a firmware bundle
+    fw_bundle_extract_parser = subparsers.add_parser(
+        "extract", help="Extract a binary from a firmware bundle"
+    )
+    fw_bundle_extract_parser.set_defaults(func=invoke_extract_fw_bundle)
+    fw_bundle_extract_parser.add_argument(
+        "bundle",
+        metavar="BUNDLE",
+        help="input bundle file to extract from",
+        type=Path,
+    )
+    fw_bundle_extract_parser.add_argument(
+        "-b",
+        "--board",
+        metavar="BOARD",
+        help="board prefix (e.g. P150A-1)",
+        required=True,
+    )
+    fw_bundle_extract_parser.add_argument(
+        "-t",
+        "--tag",
+        metavar="TAG",
+        help="image tag to extract (e.g. bootloader)",
+        required=True,
+    )
+    fw_bundle_extract_parser.add_argument(
+        "-o",
+        "--output",
+        metavar="OUTPUT",
+        help="output file for extracted binary",
+        type=Path,
+        required=True,
     )
 
     args = parser.parse_args()
