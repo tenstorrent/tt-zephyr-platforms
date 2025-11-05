@@ -10,6 +10,7 @@ as well as extracting their contents.
 """
 
 import argparse
+import hashlib
 from intelhex import IntelHex
 from base64 import b16encode
 from pathlib import Path
@@ -19,6 +20,98 @@ import shutil
 import json
 import tarfile
 import tempfile
+
+import tt_boot_fs
+
+
+def bundle_metadata(bundle: Path, board: str = "") -> dict:
+    """
+    Helper to read firmware bundle file and extract JSON metadata.
+    Reads manifest.json and board-specific tt-boot-fs contents.
+    """
+    data = {}
+    try:
+        with (
+            tarfile.open(bundle, "r:gz") as tar,
+            tempfile.TemporaryDirectory() as tempdir,
+        ):
+            manifest_file = tar.extractfile("./manifest.json")
+            data["manifest"] = json.load(manifest_file)
+            names = tar.getnames()
+            image_files = [name for name in names if "image.bin" in name]
+            if board:
+                # Filter to specified board only
+                image_files = [
+                    img for img in image_files if img.startswith(f"./{board}/")
+                ]
+            if len(image_files) == 0:
+                print(f"No images found for board '{board}' in bundle.")
+                sys.exit(os.EX_DATAERR)
+            for img in image_files:
+                board_name = img.split("/")[1]
+                board_data = {}
+                tar.extract(img, path=tempdir, filter="data")
+                try:
+                    # Attempt to pull out tt-boot-fs data for this board
+
+                    board_data["bootfs"] = tt_boot_fs.ls(
+                        Path(tempdir) / img,
+                        output_json=True,
+                        input_base64=True,
+                        verbose=-1,
+                    )
+                except Exception:
+                    # Ignore errors parsing tt-boot-fs, it won't work for
+                    # non-blackhole boards
+                    pass
+                # Compute sha256 of the bundle binary
+                with open(Path(tempdir) / img, "rb") as f:
+                    bundle_binary = f.read()
+                    board_data["sha256"] = hashlib.sha256(bundle_binary).hexdigest()
+                data[board_name] = board_data
+    except KeyError as e:
+        print(f"Firmware bundle missing expected file: {e}")
+        sys.exit(os.EX_DATAERR)
+    except FileNotFoundError:
+        print(f"Firmware bundle file not found: {bundle}")
+        sys.exit(os.EX_NOINPUT)
+    return data
+
+
+def ls_fw_bundle(bundle: Path, board: str = "", output_json: bool = False):
+    """
+    Lists the contents of a firmware bundle file.
+    """
+    fw_data = bundle_metadata(bundle, board)
+    if not output_json:
+        print(f"Firmware Bundle: {bundle}")
+        manifest = fw_data["manifest"]
+        bv = manifest["bundle_version"]
+        print(
+            f"Bundle Version: {bv['fwId']}.{bv['releaseId']}.{bv['patch']}.{bv['debug']}"
+        )
+        fw_data.pop("manifest")
+        for board_name, fw_data in fw_data.items():
+            print("\n" + "=" * 80)
+            print(f"Board: {board_name}")
+            print(f"Image SHA256: {fw_data['sha256']}")
+            if "bootfs" not in fw_data:
+                print("No tt-boot-fs data found.")
+                continue
+            bootfs = fw_data["bootfs"]
+            print("tt-boot-fs contents:")
+            hdr = "spi_addr\timage_tag\tsize\tcopy_dest\tdata_crc\tflags\t\tfd_crc\t\tdigest"
+            print(hdr)
+            bar = "-" * len(hdr.expandtabs())
+            print(bar)
+            for entry in bootfs:
+                print(
+                    f"{entry['spi_addr']:08x}\t{entry['image_tag']:<8}\t{entry['size']}\t"
+                    f"{entry['copy_dest']:08x}\t{entry['data_crc']:08x}\t"
+                    f"{entry['flags']:08x}\t{entry['fd_crc']:08x}\t{entry['digest']:.10}"
+                )
+    else:
+        print(json.dumps(fw_data, indent=2))
 
 
 def combine_fw_bundles(combine: list[Path], output: Path):
@@ -132,6 +225,11 @@ def invoke_combine_fw_bundle(args):
     return os.EX_OK
 
 
+def invoke_ls_fw_bundle(args):
+    ls_fw_bundle(args.bundle, board=args.board, output_json=args.json)
+    return os.EX_OK
+
+
 def parse_args():
     """
     Parse command line arguments.
@@ -188,6 +286,30 @@ def parse_args():
         help="input bundle files to combine",
         nargs="+",
         default=[],
+    )
+    # List contents of a firmware bundle
+    fw_bundle_ls_parser = subparsers.add_parser(
+        "ls", help="List contents of a firmware bundle"
+    )
+    fw_bundle_ls_parser.set_defaults(func=invoke_ls_fw_bundle)
+    fw_bundle_ls_parser.add_argument(
+        "-b",
+        "--board",
+        default="",
+        metavar="BOARD",
+        help="board prefix to list (e.g. P150A-1)",
+    )
+    fw_bundle_ls_parser.add_argument(
+        "-j",
+        "--json",
+        help="output in JSON format",
+        action="store_true",
+    )
+    fw_bundle_ls_parser.add_argument(
+        "bundle",
+        metavar="BUNDLE",
+        help="input bundle file to list",
+        type=Path,
     )
 
     args = parser.parse_args()

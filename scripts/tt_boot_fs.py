@@ -860,7 +860,9 @@ def ls(
                     hexdump(start_addr=fd.spi_addr, data=entry.data)
 
     except Exception as e:
-        _logger.error(f"Exception: {e}")
+        # Only log if this is being run as a script
+        if __name__ == "__main__":
+            _logger.error(f"Exception: {e}")
 
     if fds and output_json and verbose >= 0:
         print(json.dumps(fds))
