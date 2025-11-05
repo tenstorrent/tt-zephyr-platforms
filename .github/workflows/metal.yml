@@ -64,11 +64,10 @@ jobs:
           source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |
-          mkdir -p $HOME/.cargo $HOME/.cache
           python -m venv .env
           source .env/bin/activate
-          pip install git+https://github.com/tenstorrent/tt-flash.git@v3.4.2
-          tt-flash --fw-tar $HOME/fw_pack-*.fwbundle --force
+          pip install tt-flash==3.4.7
+          tt-flash $HOME/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
           sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
