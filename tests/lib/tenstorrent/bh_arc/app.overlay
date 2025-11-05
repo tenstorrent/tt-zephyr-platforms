@@ -9,7 +9,7 @@ fwtable: fwtable
 
 pll4: pll4
 	{
-		compatible = "zephyr,clock-control-emul";
+		compatible = "tenstorrent,clock-control-emul";
 		status = "okay";
 	};
 };
