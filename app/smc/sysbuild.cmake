@@ -193,11 +193,10 @@ if (PROD_NAME MATCHES "^P300")
   # Merge left and right fwbundles
   add_custom_command(OUTPUT ${OUTPUT_FWBUNDLE}
     COMMAND ${PYTHON_EXECUTABLE}
-    ${APP_DIR}/../../scripts/tt_boot_fs.py fwbundle
-    -v ${BUNDLE_VERSION_STRING}
+    ${APP_DIR}/../../scripts/tt_fwbundle.py combine
     -o ${OUTPUT_FWBUNDLE}
-    -c ${OUTPUT_FWBUNDLE_LEFT}
-    -c ${OUTPUT_FWBUNDLE_RIGHT}
+    ${OUTPUT_FWBUNDLE_LEFT}
+    ${OUTPUT_FWBUNDLE_RIGHT}
     DEPENDS ${OUTPUT_FWBUNDLE_LEFT} ${OUTPUT_FWBUNDLE_RIGHT})
 else()
   set(OUTPUT_BOOTFS ${CMAKE_BINARY_DIR}/tt_boot_fs.hex)

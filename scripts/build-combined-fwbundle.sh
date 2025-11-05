@@ -23,7 +23,7 @@ trap cleanup EXIT
 
 mPATH="$(dirname "$0")"
 TTZP_BASE="$(dirname "$mPATH")"
-# put tt_boot_fs.py in the path (use it to combine .fwbundle files)
+# put tt_fwbundle.py in the path (use it to combine .fwbundle files)
 PATH="$mPATH:$PATH"
 
 BOARD_REVS="$(jq -r -c ".[]" "$TTZP_BASE/.github/boards.json")"
@@ -68,14 +68,13 @@ done
 
 echo "Creating fw_pack-$RELEASE.fwbundle"
 # construct arguments..
-ARGS="-c $PWD/$TTZP_BASE/zephyr/blobs/fw_pack-grayskull.tar.gz"
-ARGS="$ARGS -c $PWD/$TTZP_BASE/zephyr/blobs/fw_pack-wormhole.tar.gz"
+ARGS="$PWD/$TTZP_BASE/zephyr/blobs/fw_pack-grayskull.tar.gz"
+ARGS="$ARGS $PWD/$TTZP_BASE/zephyr/blobs/fw_pack-wormhole.tar.gz"
 for REV in $BOARD_REVS; do
-  ARGS="$ARGS -c ${TEMP_DIR}${REV}/update.fwbundle"
+  ARGS="$ARGS ${TEMP_DIR}${REV}/update.fwbundle"
 done
 
 # shellcheck disable=SC2086
-tt_boot_fs.py fwbundle \
-  -v "$PRELEASE" \
+tt_fwbundle.py combine \
   -o "fw_pack-$RELEASE.fwbundle" \
   $ARGS

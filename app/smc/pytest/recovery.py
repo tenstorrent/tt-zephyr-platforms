@@ -15,6 +15,7 @@ from twister_harness import DeviceAdapter
 sys.path.append(str(Path(__file__).parents[3] / "scripts"))
 
 import tt_boot_fs
+import tt_fwbundle
 
 from pcie_utils import rescan_pcie
 
@@ -71,7 +72,9 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
         f.seek(cmfw_offset)
         f.write(b"BAD DATA")
     # Make bundle from damaged CMFW
-    tt_boot_fs.mkbundle(patched_fs, build_dir / "tt_boot_fs_patched.bundle", "P100-1")
+    tt_fwbundle.create_fw_bundle(
+        build_dir / "tt_boot_fs_patched.bundle", [0, 0, 0, 0], {"P100-1": patched_fs}
+    )
     # Flash the damaged CMFW
     unlaunched_dut.command = [
         unlaunched_dut.west,
