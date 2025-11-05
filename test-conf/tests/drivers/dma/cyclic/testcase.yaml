@@ -22,15 +22,3 @@ tests:
       - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
         boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        tt_bh_noc.overlay"

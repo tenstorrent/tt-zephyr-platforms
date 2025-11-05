@@ -15,7 +15,7 @@
 #include <zephyr/kernel.h>
 #include <string.h>
 
-#include "noc.h"
+#include "noc_init.h"
 #include "noc2axi.h"
 #include "util.h"
 
@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(dma_noc_tt_bh, CONFIG_DMA_LOG_LEVEL);
 
 #define NOC_DMA_TLB        0
 #define NOC_DMA_NOC_ID     0
-#define NOC_DMA_TIMEOUT_MS 100
+#define NOC_DMA_TIMEOUT_MS 50
 #define NOC_MAX_BURST_SIZE 16384
 
 #define DMA_MAX_TRANSFER_BLOCKS 4
@@ -57,26 +57,15 @@ LOG_MODULE_REGISTER(dma_noc_tt_bh, CONFIG_DMA_LOG_LEVEL);
 /* Define invalid channel constant - using a high value that's unlikely to be used */
 #define DMA_CHANNEL_INVALID 0xFFFFFFFF
 
-/* Context structure for async work - define before struct that uses it */
-struct noc_dma_work_context {
-	struct k_work_delayable work;
-	const struct device *dev;
-	uint32_t channel;
-};
-
-static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel);
-
 struct tt_bh_dma_channel_resettable_data {
 	/* Hardware completion tracking for get_status() */
 	uint32_t last_noc_cmd;
 	uint32_t last_expected_acks;
-	/* These should maybe be uint16_t? */
-	int block_index;
-	int block_count;
+	uint16_t block_index;
+	uint16_t block_count;
 	bool configured: 1;
 	bool active: 1;
 	bool suspended: 1;
-	bool cyclic_active: 1;
 	bool hw_completion_tracking: 1;
 };
 
@@ -84,7 +73,6 @@ struct tt_bh_dma_channel_data {
 	struct dma_block_config blocks[DMA_MAX_TRANSFER_BLOCKS];
 	struct tt_bh_dma_noc_coords coords;
 	struct dma_config config;
-	struct noc_dma_work_context work_ctx;
 	struct tt_bh_dma_channel_resettable_data state;
 };
 
@@ -274,90 +262,6 @@ static int noc_dma_transfer(uint32_t cmd, uint32_t ret_coord, uint64_t ret_addr,
 	return 0;
 }
 
-/*
- * Async work handler for memory-to-memory transfers (ARC to ARC within TLB window)
- *
- * Callback specifications for async transfers:
- * - Per-block callbacks (DMA_STATUS_BLOCK) when complete_callback_en is set
- * - Transfer completion callbacks (DMA_STATUS_COMPLETE) when all blocks are done
- * - Error callbacks (negative errno) when error_callback_dis is not set
- */
-static void noc_dma_memcpy_work(struct k_work *work)
-{
-	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-	struct noc_dma_work_context *ctx = CONTAINER_OF(dwork, struct noc_dma_work_context, work);
-	const struct tt_bh_dma_noc_config *cfg =
-		(const struct tt_bh_dma_noc_config *)ctx->dev->config;
-	struct tt_bh_dma_channel_data *chan_data = &cfg->channels[ctx->channel];
-
-	__ASSERT_NO_MSG(chan_data->config.channel_direction == MEMORY_TO_MEMORY);
-
-	/* Check if transfer is suspended */
-	if (chan_data->state.suspended) {
-		/* Re-schedule to check again later */
-		k_work_reschedule(&chan_data->work_ctx.work, K_MSEC(1));
-		return;
-	}
-
-	/* Get current block to process */
-	struct dma_block_config *current_block = &chan_data->blocks[chan_data->state.block_index];
-
-	if (!current_block || chan_data->state.block_index >= chan_data->state.block_count) {
-		LOG_ERR("Invalid block index %d", chan_data->state.block_index);
-		chan_data->state.active = false;
-
-		/* Call error callback using helper function */
-		handle_transfer_callbacks(ctx->dev, chan_data, ctx->channel, -EINVAL, true);
-		return;
-	}
-
-	/* Local memory copy for current block */
-	memcpy((void *)(uintptr_t)current_block->dest_address,
-	       (void *)(uintptr_t)current_block->source_address, current_block->block_size);
-
-	chan_data->state.block_index++;
-
-	/* Check if we have more blocks to process */
-	bool more_blocks = (chan_data->state.block_index < chan_data->state.block_count);
-
-	/* Handle callbacks using the unified helper function */
-	handle_transfer_callbacks(ctx->dev, chan_data, ctx->channel, 0, !more_blocks);
-
-	/* If we have more blocks to process, continue with next block */
-	if (more_blocks) {
-		k_work_reschedule(&chan_data->work_ctx.work, K_NO_WAIT);
-		return;
-	}
-
-	/* Handle cyclic transfers */
-	if (chan_data->config.cyclic && chan_data->state.cyclic_active) {
-		/* For cyclic transfers, reset to first block and reschedule */
-		chan_data->state.block_index = 0;
-		k_work_reschedule(&chan_data->work_ctx.work, K_MSEC(1));
-		return;
-	}
-
-	/* Handle channel linking for non-cyclic transfers */
-	if (chan_data->config.linked_channel != DMA_CHANNEL_INVALID) {
-		uint32_t linked_chan = chan_data->config.linked_channel;
-
-		if (linked_chan < cfg->num_channels &&
-		    cfg->channels[linked_chan].state.configured) {
-			if (chan_data->config.dest_chaining_en ||
-			    chan_data->config.source_chaining_en) {
-				LOG_DBG("Triggering linked channel %u from channel %u", linked_chan,
-					ctx->channel);
-				tt_bh_dma_noc_start(ctx->dev, linked_chan);
-			}
-		}
-	}
-
-	/* Mark as inactive if not cyclic */
-	if (!chan_data->config.cyclic || !chan_data->state.cyclic_active) {
-		chan_data->state.active = false;
-	}
-}
-
 static struct tt_bh_dma_channel_data *get_channel_data(const struct device *dev, uint32_t channel)
 {
 	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
@@ -372,67 +276,44 @@ static struct tt_bh_dma_channel_data *get_channel_data(const struct device *dev,
 /*
  * Config the source and dest NOC coordinates, the source and dest addresses and
  * the size of data transfer.
- *
- * Transfer data using only one block for simplicity.
  */
 static int tt_bh_dma_noc_config(const struct device *dev, uint32_t channel,
 				struct dma_config *config)
 {
-	struct tt_bh_dma_noc_data *data = (struct tt_bh_dma_noc_data *)dev->data;
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-	struct tt_bh_dma_noc_coords *coords = NULL;
+	struct tt_bh_dma_noc_data *dma_data = (struct tt_bh_dma_noc_data *)dev->data;
+	const struct tt_bh_dma_noc_config *dma_cfg =
+		(const struct tt_bh_dma_noc_config *)dev->config;
 
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!config->head_block) {
+	if (config->block_count == 0) {
 		LOG_ERR("No block configuration provided");
 		return -EINVAL;
 	}
-
-	/* user_data contains coordinates for non-memory-to-memory transfers */
-	if (config->user_data) {
-		coords = (struct tt_bh_dma_noc_coords *)config->user_data;
-	} else {
-		/* No coordinates - only valid for MEMORY_TO_MEMORY */
-		if (config->channel_direction != MEMORY_TO_MEMORY) {
-			LOG_ERR("Coordinates required for non-memory-to-memory transfers");
-			return -EINVAL;
-		}
-	}
-
-	/* Validate configuration */
-	if (config->block_count == 0) {
-		LOG_ERR("No block configuration");
-		return -EINVAL;
-	}
-
 	if (config->block_count > DMA_MAX_TRANSFER_BLOCKS) {
 		LOG_ERR("Too many blocks: %u > %u", config->block_count, DMA_MAX_TRANSFER_BLOCKS);
 		return -EINVAL;
 	}
+	if (channel > dma_cfg->num_channels) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
+	}
 
-	k_spinlock_key_t key = k_spin_lock(&data->lock);
+	struct tt_bh_dma_channel_data *chan_data = &dma_cfg->channels[channel];
+
+	k_spinlock_key_t key = k_spin_lock(&dma_data->lock);
 
 	/* Deep copy all blocks from the linked list */
 	struct dma_block_config *src_block = config->head_block;
 
-	chan_data->state.block_count = 0;
-
 	for (int i = 0; i < config->block_count && src_block != NULL; i++) {
-		/* Copy the block data */
 		chan_data->blocks[i] = *src_block;
 		/* Clear the next_block pointer since we're storing in an array */
 		chan_data->blocks[i].next_block = NULL;
-		chan_data->state.block_count++;
 
-		/* Move to next block in the linked list */
 		src_block = src_block->next_block;
 	}
 
 	chan_data->state.block_index = 0;
+	chan_data->state.block_count = config->block_count;
 	chan_data->config = *config;
 	/* Update the config to point to our copied blocks */
 	chan_data->config.head_block = &chan_data->blocks[0];
@@ -443,18 +324,15 @@ static int tt_bh_dma_noc_config(const struct device *dev, uint32_t channel,
 	chan_data->state.last_noc_cmd = 0;
 	chan_data->state.last_expected_acks = 0;
 
-	/* Handle coordinates - for memory-to-memory, coords may be NULL */
-	if (coords) {
-		chan_data->coords = *coords;
+	if (config->user_data) {
+		chan_data->coords = *(struct tt_bh_dma_noc_coords *)config->user_data;
 	} else {
-		/* Default to same coordinates for memory-to-memory */
-		chan_data->coords.source_x = 0;
-		chan_data->coords.source_y = 0;
-		chan_data->coords.dest_x = 0;
+		GetEnabledTensix(&chan_data->coords.source_x, &chan_data->coords.source_y);
+		chan_data->coords.dest_x = 8;
 		chan_data->coords.dest_y = 0;
 	}
 
-	k_spin_unlock(&data->lock, key);
+	k_spin_unlock(&dma_data->lock, key);
 
 	return 0;
 }
@@ -509,11 +387,6 @@ static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 	chan_data->state.suspended = false;
 	chan_data->state.block_index = 0;
 
-	/* Enable cyclic mode if configured */
-	if (chan_data->config.cyclic) {
-		chan_data->state.cyclic_active = true;
-	}
-
 	struct tt_bh_dma_noc_coords *coords = &chan_data->coords;
 	struct dma_block_config *current_block = &chan_data->blocks[chan_data->state.block_index];
 
@@ -526,9 +399,116 @@ static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 	/* Handle different transfer types - all asynchronous */
 	switch (chan_data->config.channel_direction) {
 	case MEMORY_TO_MEMORY: {
-		/* Memory-to-memory transfers use async work queue */
-		chan_data->state.hw_completion_tracking = false; /* No NOC hardware involved */
-		k_work_reschedule(&chan_data->work_ctx.work, K_NO_WAIT);
+		chan_data->state.hw_completion_tracking = false;
+		for (; chan_data->state.block_index < chan_data->state.block_count;
+		     chan_data->state.block_index++) {
+			current_block = &chan_data->blocks[chan_data->state.block_index];
+			if (!current_block) {
+				LOG_ERR("No valid block configuration");
+				chan_data->state.active = false;
+				handle_transfer_callbacks(dev, chan_data, channel, -EINVAL, true);
+				return -EINVAL;
+			}
+
+			uint32_t ret_coord =
+				noc_dma_format_coord(coords->source_x, coords->source_y);
+			uint64_t ret_addr = 0;
+
+			uint32_t targ_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
+			uint64_t targ_addr = current_block->source_address;
+
+			NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x,
+					coords->source_y, TARGET_ADDR_LO);
+
+			int ret = noc_dma_transfer(NOC_CMD_RD, ret_coord, ret_addr, targ_coord,
+						   targ_addr, current_block->block_size, false, 0,
+						   false, &chan_data->state.last_noc_cmd,
+						   &chan_data->state.last_expected_acks);
+
+			if (ret != 0) {
+				handle_transfer_callbacks(dev, chan_data, channel, ret, true);
+				chan_data->state.active = false;
+				return ret;
+			}
+
+			/* Wait for read operation to complete */
+			k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
+
+			while (!check_noc_dma_done_immediate(chan_data->state.last_noc_cmd,
+							     chan_data->state.last_expected_acks) &&
+			       !sys_timepoint_expired(timeout)) {
+				k_busy_wait(1);
+			}
+
+			if (sys_timepoint_expired(timeout)) {
+				LOG_ERR("NOC read operation timeout");
+				handle_transfer_callbacks(dev, chan_data, channel, -ETIMEDOUT,
+							  true);
+				chan_data->state.active = false;
+				return -ETIMEDOUT;
+			}
+
+			ret_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
+			ret_addr = current_block->dest_address;
+
+			targ_coord = noc_dma_format_coord(coords->source_x, coords->source_y);
+			targ_addr = 0;
+
+			NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x,
+					coords->source_y, TARGET_ADDR_LO);
+
+			ret = noc_dma_transfer(NOC_CMD_WR, ret_coord, ret_addr, targ_coord,
+					       targ_addr, current_block->block_size, false, 0,
+					       false, &chan_data->state.last_noc_cmd,
+					       &chan_data->state.last_expected_acks);
+
+			if (ret != 0) {
+				handle_transfer_callbacks(dev, chan_data, channel, ret, true);
+				chan_data->state.active = false;
+				return ret;
+			}
+
+			/* Wait for write operation to complete */
+			timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
+			while (!check_noc_dma_done_immediate(chan_data->state.last_noc_cmd,
+							     chan_data->state.last_expected_acks) &&
+			       !sys_timepoint_expired(timeout)) {
+				k_busy_wait(1);
+			}
+
+			if (sys_timepoint_expired(timeout)) {
+				LOG_ERR("NOC write operation timeout");
+				handle_transfer_callbacks(dev, chan_data, channel, -ETIMEDOUT,
+							  true);
+				chan_data->state.active = false;
+				return -ETIMEDOUT;
+			}
+
+			/* Enable hardware completion tracking for non-MEMORY_TO_MEMORY transfers */
+			chan_data->state.hw_completion_tracking = true;
+
+			/* Invoke callback function at transfer or block completion */
+			handle_transfer_callbacks(dev, chan_data, channel, 0,
+						  chan_data->state.block_index + 1 ==
+							  chan_data->state.block_count);
+		}
+
+		if (chan_data->config.linked_channel != DMA_CHANNEL_INVALID) {
+			uint32_t linked_chan = chan_data->config.linked_channel;
+			const struct tt_bh_dma_noc_config *cfg =
+				(const struct tt_bh_dma_noc_config *)dev->config;
+			if (linked_chan < cfg->num_channels &&
+			    cfg->channels[linked_chan].state.configured) {
+				if (chan_data->config.dest_chaining_en ||
+				    chan_data->config.source_chaining_en) {
+					LOG_DBG("Triggering linked channel %u from channel %u",
+						linked_chan, channel);
+					tt_bh_dma_noc_start(dev, linked_chan);
+				}
+			}
+		}
+
+		chan_data->state.active = false;
 		return 0;
 	}
 	case MEMORY_TO_PERIPHERAL: {
@@ -615,108 +595,11 @@ static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 	}
 }
 
-static int tt_bh_dma_noc_stop(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	/* Cancel any pending async work for this channel */
-	k_work_cancel_delayable(&chan_data->work_ctx.work);
-
-	/* Stop cyclic transfers */
-	chan_data->state.cyclic_active = false;
-	chan_data->state.suspended = false;
-	chan_data->state.active = false;
-	chan_data->state.block_index = 0;
-
-	return 0;
-}
-
-static int tt_bh_dma_noc_suspend(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!chan_data->state.active) {
-		LOG_ERR("Channel %u not active", channel);
-		return -EINVAL;
-	}
-
-	chan_data->state.suspended = true;
-	LOG_DBG("Suspended channel %u", channel);
-
-	return 0;
-}
-
-static int tt_bh_dma_noc_resume(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!chan_data->state.active) {
-		LOG_ERR("Channel %u not active", channel);
-		return -EINVAL;
-	}
-
-	chan_data->state.suspended = false;
-	LOG_DBG("Resumed channel %u", channel);
-
-	/* If cyclic and suspended, reschedule work */
-	if (chan_data->config.cyclic && chan_data->state.cyclic_active) {
-		k_work_reschedule(&chan_data->work_ctx.work, K_NO_WAIT);
-	}
-
-	return 0;
-}
-
-static void tt_bh_dma_noc_release_channel(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_noc_data *data = (struct tt_bh_dma_noc_data *)dev->data;
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return;
-	}
-
-	k_spinlock_key_t key = k_spin_lock(&data->lock);
-
-	/* Stop any ongoing transfer */
-	if (chan_data->state.active) {
-		tt_bh_dma_noc_stop(dev, channel);
-	}
-
-	/* Reset channel state */
-	chan_data->state = *(struct tt_bh_dma_channel_resettable_data *){0};
-
-	k_spin_unlock(&data->lock, key);
-}
-
 static int tt_bh_dma_noc_init(const struct device *dev)
 {
 	struct tt_bh_dma_noc_data *data = (struct tt_bh_dma_noc_data *)dev->data;
-	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
 
 	data->lock = (struct k_spinlock){};
-
-	/* Initialize work context for all channels */
-	for (uint8_t i = 0; i < cfg->num_channels; ++i) {
-		cfg->channels[i].work_ctx.dev = dev;
-		cfg->channels[i].work_ctx.channel = i;
-		k_work_init_delayable(&cfg->channels[i].work_ctx.work, noc_dma_memcpy_work);
-	}
 
 	return 0;
 }
@@ -743,7 +626,7 @@ static int tt_bh_dma_noc_get_status(const struct device *dev, uint32_t channel,
 		status->dir = MEMORY_TO_MEMORY; /* Default direction */
 	}
 
-	/* Determine if channel is busy */
+	/* Determine if channel is busy (active and not suspended) */
 	status->busy = chan_data->state.active && !chan_data->state.suspended;
 
 	/* For NOC transfers, check hardware completion status immediately (non-blocking) */
@@ -779,34 +662,70 @@ static int tt_bh_dma_noc_get_status(const struct device *dev, uint32_t channel,
 		status->total_copied = 0;
 	}
 
-	/* For cyclic transfers, provide additional information */
-	if (chan_data->config.cyclic && chan_data->state.cyclic_active) {
-		/* In cyclic mode, we can provide current position information */
-		if (chan_data->state.block_count > 0) {
-			/* Calculate position within the cyclic buffer */
-			uint32_t total_buffer_size = 0;
-			uint32_t current_position = 0;
+	return 0;
+}
 
-			/* Calculate total buffer size */
-			for (int i = 0; i < chan_data->state.block_count; i++) {
-				total_buffer_size += chan_data->blocks[i].block_size;
-			}
+static int tt_bh_dma_noc_stop(const struct device *dev, uint32_t channel)
+{
+	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
 
-			/* Calculate current position (block_index may wrap in cyclic mode) */
-			int current_index =
-				chan_data->state.block_index % chan_data->state.block_count;
-
-			for (int i = 0; i < current_index; i++) {
-				current_position += chan_data->blocks[i].block_size;
-			}
-
-			status->read_position = current_position;
-			status->write_position = current_position;
-			status->free = total_buffer_size - current_position;
-		}
+	if (!chan_data) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
 	}
 
+	if (!chan_data->state.active) {
+		return 0;
+	}
+
+	chan_data->state.active = false;
+	chan_data->state.suspended = false;
+	chan_data->state.hw_completion_tracking = false;
+
 	return 0;
+}
+
+static int tt_bh_dma_noc_resume(const struct device *dev, uint32_t channel)
+{
+	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
+
+	if (!chan_data) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
+	}
+
+	if (!chan_data->state.active) {
+		LOG_ERR("Cannot resume inactive channel %u", channel);
+		return -EINVAL;
+	}
+
+	if (!chan_data->state.suspended) {
+		/* Already resumed/active */
+		return 0;
+	}
+
+	chan_data->state.suspended = false;
+	LOG_DBG("Resumed channel %u", channel);
+	return 0;
+}
+
+static void tt_bh_dma_noc_chan_release(const struct device *dev, uint32_t channel)
+{
+	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
+
+	if (!chan_data) {
+		LOG_ERR("Invalid channel %u", channel);
+		return;
+	}
+
+	/* Stop the channel if it's active */
+	if (chan_data->state.active) {
+		tt_bh_dma_noc_stop(dev, channel);
+	}
+
+	/* Reset channel state */
+	memset(&chan_data->state, 0, sizeof(chan_data->state));
+	chan_data->state.configured = false;
 }
 
 static const struct dma_driver_api tt_bh_dma_noc_api = {
@@ -814,12 +733,12 @@ static const struct dma_driver_api tt_bh_dma_noc_api = {
 	.reload = NULL,
 	.start = tt_bh_dma_noc_start,
 	.stop = tt_bh_dma_noc_stop,
-	.suspend = tt_bh_dma_noc_suspend,
+	.suspend = NULL,
 	.resume = tt_bh_dma_noc_resume,
 	.get_status = tt_bh_dma_noc_get_status,
 	.get_attribute = NULL,
 	.chan_filter = NULL,
-	.chan_release = tt_bh_dma_noc_release_channel,
+	.chan_release = tt_bh_dma_noc_chan_release,
 };
 
 #define TT_BH_DMA_NOC_INIT(inst)                                                                   \
