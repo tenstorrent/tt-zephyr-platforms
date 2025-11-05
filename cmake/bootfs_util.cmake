@@ -19,7 +19,7 @@ function(add_bootfs_and_fwbundle bundle_version bootfs_yaml output_bootfs output
   # using tt-flash
   add_custom_command(OUTPUT ${output_fwbundle}
     COMMAND ${PYTHON_EXECUTABLE}
-    ${APP_DIR}/../../scripts/tt_boot_fs.py fwbundle
+    ${APP_DIR}/../../scripts/tt_fwbundle.py create
     -v "${bundle_version}"
     -o ${output_fwbundle}
     ${prod_name}

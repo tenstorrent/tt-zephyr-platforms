@@ -17,10 +17,7 @@ from typing import Any, Callable, cast, Iterable, Optional, Tuple
 import yaml
 import argparse
 import sys
-from base64 import b16encode
 import json
-import shutil
-import tarfile
 import tempfile
 from intelhex import IntelHex
 import imgtool.image as imgtool_image
@@ -908,74 +905,6 @@ def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
         _logger.error(f"Exception: {e}")
 
 
-def mkbundle(
-    output: Path, version: list[int], combine: list[Path], boot_fs: dict[str, Path] = {}
-):
-    bundle_dir = Path(tempfile.mkdtemp())
-    try:
-        # Process firmware bundles to combine before processing tt_boot_fs.bin files.
-        # The implication is that binaries may overwrite files from combined bundles.
-        origdir = os.getcwd()
-        os.chdir(bundle_dir)
-        for bundle in combine:
-            with tarfile.open(bundle, "r:gz") as tar:
-                tar.extractall(filter="data")  # tarfile only ever extracts to CWD
-        os.chdir(origdir)
-
-        # Process (board, tt_boot_fs) pairs
-        for board, image in boot_fs.items():
-            board_dir = bundle_dir / board
-            board_dir.mkdir()
-            mask = [{"tag": "write-boardcfg"}]
-            with open(board_dir / "mask.json", "w") as file:
-                file.write(json.dumps(mask))
-            mapping = []
-            with open(board_dir / "mapping.json", "w") as file:
-                file.write(json.dumps(mapping))
-            if image.suffix == ".hex":
-                # Encode offsets using @addr format tt-flash supports
-                ih = IntelHex(str(image))
-                b16out = ""
-                for off, end in ih.segments():
-                    b16out += f"@{off}\n"
-                    b16out += b16encode(
-                        ih.tobinarray(start=off, size=end - off)
-                    ).decode("ascii")
-                    b16out += "\n"
-            else:
-                with open(image, "rb") as img:
-                    binary = img.read()
-                    # Convert image to base16 encoded ascii to conform to
-                    # tt-flash format
-                    b16out = b16encode(binary).decode("ascii")
-            with open(board_dir / "image.bin", "w") as img:
-                img.write(b16out)
-
-        # Update the manifest last, so we can specify the bundle_version
-        manifest = {
-            "version": "2.0.0",  # manifest file version
-            "bundle_version": {
-                "fwId": version[0],
-                "releaseId": version[1],
-                "patch": version[2],
-                "debug": version[3],
-            },
-        }
-        with open(bundle_dir / "manifest.json", "w+") as file:
-            file.write(json.dumps(manifest))
-
-        # Compress output as tar.gz
-        if output.exists():
-            output.unlink()
-        with tarfile.open(output, "x:gz") as tar:
-            tar.add(bundle_dir, arcname=".")
-
-    except Exception as e:
-        raise e
-    finally:
-        shutil.rmtree(bundle_dir)
-
-
 def _generate_bootfs_yaml(
     args, partitions_node, name: str, gen_name: str, out_yaml: str
 ):
@@ -1128,28 +1057,6 @@ def invoke_fsck(args):
     return os.EX_OK
 
 
-def invoke_fwbundle(args):
-    # Convert e.g. "80.16.0.1" to [80, 16, 0, 1]
-    version = args.version.split(".")
-    if len(version) != 4:
-        raise RuntimeError("Invalid bundle version format")
-    for i in range(4):
-        version[i] = int(version[i])
-    setattr(args, "version", version)
-
-    # e.g. bootfs["P100-1"] = blah/p100/tt_boot_fs.bin
-    if len(args.bootfs) % 2 != 0:
-        raise RuntimeError(f"Invalid number of boot fs arguments: {len(args.boot_fs)}")
-    bootfs = {}
-    for i in range(0, len(args.bootfs), 2):
-        bootfs[args.bootfs[i]] = Path(args.bootfs[i + 1])
-    setattr(args, "bootfs", bootfs)
-
-    mkbundle(args.output, args.version, args.combine, args.bootfs)
-    print(f"Wrote fwbundle to {args.output}")
-    return os.EX_OK
-
-
 def invoke_ls(args):
     ls(args.bootfs, args.verbose - args.quiet, args.json, args.base64)
     return os.EX_OK
@@ -1235,41 +1142,6 @@ def parse_args():
         "filesystem", metavar="FS", help="filesystem to check", type=Path
     )
     fsck_parser.set_defaults(func=invoke_fsck)
-
-    # Create a firmware update bundle
-    bundle_parser = subparsers.add_parser("fwbundle", help="manage firmware bundle")
-    bundle_parser.add_argument(
-        "-v",
-        "--version",
-        metavar="VERSION",
-        help="bundle version (e.g. 80.16.0.1)",
-        required=True,
-    )
-    bundle_parser.add_argument(
-        "-o",
-        "--output",
-        metavar="BUNDLE",
-        help="output bundle file name",
-        type=Path,
-        required=True,
-    )
-    bundle_parser.add_argument(
-        "-c",
-        "--combine",
-        metavar="BUNDLE",
-        help="firmware bundle to combine (can be specified more than once)",
-        type=Path,
-        action="append",
-        default=[],
-    )
-    bundle_parser.add_argument(
-        "bootfs",
-        metavar="BOARD_FS",
-        help="[PREFIX FS..] pairs (e.g. P150A-1 build-p150a/tt_boot_fs.bin)",
-        nargs="*",
-        default=[],
-    )
-    bundle_parser.set_defaults(func=invoke_fwbundle)
 
     ls_parser = subparsers.add_parser("ls", help="list tt_boot_fs contents")
     ls_parser.add_argument("bootfs", metavar="FS", help="filesystem to list", type=Path)
