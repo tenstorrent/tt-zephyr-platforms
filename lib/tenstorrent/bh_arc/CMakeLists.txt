@@ -39,8 +39,11 @@ zephyr_library_sources(
   cat.c
   cm2dm_msg.c
   dw_apb_i2c.c
+  harvesting.c
   msgqueue.c
+  noc.c
   noc2axi.c
+  noc_init.c
   pcie.c
   pll.c
   post_code.c
@@ -48,6 +51,7 @@ zephyr_library_sources(
   smbus_target.c
   spi_eeprom.c
   spi_flash_buf.c
+  telemetry.c
   timer.c
 )
 
