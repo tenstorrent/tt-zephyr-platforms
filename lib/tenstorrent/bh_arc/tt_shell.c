@@ -8,12 +8,37 @@
 #include <zephyr/shell/shell.h>
 #include <stdlib.h>
 
+#include <tenstorrent/bh_power.h>
+
 #include "telemetry.h"
 #include "smbus_target.h"
 #include "gddr.h"
 #include "asic_state.h"
 #include "noc_init.h"
 LOG_MODULE_REGISTER(tt_shell, CONFIG_LOG_DEFAULT_LEVEL);
+
+int l2cpu_enable_handler(const struct shell *sh, size_t argc, char **argv)
+{
+	bool on = false;
+
+	if (strcmp(argv[1], "off") == 0) {
+		on = false;
+
+	} else if (strcmp(argv[1], "on") == 0) {
+		on = true;
+	} else {
+		shell_error(sh, "Invalid L2CPU power setting");
+	}
+
+	int ret = bh_set_l2cpu_enable(on);
+
+	if (ret != 0) {
+		shell_error(sh, "Failure to set L2CPU power setting %u", on);
+		return ret;
+	}
+	shell_print(sh, "OK");
+	return 0;
+}
 
 int tensix_enable_handler(const struct shell *sh, size_t argc, char **argv)
 {
@@ -120,6 +145,7 @@ int telem_handler(const struct shell *sh, size_t argc, char **argv)
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	sub_tt_commands, SHELL_CMD_ARG(mrisc_power, NULL, "[off|on]", mrisc_power_handler, 2, 0),
 	SHELL_CMD_ARG(tensix_power, NULL, "[off|on]", tensix_enable_handler, 2, 0),
+	SHELL_CMD_ARG(l2cpu_power, NULL, "[off|on]", l2cpu_enable_handler, 2, 0),
 	SHELL_CMD_ARG(asic_state, NULL, "[|0|3]", asic_state_handler, 1, 1),
 	SHELL_CMD_ARG(telem, NULL, "<Telemetry Index> [|x|f|d]", telem_handler, 2, 1),
 	SHELL_SUBCMD_SET_END);
