@@ -114,6 +114,78 @@ def ls_fw_bundle(bundle: Path, board: str = "", output_json: bool = False):
         print(json.dumps(fw_data, indent=2))
 
 
+def build_bootfs_digest_map(bootfs: list[dict]) -> dict[str, str]:
+    """
+    Builds a map of image tags to digests from a tt-boot-fs listing.
+    We prefer digest if present, as these do not change when the image is
+    re-signed. If digest is not present, we fall back to using data_crc.
+    """
+    digest_map = {}
+    for entry in bootfs:
+        tag = entry["image_tag"]
+        digest = entry.get("digest")
+        if digest:
+            digest_map[tag] = digest
+        else:
+            # Fall back to data_crc if digest not present
+            digest_map[tag] = f"crc-{entry['data_crc']:08x}"
+    return digest_map
+
+
+def diff_fw_bundles(bundle1: Path, bundle2: Path):
+    """
+    Compares two firmware bundles and lists differences.
+    """
+    fw_data1 = bundle_metadata(bundle1)
+    fw_data2 = bundle_metadata(bundle2)
+
+    diff_found = False
+    # Compare manifests
+    if fw_data1["manifest"] != fw_data2["manifest"]:
+        diff_found = True
+        print("Manifests differ:")
+        print(f"  Bundle 1: {fw_data1['manifest']}")
+        print(f"  Bundle 2: {fw_data2['manifest']}")
+    # Compare boards
+    boards1 = set(fw_data1.keys()) - {"manifest"}
+    boards2 = set(fw_data2.keys()) - {"manifest"}
+    if boards1 != boards2:
+        diff_found = True
+        print("Boards differ:")
+        print(f"  Bundle 1 boards: {boards1}")
+        print(f"  Bundle 2 boards: {boards2}")
+    for board in boards1.intersection(boards2):
+        board_data1 = fw_data1[board]
+        board_data2 = fw_data2[board]
+        # Compare tt-boot-fs contents if available
+        if "bootfs" in board_data1 and "bootfs" in board_data2:
+            map1 = build_bootfs_digest_map(board_data1["bootfs"])
+            map2 = build_bootfs_digest_map(board_data2["bootfs"])
+            if map1 != map2:
+                diff_found = True
+                print(f"Board {board} tt-boot-fs contents differ:")
+                tags1 = set(map1.keys())
+                tags2 = set(map2.keys())
+                all_tags = tags1.union(tags2)
+                for tag in all_tags:
+                    digest1 = map1.get(tag, "<missing>")
+                    digest2 = map2.get(tag, "<missing>")
+                    if digest1 != digest2:
+                        print(f"  Image tag '{tag}' differs:")
+                        print(f"    Bundle 1 digest: {digest1}")
+                        print(f"    Bundle 2 digest: {digest2}")
+        elif board_data1["sha256"] != board_data2["sha256"]:
+            diff_found = True
+            print(f"Board {board} images differ:")
+            print(f"  Bundle 1 SHA256: {board_data1['sha256']}")
+            print(f"  Bundle 2 SHA256: {board_data2['sha256']}")
+    if not diff_found:
+        print("No differences found between the two firmware bundles.")
+        return os.EX_OK
+    else:
+        return os.EX_DATAERR
+
+
 def combine_fw_bundles(combine: list[Path], output: Path):
     """
     Combines multiple firmware bundle files into a single tar.gz file.
@@ -230,6 +302,10 @@ def invoke_ls_fw_bundle(args):
     return os.EX_OK
 
 
+def invoke_diff_fw_bundles(args):
+    return diff_fw_bundles(args.bundle1, args.bundle2)
+
+
 def parse_args():
     """
     Parse command line arguments.
@@ -311,6 +387,23 @@ def parse_args():
         help="input bundle file to list",
         type=Path,
     )
+    # Diff two firmware bundles
+    fw_bundle_diff_parser = subparsers.add_parser(
+        "diff", help="Diff two firmware bundles"
+    )
+    fw_bundle_diff_parser.set_defaults(func=invoke_diff_fw_bundles)
+    fw_bundle_diff_parser.add_argument(
+        "bundle1",
+        metavar="BUNDLE1",
+        help="first bundle file to compare",
+        type=Path,
+    )
+    fw_bundle_diff_parser.add_argument(
+        "bundle2",
+        metavar="BUNDLE2",
+        help="second bundle file to compare",
+        type=Path,
+    )
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
@@ -326,8 +419,8 @@ def main():
     Main entry point for tt_fwbundle script.
     """
     args = parse_args()
-    args.func(args)
+    return args.func(args)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
