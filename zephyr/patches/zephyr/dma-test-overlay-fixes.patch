@@ -1,0 +1,97 @@
+diff --git a/test-conf/tests/drivers/dma/chan_blen_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay b/test-conf/tests/drivers/dma/chan_blen_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+index aa4320d..7366013 100644
+--- a/test-conf/tests/drivers/dma/chan_blen_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
++++ b/test-conf/tests/drivers/dma/chan_blen_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+@@ -8,9 +8,7 @@
+  * on the Tenstorrent Blackhole SMC platform.
+  */
+ 
+-&dma0 {
+-	status = "okay";
++tst_dma0: &dma0 {
+ 	dma-channels = <4>;
++	status = "okay";
+ };
+-
+-tst_dma0: &dma0 { };
+diff --git a/test-conf/tests/drivers/dma/chan_blen_transfer/tt_bh_noc.overlay b/test-conf/tests/drivers/dma/chan_blen_transfer/tt_bh_noc.overlay
+index 8bb7d39..5020315 100644
+--- a/test-conf/tests/drivers/dma/chan_blen_transfer/tt_bh_noc.overlay
++++ b/test-conf/tests/drivers/dma/chan_blen_transfer/tt_bh_noc.overlay
+@@ -3,6 +3,6 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+-tst_dma0: &dma1 {
++tst_dma1: &dma1 {
+ 	status = "okay";
+ };
+diff --git a/test-conf/tests/drivers/dma/chan_link_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay b/test-conf/tests/drivers/dma/chan_link_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+index 8ef6456..de7ac51 100644
+--- a/test-conf/tests/drivers/dma/chan_link_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
++++ b/test-conf/tests/drivers/dma/chan_link_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+@@ -8,9 +8,7 @@
+  * on the Tenstorrent Blackhole SMC platform.
+  */
+ 
+-&dma0 {
+-	status = "okay";
++tst_dma0: &dma0 {
+ 	dma-channels = <4>;
++	status = "okay";
+ };
+-
+-tst_dma0: &dma0 { };
+diff --git a/test-conf/tests/drivers/dma/cyclic/boards/tt_blackhole_tt_blackhole_smc.overlay b/test-conf/tests/drivers/dma/cyclic/boards/tt_blackhole_tt_blackhole_smc.overlay
+index cb93e18..9255da9 100644
+--- a/test-conf/tests/drivers/dma/cyclic/boards/tt_blackhole_tt_blackhole_smc.overlay
++++ b/test-conf/tests/drivers/dma/cyclic/boards/tt_blackhole_tt_blackhole_smc.overlay
+@@ -8,15 +8,7 @@
+  * on the Tenstorrent Blackhole SMC platform.
+  */
+ 
+-/ {
+-	aliases {
+-		dma0 = &dma0;
+-	};
+-};
+-
+ &dma0 {
+ 	status = "okay";
+ 	dma-channels = <4>;
+ };
+-
+-tst_dma0: &dma0 { };
+diff --git a/test-conf/tests/drivers/dma/loop_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay b/test-conf/tests/drivers/dma/loop_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+index 2bcea84..aa1de95 100644
+--- a/test-conf/tests/drivers/dma/loop_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
++++ b/test-conf/tests/drivers/dma/loop_transfer/boards/tt_blackhole_tt_blackhole_smc.overlay
+@@ -8,13 +8,11 @@
+  * on the Tenstorrent Blackhole SMC platform.
+  */
+ 
+-&dma0 {
+-	status = "okay";
++tst_dma0: &dma0 {
+ 	dma-channels = <4>;
++	status = "okay";
+ };
+ 
+-tst_dma0: &dma0 { };
+-
+ /*
+  * added to prevent SRAM overflow errors
+  */
+diff --git a/test-conf/tests/drivers/dma/loop_transfer/tt_bh_noc.overlay b/test-conf/tests/drivers/dma/loop_transfer/tt_bh_noc.overlay
+index 4bf2e9a..4c7e6d7 100644
+--- a/test-conf/tests/drivers/dma/loop_transfer/tt_bh_noc.overlay
++++ b/test-conf/tests/drivers/dma/loop_transfer/tt_bh_noc.overlay
+@@ -3,7 +3,7 @@
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+-tst_dma0: &dma1 {
++tst_dma1: &dma1 {
+ 	status = "okay";
+ };
+

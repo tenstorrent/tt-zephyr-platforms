@@ -8,12 +8,10 @@
  * on the Tenstorrent Blackhole SMC platform.
  */
 
-&dma0 {
-	status = "okay";
+tst_dma0: &dma0 {
 	dma-channels = <4>;
+	status = "okay";
 };
-
-tst_dma0: &dma0 { };
 
 /*
  * added to prevent SRAM overflow errors

@@ -167,3 +167,12 @@ patches:
       Ensure that the I2C DesignWare target driver invokes the stop callback
       after read operations complete. This ensures proper synchronization
       for I2C target devices.
+  - path: zephyr/dma-test-overlay-fixes.patch
+    sha256sum: fe83050bbc6678caa2e664278a03f02471f7ee28e795cf9a418e74acb9495b70
+    module: zephyr
+    author: Mai Shimozato
+    email: mshimozato@tenstorrent.com
+    date: 2025-11-06
+    comments: |
+      Fix DMA test overlay files to consolidate dma0 configuration and fix
+      label naming (tst_dma0 -> tst_dma1 for dma1 references).

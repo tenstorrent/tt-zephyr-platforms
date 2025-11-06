@@ -8,15 +8,7 @@
  * on the Tenstorrent Blackhole SMC platform.
  */
 
-/ {
-	aliases {
-		dma0 = &dma0;
-	};
-};
-
 &dma0 {
 	status = "okay";
 	dma-channels = <4>;
 };
-
-tst_dma0: &dma0 { };
