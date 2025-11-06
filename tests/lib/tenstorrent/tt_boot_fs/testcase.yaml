@@ -10,3 +10,4 @@ tests:
     harness_config:
       pytest_root:
         - pytest/test-tt-boot-fs.py
+        - pytest/test-tt-fwbundle.py
