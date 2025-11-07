@@ -72,14 +72,19 @@ static void EnableTensixCG(void)
 	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_en, enable_all_tensix_cg);
 }
 
-/* this function first clears an arbitrary non-harvested tensix core and do a NOC DMA broadcast to
- * clear all remaining tensix l1s
+/**
+ * @brief Zeros the l1 of every non-harvested tensix core
+ *
+ * First zero the l1 of an arbitrary non-harvested tensix core, then broadcasts the zero'd l1 to
+ * all other non-harvested tensix cores. This approach is faster than iterating over all tensix
+ * cores sequentially to clear each l1.
  */
 static void wipe_l1(void)
 {
 	uint64_t addr = 0;
 	uint8_t tensix_x, tensix_y;
-	uint8_t sram_buffer[CONFIG_TT_BH_ARC_SCRATCHPAD_SIZE] __aligned(4);
+	/* NOC2AXI to Tensix L1 transactions must be aligned to 64 bytes */
+	uint8_t sram_buffer[CONFIG_TT_BH_ARC_SCRATCHPAD_SIZE] __aligned(64);
 
 	GetEnabledTensix(&tensix_x, &tensix_y);
 
