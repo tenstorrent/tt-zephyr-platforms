@@ -8,7 +8,7 @@ patches:
     comments: |
       Support multilevel interrupt priority on ARC cores.
   - path: zephyr/check-compliance.patch
-    sha256sum: fa20f70530a7685f4e415f26ffd9eb79dba6cf1f85d6d35446b97fea573a5148
+    sha256sum: 71f8c8134745fa2fd553f6a0e7f3289abc27e468cada40df9a437ae505a69903
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -184,4 +184,22 @@ patches:
     date: 2025-11-05
     comments: |
       Make data alignment in DMA SG test configurable according to its DT property
+      dma-buf-addr-alignment.
+  - path: zephyr/tests-drivers-dma-loop.patch
+    sha256sum: 452fa314b1185c661f95d27aef2955d9cb5f84490f0e4ded0475b030927e7e94
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-11-07
+    comments: |
+      Make data alignment in DMA loop test configurable according to its DT property
+      dma-buf-addr-alignment.
+  - path: zephyr/tests-drivers-dma-blen.patch
+    sha256sum: a74bbf9eda803ba42bf10ae1fa93483f1359fa64ab783f68dc964da6bd5ed6cf
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-11-07
+    comments: |
+      Make data alignment in DMA blen test configurable according to its DT property
       dma-buf-addr-alignment.
