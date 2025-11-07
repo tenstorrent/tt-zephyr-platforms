@@ -28,6 +28,7 @@ feature_enable {
   smbus_en: false
   fan_ctrl_en: true
   harvesting_en: true
+  doppler_en: true
 }
 
 fan_table {
