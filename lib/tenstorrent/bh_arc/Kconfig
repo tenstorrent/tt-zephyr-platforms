@@ -11,6 +11,7 @@ config TT_BH_ARC
 	select I2C
 	select I2C_TARGET
 	select SMBUS_TARGET
+	select ZBUS
 	help
 	  This option enables the Blackhole ARC firmware library.
 
