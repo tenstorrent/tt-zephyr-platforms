@@ -17,10 +17,10 @@
 
 static uint32_t power_limit;
 
-static const bool doppler = true;
-static const bool doppler_slow = true && doppler;
-static const bool doppler_t2 = true && doppler;
-static const bool doppler_t3 = true && doppler;
+static bool doppler;
+static bool doppler_slow;
+static bool doppler_t2;
+static bool doppler_t3;
 static const bool thermal_throttling = true;
 
 #define kThrottlerAiclkScaleFactor 500.0F
@@ -186,6 +186,11 @@ static void SendKernelThrottlingMessage(bool throttle)
 
 void InitThrottlers(void)
 {
+	doppler = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.doppler_en;
+	doppler_slow = doppler;
+	doppler_t2 = doppler;
+	doppler_t3 = doppler;
+
 	SetThrottlerLimit(kThrottlerTDP,
 			  tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.tdp_limit);
 	SetThrottlerLimit(kThrottlerFastTDC,
