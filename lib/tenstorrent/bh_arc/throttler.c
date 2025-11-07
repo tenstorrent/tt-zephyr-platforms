@@ -7,6 +7,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/zbus/zbus.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
 #include "cm2dm_msg.h"
@@ -14,6 +15,7 @@
 #include "telemetry_internal.h"
 #include "telemetry.h"
 #include "noc2axi.h"
+#include "tensix_state_msg.h"
 
 static uint32_t power_limit;
 
@@ -149,26 +151,30 @@ static void SetThrottlerLimit(ThrottlerId id, float limit)
 
 static uint32_t throttle_counter;
 static const uint32_t kKernelThrottleAddress = 0x10;
+static bool tensixes_enabled = true;
+
+static void BroadcastKernelThrottleState(void)
+{
+	const uint8_t kNocRing = 0;
+	const uint8_t kNocTlb = 1;
+
+	if (tensixes_enabled) {
+		NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kKernelThrottleAddress,
+					       kNoc2AxiOrderingStrict);
+		NOC2AXIWrite32(kNocRing, kNocTlb, kKernelThrottleAddress, throttle_counter);
+	}
+}
 
 static void InitKernelThrottling(void)
 {
-	const uint8_t kNocRing = 0;
-	const uint8_t kNocTlb = 1; /* should reserve and pre-program a TLB for this */
-
 	throttle_counter = 0;
 
-	/* should reserve a TLB for this */
-	NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kKernelThrottleAddress,
-				       kNoc2AxiOrderingStrict);
-	NOC2AXIWrite32(kNocRing, kNocTlb, kKernelThrottleAddress, throttle_counter);
+	BroadcastKernelThrottleState();
 }
 
 /* must only be called when throttle state changes */
 static void SendKernelThrottlingMessage(bool throttle)
 {
-	const uint8_t kNocRing = 0;
-	const uint8_t kNocTlb = 1; /* should reserve and pre-program a TLB for this */
-
 	/* The LLK uses fast = even, slow = odd, but for debug purposes, they'd like to
 	 * know how many times throttling has happened. Just in case CMFW somehow gets
 	 * out of sync internally, double-check the parity.
@@ -178,11 +184,20 @@ static void SendKernelThrottlingMessage(bool throttle)
 		throttle_counter++;
 	}
 
-	/* should reserve a TLB for this */
-	NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kKernelThrottleAddress,
-				       kNoc2AxiOrderingStrict);
-	NOC2AXIWrite32(kNocRing, kNocTlb, kKernelThrottleAddress, throttle_counter);
+	BroadcastKernelThrottleState();
 }
+
+static void doppler_tensix_state_callback(const struct zbus_channel *chan)
+{
+	const struct tensix_state_msg *msg = zbus_chan_const_msg(chan);
+
+	tensixes_enabled = msg->enable;
+
+	BroadcastKernelThrottleState();
+}
+
+ZBUS_LISTENER_DEFINE(doppler_tensix_state_listener, doppler_tensix_state_callback);
+ZBUS_CHAN_ADD_OBS(tensix_state_chan, doppler_tensix_state_listener, 0);
 
 void InitThrottlers(void)
 {
