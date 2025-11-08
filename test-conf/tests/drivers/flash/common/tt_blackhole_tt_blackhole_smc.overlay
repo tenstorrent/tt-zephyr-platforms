@@ -8,3 +8,9 @@
 storage_partition: &storage {
 	reg = <0x500000 DT_SIZE_K(64)>;
 };
+
+&vuart0 {
+	/* to avoid drivers.flash.common failing due to buffer size being too small */
+	rx-cap = <1024>;
+	tx-cap = <(3036 + 4096)>;
+};

@@ -1,45 +1,24 @@
-From a9c2d915f1bab195dc6202bf62cbfa6e13b8ffda Mon Sep 17 00:00:00 2001
-From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
-Date: Wed, 17 Sep 2025 16:35:34 -0500
-Subject: [PATCH] scripts: twister: add failure_script parameter to run after
- test failure
-
-Add "failure_script", a commandline or hardware map parameter that
-allows users to execute a custom script after a testcase fails on a DUT.
-This can be useful to dump device state after a test failure, especially
-one that did not produce any console output.
-
-Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
----
- scripts/pylib/twister/twisterlib/environment.py |  5 +++++
- scripts/pylib/twister/twisterlib/handlers.py    |  6 ++++++
- scripts/pylib/twister/twisterlib/hardwaremap.py | 12 ++++++++++--
- scripts/schemas/twister/hwmap-schema.yaml       |  6 ++++++
- scripts/tests/twister/test_handlers.py          |  2 ++
- scripts/tests/twister/test_hardwaremap.py       |  4 ++++
- 6 files changed, 33 insertions(+), 2 deletions(-)
-
 diff --git a/scripts/pylib/twister/twisterlib/environment.py b/scripts/pylib/twister/twisterlib/environment.py
-index f956f853c2b..41a3fc551e5 100644
+index 78e3f03720b..ccfde532f83 100644
 --- a/scripts/pylib/twister/twisterlib/environment.py
 +++ b/scripts/pylib/twister/twisterlib/environment.py
-@@ -683,6 +683,11 @@ structure in the main Zephyr tree: boards/<vendor>/<board_name>/""")
-                         before device handler open serial port and invoke runner.
-                         """)
-
+@@ -680,6 +680,11 @@ structure in the main Zephyr tree: boards/<vendor>/<board_name>/""")
+              " risk. It is recommended to only use this option for local "
+              " development and when testing localized change in a subsystem.")
+ 
 +    parser.add_argument("--failure-script",
 +                        help="""specify a failures script. This will be executed
 +                        on test failure.
 +                        """)
 +
      parser.add_argument(
-         "--quarantine-list",
-         action="append",
+         '--detailed-test-id', action='store_true',
+         help="Compose each test Suite name from its configuration path (relative to root) and "
 diff --git a/scripts/pylib/twister/twisterlib/handlers.py b/scripts/pylib/twister/twisterlib/handlers.py
-index dc1ff258935..ce43c530061 100755
+index 695888cc695..e59c1a6d756 100755
 --- a/scripts/pylib/twister/twisterlib/handlers.py
 +++ b/scripts/pylib/twister/twisterlib/handlers.py
-@@ -522,6 +522,12 @@ class DeviceHandler(Handler):
+@@ -543,6 +543,12 @@ class DeviceHandler(Handler):
      def make_dut_available(self, dut):
          if self.instance.status in [TwisterStatus.ERROR, TwisterStatus.FAIL]:
              dut.failures_increment()
@@ -53,7 +32,7 @@ index dc1ff258935..ce43c530061 100755
                       f"counter:{dut.counter}, failures:{dut.failures}")
          # get all DUTs with the same id
 diff --git a/scripts/pylib/twister/twisterlib/hardwaremap.py b/scripts/pylib/twister/twisterlib/hardwaremap.py
-index 74c384ab5d6..3b1d5381362 100644
+index 919f9bfeb4c..9f1a8ddad70 100644
 --- a/scripts/pylib/twister/twisterlib/hardwaremap.py
 +++ b/scripts/pylib/twister/twisterlib/hardwaremap.py
 @@ -49,7 +49,8 @@ class DUT:
@@ -63,7 +42,7 @@ index 74c384ab5d6..3b1d5381362 100644
 -                 flash_before=False):
 +                 flash_before=False,
 +                 failure_script=None):
-
+ 
          self.serial = serial
          self.baud = serial_baud or 115200
 @@ -70,6 +71,7 @@ class DUT:
@@ -74,7 +53,7 @@ index 74c384ab5d6..3b1d5381362 100644
          self.probe_id = None
          self.notes = None
          self.lock = Lock()
-@@ -198,6 +200,7 @@ class HardwareMap:
+@@ -199,6 +201,7 @@ class HardwareMap:
                  self.add_device(self.options.device_serial,
                                  self.options.platform[0],
                                  self.options.pre_script,
@@ -82,7 +61,7 @@ index 74c384ab5d6..3b1d5381362 100644
                                  False,
                                  baud=self.options.device_serial_baud,
                                  flash_timeout=self.options.device_flash_timeout,
-@@ -209,6 +212,7 @@ class HardwareMap:
+@@ -210,6 +213,7 @@ class HardwareMap:
                  self.add_device(self.options.device_serial_pty,
                                  self.options.platform[0],
                                  self.options.pre_script,
@@ -90,7 +69,7 @@ index 74c384ab5d6..3b1d5381362 100644
                                  True,
                                  flash_timeout=self.options.device_flash_timeout,
                                  flash_with_test=self.options.device_flash_with_test,
-@@ -238,6 +242,7 @@ class HardwareMap:
+@@ -239,6 +243,7 @@ class HardwareMap:
          serial,
          platform,
          pre_script,
@@ -98,7 +77,7 @@ index 74c384ab5d6..3b1d5381362 100644
          is_pty,
          baud=None,
          flash_timeout=60,
-@@ -248,6 +253,7 @@ class HardwareMap:
+@@ -249,6 +254,7 @@ class HardwareMap:
              platform=platform,
              connected=True,
              pre_script=pre_script,
@@ -106,7 +85,7 @@ index 74c384ab5d6..3b1d5381362 100644
              serial_baud=baud,
              flash_timeout=flash_timeout,
              flash_with_test=flash_with_test,
-@@ -291,6 +297,7 @@ class HardwareMap:
+@@ -292,6 +298,7 @@ class HardwareMap:
              product = dut.get('product')
              fixtures = dut.get('fixtures', [])
              connected = dut.get('connected') and ((serial or serial_pty) is not None)
@@ -114,7 +93,7 @@ index 74c384ab5d6..3b1d5381362 100644
              if not connected:
                  continue
              for plat in platforms:
-@@ -309,7 +316,8 @@ class HardwareMap:
+@@ -310,7 +317,8 @@ class HardwareMap:
                                post_flash_script=post_flash_script,
                                script_param=script_param,
                                flash_timeout=flash_timeout,
@@ -146,10 +125,10 @@ index 142d4a1969b..f369a84f3f3 100644
 +            type: int
 +            required: false
 diff --git a/scripts/tests/twister/test_handlers.py b/scripts/tests/twister/test_handlers.py
-index e4710060a35..41938878ffd 100644
+index 49139da52d2..ef00cbfe841 100644
 --- a/scripts/tests/twister/test_handlers.py
 +++ b/scripts/tests/twister/test_handlers.py
-@@ -1439,6 +1439,7 @@ def test_devicehandler_handle(
+@@ -1441,6 +1441,7 @@ def test_devicehandler_handle(
          pre_script='dummy pre script',
          post_script='dummy post script',
          post_flash_script='dummy post flash script',
@@ -157,20 +136,21 @@ index e4710060a35..41938878ffd 100644
          flash_timeout=60,
          flash_with_test=True
      )
-@@ -1491,6 +1492,7 @@ def test_devicehandler_handle(
+@@ -1498,7 +1499,8 @@ def test_devicehandler_handle(
+     handler.run_custom_script.assert_has_calls([
          mock.call('dummy pre script', mock.ANY),
          mock.call('dummy post flash script', mock.ANY),
 -        mock.call('dummy post script', mock.ANY)
 +        mock.call('dummy post script', mock.ANY),
 +        mock.call('dummy failure script', mock.ANY)
      ])
-
+ 
      if expected_reason:
 diff --git a/scripts/tests/twister/test_hardwaremap.py b/scripts/tests/twister/test_hardwaremap.py
-index 5dc61dc1d9e..81586d47c65 100644
+index 5d0ea798ed6..8b749adc0eb 100644
 --- a/scripts/tests/twister/test_hardwaremap.py
 +++ b/scripts/tests/twister/test_hardwaremap.py
-@@ -57,6 +57,7 @@ TESTDATA_1 = [
+@@ -53,6 +53,7 @@ TESTDATA_1 = [
              'pre_script': 'dummy pre script',
              'post_script': 'dummy post script',
              'post_flash_script': 'dummy post flash script',
@@ -178,7 +158,7 @@ index 5dc61dc1d9e..81586d47c65 100644
              'runner': 'dummy runner',
              'flash_timeout': 30,
              'flash_with_test': True,
-@@ -64,6 +65,7 @@ TESTDATA_1 = [
+@@ -60,6 +61,7 @@ TESTDATA_1 = [
                  'pre_script_timeout' : 30,
                  'post_flash_timeout' : 30,
                  'post_script_timeout' : 30,
@@ -186,7 +166,7 @@ index 5dc61dc1d9e..81586d47c65 100644
                  }
          },
          {
-@@ -79,6 +81,7 @@ TESTDATA_1 = [
+@@ -75,6 +77,7 @@ TESTDATA_1 = [
              'pre_script': 'dummy pre script',
              'post_script': 'dummy post script',
              'post_flash_script': 'dummy post flash script',
@@ -194,7 +174,7 @@ index 5dc61dc1d9e..81586d47c65 100644
              'runner': 'dummy runner',
              'flash_timeout': 30,
              'flash_with_test': True,
-@@ -86,6 +89,7 @@ TESTDATA_1 = [
+@@ -82,6 +85,7 @@ TESTDATA_1 = [
                  'pre_script_timeout' : 30,
                  'post_flash_timeout' : 30,
                  'post_script_timeout' : 30,
@@ -202,5 +182,3 @@ index 5dc61dc1d9e..81586d47c65 100644
                  }
          },
          '<dummy platform (dummy product) on dummy serial>'
---
-2.34.1
