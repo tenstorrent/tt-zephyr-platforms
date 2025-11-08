@@ -81,16 +81,6 @@ patches:
     upstreamable: false
     comments: |
       Add k_busy_wait_ns() helper for nanosecond busy wait support.
-  - path: zephyr/smbus_stm32-pec.patch
-    sha256sum: bd6e48cdeeb729b4c9c49c581a868230b24d9e74bd0c3373c87a0bec62d1e15a
-    module: zephyr
-    author: Andrew Lewycky
-    email: alewycky@tenstorrent.com
-    date: 2025-07-24
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/96691
-    comments: |
-      SMBus controller PEC for smbus_stm32
   - path: zephyr/scripts-pylib-pytest-twister-harness-ensure-serial.patch
     sha256sum: a638bb624dbf6b1a087c21c3312ac574402ef89d9788ce8987fbeb8c69e55e69
     module: zephyr
@@ -102,7 +92,7 @@ patches:
       Ensure that the serial connection is properly closed when terminating the process.
       This prevents issues with lingering connections that can interfere with subsequent tests.
   - path: zephyr/scripts-twister-add-failure_script-parameter-to-run.patch
-    sha256sum: eb1db0329a50cc20e536a221b1c8cb641cd09d4fb62e7fb0a3f8eb5fddcecdc3
+    sha256sum: e06e495cb4cc218d2c4a52eb3941ee1560d791293a2a7f9fbb07f3a3ce8c3e4d
     module: zephyr
     author: Daniel DeGrasse
     email: ddegrasse@tenstorrent.com
@@ -121,16 +111,6 @@ patches:
     date: 2025-08-19
     comments: |
       Make zversion html take project/version settings from conf.py
-  - path: zephyr/stm32-bwbr.patch
-    sha256sum: 123e9cc2b7b1fd2c6833ac6ff5e654ea277f1d179d9d30954375bd49c54ec9c6
-    module: zephyr
-    author: James Growden
-    email: jgrowden@tenstorrent.com
-    date: 2025-09-18
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97188
-    comments: |
-      Add support for BWBR smbus32 pcalls
   - path: zephyr/smbus-cancel.patch
     sha256sum: 0908fe5105fb654254340d173d937f13faf51f1fbd72f62e9a0869618672d4f4
     module: zephyr
@@ -144,29 +124,6 @@ patches:
       and rejects all future transfers until cancellation is reversed.
 
       Implementations are included for STM32 I2C and SMBus.
-  - path: zephyr/separate-runner-inc.patch
-    sha256sum: f82485d473dfd1b46f8bb808f592129a5515514adbad1ba997f6ceead5b9e3a9
-    module: zephyr
-    author: James Growden
-    email: jgrowden@tenstorrent.com
-    date: 2025-10-8
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/97213
-    merge-date: 2025-10-10
-    comments: |
-      The module includes for our runners get overwritten whenever we load a new python
-      runner file, leading to flaky behaviour when west tries to access our runners. This
-      corrects the module load by placing each py file loaded in a different sys.module.
-  - path: zephyr/drivers-i2c-i2c_dw-make-target-stop-callback-after-r.patch
-    sha256sum: f74129867892db21df4f328943ca8855f6fa5ca6a3780574fae6c730290dae8c
-    module: zephyr
-    author: Daniel DeGrasse
-    email: ddegrasse@tenstorrent.com
-    date: 2025-10-30
-    comments: |
-      Ensure that the I2C DesignWare target driver invokes the stop callback
-      after read operations complete. This ensures proper synchronization
-      for I2C target devices.
   - path: zephyr/tests-drivers-dma-link.patch
     sha256sum: 83960bef4175af4fea37f1ae55f524a3fac492bbf41bcadf297f24f694f7d564
     module: zephyr
@@ -203,3 +160,13 @@ patches:
     comments: |
       Make data alignment in DMA blen test configurable according to its DT property
       dma-buf-addr-alignment.
+  - path: zephyr/drivers-smbus-fixes-post-430-rc3.patch
+    sha256sum: 32c303e6bb32732556bb1a0133336aad0f0a90512f4399848d998ba9962f0bfa
+    module: zephyr
+    author: Chris Friedt
+    email: cfriedt@tenstorrent.com
+    date: 2025-11-09
+    upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/99128
+    comments: |
+      Post 4.3.0-rc3 fixes to the SMBus driver.
