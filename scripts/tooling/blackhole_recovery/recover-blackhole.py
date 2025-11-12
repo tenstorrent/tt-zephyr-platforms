@@ -17,6 +17,7 @@ import sys
 import time
 import os
 from intelhex import IntelHex
+import usb.core
 
 try:
     import pyluwen
@@ -24,6 +25,7 @@ try:
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
     from pyocd.flash.eraser import FlashEraser
+    from pyocd.core import exceptions as pyocd_exceptions
 except ImportError:
     print("Required modules not found. Please run pip install -r requirements.txt")
     sys.exit(os.EX_UNAVAILABLE)
@@ -157,7 +159,26 @@ def check_card_status(board_config):
         return True
 
 
-def get_session(asic, adapter_id, temp_dir, no_prompt):
+def recover_stlink():
+    """
+    Attempt to recover the ST-Link device by resetting the USB bus
+    """
+
+    def is_stlink_device(dev):
+        return dev.idVendor == 0x0483  # STMicroelectronics
+
+    stlink_devs = usb.core.find(find_all=True, custom_match=is_stlink_device)
+    for dev in stlink_devs:
+        try:
+            dev.reset()
+            print(f"Reset ST-Link device: VID={dev.idVendor:x}, PID={dev.idProduct:x}")
+        except usb.core.USBError as e:
+            print(
+                f"Error resetting ST-Link device: VID={dev.idVendor:x}, PID={dev.idProduct:x}, {e}"
+            )
+
+
+def _get_session(asic, adapter_id, temp_dir, no_prompt):
     if adapter_id is None:
         print(
             "No adapter ID provided, please select the debugger "
@@ -174,6 +195,16 @@ def get_session(asic, adapter_id, temp_dir, no_prompt):
             user_script=Path(temp_dir) / asic["pyocd-config"],
             unique_id=adapter_id,
         )
+    return session
+
+
+def get_session(asic, adapter_id, temp_dir, no_prompt):
+    try:
+        session = _get_session(asic, adapter_id, temp_dir, no_prompt)
+    except pyocd_exceptions.ProbeError as e:
+        print(f"Error connecting to probe, will attempt USB reset: {e}")
+        recover_stlink()
+        session = _get_session(asic, adapter_id, temp_dir, no_prompt)
     return session
 
 
