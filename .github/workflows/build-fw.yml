@@ -50,7 +50,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tt-zephyr-platforms
-          fetch-tags: true
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
