@@ -21,10 +21,23 @@ Setting Up Your Development Environment
 
 Follow these steps to set up your TT Zephyr Platforms development environment:
 
+.. important::
+   TT Zephyr Platforms requires **Python 3.12**. Although upstream Zephyr documentation references Python 3.10, ensure you install and use Python 3.12 before creating your virtual environment.
+
+On Ubuntu, you can install Python 3.12 and its tooling with:
+
 .. code-block:: shell
 
-   # Step 1: Create and activate a virtual environment
-   python3 -m venv ~/tt-zephyr-platforms-work/.venv
+   sudo add-apt-repository ppa:deadsnakes/ppa
+   sudo apt update
+   sudo apt install python3.12 python3.12-dev python3.12-venv
+
+Verify that ``python3.12`` is available on your ``PATH`` before continuing.
+
+.. code-block:: shell
+
+   # Step 1: Create and activate a Python 3.12 virtual environment
+   python3.12 -m venv ~/tt-zephyr-platforms-work/.venv
    source ~/tt-zephyr-platforms-work/.venv/bin/activate
 
    # Step 2: Install West (Zephyr's meta-tool)
