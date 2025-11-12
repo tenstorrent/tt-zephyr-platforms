@@ -1,0 +1,3 @@
+Fail Count,Total Tries,Failure Percentage,Commit,Branch,Workflow Run URL,Timestamp
+5,100,5.00%,abc123,main,https://github.com/.../actions/runs/123,2025-11-12T10:00:00Z
+12,100,12.00%,def456,main,https://github.com/.../actions/runs/124,2025-11-12T11:00:00Z
