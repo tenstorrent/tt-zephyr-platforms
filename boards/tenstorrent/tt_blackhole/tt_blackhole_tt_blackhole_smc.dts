@@ -5,7 +5,7 @@
 
 /dts-v1/;
 
-#include <arc/tenstorrent/tt_blackhole_smc.dtsi>
+#include <tenstorrent/tt_blackhole_smc.dtsi>
 #include "tt_blackhole_smc-pinctrl.dtsi"
 
 #include <freq.h>
