@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/ztest.h>
 
 #include <tenstorrent/smc_msg.h>
@@ -97,20 +99,36 @@ ZTEST(msgqueue, test_msgqueue_register_handler)
 
 ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 {
+	const struct device *pll4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
 	union request req = {0};
 	struct response rsp = {0};
 
 	/* LSB to MSB:
 	 * 0x21: TT_SMC_MSG_POWER_SETTING
-	 * 0x03: 3 power flags valid, 0 power settings valid
-	 * 0x0003: max_ai_clk on, mrisc power on, tensix power off
+	 * 0x04: 4 power flags valid, 0 power settings valid
+	 * 0x0003: max_ai_clk on, mrisc power on, tensix power off, l2cpu off
 	 */
-	req.data[0] = 0x00030321;
+	req.data[0] = 0x00030421;
 	msgqueue_request_push(0, &req);
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
 
 	zassert_equal(rsp.data[0], 0x0);
+
+	/* Validate that status of emulated L2CPUCLKs are disabled */
+	zassert_true(device_is_ready(pll4));
+	zassert_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zassert_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zassert_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zassert_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3),
+		      CLOCK_CONTROL_STATUS_OFF);
 }
 
 ZTEST(msgqueue, test_msg_type_set_voltage)
