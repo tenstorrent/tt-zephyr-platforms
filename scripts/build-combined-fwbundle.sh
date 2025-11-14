@@ -62,8 +62,7 @@ for REV in $BOARD_REVS; do
   fi
 
   echo "Building $BOARD"
-  west build -d "${TEMP_DIR}${REV}" --sysbuild -p -b "$BOARD" app/smc \
-    >/dev/null 2>&1
+  west build -d "${TEMP_DIR}${REV}" --sysbuild -p -b "$BOARD" app/smc
 done
 
 echo "Creating fw_pack-$RELEASE.fwbundle"
