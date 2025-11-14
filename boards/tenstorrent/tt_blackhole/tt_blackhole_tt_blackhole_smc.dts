@@ -190,3 +190,8 @@
 &nv_flash {
 	#include "tt_blackhole_fixed_partitions.dtsi"
 };
+
+&dma0 {
+	status = "okay";
+	dma-channels = <4>;
+};
