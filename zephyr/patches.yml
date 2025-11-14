@@ -151,16 +151,6 @@ patches:
     comments: |
       Make data alignment in DMA blen test configurable according to its DT property
       dma-buf-addr-alignment.
-  - path: zephyr/drivers-smbus-fixes-post-430-rc3.patch
-    sha256sum: 32c303e6bb32732556bb1a0133336aad0f0a90512f4399848d998ba9962f0bfa
-    module: zephyr
-    author: Chris Friedt
-    email: cfriedt@tenstorrent.com
-    date: 2025-11-09
-    upstreamable: true
-    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/99128
-    comments: |
-      Post 4.3.0-rc3 fixes to the SMBus driver.
   - path: zephyr/mspi-dw-nor-fixes.patch
     sha256sum: c8d26eb9fc2ea6114c66d9e832b3fe487a504ce145b5d8bbbe43b1d904410253
     module: zephyr
