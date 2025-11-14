@@ -11,6 +11,7 @@
 #include "reg.h"
 #include "telemetry.h"
 #include "gddr.h"
+#include "tensix_state_msg.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -23,6 +24,7 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/zbus/zbus.h>
 
 /* NIU config register indices for Read/WriteNocCfgReg */
 #define NIU_CFG_0                    0x0
@@ -178,6 +180,16 @@ static bool GetTileClkDisable(uint8_t px, uint8_t py)
 	return false;
 }
 
+/* clang-format off */
+ZBUS_CHAN_DEFINE(tensix_state_chan,
+	struct tensix_state_msg,
+	NULL, /* validator */
+	NULL, /* user data */
+	ZBUS_OBSERVERS_EMPTY,
+	ZBUS_MSG_INIT(.enable = true)
+);
+/* clang-format on */
+
 int32_t set_tensix_enable(bool enable)
 {
 	const uint8_t noc_ring = 0;
@@ -198,6 +210,11 @@ int32_t set_tensix_enable(bool enable)
 	NOC2AXIWrite32(noc_ring, noc_tlb, niu_cfg_0_addr, niu_cfg_0);
 
 	noc_regs = SetupNiuTlb(kTlbIndex, x, y, 0);
+
+	struct tensix_state_msg tensix_state = {enable};
+
+	zbus_chan_pub(&tensix_state_chan, &tensix_state, K_NO_WAIT);
+
 	return 0;
 }
 
@@ -696,7 +713,7 @@ static uint8_t debug_noc_translation_handler(const union request *req, struct re
 	uint16_t skip_eth = req->debug_noc_translation.skip_eth_low |
 			    ((uint16_t)req->debug_noc_translation.skip_eth_hi << 8U);
 
-	if (bad_gddr >= NUM_GDDR  && bad_gddr != NO_BAD_GDDR) {
+	if (bad_gddr >= NUM_GDDR && bad_gddr != NO_BAD_GDDR) {
 		return -EINVAL;
 	}
 	ClearNocTranslation();
