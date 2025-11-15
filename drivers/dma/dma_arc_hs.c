@@ -411,7 +411,7 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	struct arc_dma_channel *chan;
 	struct arc_dma_channel *linked_chan;
 	uint32_t done_status;
-	k_spinlock_key_t key, hw_key;
+	k_spinlock_key_t key, key_chan;
 	const struct arc_dma_config *dev_config = dev->config;
 
 	key = k_spin_lock(&data->lock);
@@ -423,11 +423,11 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	}
 
 	/* Lock hardware access for this channel */
-	hw_key = k_spin_lock(&chan->hw_lock);
+	key_chan = k_spin_lock(&chan->hw_lock);
 
 	/* Re-check active state after locking to prevent race with dma_stop */
 	if (!chan->active) {
-		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&chan->hw_lock, key_chan);
 		k_spin_unlock(&data->lock, key);
 		return;
 	}
@@ -479,11 +479,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 					dma_addr_t src_addr;
 					void *dst_addr;
 
-					k_spin_unlock(&chan->hw_lock, hw_key);
-
-					/* Lock the linked channel's hardware */
-					hw_key = k_spin_lock(&linked_chan->hw_lock);
-
 					/* Start first block */
 					LOG_DBG("Linked block %u: src=0x%x, dst=0x%x, size=%u",
 						block_idx, (uint32_t)block->source_address,
@@ -520,8 +515,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 					linked_chan->blocks_completed = 0;
 
 					LOG_DBG("Linked channel %u started", linked_ch);
-
-					k_spin_unlock(&linked_chan->hw_lock, hw_key);
 				} else {
 					LOG_WRN("Linked channel %u not in PREPARED state "
 						"or not in use",
@@ -531,7 +524,7 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 		}
 	}
 
-	k_spin_unlock(&chan->hw_lock, hw_key);
+	k_spin_unlock(&chan->hw_lock, key_chan);
 	k_spin_unlock(&data->lock, key);
 }
 
@@ -543,7 +536,7 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 	struct arc_dma_channel *chan;
 	struct arc_dma_channel *linked_chan;
 	uint32_t done_status;
-	k_spinlock_key_t key, hw_key;
+	k_spinlock_key_t key, key_chan;
 
 	if (channel >= dev_config->channels) {
 		return -EINVAL;
@@ -567,11 +560,11 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 
 	if (chan->active) {
 		/* Lock hardware access for this channel */
-		hw_key = k_spin_lock(&chan->hw_lock);
+		key_chan = k_spin_lock(&chan->hw_lock);
 
 		/* Re-check active state after locking to prevent race with dma_stop */
 		if (!chan->active) {
-			k_spin_unlock(&chan->hw_lock, hw_key);
+			k_spin_unlock(&chan->hw_lock, key_chan);
 			k_spin_unlock(&data->lock, key);
 			return 0;
 		}
@@ -634,11 +627,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 						dma_addr_t src_addr;
 						void *dst_addr;
 
-						k_spin_unlock(&chan->hw_lock, hw_key);
-
-						/* Lock the linked channel's hardware */
-						hw_key = k_spin_lock(&linked_chan->hw_lock);
-
 						/* Start first block */
 						LOG_DBG("Linked block %u: src=0x%x, dst=0x%x, "
 							"size=%u",
@@ -681,7 +669,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 						linked_chan->block_count =
 							linked_chan->config.block_count;
 						linked_chan->blocks_completed = 0;
-						k_spin_unlock(&linked_chan->hw_lock, hw_key);
 					} else {
 						LOG_WRN("Linked channel %u not in PREPARED state "
 							"or not in use",
@@ -691,7 +678,7 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 			}
 		}
 
-		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&chan->hw_lock, key_chan);
 	} else {
 		LOG_DBG("Channel %u not active", channel);
 	}

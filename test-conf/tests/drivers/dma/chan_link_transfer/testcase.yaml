@@ -1,8 +1,9 @@
+common:
+  tags:
+    - dma
 tests:
-  drivers.dma.chan_link_transfer:
-    min_ram: 16
+  drivers.dma.chan_link_transfer.tt_bh_noc:
     tags:
-      - dma
       - smoke
     platform_allow:
       - tt_blackhole@p100a/tt_blackhole/smc
@@ -10,27 +11,18 @@ tests:
       - tt_blackhole@p150b/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
-        tt_bh_noc.overlay"
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+         tt_bh_noc.overlay"
+  drivers.dma.chan_link_transfer.arc_hs:
+    tags:
+      - smoke
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_link_transfer/\
+         arc_hs.overlay"

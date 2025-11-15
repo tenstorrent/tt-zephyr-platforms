@@ -12,6 +12,12 @@ properties:
   "#dma-cells":
     const: 1
 
+  dma-buf-addr-alignment:
+    type: int
+    default: 32
+    description: |
+      Memory address alignment requirement for DMA buffers used by the controller.
+
   dma-channels:
     type: int
     default: 1

@@ -3,11 +3,4 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-&dma0 {
-	status = "okay";
-	dma-channels = <4>;
-};
-
-&dma1 {
-	status = "okay";
-};
+test_dma0: &dma0 {};

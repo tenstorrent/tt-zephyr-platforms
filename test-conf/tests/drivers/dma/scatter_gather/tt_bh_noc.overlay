@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-test_dma0: &dma1 {
-	status = "okay";
+/ {
+	aliases {
+		dma0 = &dma1;
+	};
 };
 
-&csm {
-	reg = <0x10000000 0x40000>;
-};
+test_dma0: &dma1 {};

@@ -6,3 +6,11 @@ include: [dma-controller.yaml]
 
 description: |
   Tenstorrent Network-on-Chip (NOC) DMA Controller
+
+properties:
+
+  dma-buf-addr-alignment:
+    type: int
+    default: 64
+    description: |
+      Memory address alignment requirement for DMA buffers used by the controller.

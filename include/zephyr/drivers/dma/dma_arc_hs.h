@@ -18,4 +18,4 @@
  */
 
 int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
-						size_t len);
+			size_t len);
