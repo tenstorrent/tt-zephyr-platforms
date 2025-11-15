@@ -11,7 +11,9 @@
 
 /* Assign the partition labels MCUBoot expects */
 mcuboot: &cmfw {};
+
 slot0_partition: &smc_main_image {};
+
 slot1_partition: &smc_recovery {};
 
 / {

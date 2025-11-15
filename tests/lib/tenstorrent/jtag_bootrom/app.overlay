@@ -19,32 +19,32 @@
 	};
 
 	mcureset {
-	       compatible = "zephyr,gpio-line";
-	       label = "ASIC reset line";
-	       gpios = <&gpio0 5 GPIO_PULL_DOWN>;
+		compatible = "zephyr,gpio-line";
+		label = "ASIC reset line";
+		gpios = <&gpio0 5 GPIO_PULL_DOWN>;
 	};
 
 	spireset {
-	       compatible = "zephyr,gpio-line";
-	       label = "Spi reset line";
-	       gpios = <&gpio0 6 GPIO_PULL_DOWN>;
+		compatible = "zephyr,gpio-line";
+		label = "Spi reset line";
+		gpios = <&gpio0 6 GPIO_PULL_DOWN>;
 	};
 
 	pgood {
-	       compatible = "zephyr,gpio-line";
-	       label = "Power good indicator";
-	       gpios = <&gpio0 8 GPIO_PULL_DOWN>;
+		compatible = "zephyr,gpio-line";
+		label = "Power good indicator";
+		gpios = <&gpio0 8 GPIO_PULL_DOWN>;
 	};
 
 	arc_rambus_jtag_mux_sel: arc_rambus_jtag_mux_enable {
-	       label = "Enable to select the arc jtag, disable to select rambus";
-	       compatible = "zephyr,gpio-line";
-	       gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+		label = "Enable to select the arc jtag, disable to select rambus";
+		compatible = "zephyr,gpio-line";
+		gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
 	};
 
 	arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
-	       label = "Enable to select the arc jtag, disable to select l2cpu";
-	       compatible = "zephyr,gpio-line";
-	       gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+		label = "Enable to select the arc jtag, disable to select l2cpu";
+		compatible = "zephyr,gpio-line";
+		gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
 	};
 };
