@@ -19,7 +19,7 @@
 	dma-channels = <4>;
 };
 
-tst_dma0: &dma0 { };
+tst_dma0: &dma0 {};
 
 /*
  * added to prevent SRAM overflow errors

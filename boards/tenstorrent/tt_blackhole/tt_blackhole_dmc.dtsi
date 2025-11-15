@@ -37,6 +37,7 @@
 		};
 
 		flash = <&flash1>;
+
 		spi_mux {
 			compatible = "zephyr,gpio-line";
 			label = "Line to spi mux, drive low to enable dmfw -> eeprom";
@@ -148,7 +149,7 @@
 
 &spi1 {
 	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pb3
-			 &spi1_miso_pa11 &spi1_mosi_pa12>;
+		     &spi1_miso_pa11 &spi1_mosi_pa12>;
 	pinctrl-names = "default";
 	status = "okay";
 
@@ -180,6 +181,7 @@
 		 */
 		#address-cells = <1>;
 		#size-cells = <1>;
+
 		nv_flash: nv-flash@0 {
 			compatible = "soc-nv-flash";
 			reg = <0 DT_SIZE_M(512)>;
