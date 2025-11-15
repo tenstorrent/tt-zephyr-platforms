@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_library_named(bh_arc)
-zephyr_include_directories(.)
-zephyr_include_directories(${ZEPHYR_CURRENT_MODULE_DIR}/include)
+
+zephyr_library_include_directories_ifdef(CONFIG_TT_BH_ARC ${ZEPHYR_CURRENT_MODULE_DIR}/include)
+
 zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY
 # zephyr-keep-sorted-start

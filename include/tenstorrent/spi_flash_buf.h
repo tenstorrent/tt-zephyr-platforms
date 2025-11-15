@@ -7,8 +7,6 @@
 #ifndef _SPI_FLASH_BUF_H_
 #define _SPI_FLASH_BUF_H_
 
-#include "init.h"
-
 #include <stdint.h>
 #include <stddef.h>
 
