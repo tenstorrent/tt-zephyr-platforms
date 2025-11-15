@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_library_named(bh_arc)
-zephyr_include_directories(.)
-zephyr_include_directories(${ZEPHYR_CURRENT_MODULE_DIR}/include)
+
+zephyr_library_include_directories_ifdef(CONFIG_TT_BH_ARC ${ZEPHYR_CURRENT_MODULE_DIR}/include)
+
 zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY
 # zephyr-keep-sorted-start
@@ -77,46 +78,46 @@ message(STATUS "Generating Python files from protobufs")
 set(OUTPUT_DIR ${ZEPHYR_BINARY_DIR}/python_proto_files)
 file(MAKE_DIRECTORY ${OUTPUT_DIR})
 set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/fw_table.proto -I ${SPIROM_PROTOBUFS}
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/read_only.proto -I ${SPIROM_PROTOBUFS}
-	COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/flash_info.proto -I ${SPIROM_PROTOBUFS}
+  COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/fw_table.proto -I ${SPIROM_PROTOBUFS}
+  COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/read_only.proto -I ${SPIROM_PROTOBUFS}
+  COMMAND ${PROTOC} --python_out=${OUTPUT_DIR} ${SPIROM_PROTOBUFS}/flash_info.proto -I ${SPIROM_PROTOBUFS}
 )
 
 if(NOT DEFINED CONFIG_TT_SMC_RECOVERY)
-	if(BOARD STREQUAL "tt_blackhole")
-	# Map board revision names to folder name
-	string(TOUPPER ${BOARD_REVISION} PROD_NAME)
-	elseif(BOARD STREQUAL "native_sim")
-	# Use P100 data files to stand in
-	set(PROD_NAME "P100")
-	else()
-	message(FATAL_ERROR "No support for board ${BOARD}")
-	endif()
+  if(BOARD STREQUAL "tt_blackhole")
+  # Map board revision names to folder name
+  string(TOUPPER ${BOARD_REVISION} PROD_NAME)
+  elseif(BOARD STREQUAL "native_sim")
+  # Use P100 data files to stand in
+  set(PROD_NAME "P100")
+  else()
+  message(FATAL_ERROR "No support for board ${BOARD}")
+  endif()
 
-	message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
+  message(STATUS "Generating rom configuration binary files for ${PROD_NAME}")
 
-	include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
+  include(${ZEPHYR_CURRENT_MODULE_DIR}/cmake/bundle_version.cmake)
 
-	# variable is needed to avoid protobuf version clashing
-	if (PROD_NAME MATCHES "^P300")
-	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
-		  --board ${PROD_NAME}_L --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
-		  --bundle-version ${BUNDLE_VERSION_STRING}
-	)
-	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
-		  --board ${PROD_NAME}_R --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
-		  --bundle-version ${BUNDLE_VERSION_STRING}
-	)
-	else()
-	set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-		COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-		  ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
-		  --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
-		  --bundle-version ${BUNDLE_VERSION_STRING}
-	)
-	endif()
+  # variable is needed to avoid protobuf version clashing
+  if(PROD_NAME MATCHES "^P300")
+  set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+    COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+      ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+      --board ${PROD_NAME}_L --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+      --bundle-version ${BUNDLE_VERSION_STRING}
+  )
+  set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+    COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+      ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+      --board ${PROD_NAME}_R --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+      --bundle-version ${BUNDLE_VERSION_STRING}
+  )
+  else()
+  set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+    COMMAND PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+      ${PYTHON_EXECUTABLE} ${ZEPHYR_CURRENT_MODULE_DIR}/scripts/encode_spirom_bins.py
+      --board ${PROD_NAME} --build-dir ${CMAKE_BINARY_DIR} --output ${CMAKE_BINARY_DIR}/generated_board_cfg
+      --bundle-version ${BUNDLE_VERSION_STRING}
+  )
+  endif()
 endif()
