@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include <arc_dma.h>
+#include "arc_dma.h"
 
 typedef enum {
 	EfuseBoxDft0 = 0,

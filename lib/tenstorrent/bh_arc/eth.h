@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include <arc_dma.h>
+#include "arc_dma.h"
 
 #define MAX_ETH_INSTANCES 14
 

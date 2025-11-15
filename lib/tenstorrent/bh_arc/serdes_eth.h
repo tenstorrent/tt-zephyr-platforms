@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include <arc_dma.h>
+#include "arc_dma.h"
 #include "serdes_ss_regs.h"
 
 /* LANE OFFSETS */
