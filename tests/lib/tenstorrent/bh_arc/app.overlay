@@ -1,7 +1,5 @@
-/
-{
-fwtable: fwtable
-	{
+/ {
+	fwtable: fwtable {
 		compatible = "tenstorrent,bh-fwtable";
 		status = "okay";
 		flash-dev = <&flashcontroller0>;
