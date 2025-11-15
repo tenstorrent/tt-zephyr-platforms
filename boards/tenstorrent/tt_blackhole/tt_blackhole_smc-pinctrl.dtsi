@@ -12,6 +12,7 @@
 		pinmux = <TT_BH_PINMUX(A, 51, UART0_TX)>;
 		bias-disable;
 	};
+
 	/omit-if-no-ref/ uart0_rx_default: uart0_rx_default {
 		pinmux = <TT_BH_PINMUX(B, 15, UART0_RX)>;
 		bias-disable;

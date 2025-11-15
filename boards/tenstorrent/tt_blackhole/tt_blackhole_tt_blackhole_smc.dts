@@ -76,6 +76,7 @@
 
 &i2c0 {
 	status = "okay";
+
 	smbus_target0: smbus@a {
 		status = "okay";
 		compatible = "zephyr,smbus_target";
@@ -163,7 +164,7 @@
 	status = "okay";
 };
 
-&pll0{
+&pll0 {
 	status = "okay";
 };
 

@@ -10,6 +10,7 @@
 &i2c1_scl_pa9 {
 	/delete-property/ bias-pull-up;
 };
+
 &i2c1_sda_pa10 {
 	/delete-property/ bias-pull-up;
 };
@@ -35,8 +36,8 @@
 
 	/* Used to set the ARC_JTAG mux gpio, which is used by the debugger */
 	arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
-	       compatible = "zephyr,gpio-line";
-	       gpios = <&gpiod 13 GPIO_ACTIVE_LOW>;
+		compatible = "zephyr,gpio-line";
+		gpios = <&gpiod 13 GPIO_ACTIVE_LOW>;
 	};
 
 	chip1: chip1 {
@@ -105,6 +106,7 @@
 		};
 
 		flash = <&chip1_flash>;
+
 		spi_mux {
 			compatible = "zephyr,gpio-line";
 			label = "Line to spi mux, drive low to enable dmfw -> eeprom";
@@ -152,7 +154,7 @@
  */
 &spi2 {
 	pinctrl-0 = <&spi2_nss_pb12 &spi2_sck_pb8
-			 &spi2_miso_pc2 &spi2_mosi_pc3>;
+		     &spi2_miso_pc2 &spi2_mosi_pc3>;
 	pinctrl-names = "default";
 	status = "okay";
 
