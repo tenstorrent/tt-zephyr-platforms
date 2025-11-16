@@ -3,14 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
- * DTS overlay to expose the ARC DMA controller to the chan_blen_transfer test
- * on the Tenstorrent Blackhole SMC platform.
- */
-
-&dma0 {
+tst_dma0: &dma0 {
 	status = "okay";
-	dma-channels = <4>;
 };
-
-tst_dma0: &dma0 { };

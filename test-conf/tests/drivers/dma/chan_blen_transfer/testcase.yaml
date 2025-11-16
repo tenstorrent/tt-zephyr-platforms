@@ -10,27 +10,13 @@ tests:
       - tt_blackhole@p150b/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+      - "DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-         boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         boards/tt_blackhole_tt_blackhole_smc.overlay;
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-         boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+        tt_bh_noc.overlay"
+      - "EXTRA_CONF_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-         boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
+         boards/tt_blackhole_tt_blackhole_smc.conf;
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-         boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-        tt_bh_noc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/chan_blen_transfer/\
-        tt_bh_noc.overlay"
+         tt_bh_noc.conf"
