@@ -115,42 +115,14 @@ patches:
       and rejects all future transfers until cancellation is reversed.
 
       Implementations are included for STM32 I2C and SMBus.
-  - path: zephyr/tests-drivers-dma-link.patch
-    sha256sum: 83960bef4175af4fea37f1ae55f524a3fac492bbf41bcadf297f24f694f7d564
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-05
-    comments: |
-      Make data alignment in DMA link test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-sg.patch
-    sha256sum: 629f6b6bb2b23dd7a6e41882d47974929b5ed3f5ea8ba501ca4189df2e1be555
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-05
-    comments: |
-      Make data alignment in DMA SG test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-loop.patch
-    sha256sum: 452fa314b1185c661f95d27aef2955d9cb5f84490f0e4ded0475b030927e7e94
+  - path: zephyr/tests-drivers-dma.patch
+    sha256sum: 72cdb81019d9473d8711c0bdf3c68ffac77a33b3cd4c34ee32c3a600205b1f59
     module: zephyr
     author: Alex Apostolu
     email: aapostolu@tenstorrent.com
     date: 2025-11-07
     comments: |
-      Make data alignment in DMA loop test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-blen.patch
-    sha256sum: a74bbf9eda803ba42bf10ae1fa93483f1359fa64ab783f68dc964da6bd5ed6cf
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-07
-    comments: |
-      Make data alignment in DMA blen test configurable according to its DT property
-      dma-buf-addr-alignment.
+      Make data alignment in DMA tests 64 bytes.
   - path: zephyr/mspi-dw-nor-fixes.patch
     sha256sum: c8d26eb9fc2ea6114c66d9e832b3fe487a504ce145b5d8bbbe43b1d904410253
     module: zephyr
