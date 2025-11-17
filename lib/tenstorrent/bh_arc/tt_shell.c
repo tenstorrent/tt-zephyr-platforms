@@ -17,7 +17,7 @@
 #include "noc_init.h"
 LOG_MODULE_REGISTER(tt_shell, CONFIG_LOG_DEFAULT_LEVEL);
 
-int l2cpu_enable_handler(const struct shell *sh, size_t argc, char **argv)
+static int l2cpu_enable_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	bool on = false;
 
@@ -42,7 +42,7 @@ int l2cpu_enable_handler(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-int tensix_enable_handler(const struct shell *sh, size_t argc, char **argv)
+static int tensix_enable_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	bool on = false;
 
@@ -67,7 +67,7 @@ int tensix_enable_handler(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-int mrisc_power_handler(const struct shell *sh, size_t argc, char **argv)
+static int mrisc_power_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	bool on = false;
 
@@ -92,7 +92,7 @@ int mrisc_power_handler(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-int asic_state_handler(const struct shell *sh, size_t argc, char **argv)
+static int asic_state_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	if (argc == 2U) {
 		AsicState state = (AsicState)atoi(argv[1]);
@@ -111,7 +111,7 @@ int asic_state_handler(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-int telem_handler(const struct shell *sh, size_t argc, char **argv)
+static int telem_handler(const struct shell *sh, size_t argc, char **argv)
 {
 	int32_t idx = atoi(argv[1]);
 	char fmt;
