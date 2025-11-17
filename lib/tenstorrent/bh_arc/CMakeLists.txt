@@ -8,6 +8,7 @@ zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY
 # zephyr-keep-sorted-start
   aiclk_ppm.c
+  bh_power.c
   clock_wave.c
   dvfs.c
   efuse.c
@@ -21,7 +22,6 @@ zephyr_library_sources_ifndef(
   noc_init.c
   pcie_dma.c
   pcie_msi.c
-  power.c
   pvt.c
   regulator.c
   regulator_config.c
