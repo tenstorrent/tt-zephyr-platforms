@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <tenstorrent/bh_power.h>
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 
@@ -30,7 +31,7 @@ enum power_settings_e {
 	power_settings_max
 };
 
-int32_t set_l2cpu_enable(bool enable)
+int32_t bh_set_l2cpu_enable(bool enable)
 {
 	int32_t ret = 0;
 
@@ -74,7 +75,7 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_l2cpu) {
-		ret = set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
+		ret = bh_set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
 	}
 
 	return ret;

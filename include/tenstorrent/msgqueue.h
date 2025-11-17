@@ -110,8 +110,8 @@ struct power_setting_rqst {
 		 */
 		uint16_t tensix_enable: 1;
 
-		/** @brief 1 - @ref set_l2cpu_enable "Enable L2CPU cores"
-		 * <br> 0 - @ref set_l2cpu_enable "Disable L2CPU cores"
+		/** @brief 1 - @ref bh_set_l2cpu_enable "Enable L2CPU cores"
+		 * <br> 0 - @ref bh_set_l2cpu_enable "Disable L2CPU cores"
 		 */
 		uint16_t l2cpu_enable: 1;
 
