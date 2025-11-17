@@ -1,28 +1,27 @@
 common:
   tags:
+    - smoke
     - dma
+  platform_allow:
+    - tt_blackhole@p100a/tt_blackhole/smc
+    - tt_blackhole@p150a/tt_blackhole/smc
+    - tt_blackhole@p150b/tt_blackhole/smc
+    - tt_blackhole@p300a/tt_blackhole/smc
 tests:
   drivers.dma.scatter_gather.tt_bh_noc:
-    tags:
-      - smoke
-    platform_allow:
-      - tt_blackhole@p100a/tt_blackhole/smc
-      - tt_blackhole@p150a/tt_blackhole/smc
-      - tt_blackhole@p150b/tt_blackhole/smc
-      - tt_blackhole@p300a/tt_blackhole/smc
+    min_ram: 16
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
          tt_bh_noc.overlay"
+      - "EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
+         tt_bh_noc.conf"
   drivers.dma.scatter_gather.arc_hs:
-    tags:
-      - smoke
-    platform_allow:
-      - tt_blackhole@p100a/tt_blackhole/smc
-      - tt_blackhole@p150a/tt_blackhole/smc
-      - tt_blackhole@p150b/tt_blackhole/smc
-      - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
          arc_hs.overlay"
+      - "EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
+         arc_hs.conf"

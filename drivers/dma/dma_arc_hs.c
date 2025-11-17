@@ -990,14 +990,23 @@ static int dma_arc_hs_init(const struct device *dev)
 	const struct arc_dma_config *config = dev->config;
 	struct arc_dma_data *data = dev->data;
 	int i;
-
 	LOG_DBG("Initializing ARC DMA with %u channels", config->channels);
+
+	/* Zero-initialize the entire channel array including spinlocks */
+	memset(data->channels, 0, config->channels * sizeof(struct arc_dma_channel));
+	
+	/* Zero-initialize the main driver spinlock */
+	memset(&data->lock, 0, sizeof(struct k_spinlock));
+	
+	/* Zero-initialize the completion_work before k_work_init_delayable */
+	memset(&data->completion_work, 0, sizeof(struct k_work_delayable));
 
 	data->dma_ctx.magic = DMA_MAGIC;
 	data->dma_ctx.dma_channels = config->channels;
 	data->dma_ctx.atomic = data->channels_atomic;
 	memset(data->channels_atomic, 0, sizeof(data->channels_atomic));
 
+	/* Initialize each channel's basic fields (spinlocks already zeroed above) */
 	for (i = 0; i < config->channels; i++) {
 		data->channels[i].id = i;
 		data->channels[i].in_use = false;
@@ -1007,7 +1016,6 @@ static int dma_arc_hs_init(const struct device *dev)
 		data->channels[i].callback_arg = NULL;
 		data->channels[i].block_count = 0;
 		data->channels[i].blocks_completed = 0;
-		/* Spinlocks are zero-initialized by default in Zephyr */
 	}
 
 	dma_arc_hs_config_hw();
@@ -1037,7 +1045,8 @@ static int dma_arc_hs_init(const struct device *dev)
 	};                                                                                         \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
-	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];   \
+	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)] = \
+		{0};                                                                                \
 	static struct arc_dma_data arc_dma_data_##inst = {                                         \
 		.channels = arc_dma_channels_##inst,                                               \
 	};                                                                                         \
