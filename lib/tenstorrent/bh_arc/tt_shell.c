@@ -28,6 +28,8 @@ int l2cpu_enable_handler(const struct shell *sh, size_t argc, char **argv)
 		on = true;
 	} else {
 		shell_error(sh, "Invalid L2CPU power setting");
+
+		return -EINVAL;
 	}
 
 	int ret = bh_set_l2cpu_enable(on);
@@ -51,6 +53,8 @@ int tensix_enable_handler(const struct shell *sh, size_t argc, char **argv)
 		on = true;
 	} else {
 		shell_error(sh, "Invalid tensix power setting");
+
+		return -EINVAL;
 	}
 
 	int ret = set_tensix_enable(on);
@@ -74,6 +78,8 @@ int mrisc_power_handler(const struct shell *sh, size_t argc, char **argv)
 		on = true;
 	} else {
 		shell_error(sh, "Invalid MRISC power setting");
+
+		return -EINVAL;
 	}
 
 	int ret = set_mrisc_power_setting(on);
