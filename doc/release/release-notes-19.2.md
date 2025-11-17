@@ -1,7 +1,5 @@
 # v19.2.0
 
-> This is a working draft for the up-coming v19.2.0 release.
-
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.2.0 🥳🎉.
 
 Major enhancements with this release include:
