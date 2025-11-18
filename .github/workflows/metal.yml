@@ -41,10 +41,12 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
+        - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
+      HF_MODEL: /opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/
     defaults:
       run:
         shell: bash
@@ -68,9 +70,19 @@ jobs:
           source .env/bin/activate
           pip install tt-flash==3.4.7
           tt-flash $HOME/fw_pack-*.fwbundle --force
+      - name: Patch Test Command
+        run: |
+          # Patch whisper demo test to run with CI=false to skip the performance checks.
+          # These tests fail on syseng CI because the runners have different configurations
+          # than metal CI systems.
+          sed -i 's/pytest\(.*\)test_demo_for_conditional_generation/CI=false pytest\1test_demo_for_conditional_generation/g' \
+            dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
+          # To verify patch was applied
+          git diff
+
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
       - name: cleanup
         if: ${{ always() }}
         run: |
