@@ -70,7 +70,7 @@ jobs:
           tt-flash $HOME/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
       - name: cleanup
         if: ${{ always() }}
         run: |
