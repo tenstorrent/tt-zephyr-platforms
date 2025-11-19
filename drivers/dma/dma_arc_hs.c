@@ -994,10 +994,10 @@ static int dma_arc_hs_init(const struct device *dev)
 
 	/* Zero-initialize the entire channel array including spinlocks */
 	memset(data->channels, 0, config->channels * sizeof(struct arc_dma_channel));
-	
+
 	/* Zero-initialize the main driver spinlock */
 	memset(&data->lock, 0, sizeof(struct k_spinlock));
-	
+
 	/* Zero-initialize the completion_work before k_work_init_delayable */
 	memset(&data->completion_work, 0, sizeof(struct k_work_delayable));
 
@@ -1045,8 +1045,7 @@ static int dma_arc_hs_init(const struct device *dev)
 	};                                                                                         \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
-	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)] = \
-		{0};                                                                                \
+	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];  \
 	static struct arc_dma_data arc_dma_data_##inst = {                                         \
 		.channels = arc_dma_channels_##inst,                                               \
 	};                                                                                         \
