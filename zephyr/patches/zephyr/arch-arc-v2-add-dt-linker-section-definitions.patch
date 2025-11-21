@@ -1,0 +1,44 @@
+From 2e05ae76fbe4dd9a023989bbab37301acb400b49 Mon Sep 17 00:00:00 2001
+From: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+Date: Wed, 19 Nov 2025 11:02:58 -0600
+Subject: [PATCH] arch: arc v2: add dt linker section definitions
+
+Add dt linker section definitions for ARC V2 platforms.
+
+Signed-off-by: Daniel DeGrasse <ddegrasse@tenstorrent.com>
+---
+ include/zephyr/arch/arc/v2/linker.ld | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/zephyr/arch/arc/v2/linker.ld b/include/zephyr/arch/arc/v2/linker.ld
+index 1b1bd291148..504256cf0c7 100644
+--- a/include/zephyr/arch/arc/v2/linker.ld
++++ b/include/zephyr/arch/arc/v2/linker.ld
+@@ -12,6 +12,7 @@
+ #include <zephyr/linker/sections.h>
+ #include <zephyr/linker/linker-defs.h>
+ #include <zephyr/linker/linker-tool.h>
++#include <zephyr/linker/devicetree_regions.h>
+
+ /* physical address of RAM */
+ #ifdef CONFIG_HARVARD
+@@ -73,6 +74,7 @@ MEMORY {
+ #ifdef YCCM_START
+ 	YCCM  (rw)  : ORIGIN = YCCM_START,  LENGTH = YCCM_SIZE
+ #endif
++	LINKER_DT_REGIONS()
+ 	/* Used by and documented in include/linker/intlist.ld */
+ 	IDT_LIST  (wx)      : ORIGIN = 0xFFFFF7FF, LENGTH = 2K
+ }
+@@ -325,6 +327,9 @@ SECTIONS {
+ 	__arc_rw_sram_size = SRAM_START + SRAM_SIZE - _image_ram_start;
+ #endif
+
++	/* Sections generated from 'zephyr,memory-region' nodes */
++	LINKER_DT_SECTIONS()
++
+ 	/DISCARD/ : {
+ 		/* Discard all destructors */
+ 		*(.dtors*)
+--
+2.34.1

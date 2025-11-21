@@ -17,6 +17,7 @@ zephyr_library_sources_ifndef(
   functional_efuse.c
   gddr.c
   harvesting.c
+  hotload.c
   i2c_messages.c
   noc.c
   noc_init.c
@@ -64,6 +65,7 @@ zephyr_library_sources(
 zephyr_library_sources_ifdef(CONFIG_TT_SHELL tt_shell.c)
 
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
+zephyr_linker_sources(SECTIONS hotload.ld)
 if(CONFIG_ARC)
   zephyr_library_link_libraries(${ZEPHYR_CURRENT_MODULE_DIR}/zephyr/blobs/tt_blackhole_libpciesd.a)
 endif()

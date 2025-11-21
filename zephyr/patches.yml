@@ -160,3 +160,11 @@ patches:
     comments: |
       Add support for read-frequency property in jedec,spi-nor binding and
       enable using the flash page layout API with the driver.
+  - path: zephyr/arch-arc-v2-add-dt-linker-section-definitions.patch
+    sha256sum: 16883fd65a04402677ee53e2e16ed27c8eb4534ed6fd28136b9022689c51437b
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-11-19
+    comments: |
+      Add DT linker section definitions for ARCv2 architecture.

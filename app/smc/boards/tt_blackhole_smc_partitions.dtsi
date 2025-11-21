@@ -32,7 +32,14 @@ slot1_partition: &smc_recovery {};
 		compatible = "zephyr,memory-region", "mmio-sram";
 		zephyr,memory-region = "CSM-APP";
 		device_type = "memory";
-		reg = <0x10010000 0x6f000>; /* 444 KiB for application */
+		reg = <0x10010000 0x6e000>; /* 440 KiB for application */
+	};
+
+	csm_persistent: memory@1007e000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-region = "CSM-PERSISTENT";
+		device_type = "memory";
+		reg = <0x1007e000 0x1000>; /* 4 KiB for persistent storage */
 	};
 
 	csm_shared: memory@1007f000 {
