@@ -385,6 +385,9 @@ def test_upgrade_from_19_00(arc_chip_dut, tmp_path: Path, board_name, unlaunched
         (22 << 16),
         replace_bootloader=True,
     )
+    # Allow flash to settle after heavy upgrade operations
+    logger.info("Waiting for flash to stabilize after upgrade test...")
+    time.sleep(5)
 
 
 def test_arc_msg(arc_chip_dut, asic_id):
@@ -444,6 +447,10 @@ def test_flash_write(arc_chip_dut, asic_id):
     Validates that flash read/write works via pyluwen,
     since this is the same interface used by tt-flash
     """
+    # Allow flash to stabilize after previous tests
+    logger.info("Waiting for SPI flash to be ready...")
+    time.sleep(2)
+
     SPI_RX_TRAIN_ADDR = 0x13FFC
     SPI_RX_TRAIN_DATA = 0xA5A55A5A
     SCRATCH_REGION = 0x2800000

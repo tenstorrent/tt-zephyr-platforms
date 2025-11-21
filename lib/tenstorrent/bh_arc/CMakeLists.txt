@@ -37,7 +37,6 @@ zephyr_library_sources_ifndef(
 
 zephyr_library_sources(
 # zephyr-keep-sorted-start
-  arc_dma.c
   asic_state.c
   avs.c
   cat.c

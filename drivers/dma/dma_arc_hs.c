@@ -15,6 +15,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/arch/arc/v2/aux_regs.h>
 #include <zephyr/sys/__assert.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 #define DT_DRV_COMPAT snps_designware_dma_arc_hs
 
@@ -124,16 +125,6 @@ static void dma_arc_hs_init_channel_hw(uint32_t dma_ch, uint32_t base, uint32_t 
 	z_arc_v2_aux_reg_write(DMA_S_STATC_AUX(dma_ch), 0x1); /* Enable dma_ch */
 }
 
-static void dma_arc_hs_start_hw(uint32_t dma_ch, const void *p_src, void *p_dst, uint32_t len,
-				uint32_t attr)
-{
-	z_arc_v2_aux_reg_write(DMA_C_CHAN_AUX, dma_ch);
-	z_arc_v2_aux_reg_write(DMA_C_SRC_AUX, (uint32_t)p_src);
-	z_arc_v2_aux_reg_write(DMA_C_DST_AUX, (uint32_t)p_dst);
-	z_arc_v2_aux_reg_write(DMA_C_ATTR_AUX, attr);
-	z_arc_v2_aux_reg_write(DMA_C_LEN_AUX, len);
-}
-
 /* Queue a transfer on the currently selected channel (for multi-block) */
 static void dma_arc_hs_next_hw(const void *p_src, void *p_dst, uint32_t len, uint32_t attr)
 {
@@ -142,6 +133,13 @@ static void dma_arc_hs_next_hw(const void *p_src, void *p_dst, uint32_t len, uin
 	z_arc_v2_aux_reg_write(DMA_C_DST_AUX, (uint32_t)p_dst);
 	z_arc_v2_aux_reg_write(DMA_C_ATTR_AUX, attr);
 	z_arc_v2_aux_reg_write(DMA_C_LEN_AUX, len);
+}
+
+static void dma_arc_hs_start_hw(uint32_t dma_ch, const void *p_src, void *p_dst, uint32_t len,
+				uint32_t attr)
+{
+	z_arc_v2_aux_reg_write(DMA_C_CHAN_AUX, dma_ch);
+	dma_arc_hs_next_hw(p_src, p_dst, len, attr);
 }
 
 static uint32_t dma_arc_hs_get_handle_hw(void)
@@ -359,7 +357,7 @@ static int dma_arc_hs_stop(const struct device *dev, uint32_t channel)
 	}
 
 	if (!chan->active) {
-		LOG_WRN("Channel %u already stopped", channel);
+		LOG_DBG("Channel %u already stopped", channel);
 		k_spin_unlock(&data->lock, key);
 		return 0;
 	}
@@ -413,7 +411,7 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	struct arc_dma_channel *chan;
 	struct arc_dma_channel *linked_chan;
 	uint32_t done_status;
-	k_spinlock_key_t key, hw_key;
+	k_spinlock_key_t key, key_chan;
 	const struct arc_dma_config *dev_config = dev->config;
 
 	key = k_spin_lock(&data->lock);
@@ -425,7 +423,14 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	}
 
 	/* Lock hardware access for this channel */
-	hw_key = k_spin_lock(&chan->hw_lock);
+	key_chan = k_spin_lock(&chan->hw_lock);
+
+	/* Re-check active state after locking to prevent race with dma_stop */
+	if (!chan->active) {
+		k_spin_unlock(&chan->hw_lock, key_chan);
+		k_spin_unlock(&data->lock, key);
+		return;
+	}
 
 	done_status = dma_arc_hs_get_done_hw(chan->handle);
 
@@ -474,11 +479,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 					dma_addr_t src_addr;
 					void *dst_addr;
 
-					k_spin_unlock(&chan->hw_lock, hw_key);
-
-					/* Lock the linked channel's hardware */
-					hw_key = k_spin_lock(&linked_chan->hw_lock);
-
 					/* Start first block */
 					LOG_DBG("Linked block %u: src=0x%x, dst=0x%x, size=%u",
 						block_idx, (uint32_t)block->source_address,
@@ -515,8 +515,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 					linked_chan->blocks_completed = 0;
 
 					LOG_DBG("Linked channel %u started", linked_ch);
-
-					k_spin_unlock(&linked_chan->hw_lock, hw_key);
 				} else {
 					LOG_WRN("Linked channel %u not in PREPARED state "
 						"or not in use",
@@ -526,7 +524,7 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 		}
 	}
 
-	k_spin_unlock(&chan->hw_lock, hw_key);
+	k_spin_unlock(&chan->hw_lock, key_chan);
 	k_spin_unlock(&data->lock, key);
 }
 
@@ -538,7 +536,7 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 	struct arc_dma_channel *chan;
 	struct arc_dma_channel *linked_chan;
 	uint32_t done_status;
-	k_spinlock_key_t key, hw_key;
+	k_spinlock_key_t key, key_chan;
 
 	if (channel >= dev_config->channels) {
 		return -EINVAL;
@@ -562,7 +560,14 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 
 	if (chan->active) {
 		/* Lock hardware access for this channel */
-		hw_key = k_spin_lock(&chan->hw_lock);
+		key_chan = k_spin_lock(&chan->hw_lock);
+
+		/* Re-check active state after locking to prevent race with dma_stop */
+		if (!chan->active) {
+			k_spin_unlock(&chan->hw_lock, key_chan);
+			k_spin_unlock(&data->lock, key);
+			return 0;
+		}
 
 		done_status = dma_arc_hs_get_done_hw(chan->handle);
 		LOG_DBG("Channel %u status check: handle=%u, done_status=%u", channel, chan->handle,
@@ -622,11 +627,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 						dma_addr_t src_addr;
 						void *dst_addr;
 
-						k_spin_unlock(&chan->hw_lock, hw_key);
-
-						/* Lock the linked channel's hardware */
-						hw_key = k_spin_lock(&linked_chan->hw_lock);
-
 						/* Start first block */
 						LOG_DBG("Linked block %u: src=0x%x, dst=0x%x, "
 							"size=%u",
@@ -669,7 +669,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 						linked_chan->block_count =
 							linked_chan->config.block_count;
 						linked_chan->blocks_completed = 0;
-						k_spin_unlock(&linked_chan->hw_lock, hw_key);
 					} else {
 						LOG_WRN("Linked channel %u not in PREPARED state "
 							"or not in use",
@@ -679,7 +678,7 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 			}
 		}
 
-		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&chan->hw_lock, key_chan);
 	} else {
 		LOG_DBG("Channel %u not active", channel);
 	}
@@ -933,19 +932,81 @@ static const struct dma_driver_api dma_arc_hs_api = {
 	.get_attribute = dma_arc_hs_get_attribute,
 };
 
+int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
+			size_t len)
+{
+	struct dma_config cfg = {0};
+	struct dma_block_config blk = {0};
+	struct dma_status stat;
+	int rc;
+
+	if (!device_is_ready(dev)) {
+		LOG_ERR("DMA device not ready");
+		return -ENODEV;
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	if (((uintptr_t)src & 3) || ((uintptr_t)dst & 3)) {
+		LOG_ERR("src/dst not 4-byte aligned");
+		return -EINVAL;
+	}
+
+	if (channel >= ((const struct arc_dma_config *)dev->config)->channels) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
+	}
+
+	blk.source_address = (dma_addr_t)(uintptr_t)src;
+	blk.dest_address = (dma_addr_t)(uintptr_t)dst;
+	blk.block_size = len;
+
+	cfg.channel_direction = MEMORY_TO_MEMORY;
+	cfg.head_block = &blk;
+	cfg.block_count = 1;
+
+	rc = dma_config(dev, channel, &cfg);
+	if (rc < 0) {
+		return rc;
+	}
+
+	rc = dma_start(dev, channel);
+	if (rc < 0) {
+		return rc;
+	}
+
+	while (dma_get_status(dev, channel, &stat) == 0 && stat.busy) {
+		k_msleep(1);
+	}
+
+	dma_stop(dev, channel);
+	return 0;
+}
+
 static int dma_arc_hs_init(const struct device *dev)
 {
 	const struct arc_dma_config *config = dev->config;
 	struct arc_dma_data *data = dev->data;
 	int i;
-
 	LOG_DBG("Initializing ARC DMA with %u channels", config->channels);
+
+	/* Zero-initialize the entire channel array including spinlocks */
+	memset(data->channels, 0, config->channels * sizeof(struct arc_dma_channel));
+
+	/* Zero-initialize the main driver spinlock */
+	memset(&data->lock, 0, sizeof(struct k_spinlock));
+
+	/* Zero-initialize the completion_work before k_work_init_delayable */
+	memset(&data->completion_work, 0, sizeof(struct k_work_delayable));
 
 	data->dma_ctx.magic = DMA_MAGIC;
 	data->dma_ctx.dma_channels = config->channels;
 	data->dma_ctx.atomic = data->channels_atomic;
 	memset(data->channels_atomic, 0, sizeof(data->channels_atomic));
 
+	/* Initialize each channel's basic fields (spinlocks already zeroed above) */
 	for (i = 0; i < config->channels; i++) {
 		data->channels[i].id = i;
 		data->channels[i].in_use = false;
@@ -955,7 +1016,6 @@ static int dma_arc_hs_init(const struct device *dev)
 		data->channels[i].callback_arg = NULL;
 		data->channels[i].block_count = 0;
 		data->channels[i].blocks_completed = 0;
-		/* Spinlocks are zero-initialized by default in Zephyr */
 	}
 
 	dma_arc_hs_config_hw();
@@ -985,7 +1045,7 @@ static int dma_arc_hs_init(const struct device *dev)
 	};                                                                                         \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
-	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];   \
+	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];  \
 	static struct arc_dma_data arc_dma_data_##inst = {                                         \
 		.channels = arc_dma_channels_##inst,                                               \
 	};                                                                                         \

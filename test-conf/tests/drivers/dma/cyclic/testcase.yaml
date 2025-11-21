@@ -1,24 +1,15 @@
+common:
+  tags:
+    - smoke
+    - dma
+  platform_allow:
+    - tt_blackhole@p100a/tt_blackhole/smc
+    - tt_blackhole@p150a/tt_blackhole/smc
+    - tt_blackhole@p150b/tt_blackhole/smc
+    - tt_blackhole@p300a/tt_blackhole/smc
 tests:
-  drivers.dma.cyclic:
-    min_ram: 16
-    tags:
-      - dma
-      - smoke
-    platform_allow:
-      - tt_blackhole@p100a/tt_blackhole/smc
-      - tt_blackhole@p150a/tt_blackhole/smc
-      - tt_blackhole@p150b/tt_blackhole/smc
-      - tt_blackhole@p300a/tt_blackhole/smc
+  drivers.dma.cyclic.arc_hs:
     extra_args:
-      - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p150b/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
-      - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
-        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
-        boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/cyclic/\
+         arc_hs.overlay"
