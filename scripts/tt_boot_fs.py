@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import ctypes
 from dataclasses import dataclass
+import io
 import logging
 import os
 from pathlib import Path
@@ -19,6 +20,7 @@ import argparse
 import sys
 import json
 import tempfile
+from base64 import b16encode
 from intelhex import IntelHex
 import imgtool.image as imgtool_image
 
@@ -581,6 +583,19 @@ class BootFs:
 
         return BootFs(order, entries, failover)
 
+    def to_b16(self) -> str:
+        ih = IntelHex()
+        ih.loadhex(io.StringIO(self.to_intel_hex(True).decode("ascii")))
+        b16out = ""
+        for off, end in ih.segments():
+            b16out += f"@{off}\n"
+            b16out += b16encode(ih.tobinarray(start=off, size=end - off)).decode(
+                "ascii"
+            )
+            b16out += "\n"
+
+        return b16out
+
 
 @dataclass
 class FileImage:
@@ -908,6 +923,31 @@ def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
             f.write(entry_data)
     except Exception as e:
         _logger.error(f"Exception: {e}")
+
+
+def extract_all(bootfs: Path, input_base64=False):
+    if input_base64:
+        data = bytes(0)
+        # Pad with 0x0 between offsets
+        with open(bootfs, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith("@"):
+                    # This is an address line, pad data to this point
+                    offset = int(line[1:], 10)
+                    # Pad with 0x0
+                    data += bytes([0xFF] * (offset - len(data)))
+                else:
+                    # This is a data line, decode and append
+                    data += base64.b16decode(line.strip())
+    elif bootfs.suffix == ".hex":
+        # Read hex file and convert to binary
+        ih = IntelHex(str(bootfs))
+        data = ih.tobinarray()
+    else:
+        data = open(bootfs, "rb").read()
+
+    return data
 
 
 def _generate_bootfs_yaml(
