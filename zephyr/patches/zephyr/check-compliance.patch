@@ -1,5 +1,5 @@
 diff --git a/scripts/ci/check_compliance.py b/scripts/ci/check_compliance.py
-index a0fa1348bb6..f2bbd7e2278 100755
+index e2a66589204..78aa6a90571 100755
 --- a/scripts/ci/check_compliance.py
 +++ b/scripts/ci/check_compliance.py
 @@ -291,7 +291,7 @@ class CheckPatch(ComplianceTest):
@@ -11,7 +11,7 @@ index a0fa1348bb6..f2bbd7e2278 100755
                                  stdout=subprocess.PIPE,
                                  cwd=GIT_TOP) as diff:
              try:
-@@ -742,7 +742,7 @@ class KconfigCheck(ComplianceTest):
+@@ -865,7 +865,7 @@ class KconfigCheck(ComplianceTest):
  
          # Use hard coded paths for Zephyr for tests, samples and ext. module root
          tmp_output = git("grep", "-I", "-h", "--perl-regexp", regex, "--", ":tests", ":samples",
@@ -20,7 +20,7 @@ index a0fa1348bb6..f2bbd7e2278 100755
  
          if len(tmp_output) > 0:
              kconfigs += tmp_output + "\n"
-@@ -1254,7 +1254,11 @@ flagged.
+@@ -1377,7 +1377,17 @@ flagged.
          "COMPILER_RT_RTLIB",
          "CRC",  # Used in TI CC13x2 / CC26x2 SDK comment
          "DEEP_SLEEP",  # #defined by RV32M1 in ext/
@@ -29,10 +29,16 @@ index a0fa1348bb6..f2bbd7e2278 100755
 +        "DMC_RUN_SMBUS_TESTS",
 +        "DMA_SG_XFER_SIZE",
 +        "DMA_LOOP_TRANSFER_SIZE",
++        "DMA_BLEN_ALIGNMENT",
++        "DMA_CYCLIC_ALIGNMENT",
++        "DMA_CYCLIC_XFER_SIZE",
++        "DMA_LINK_ALIGNMENT",
++        "DMA_LOOP_ALIGNMENT",
++        "DMA_SG_ALIGNMENT",
          "ERR",
          "ESP_DIF_LIBRARY",  # Referenced in CMake comment
          "EXPERIMENTAL",
-@@ -1279,6 +1283,7 @@ flagged.
+@@ -1428,6 +1438,7 @@ flagged.
          "IAR_LIBCPP",
          "IAR_SEMIHOSTING",
          "IAR_ZEPHYR_INIT",
@@ -40,7 +46,7 @@ index a0fa1348bb6..f2bbd7e2278 100755
          "IPC_SERVICE_ICMSG_BOND_NOTIFY_REPEAT_TO_MS", # Used in ICMsg tests for intercompatibility
                                                        # with older versions of the ICMsg.
          "LIBGCC_RTLIB",
-@@ -1415,6 +1420,7 @@ class SysbuildKconfigCheck(KconfigCheck):
+@@ -1565,6 +1576,7 @@ class SysbuildKconfigCheck(KconfigCheck):
      # A different allowlist is used for symbols prefixed with SB_CONFIG_ (omitted here).
      UNDEF_KCONFIG_ALLOWLIST = {
          # zephyr-keep-sorted-start re(^\s+")
@@ -48,7 +54,7 @@ index a0fa1348bb6..f2bbd7e2278 100755
          "FOO",
          "MY_IMAGE", # Used in sysbuild documentation as example
          "OTHER_APP_IMAGE_NAME", # Used in sysbuild documentation as example
-@@ -1585,17 +1591,25 @@ class LicenseAndCopyrightCheck(ComplianceTest):
+@@ -1735,17 +1747,25 @@ class LicenseAndCopyrightCheck(ComplianceTest):
              self.fmtd_failure(severity, title, rel_path, desc=desc or "", line=1)
  
      def run(self) -> None:
@@ -79,7 +85,7 @@ index a0fa1348bb6..f2bbd7e2278 100755
  
          project = Project.from_directory(GIT_TOP)
          report = ProjectSubsetReport.generate(project, changed_files, multiprocessing=False)
-@@ -2020,6 +2034,11 @@ class KeepSorted(ComplianceTest):
+@@ -2203,6 +2223,11 @@ class KeepSorted(ComplianceTest):
          if not mime_type.startswith("text/"):
              return
  

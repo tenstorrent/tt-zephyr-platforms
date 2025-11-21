@@ -8,7 +8,7 @@ patches:
     comments: |
       Support multilevel interrupt priority on ARC cores.
   - path: zephyr/check-compliance.patch
-    sha256sum: 71f8c8134745fa2fd553f6a0e7f3289abc27e468cada40df9a437ae505a69903
+    sha256sum: 4e25d8ea7caa5e4c26e8256bf32908edfe45fa2a52882d51a73507c432d08df0
     module: zephyr
     author: Chris Friedt
     email: cfriedt@tenstorrent.com
@@ -115,42 +115,6 @@ patches:
       and rejects all future transfers until cancellation is reversed.
 
       Implementations are included for STM32 I2C and SMBus.
-  - path: zephyr/tests-drivers-dma-link.patch
-    sha256sum: 83960bef4175af4fea37f1ae55f524a3fac492bbf41bcadf297f24f694f7d564
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-05
-    comments: |
-      Make data alignment in DMA link test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-sg.patch
-    sha256sum: 629f6b6bb2b23dd7a6e41882d47974929b5ed3f5ea8ba501ca4189df2e1be555
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-05
-    comments: |
-      Make data alignment in DMA SG test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-loop.patch
-    sha256sum: 452fa314b1185c661f95d27aef2955d9cb5f84490f0e4ded0475b030927e7e94
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-07
-    comments: |
-      Make data alignment in DMA loop test configurable according to its DT property
-      dma-buf-addr-alignment.
-  - path: zephyr/tests-drivers-dma-blen.patch
-    sha256sum: a74bbf9eda803ba42bf10ae1fa93483f1359fa64ab783f68dc964da6bd5ed6cf
-    module: zephyr
-    author: Alex Apostolu
-    email: aapostolu@tenstorrent.com
-    date: 2025-11-07
-    comments: |
-      Make data alignment in DMA blen test configurable according to its DT property
-      dma-buf-addr-alignment.
   - path: zephyr/mspi-dw-nor-fixes.patch
     sha256sum: c8d26eb9fc2ea6114c66d9e832b3fe487a504ce145b5d8bbbe43b1d904410253
     module: zephyr
@@ -160,3 +124,12 @@ patches:
     comments: |
       Add support for read-frequency property in jedec,spi-nor binding and
       enable using the flash page layout API with the driver.
+  - path: zephyr/tests-drivers-dma.patch
+    sha256sum: b9fe2a83814e83cfdd0989c290ec698a84781febd5302e1d5a53599b94008c83
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-11-21
+    comments: |
+      Make data alignment configurable in dma driver tests and change
+      alias from dma0 to tst_dma0.
