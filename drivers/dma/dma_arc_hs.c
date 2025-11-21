@@ -328,10 +328,10 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
 
+	k_spin_unlock(&data->lock, key);
+
 	/* Schedule completion work to check for transfer completion */
 	k_work_schedule(&data->completion_work, K_MSEC(1));
-
-	k_spin_unlock(&data->lock, key);
 
 	LOG_DBG("Started DMA transfer on channel %u, handle %u", current_channel, chan->handle);
 	return 0;
@@ -410,13 +410,19 @@ static size_t dma_arc_hs_calc_linked_transfer_size(struct arc_dma_channel *chan,
 static void dma_arc_hs_check_completion(const struct device *dev, uint32_t channel)
 {
 	struct arc_dma_data *data = dev->data;
-	struct arc_dma_channel *chan;
-	struct arc_dma_channel *linked_chan;
-	uint32_t done_status;
-	k_spinlock_key_t key, hw_key;
 	const struct arc_dma_config *dev_config = dev->config;
+	struct arc_dma_channel *chan;
+	k_spinlock_key_t key;
+	uint32_t handle;
+	bool active;
+	bool cyclic;
+	dma_callback_t callback;
+	void *callback_arg;
+	bool trigger_linked = false;
+	uint32_t linked_ch = 0;
 
 	key = k_spin_lock(&data->lock);
+
 	chan = &data->channels[channel];
 
 	if (!chan->in_use || !chan->active) {
@@ -424,110 +430,114 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 		return;
 	}
 
-	/* Lock hardware access for this channel */
-	hw_key = k_spin_lock(&chan->hw_lock);
+	/* Copy the minimal state we need for the rest of the function */
+	handle      = chan->handle;
+	active      = chan->active;
+	cyclic       = chan->config.cyclic;
+	callback    = chan->callback;
+	callback_arg = chan->callback_arg;
 
-	done_status = dma_arc_hs_get_done_hw(chan->handle);
+	if (chan->config.source_chaining_en || chan->config.dest_chaining_en) {
+		trigger_linked = true;
+		linked_ch      = chan->config.linked_channel;
+	}
 
-	if (done_status != 0) {
-		LOG_DBG("Channel %u transfer completed", channel);
-		dma_arc_hs_clear_done_hw(chan->handle);
+	k_spin_unlock(&data->lock, key);
 
-		/* For cyclic transfers, keep channel active and restart */
-		if (chan->config.cyclic) {
-			struct dma_block_config *block = chan->config.head_block;
-			uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
+	k_spinlock_key_t hw_key = k_spin_lock(&chan->hw_lock);
 
-			LOG_DBG("Cyclic transfer: restarting channel %u", channel);
+	if (!active) {
+		/* Channel was stopped concurrently – nothing to do */
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		return;
+	}
 
-			/* Restart the transfer for cyclic mode */
-			dma_arc_hs_start_hw(channel, (const void *)block->source_address,
-					    (void *)block->dest_address, block->block_size, attr);
-			chan->handle = dma_arc_hs_get_handle_hw();
-			/* Channel remains active */
-		} else {
-			/* Non-cyclic transfer completes and goes idle */
-			chan->active = false;
-			chan->state = ARC_DMA_IDLE;
-		}
+	uint32_t done_status = dma_arc_hs_get_done_hw(handle);
 
-		if (chan->callback) {
-			chan->callback(dev, chan->callback_arg, channel, 0);
-		}
+	if (done_status == 0) {
+		/* Transfer still running */
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		return;
+	}
 
-		/* Check if channel linking is enabled - trigger linked channel */
-		if (chan->config.source_chaining_en || chan->config.dest_chaining_en) {
-			LOG_DBG("Channel linking enabled: triggering linked channel %u",
-				chan->config.linked_channel);
+	/* Transfer really finished */
+	LOG_DBG("Channel %u transfer completed (handle 0x%x)", channel, handle);
+	dma_arc_hs_clear_done_hw(handle);
 
-			uint32_t linked_ch = chan->config.linked_channel;
+	if (cyclic) {
+		/* Restart the same transfer immediately */
+		struct dma_block_config *block = chan->config.head_block;
+		uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
 
-			if (linked_ch < dev_config->channels) {
-				linked_chan = &data->channels[linked_ch];
+		LOG_DBG("Cyclic transfer – restarting channel %u", channel);
 
-				if (linked_chan->in_use && linked_chan->state == ARC_DMA_PREPARED) {
-					/* Start the linked channel */
-					struct dma_block_config *block =
-						linked_chan->config.head_block;
-					uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
-					uint32_t block_idx = 0;
-					dma_addr_t src_addr;
-					void *dst_addr;
-
-					k_spin_unlock(&chan->hw_lock, hw_key);
-
-					/* Lock the linked channel's hardware */
-					hw_key = k_spin_lock(&linked_chan->hw_lock);
-
-					/* Start first block */
-					LOG_DBG("Linked block %u: src=0x%x, dst=0x%x, size=%u",
-						block_idx, (uint32_t)block->source_address,
-						(uint32_t)block->dest_address, block->block_size);
-
-					/* Simulate the actual data transfer by copying memory */
-					/* When triggered by channel linking, transfer one burst */
-					src_addr = block->source_address;
-					dst_addr = (void *)(uintptr_t)block->dest_address;
-					uint32_t burst_len =
-						linked_chan->config.source_burst_length;
-					size_t transfer_size;
-
-					/* Calculate transfer size based on chaining config */
-					transfer_size = dma_arc_hs_calc_linked_transfer_size(
-						chan, block, burst_len);
-
-					LOG_DBG("Linked transfer: src=0x%x, dst=0x%x, size=%zu",
-						(uint32_t)src_addr, (uint32_t)dst_addr,
-						transfer_size);
-					memcpy(dst_addr, (void *)(uintptr_t)src_addr,
-					       transfer_size);
-
-					/* For linked channel, queue one transfer per trigger */
-					dma_arc_hs_start_hw(
-						linked_ch, (const void *)block->source_address,
-						(void *)block->dest_address, transfer_size, attr);
-
-					/* Get handle for the linked channel */
-					linked_chan->handle = dma_arc_hs_get_handle_hw();
-					linked_chan->active = true;
-					linked_chan->state = ARC_DMA_ACTIVE;
-					linked_chan->block_count = linked_chan->config.block_count;
-					linked_chan->blocks_completed = 0;
-
-					LOG_DBG("Linked channel %u started", linked_ch);
-
-					k_spin_unlock(&linked_chan->hw_lock, hw_key);
-				} else {
-					LOG_WRN("Linked channel %u not in PREPARED state "
-						"or not in use",
-						linked_ch);
-				}
-			}
-		}
+		dma_arc_hs_start_hw(channel,
+				    (const void *)block->source_address,
+				    (void *)block->dest_address,
+				    block->block_size, attr);
+		chan->handle = dma_arc_hs_get_handle_hw();
+		/* active flag stays true */
+	} else {
+		chan->active = false;
+		chan->state  = ARC_DMA_IDLE;
 	}
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
-	k_spin_unlock(&data->lock, key);
+	/* chan->hw_lock released – safe to call user callback */
+
+	if (callback) {
+		callback(dev, callback_arg, channel, 0);
+	}
+
+	if (trigger_linked && linked_ch < dev_config->channels) {
+		LOG_DBG("Channel linking: trying to trigger channel %u", linked_ch);
+
+		/* Re-acquire global lock only to safely read the linked channel state */
+		key = k_spin_lock(&data->lock);
+		struct arc_dma_channel *linked_chan = &data->channels[linked_ch];
+
+		if (linked_chan->in_use && linked_chan->state == ARC_DMA_PREPARED) {
+			/* Grab everything we need from the linked channel while protected */
+			struct dma_block_config *block = linked_chan->config.head_block;
+			uint32_t burst_len = linked_chan->config.source_burst_length;
+			dma_addr_t src_addr = block->source_address;
+			dma_addr_t dst_addr = block->dest_address;
+
+			k_spin_unlock(&data->lock, key);
+
+			/* Now safely start the linked transfer under its own hw_lock */
+			k_spinlock_key_t linked_hw_key = k_spin_lock(&linked_chan->hw_lock);
+
+			size_t transfer_size =
+				dma_arc_hs_calc_linked_transfer_size(chan, block, burst_len);
+
+			/* Optional software copy for verification / simulation */
+			memcpy((void *)(uintptr_t)dst_addr,
+			       (const void *)(uintptr_t)src_addr,
+			       transfer_size);
+
+			uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
+
+			dma_arc_hs_start_hw(linked_ch,
+					    (const void *)src_addr,
+					    (void *)(uintptr_t)dst_addr,
+					    transfer_size, attr);
+
+			linked_chan->handle = dma_arc_hs_get_handle_hw();
+			linked_chan->active = true;
+			linked_chan->state  = ARC_DMA_ACTIVE;
+			linked_chan->block_count = linked_chan->config.block_count;
+			linked_chan->blocks_completed = 0;
+
+			LOG_DBG("Linked channel %u started (size %zu)", linked_ch, transfer_size);
+
+			k_spin_unlock(&linked_chan->hw_lock, linked_hw_key);
+		} else {
+			k_spin_unlock(&data->lock, key);
+			LOG_WRN("Linked channel %u not ready (in_use=%d, state=%d)",
+				linked_ch, linked_chan->in_use, linked_chan->state);
+		}
+	}
 }
 
 static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
