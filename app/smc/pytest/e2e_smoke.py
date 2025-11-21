@@ -561,10 +561,12 @@ def arc_watchdog_test(asic_id):
             logger.warning(
                 "ARC did not reset, waiting 10 additional seconds to see if ARC core resets"
             )
+            del arc_chip
             time.sleep(10)
             rescan_pcie()
             arc_chip = pyluwen.detect_chips()[asic_id]
             hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
+            del arc_chip
             if hang_pc == 0:
                 logger.error("ARC core was not reset after ten seconds")
                 return False
