@@ -8,6 +8,7 @@
 #include <string.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/barrier.h>
@@ -359,7 +360,6 @@ static int dma_arc_hs_stop(const struct device *dev, uint32_t channel)
 	}
 
 	if (!chan->active) {
-		LOG_WRN("Channel %u already stopped", channel);
 		k_spin_unlock(&data->lock, key);
 		return 0;
 	}
@@ -929,6 +929,74 @@ static void dma_arc_hs_completion_work_handler(struct k_work *work)
 	} else {
 		LOG_DBG("No active transfers, work handler idle");
 	}
+}
+
+int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
+			size_t len, k_timeout_t timeout)
+{
+	struct dma_config cfg = {0};
+	struct dma_block_config blk = {0};
+	struct dma_status stat;
+	k_timepoint_t end_time;
+	int rc;
+
+	if (!device_is_ready(dev)) {
+		LOG_ERR("DMA device not ready");
+		return -ENODEV;
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	if (((uintptr_t)src & 3) || ((uintptr_t)dst & 3)) {
+		LOG_ERR("src/dst not 4-byte aligned");
+		return -EINVAL;
+	}
+
+	if (channel >= ((const struct arc_dma_config *)dev->config)->channels) {
+		LOG_ERR("Invalid channel %u", channel);
+		return -EINVAL;
+	}
+
+	blk.source_address = (dma_addr_t)(uintptr_t)src;
+	blk.dest_address = (dma_addr_t)(uintptr_t)dst;
+	blk.block_size = len;
+
+	cfg.channel_direction = MEMORY_TO_MEMORY;
+	cfg.head_block = &blk;
+	cfg.block_count = 1;
+
+	rc = dma_config(dev, channel, &cfg);
+	if (rc < 0) {
+		return rc;
+	}
+
+	rc = dma_start(dev, channel);
+	if (rc < 0) {
+		return rc;
+	}
+
+	end_time = sys_timepoint_calc(timeout);
+
+	do {
+		if (dma_get_status(dev, channel, &stat) == 0 && !stat.busy) {
+			dma_stop(dev, channel);
+			return 0;
+		}
+
+		/* Update timeout with remaining time */
+		timeout = sys_timepoint_timeout(end_time);
+
+		/* Busy wait for a short period */
+		if (!K_TIMEOUT_EQ(timeout, K_NO_WAIT)) {
+			k_busy_wait(100);
+		}
+	} while (!K_TIMEOUT_EQ(timeout, K_NO_WAIT));
+
+	/* Timeout expired */
+	dma_stop(dev, channel);
+	return -ETIMEDOUT;
 }
 
 static const struct dma_driver_api dma_arc_hs_api = {
