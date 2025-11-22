@@ -4,6 +4,7 @@
 import argparse
 import base64
 import logging
+import os
 import pykwalify.core
 import requests
 import sys
@@ -24,6 +25,7 @@ sys.path.append(str(MODULE_ROOT / "scripts"))
 sys.path.append(str(ZEPHYR_BASE / "scripts" / "dts" / "python-devicetree" / "src"))
 
 import tt_boot_fs  # noqa: E402
+import update_bar4_size  # noqa: E402
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -433,3 +435,31 @@ def test_tt_boot_fs_gen_yaml(tmp_path: Path):
         generated_yaml = yaml.safe_load(f)
 
     assert generated_yaml == expected_yaml, "Generated yaml differs from expected yaml"
+
+
+def test_update_bar4_size(tmp_path: Path):
+    """
+    Tests that BAR4 can be resized by scripts/update_bar4_size.py.
+    """
+
+    version = "19.2.0"
+    release_dl_url_base = (
+        "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/"
+    )
+    url = release_dl_url_base + f"v{version}/fw_pack-{version}.fwbundle"
+
+    input_path = tmp_path / "input.fwbundle"
+    output_path = input_path
+
+    print(f"Downloading v{version} firmware bundle from {url}...")
+
+    response = requests.get(url)
+    response.raise_for_status()
+    with open(input_path, "wb") as f:
+        f.write(response.content)
+
+    print("Updating BAR4 size for P100A-1 to 0 MiB...")
+
+    assert os.EX_OK == update_bar4_size.do_update(
+        input_path, output_path, ["P100A-1"], [0], 0, verbose=True
+    )
