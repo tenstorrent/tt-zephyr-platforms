@@ -33,6 +33,10 @@
 	status = "okay";
 };
 
+&dma0 {
+	status = "okay";
+};
+
 &spi0 {
 	status = "okay";
 
