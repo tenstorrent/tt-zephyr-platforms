@@ -18,6 +18,8 @@ typedef enum {
 	kAiclkArbMaxBoardPower,
 	kAiclkArbMaxVoltage,
 	kAiclkArbMaxGDDRThm,
+	kAiclkArbMaxDopplerSlow,
+	kAiclkArbMaxDopplerCritical,
 	kAiclkArbMaxCount,
 } AiclkArbMax;
 
@@ -30,6 +32,8 @@ typedef enum {
 void aiclk_set_busy(bool is_busy);
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq);
 void SetAiclkArbMin(AiclkArbMin arb_min, float freq);
+void EnableArbMax(AiclkArbMax arb_max, bool enable);
+void EnableArbMin(AiclkArbMin arb_min, bool enable);
 void CalculateTargAiclk(void);
 void DecreaseAiclk(void);
 void IncreaseAiclk(void);
@@ -38,5 +42,7 @@ float GetThrottlerArbMax(AiclkArbMax arb_max);
 uint8_t ForceAiclk(uint32_t freq);
 uint32_t GetAiclkTarg(void);
 uint32_t GetMaxAiclkForVoltage(uint32_t voltage);
+uint32_t GetAiclkFmin(void);
+uint32_t GetAiclkFmax(void);
 
 #endif
