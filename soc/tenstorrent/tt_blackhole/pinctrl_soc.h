@@ -39,6 +39,8 @@ typedef struct pinctrl_soc_pin {
 	PINCTRL_TT_BH_DT_PIN(DT_PROP_BY_IDX(node_id, prop, idx))
 
 #define Z_PINCTRL_STATE_PINS_INIT(node_id, prop)                                                   \
-	{DT_FOREACH_PROP_ELEM(node_id, prop, Z_PINCTRL_STATE_PIN_INIT)}
+	{                                                                                          \
+		DT_FOREACH_PROP_ELEM(node_id, prop, Z_PINCTRL_STATE_PIN_INIT)                      \
+	}
 
 #endif

@@ -332,7 +332,6 @@ void PLLUpdate(PLLNum pll, const PLLSettings *pll_settings)
 	WriteReg(GET_PLL_CNTL_ADDR(pll, PLL_CNTL_0), pll_cntl_0.val);
 
 	WaitNs(300);
-
 }
 
 static void enable_clk_counters(void)

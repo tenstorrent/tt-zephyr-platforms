@@ -42,8 +42,7 @@ int main(void)
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.aiclk_ppm_en) {
 			STATUS_ERROR_STATUS0_reg_u error_status0 = {
-				.val = ReadReg(STATUS_ERROR_STATUS0_REG_ADDR)
-			};
+				.val = ReadReg(STATUS_ERROR_STATUS0_REG_ADDR)};
 
 			if (error_status0.f.regulator_init_error) {
 				LOG_ERR("Not enabling AICLK PPM due to regulator init error");

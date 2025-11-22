@@ -48,8 +48,8 @@
 #define DW_APB_I2C_IC_STATUS_TFE_MASK           0x4
 #define DW_APB_I2C_IC_STATUS_TFNF_MASK          0x2
 #define DW_APB_I2C_IC_STATUS_RFNE_MASK          0x8
-#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK        0x1
-#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK        0x2
+#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK  0x1
+#define RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK  0x2
 #define RESET_UNIT_I2C_PAD_CNTL_PUEN_MASK       0xC
 #define RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK       0xC0
 #define DW_APB_I2C_IC_STATUS_MST_ACTIVITY_MASK  0x20
@@ -85,7 +85,7 @@
 /* IC abort source */
 /* starting from bit21, bit20-0 is reserved. */
 #define IC_ABRT_A3_STATE (0x1 << 21)
-#define IC_VERIFY_FAIL (0x1 << 22)
+#define IC_VERIFY_FAIL   (0x1 << 22)
 
 #define GET_I2C_OFFSET(REG_NAME) DW_APB_I2C_##REG_NAME##_REG_OFFSET
 
@@ -214,7 +214,7 @@ void I2CRecoverBus(uint32_t id)
 {
 	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
 	uint32_t i2c_cntl = (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
-				RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK;
+			    RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK;
 	uint32_t i2c_rst_cntl = ReadReg(RESET_UNIT_I2C_CNTL_REG_ADDR);
 
 	/* Disable I2C controller */
@@ -247,8 +247,8 @@ void I2CRecoverBus(uint32_t id)
 	/* Add stop condition- transition SDA to high while SCL is high. */
 	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK);
 	Wait(100 * WAIT_1US);
-	WriteReg(GetI2CPadCntlAddr(id), RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK |
-					RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
+	WriteReg(GetI2CPadCntlAddr(id),
+		 RESET_UNIT_I2C_PAD_CTRL_TRIEN_SCL_MASK | RESET_UNIT_I2C_PAD_CTRL_TRIEN_SDA_MASK);
 	Wait(100 * WAIT_1US);
 	/* Restore pads to input mode */
 	WriteReg(GetI2CPadCntlAddr(id), (drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
@@ -269,7 +269,8 @@ static void WaitTxFifoEmpty(uint32_t id)
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
 
 		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
-			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+			if ((k_uptime_get() - ts) >
+			    COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
 							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
 							(0))) {
 				I2CRecoverBus(id);
@@ -287,7 +288,8 @@ static void WaitTxFifoNotFull(uint32_t id)
 	do {
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
 		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
-			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+			if ((k_uptime_get() - ts) >
+			    COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
 							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
 							(0))) {
 				I2CRecoverBus(id);
@@ -305,7 +307,8 @@ static void WaitMasterIdle(uint32_t id)
 	do {
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
 		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
-			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+			if ((k_uptime_get() - ts) >
+			    COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
 							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
 							(0))) {
 				I2CRecoverBus(id);
@@ -356,7 +359,8 @@ static uint32_t WaitAllTxDone(uint32_t id)
 		tx_fifo_not_empty = (ic_status & DW_APB_I2C_IC_STATUS_TFE_MASK) == 0;
 
 		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
-			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+			if ((k_uptime_get() - ts) >
+			    COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
 							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
 							(0))) {
 				I2CRecoverBus(id);
@@ -383,7 +387,8 @@ uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf)
 		ic_status = ReadReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_STATUS)));
 
 		if (IS_ENABLED(CONFIG_TT_BH_ARC_I2C_TIMEOUT)) {
-			if ((k_uptime_get() - ts) > COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
+			if ((k_uptime_get() - ts) >
+			    COND_CODE_1(CONFIG_TT_BH_ARC_I2C_TIMEOUT,
 							(CONFIG_TT_BH_ARC_I2C_TIMEOUT_DURATION),
 							(0))) {
 				I2CRecoverBus(id);

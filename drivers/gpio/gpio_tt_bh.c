@@ -39,8 +39,8 @@ static int gpio_tt_bh_pin_configure(const struct device *port, gpio_pin_t pin, g
 	struct gpio_tt_bh_data *data = (struct gpio_tt_bh_data *)port->data;
 
 	/* Only support input and output flags */
-	if ((flags & ~(GPIO_INPUT | GPIO_OUTPUT | GPIO_OUTPUT_INIT_LOW |
-		GPIO_OUTPUT_INIT_HIGH | GPIO_DISCONNECTED)) != 0) {
+	if ((flags & ~(GPIO_INPUT | GPIO_OUTPUT | GPIO_OUTPUT_INIT_LOW | GPIO_OUTPUT_INIT_HIGH |
+		       GPIO_DISCONNECTED)) != 0) {
 		return -ENOTSUP;
 	}
 

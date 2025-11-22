@@ -29,8 +29,9 @@
 #define EFUSE_BOX_ADDR_ALIGN             0x2000
 #define EFUSE_SECURITY_BOX_MEM_BASE_ADDR 0xB0040000
 #define EFUSE_SECURITY_REG_OFFSET_ADDR   0x8000
-#define EFUSE_BOX_START_ADDR(box_id)     \
-	(EFUSE_DFT0_MEM_BASE_ADDR + (box_id) * EFUSE_BOX_ADDR_ALIGN)
+
+#define EFUSE_BOX_START_ADDR(box_id) (EFUSE_DFT0_MEM_BASE_ADDR + (box_id) * EFUSE_BOX_ADDR_ALIGN)
+
 #define EFUSE_CTRL_REG_START_ADDR(box_id)                                                          \
 	(EFUSE_DFT0_CNTL_REG_MAP_BASE_ADDR + (box_id) * EFUSE_BOX_ADDR_ALIGN)
 
