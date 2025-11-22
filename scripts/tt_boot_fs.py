@@ -383,43 +383,43 @@ class BootFs:
     def __init__(
         self, order: list[str], entries: dict[str, FsEntry], failover: FsEntry
     ) -> None:
-        self.writes: list[tuple[bool, int, bytes]] = []
+        self.order = order
+        self.entries = entries
+        self.entries["failover"] = failover
 
+    def writes(self) -> list[tuple[bool, int, bytes]]:
         # Write image descriptors and data
         descriptor_addr = 0
-        self.entries = entries
-        for tag in order:
-            entry = entries[tag]
+        writes: list[tuple[bool, int, bytes]] = []
+        for tag in self.order:
+            entry = self.entries[tag]
             descriptor = entry.descriptor()
-            self.writes.append((True, descriptor_addr, descriptor))
-            self.writes.append(
-                (not entry.provisioning_only, entry.spi_addr, entry.data)
-            )
+            writes.append((True, descriptor_addr, descriptor))
+            writes.append((not entry.provisioning_only, entry.spi_addr, entry.data))
             descriptor_addr += len(descriptor)
 
         # Handle failover
-        self.writes.append((True, FAILOVER_HEAD_ADDR, failover.descriptor()))
-        self.writes.append((True, failover.spi_addr, failover.data))
+        writes.append((True, FAILOVER_HEAD_ADDR, self.entries["failover"].descriptor()))
+        writes.append(
+            (True, self.entries["failover"].spi_addr, self.entries["failover"].data)
+        )
 
         # Handle RTR training value
-        self.writes.append((True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")))
+        writes.append((True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")))
 
-        self.writes.sort(key=lambda x: x[1])
+        writes.sort(key=lambda x: x[1])
 
-        self._check_overlap()
-
-        # Add failover to self.entries for each retrieval later
-        self.entries["failover"] = failover
-
-    def _check_overlap(self):
+        # check_overlap
         tracker = RangeTracker(1)
-        for write in self.writes:
+        for write in writes:
             tracker.add(write[1], write[1] + len(write[2]), None)
+
+        return writes
 
     def to_binary(self, all_sections) -> bytes:
         write = bytearray()
         last_addr = 0
-        for always_write, addr, data in self.writes:
+        for always_write, addr, data in self.writes():
             if not (always_write or all_sections):
                 continue
             write.extend([0xFF] * (addr - last_addr))
@@ -431,7 +431,7 @@ class BootFs:
         output = ""
         current_segment = -1  # Track the current 16-bit segment
 
-        for always_write, address, data in self.writes:
+        for always_write, address, data in self.writes():
             if not (always_write or all_sections):
                 continue
             end_address = address + len(data)
