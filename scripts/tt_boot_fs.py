@@ -745,7 +745,7 @@ def fsck(path: Path, alignment: int = 0x1000) -> bool:
     return fs is not None
 
 
-def hexdump(start_addr: int, data: bytes):
+def hexdump(start_addr: int, data: bytes, checksum: bool = False):
     def to_printable_ascii(byte):
         return chr(byte) if 32 <= byte <= 126 else "."
 
@@ -775,6 +775,9 @@ def hexdump(start_addr: int, data: bytes):
         # reset chunk state
         prev_chunk = chunk
         nskipped_chunks = 0
+
+    if checksum:
+        print(f"checksum: {cksum(data):08x}")
 
 
 def ls(
