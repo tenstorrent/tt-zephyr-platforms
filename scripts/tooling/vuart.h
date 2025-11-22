@@ -18,13 +18,10 @@
 #endif
 
 #define VUART_DATA_INIT(_dev_name, _addr, _magic, _pci_device_id, _channel)                        \
-	{.dev_name = _dev_name,                                                                    \
-	 .addr = _addr,                                                                            \
-	 .magic = _magic,                                                                          \
-	 .pci_device_id = _pci_device_id,                                                          \
-	 .channel = _channel,                                                                      \
-	 .fd = -1,                                                                                 \
-	 .tlb = MAP_FAILED}
+	{                                                                                          \
+		.dev_name = _dev_name, .addr = _addr, .magic = _magic,                             \
+		.pci_device_id = _pci_device_id, .channel = _channel, .fd = -1, .tlb = MAP_FAILED  \
+	}
 
 struct vuart_data {
 	const char *dev_name;

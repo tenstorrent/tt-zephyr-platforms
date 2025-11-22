@@ -23,8 +23,8 @@ LOG_MODULE_REGISTER(jtag_emul, CONFIG_JTAG_LOG_LEVEL);
 
 static const enum jtag_state next_state[2][16] = {
 	/* TMS low */
-	[0] = {
-
+	[0] =
+		{
 			[JTAG_RESET] = IDLE,
 			[IDLE] = IDLE,
 			[SCAN_DR] = CAPTURE_DR,
@@ -43,8 +43,8 @@ static const enum jtag_state next_state[2][16] = {
 			[UPDATE_IR] = IDLE,
 		},
 	/* TMS high */
-	[1] = {
-
+	[1] =
+		{
 			[JTAG_RESET] = JTAG_RESET,
 			[IDLE] = SCAN_DR,
 			[SCAN_DR] = SCAN_IR,

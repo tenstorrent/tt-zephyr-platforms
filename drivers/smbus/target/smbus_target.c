@@ -96,8 +96,7 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 		case kSmbusTransBlockWriteBlockRead:
 			smbus_data->blocksize_w = val;
 			if (smbus_data->blocksize_w > CONFIG_SMBUS_MAX_MSG_SIZE) {
-				LOG_ERR("Oversized SMBUS block write: %d",
-					smbus_data->blocksize_w);
+				LOG_ERR("Oversized SMBUS block write: %d", smbus_data->blocksize_w);
 				/* block size too big */
 				smbus_data->state = kSmbusStateWaitIdle;
 				ret = -1;

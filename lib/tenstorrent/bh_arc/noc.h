@@ -14,8 +14,8 @@
 
 #define NIU_CFG_0_AXI_SLAVE_ENABLE 15
 
-#define NOC0_X_TO_NOC1(x) (NOC_X_SIZE - (x) - 1)
-#define NOC0_Y_TO_NOC1(y) (NOC_Y_SIZE - (y) - 1)
+#define NOC0_X_TO_NOC1(x) (NOC_X_SIZE - (x)-1)
+#define NOC0_Y_TO_NOC1(y) (NOC_Y_SIZE - (y)-1)
 
 uint64_t NiuRegsBase(uint8_t px, uint8_t py, uint8_t noc_id);
 uint64_t OverlayRegsBase(uint8_t px, uint8_t py); /* Returns 0 if node doesn't support overlay. */

@@ -9,8 +9,10 @@
 #include "regulator_config.h"
 
 #define REGULATOR_DATA(regulator, cmd)                                                             \
-	{0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask,                              \
-	 sizeof(regulator##_##cmd##_data)}
+	{                                                                                          \
+		0x##cmd, regulator##_##cmd##_data, regulator##_##cmd##_mask,                       \
+			sizeof(regulator##_##cmd##_data)                                           \
+	}
 
 /***** Start of p1x0 (p150 / p100) settings */
 /* VCORE */

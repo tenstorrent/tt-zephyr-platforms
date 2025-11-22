@@ -47,7 +47,7 @@ static void *setup_bootfs(void)
 	uint8_t image_C[] = {0x73, 0x73, 0x42, 0x42};
 
 	uint32_t spi_addr = IMAGE_ADDR;
-#define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
+#define ALIGN_UP(x, align) (((x) + ((align)-1)) & ~((align)-1))
 
 	setup_fd(&fds[0], spi_addr, 0x1000000, (sizeof(image_A) & 0xFFFFFF) | (1 << 25), "imageA",
 		 image_A, sizeof(image_A));

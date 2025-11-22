@@ -71,8 +71,7 @@ static int wdt_tt_bh_init(const struct device *dev)
 
 #define WDT_TT_BH_DRIVER_INIT(inst)                                                                \
 	static struct wdt_tt_bh_data wdt_tt_bh_data_##inst;                                        \
-	DEVICE_DT_INST_DEFINE(inst, wdt_tt_bh_init, NULL, &wdt_tt_bh_data_##inst,                  \
-			      NULL, PRE_KERNEL_1,                                                  \
-			      CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &wdt_tt_bh_api);
+	DEVICE_DT_INST_DEFINE(inst, wdt_tt_bh_init, NULL, &wdt_tt_bh_data_##inst, NULL,            \
+			      PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &wdt_tt_bh_api);
 
 DT_INST_FOREACH_STATUS_OKAY(WDT_TT_BH_DRIVER_INIT)

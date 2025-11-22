@@ -106,8 +106,8 @@ struct bh_chip {
 extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 
 #define MAKE_STRUCT_FIELD(n) .n
-#define INIT_STRAP(n)        MAKE_STRUCT_FIELD(DT_NODE_FULL_NAME_TOKEN(n)) = \
-	GPIO_DT_SPEC_GET(n, gpios),
+
+#define INIT_STRAP(n) MAKE_STRUCT_FIELD(DT_NODE_FULL_NAME_TOKEN(n)) = GPIO_DT_SPEC_GET(n, gpios),
 
 #define INIT_CHIP(n, prop, idx)                                                                    \
 	{                                                                                          \
@@ -139,8 +139,9 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 			    INIT_STRAP)),                                                          \
 	  ())},                                            \
 			},                                                                         \
-				.auto_reset_timer = Z_TIMER_INITIALIZER(                           \
-					BH_CHIPS[idx].auto_reset_timer, bh_chip_auto_reset, NULL), \
+						   .auto_reset_timer = Z_TIMER_INITIALIZER(        \
+							   BH_CHIPS[idx].auto_reset_timer,         \
+							   bh_chip_auto_reset, NULL),              \
 			},
 
 #define BH_CHIP_PRIMARY_INDEX DT_PROP(DT_PATH(chips), primary)
