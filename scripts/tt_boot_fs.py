@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import ctypes
 from dataclasses import dataclass
+import io
 import logging
 import os
 from pathlib import Path
@@ -19,6 +20,7 @@ import argparse
 import sys
 import json
 import tempfile
+from base64 import b16encode
 from intelhex import IntelHex
 import imgtool.image as imgtool_image
 
@@ -383,43 +385,43 @@ class BootFs:
     def __init__(
         self, order: list[str], entries: dict[str, FsEntry], failover: FsEntry
     ) -> None:
-        self.writes: list[tuple[bool, int, bytes]] = []
+        self.order = order
+        self.entries = entries
+        self.entries["failover"] = failover
 
+    def writes(self) -> list[tuple[bool, int, bytes]]:
         # Write image descriptors and data
         descriptor_addr = 0
-        self.entries = entries
-        for tag in order:
-            entry = entries[tag]
+        writes: list[tuple[bool, int, bytes]] = []
+        for tag in self.order:
+            entry = self.entries[tag]
             descriptor = entry.descriptor()
-            self.writes.append((True, descriptor_addr, descriptor))
-            self.writes.append(
-                (not entry.provisioning_only, entry.spi_addr, entry.data)
-            )
+            writes.append((True, descriptor_addr, descriptor))
+            writes.append((not entry.provisioning_only, entry.spi_addr, entry.data))
             descriptor_addr += len(descriptor)
 
         # Handle failover
-        self.writes.append((True, FAILOVER_HEAD_ADDR, failover.descriptor()))
-        self.writes.append((True, failover.spi_addr, failover.data))
+        writes.append((True, FAILOVER_HEAD_ADDR, self.entries["failover"].descriptor()))
+        writes.append(
+            (True, self.entries["failover"].spi_addr, self.entries["failover"].data)
+        )
 
         # Handle RTR training value
-        self.writes.append((True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")))
+        writes.append((True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")))
 
-        self.writes.sort(key=lambda x: x[1])
+        writes.sort(key=lambda x: x[1])
 
-        self._check_overlap()
-
-        # Add failover to self.entries for each retrieval later
-        self.entries["failover"] = failover
-
-    def _check_overlap(self):
+        # check_overlap
         tracker = RangeTracker(1)
-        for write in self.writes:
+        for write in writes:
             tracker.add(write[1], write[1] + len(write[2]), None)
+
+        return writes
 
     def to_binary(self, all_sections) -> bytes:
         write = bytearray()
         last_addr = 0
-        for always_write, addr, data in self.writes:
+        for always_write, addr, data in self.writes():
             if not (always_write or all_sections):
                 continue
             write.extend([0xFF] * (addr - last_addr))
@@ -431,7 +433,7 @@ class BootFs:
         output = ""
         current_segment = -1  # Track the current 16-bit segment
 
-        for always_write, address, data in self.writes:
+        for always_write, address, data in self.writes():
             if not (always_write or all_sections):
                 continue
             end_address = address + len(data)
@@ -580,6 +582,19 @@ class BootFs:
         failover = BootFs.check_entry("failover", failover_fd, data, alignment)
 
         return BootFs(order, entries, failover)
+
+    def to_b16(self) -> str:
+        ih = IntelHex()
+        ih.loadhex(io.StringIO(self.to_intel_hex(True).decode("ascii")))
+        b16out = ""
+        for off, end in ih.segments():
+            b16out += f"@{off}\n"
+            b16out += b16encode(ih.tobinarray(start=off, size=end - off)).decode(
+                "ascii"
+            )
+            b16out += "\n"
+
+        return b16out
 
 
 @dataclass
@@ -745,7 +760,7 @@ def fsck(path: Path, alignment: int = 0x1000) -> bool:
     return fs is not None
 
 
-def hexdump(start_addr: int, data: bytes):
+def hexdump(start_addr: int, data: bytes, checksum: bool = False):
     def to_printable_ascii(byte):
         return chr(byte) if 32 <= byte <= 126 else "."
 
@@ -775,6 +790,9 @@ def hexdump(start_addr: int, data: bytes):
         # reset chunk state
         prev_chunk = chunk
         nskipped_chunks = 0
+
+    if checksum:
+        print(f"checksum: {cksum(data):08x}")
 
 
 def ls(
@@ -905,6 +923,31 @@ def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
             f.write(entry_data)
     except Exception as e:
         _logger.error(f"Exception: {e}")
+
+
+def extract_all(bootfs: Path, input_base64=False):
+    if input_base64:
+        data = bytes(0)
+        # Pad with 0x0 between offsets
+        with open(bootfs, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith("@"):
+                    # This is an address line, pad data to this point
+                    offset = int(line[1:], 10)
+                    # Pad with 0x0
+                    data += bytes([0xFF] * (offset - len(data)))
+                else:
+                    # This is a data line, decode and append
+                    data += base64.b16decode(line.strip())
+    elif bootfs.suffix == ".hex":
+        # Read hex file and convert to binary
+        ih = IntelHex(str(bootfs))
+        data = ih.tobinarray()
+    else:
+        data = open(bootfs, "rb").read()
+
+    return data
 
 
 def _generate_bootfs_yaml(
