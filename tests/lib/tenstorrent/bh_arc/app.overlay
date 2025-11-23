@@ -10,6 +10,10 @@ pll4: pll4
 		compatible = "tenstorrent,clock-control-emul";
 		status = "okay";
 	};
+
+	dma1: noc_dma {
+		status = "okay";
+	};
 };
 
 &i2c0 {
