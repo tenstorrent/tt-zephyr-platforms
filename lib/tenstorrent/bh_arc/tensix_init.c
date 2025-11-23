@@ -22,7 +22,7 @@
 #define TENSIX_L1_SIZE (1536 * 1024)
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
-static const struct device *const dma_noc = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma1));
+static const struct device *const dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
 
 /* Enable CG_CTRL_EN in each non-harvested Tensix node and set CG hystersis to 2. */
 /* This requires NOC init so that broadcast is set up properly. */
