@@ -364,8 +364,7 @@ static void wipe_l1(void)
 
 	GetEnabledTensix(&tensix_x, &tensix_y);
 
-	struct tt_bh_dma_noc_coords coords =
-		tt_bh_dma_noc_coords_init(tensix_x, tensix_y, 0, 0);
+	struct tt_bh_dma_noc_coords coords = tt_bh_dma_noc_coords_init(tensix_x, tensix_y, 0, 0);
 
 	struct dma_block_config block = {
 		.source_address = addr,
