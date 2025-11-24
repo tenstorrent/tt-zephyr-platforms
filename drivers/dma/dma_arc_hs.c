@@ -94,6 +94,7 @@ struct arc_dma_config {
 	uint32_t max_burst_size;
 	uint32_t max_pending_transactions;
 	uint32_t buffer_size;
+	uint32_t max_block_size;
 	bool coherency_support;
 };
 
@@ -106,6 +107,8 @@ struct arc_dma_data {
 	struct k_work_delayable completion_work;
 	const struct device *dev;
 	bool work_initialized;
+	/* Static block array for splitting large transfers - sized by max descriptors */
+	struct dma_block_config *transfer_blocks;
 };
 
 /* Low-level ARC DMA Functions */
@@ -929,11 +932,14 @@ static void dma_arc_hs_completion_work_handler(struct k_work *work)
 int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *src, void *dst,
 			size_t len, k_timeout_t timeout)
 {
+	const struct arc_dma_config *dev_config = dev->config;
+	struct arc_dma_data *data = dev->data;
 	struct dma_config cfg = {0};
-	struct dma_block_config blk = {0};
 	struct dma_status stat;
 	k_timepoint_t end_time;
 	int rc;
+	size_t num_blocks;
+	size_t max_block_size;
 
 	if (!device_is_ready(dev)) {
 		LOG_ERR("DMA device not ready");
@@ -959,18 +965,54 @@ int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *
 		}
 	}
 
-	if (channel >= ((const struct arc_dma_config *)dev->config)->channels) {
+	if (channel >= dev_config->channels) {
 		LOG_ERR("Invalid channel %u", channel);
 		return -EINVAL;
 	}
 
-	blk.source_address = (dma_addr_t)(uintptr_t)src;
-	blk.dest_address = (dma_addr_t)(uintptr_t)dst;
-	blk.block_size = len;
+	/* Get maximum block size from device tree configuration */
+	max_block_size = dev_config->max_block_size;
+
+	/* Calculate number of blocks needed to split the transfer */
+	num_blocks = (len + max_block_size - 1) / max_block_size;
+
+	/* Check if we exceed the maximum number of descriptors */
+	if (num_blocks > dev_config->descriptors) {
+		LOG_ERR("Transfer size %zu requires %zu blocks but only %u descriptors available",
+			len, num_blocks, dev_config->descriptors);
+		return -EINVAL;
+	}
+
+	/* Use statically allocated transfer_blocks array (no malloc needed) */
+	struct dma_block_config *blocks = data->transfer_blocks;
+
+	/* Split the transfer into multiple blocks */
+	size_t remaining = len;
+	uintptr_t src_addr = (uintptr_t)src;
+	uintptr_t dst_addr = (uintptr_t)dst;
+
+	for (size_t i = 0; i < num_blocks; i++) {
+		size_t block_len = (remaining > max_block_size) ? max_block_size : remaining;
+
+		memset(&blocks[i], 0, sizeof(struct dma_block_config));
+		blocks[i].source_address = (dma_addr_t)src_addr;
+		blocks[i].dest_address = (dma_addr_t)dst_addr;
+		blocks[i].block_size = block_len;
+		blocks[i].next_block = (i < num_blocks - 1) ? &blocks[i + 1] : NULL;
+
+		src_addr += block_len;
+		dst_addr += block_len;
+		remaining -= block_len;
+	}
+
+	if (num_blocks > 1) {
+		LOG_DBG("Split %zu-byte transfer into %zu blocks of max %zu bytes",
+			len, num_blocks, max_block_size);
+	}
 
 	cfg.channel_direction = MEMORY_TO_MEMORY;
-	cfg.head_block = &blk;
-	cfg.block_count = 1;
+	cfg.head_block = blocks;
+	cfg.block_count = num_blocks;
 
 	rc = dma_config(dev, channel, &cfg);
 	if (rc < 0) {
@@ -1064,13 +1106,17 @@ static int dma_arc_hs_init(const struct device *dev)
 		.max_burst_size = DT_INST_PROP(inst, max_burst_size),                              \
 		.max_pending_transactions = DT_INST_PROP(inst, max_pending_transactions),          \
 		.buffer_size = DT_INST_PROP(inst, buffer_size),                                    \
+		.max_block_size = DT_INST_PROP(inst, dma_max_block_size),                          \
 		.coherency_support = DT_INST_PROP(inst, coherency_support),                        \
 	};                                                                                         \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
 	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];   \
+	/* Statically allocate transfer blocks - sized by max descriptors */                       \
+	static struct dma_block_config arc_dma_blocks_##inst[DT_INST_PROP(inst, dma_descriptors)]; \
 	static struct arc_dma_data arc_dma_data_##inst = {                                         \
 		.channels = arc_dma_channels_##inst,                                               \
+		.transfer_blocks = arc_dma_blocks_##inst,                                          \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(inst, dma_arc_hs_init, NULL, &arc_dma_data_##inst,                   \
