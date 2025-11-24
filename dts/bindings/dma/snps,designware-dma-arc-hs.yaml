@@ -42,6 +42,14 @@ properties:
     description: |
       DMA server data buffer size in word entries.
 
+  dma-max-block-size:
+    type: int
+    default: 65536
+    description: |
+      Maximum size in bytes that can be transferred in a single block.
+      This is typically limited by the hardware length register width.
+      For 16-bit length register, max is 65536 (2^16) bytes.
+
   coherency-support:
     type: boolean
     description: |
