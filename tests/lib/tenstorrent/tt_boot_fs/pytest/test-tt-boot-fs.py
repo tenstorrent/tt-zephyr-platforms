@@ -26,6 +26,7 @@ sys.path.append(str(ZEPHYR_BASE / "scripts" / "dts" / "python-devicetree" / "src
 
 import tt_boot_fs  # noqa: E402
 import update_bar4_size  # noqa: E402
+import fwtable_tooling  # noqa: E402
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -460,6 +461,16 @@ def test_update_bar4_size(tmp_path: Path):
 
     print("Updating BAR4 size for P100A-1 to 0 MiB...")
 
-    assert os.EX_OK == update_bar4_size.do_update(
-        input_path, output_path, ["P100A-1"], [0], 0, verbose=True
+    cb_object = {
+        "bus": [0],
+        "size": 0,
+    }
+
+    assert os.EX_OK == fwtable_tooling.do_update(
+        input_path,
+        output_path,
+        ["P100A-1"],
+        update_bar4_size.iterate_bar4_sizes,
+        cb_object,
+        True,
     )
