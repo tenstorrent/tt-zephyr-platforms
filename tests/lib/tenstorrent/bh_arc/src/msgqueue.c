@@ -282,4 +282,58 @@ ZTEST(msgqueue, test_msg_type_send_pcie_msi)
 	zexpect_equal(noc_2_axi_last_write, 1);
 }
 
+ZTEST(msgqueue, test_msg_type_i2c_message_bad_line_id)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Reset timer counter and set up the fake */
+	timer_counter = 0;
+	ReadReg_fake.custom_fake = ReadReg_msgqueue_fake;
+
+	req.data[0] = BIT(24U)    /*Write Operation*/
+		      | FIELD_PREP(0xFF0000, 0x50) /* target address */
+		      | FIELD_PREP(0xFF00, 0x5U)   /*Invalid Line Id*/
+		      | TT_SMC_MSG_I2C_MESSAGE;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 1);
+}
+
+ZTEST(msgqueue, test_msg_type_i2c_message)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	i2c_read_buf_emul[0] = 0x1U;
+	i2c_read_buf_emul[1] = 0x2U;
+	i2c_read_buf_emul[2] = 0x3U;
+	i2c_read_buf_emul[3] = 0x4U;
+
+	/* Reset timer counter and set up the fake */
+	timer_counter = 0;
+	ReadReg_fake.custom_fake = ReadReg_msgqueue_fake;
+
+	req.data[0] = FIELD_PREP(0xFF000000, 0x4) /*Write 4 bytes*/
+		      | FIELD_PREP(0xFF0000, 0x50) /* target address */
+		      | FIELD_PREP(0xFF00, 0x1U)   /*Line Id*/
+		      | TT_SMC_MSG_I2C_MESSAGE;
+
+	req.data[1] = 4Ul; /*Read 4 bytes*/
+	req.data[2] = 0xDDCCBBAAU; /*Write data*/
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(rsp.data[1], 0x04030201);
+
+	zexpect_equal(i2c_write_buf_emul[0], 0xaa);
+	zexpect_equal(i2c_write_buf_emul[1], 0xbb);
+	zexpect_equal(i2c_write_buf_emul[2], 0xcc);
+	zexpect_equal(i2c_write_buf_emul[3], 0xdd);
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
