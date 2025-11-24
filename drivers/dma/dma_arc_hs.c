@@ -944,9 +944,19 @@ int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *
 		return 0;
 	}
 
-	if (((uintptr_t)src & 3) || ((uintptr_t)dst & 3)) {
-		LOG_ERR("src/dst not 4-byte aligned");
-		return -EINVAL;
+	uint32_t required_alignment;
+	int ret = dma_get_attribute(dev, DMA_ATTR_BUFFER_ADDRESS_ALIGNMENT, &required_alignment);
+
+	if (ret < 0) {
+		LOG_ERR("Failed to get buffer address alignment: %d", ret);
+		return ret;
+	} else if (ret == 0) {
+		uint32_t alignment_mask = required_alignment - 1;
+
+		if (((uintptr_t)src & alignment_mask) || ((uintptr_t)dst & alignment_mask)) {
+			LOG_ERR("src/dst not aligned to %u", required_alignment);
+			return -EINVAL;
+		}
 	}
 
 	if (channel >= ((const struct arc_dma_config *)dev->config)->channels) {
