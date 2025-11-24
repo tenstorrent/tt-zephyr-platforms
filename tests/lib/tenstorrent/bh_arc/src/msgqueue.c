@@ -291,7 +291,7 @@ ZTEST(msgqueue, test_msg_type_i2c_message_bad_line_id)
 	timer_counter = 0;
 	ReadReg_fake.custom_fake = ReadReg_msgqueue_fake;
 
-	req.data[0] = BIT(24U)    /*Write Operation*/
+	req.data[0] = BIT(24U)                     /*Write Operation*/
 		      | FIELD_PREP(0xFF0000, 0x50) /* target address */
 		      | FIELD_PREP(0xFF00, 0x5U)   /*Invalid Line Id*/
 		      | TT_SMC_MSG_I2C_MESSAGE;
@@ -316,12 +316,12 @@ ZTEST(msgqueue, test_msg_type_i2c_message)
 	timer_counter = 0;
 	ReadReg_fake.custom_fake = ReadReg_msgqueue_fake;
 
-	req.data[0] = FIELD_PREP(0xFF000000, 0x4) /*Write 4 bytes*/
+	req.data[0] = FIELD_PREP(0xFF000000, 0x4)  /*Write 4 bytes*/
 		      | FIELD_PREP(0xFF0000, 0x50) /* target address */
 		      | FIELD_PREP(0xFF00, 0x1U)   /*Line Id*/
 		      | TT_SMC_MSG_I2C_MESSAGE;
 
-	req.data[1] = 4Ul; /*Read 4 bytes*/
+	req.data[1] = 4Ul;         /*Read 4 bytes*/
 	req.data[2] = 0xDDCCBBAAU; /*Write data*/
 	msgqueue_request_push(0, &req);
 	process_message_queues();
