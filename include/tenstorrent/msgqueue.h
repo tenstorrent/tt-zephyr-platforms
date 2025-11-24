@@ -277,6 +277,32 @@ struct send_pcie_msi_rqst {
 	uint32_t vector_id;
 };
 
+/** @brief Host request for I2C message transaction
+ * @details Messages of this type are processed by @ref i2c_message_handler
+ */
+struct i2c_message_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_I2C_MESSAGE */
+	uint8_t command_code;
+
+	/** @brief I2C master ID */
+	uint8_t i2c_mst_id;
+
+	/** @brief I2C slave address (7-bit) */
+	uint8_t i2c_slave_address;
+
+	/** @brief Number of bytes to write */
+	uint8_t num_write_bytes;
+
+	/** @brief Number of bytes to read */
+	uint8_t num_read_bytes;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Write data buffer (up to 24 bytes) */
+	uint8_t write_data[24];
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -322,6 +348,9 @@ union request {
 
 	/** @brief A Send PCIE MSI request */
 	struct send_pcie_msi_rqst send_pci_msi;
+
+	/** @brief An I2C message request */
+	struct i2c_message_rqst i2c_message;
 };
 
 /** @} */
