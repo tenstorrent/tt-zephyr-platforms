@@ -64,9 +64,6 @@ struct tt_bh_dma_channel_resettable_data {
 	uint16_t block_index;
 	uint16_t block_count;
 	bool configured: 1;
-	bool active: 1;
-	bool suspended: 1;
-	bool hw_completion_tracking: 1;
 };
 
 struct tt_bh_dma_channel_data {
@@ -94,24 +91,8 @@ struct tt_bh_dma_noc_data {
 	struct k_spinlock lock;
 };
 
-struct ret_addr_hi {
-	uint32_t end_x: 6;
-	uint32_t end_y: 6;
-	uint32_t start_x: 6;
-	uint32_t start_y: 6;
-};
-
-union ret_addr_hi_u {
-	struct ret_addr_hi f;
-	uint32_t u;
-};
-
 static bool noc_wait_cmd_ready(void)
 {
-#ifdef CONFIG_BOARD_NATIVE_SIM
-	/* Fake completion */
-	return true;
-#else
 	uint32_t cmd_ctrl;
 	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
 
@@ -120,7 +101,6 @@ static bool noc_wait_cmd_ready(void)
 	} while (cmd_ctrl != 0 && !sys_timepoint_expired(timeout));
 
 	return cmd_ctrl == 0;
-#endif
 }
 
 static uint32_t get_expected_acks(uint32_t noc_cmd, uint64_t size)
@@ -152,28 +132,15 @@ static inline bool is_behind(uint32_t current, uint32_t target)
 	return (int32_t)(current - target) < 0;
 }
 
-static bool check_noc_dma_done_immediate(uint32_t noc_cmd, uint32_t expected_acks)
+static inline uint32_t noc_coord_encode(uint32_t x, uint32_t y)
 {
-#ifdef CONFIG_BOARD_NATIVE_SIM
-	/* Fake NOC completion */
-	return true;
-#else
-	uint32_t ack_reg_addr =
-		(noc_cmd & NOC_CMD_WR) ? NIU_MST_WR_ACK_RECEIVED : NIU_MST_RD_RESP_RECEIVED;
-	uint32_t ack_received = NOC2AXIRead32(NOC_DMA_NOC_ID, NOC_DMA_TLB, ack_reg_addr);
-
-	/* Immediate check - no waiting */
-	return !is_behind(ack_received, expected_acks);
-#endif
+	return (y << 6) | x;
 }
 
-static uint32_t noc_dma_format_coord(uint8_t x, uint8_t y)
+static inline uint32_t noc_coord_encode_range(uint32_t start_x, uint32_t start_y, uint32_t end_x,
+					      uint32_t end_y)
 {
-	/* clang-format off */
-	return (union ret_addr_hi_u){
-		.f = { .end_x = x, .end_y = y }
-	} .u;
-	/* clang-format on */
+	return (start_y << 18) | (start_y << 12) | (end_y << 6) | end_x;
 }
 
 static void handle_transfer_callbacks(const struct device *dev,
@@ -242,7 +209,8 @@ static int noc_dma_transfer(uint32_t cmd, uint32_t ret_coord, uint64_t ret_addr,
 	}
 
 	if (!noc_wait_cmd_ready()) {
-		return 1;
+		LOG_ERR("Waiting for transfer command timed out");
+		return -ETIMEDOUT;
 	}
 
 	NOC2AXIWrite32(NOC_DMA_NOC_ID, NOC_DMA_TLB, TARGET_ADDR_LO, targ_addr_lo);
@@ -260,17 +228,6 @@ static int noc_dma_transfer(uint32_t cmd, uint32_t ret_coord, uint64_t ret_addr,
 	NOC2AXIWrite32(NOC_DMA_NOC_ID, NOC_DMA_TLB, CMD_CTRL, 1);
 
 	return 0;
-}
-
-static struct tt_bh_dma_channel_data *get_channel_data(const struct device *dev, uint32_t channel)
-{
-	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
-
-	if (channel >= cfg->num_channels) {
-		return NULL;
-	}
-
-	return &cfg->channels[channel];
 }
 
 /*
@@ -318,9 +275,6 @@ static int tt_bh_dma_noc_config(const struct device *dev, uint32_t channel,
 	/* Update the config to point to our copied blocks */
 	chan_data->config.head_block = &chan_data->blocks[0];
 	chan_data->state.configured = true;
-	chan_data->state.active = false;
-	/* Initialize hardware completion tracking */
-	chan_data->state.hw_completion_tracking = false;
 	chan_data->state.last_noc_cmd = 0;
 	chan_data->state.last_expected_acks = 0;
 
@@ -337,25 +291,17 @@ static int tt_bh_dma_noc_config(const struct device *dev, uint32_t channel,
 	return 0;
 }
 
-static uint32_t noc_dma_format_multicast(uint8_t start_x, uint8_t start_y, uint8_t end_x,
-					 uint8_t end_y)
-{
-	return (union ret_addr_hi_u){
-		.f = {.end_x = end_x, .end_y = end_y, .start_x = start_x, .start_y = start_y}}
-		.u;
-}
-
 static int noc_dma_write_multicast(uint8_t local_x, uint8_t local_y, uint64_t local_addr,
 				   uint8_t remote_start_x, uint8_t remote_start_y,
 				   uint8_t remote_end_x, uint8_t remote_end_y, uint64_t remote_addr,
 				   uint32_t size, bool include_self, uint32_t *noc_cmd_out,
 				   uint32_t *expected_acks_out)
 {
-	uint32_t ret_coord = noc_dma_format_multicast(remote_start_x, remote_start_y, remote_end_x,
-						      remote_end_y);
+	uint32_t ret_coord =
+		noc_coord_encode_range(remote_start_x, remote_start_y, remote_end_x, remote_end_y);
 	uint64_t ret_addr = remote_addr;
 
-	uint32_t targ_coord = noc_dma_format_coord(local_x, local_y);
+	uint32_t targ_coord = noc_coord_encode(local_x, local_y);
 	uint64_t targ_addr = local_addr;
 
 	NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, local_x, local_y, TARGET_ADDR_LO);
@@ -364,27 +310,66 @@ static int noc_dma_write_multicast(uint8_t local_x, uint8_t local_y, uint64_t lo
 				0, include_self, noc_cmd_out, expected_acks_out);
 }
 
+static int tt_bh_dma_noc_start_mem_to_per(const struct device *dev, uint32_t channel)
+{
+	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
+	struct tt_bh_dma_channel_data *chan_data = &cfg->channels[channel];
+	struct tt_bh_dma_noc_coords *coords = &chan_data->coords;
+	struct dma_block_config *current_block = &chan_data->blocks[chan_data->state.block_index];
+
+	uint32_t ret_coord = noc_coord_encode(coords->source_x, coords->source_y);
+	uint64_t ret_addr = current_block->source_address;
+
+	uint32_t targ_coord = noc_coord_encode(coords->dest_x, coords->dest_y);
+	uint64_t targ_addr = current_block->dest_address;
+
+	NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x, coords->source_y,
+			TARGET_ADDR_LO);
+
+	return noc_dma_transfer(NOC_CMD_RD, ret_coord, ret_addr, targ_coord, targ_addr,
+				current_block->block_size, false, 0, false,
+				&chan_data->state.last_noc_cmd,
+				&chan_data->state.last_expected_acks);
+}
+
+static int tt_bh_dma_noc_start_per_to_mem(const struct device *dev, uint32_t channel)
+{
+	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
+	struct tt_bh_dma_channel_data *chan_data = &cfg->channels[channel];
+	struct tt_bh_dma_noc_coords *coords = &chan_data->coords;
+	struct dma_block_config *current_block = &chan_data->blocks[chan_data->state.block_index];
+
+	uint32_t ret_coord = noc_coord_encode(coords->dest_x, coords->dest_y);
+	uint64_t ret_addr = current_block->dest_address;
+
+	uint32_t targ_coord = noc_coord_encode(coords->source_x, coords->source_y);
+	uint64_t targ_addr = current_block->source_address;
+
+	NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x, coords->source_y,
+			TARGET_ADDR_LO);
+
+	return noc_dma_transfer(NOC_CMD_WR, ret_coord, ret_addr, targ_coord, targ_addr,
+				current_block->block_size, false, 0, false,
+				&chan_data->state.last_noc_cmd,
+				&chan_data->state.last_expected_acks);
+}
+
 static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 {
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
+	const struct tt_bh_dma_noc_config *cfg = (const struct tt_bh_dma_noc_config *)dev->config;
 
-	if (!chan_data) {
+	if (channel >= cfg->num_channels) {
 		LOG_ERR("Invalid channel %u", channel);
 		return -EINVAL;
 	}
+
+	struct tt_bh_dma_channel_data *chan_data = &cfg->channels[channel];
 
 	if (!chan_data->state.configured) {
 		LOG_ERR("Channel %u not configured", channel);
 		return -EINVAL;
 	}
 
-	if (chan_data->state.active) {
-		LOG_ERR("Channel %u already active", channel);
-		return -EBUSY;
-	}
-
-	chan_data->state.active = true;
-	chan_data->state.suspended = false;
 	chan_data->state.block_index = 0;
 
 	struct tt_bh_dma_noc_coords *coords = &chan_data->coords;
@@ -392,340 +377,143 @@ static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 
 	if (!current_block) {
 		LOG_ERR("No valid block configuration");
-		chan_data->state.active = false;
 		return -EINVAL;
 	}
 
-	/* Handle different transfer types - all asynchronous */
-	switch (chan_data->config.channel_direction) {
-	case MEMORY_TO_MEMORY: {
-		chan_data->state.hw_completion_tracking = false;
-		for (; chan_data->state.block_index < chan_data->state.block_count;
-		     chan_data->state.block_index++) {
-			current_block = &chan_data->blocks[chan_data->state.block_index];
-			if (!current_block) {
-				LOG_ERR("No valid block configuration");
-				chan_data->state.active = false;
-				handle_transfer_callbacks(dev, chan_data, channel, -EINVAL, true);
-				return -EINVAL;
-			}
+	int ret;
 
-			uint32_t ret_coord =
-				noc_dma_format_coord(coords->source_x, coords->source_y);
-			uint64_t ret_addr = 0;
+	/* Handle different transfer types - all asynchronous except for MEMORY to MEMORY */
+	for (; chan_data->state.block_index < chan_data->state.block_count;
+	     chan_data->state.block_index++) {
+		current_block = &chan_data->blocks[chan_data->state.block_index];
+		if (!current_block) {
+			LOG_ERR("No valid block configuration");
+			return -EINVAL;
+		}
 
-			uint32_t targ_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
-			uint64_t targ_addr = current_block->source_address;
+		switch (chan_data->config.channel_direction) {
+		case MEMORY_TO_MEMORY: {
+			int dest_address_ = current_block->dest_address;
 
-			NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x,
-					coords->source_y, TARGET_ADDR_LO);
+			current_block->dest_address = current_block->source_address;
+			current_block->source_address = 0;
 
-			int ret = noc_dma_transfer(NOC_CMD_RD, ret_coord, ret_addr, targ_coord,
-						   targ_addr, current_block->block_size, false, 0,
-						   false, &chan_data->state.last_noc_cmd,
-						   &chan_data->state.last_expected_acks);
-
+			ret = tt_bh_dma_noc_start_mem_to_per(dev, channel);
 			if (ret != 0) {
-				handle_transfer_callbacks(dev, chan_data, channel, ret, true);
-				chan_data->state.active = false;
 				return ret;
 			}
 
+			current_block->dest_address = dest_address_;
+
 			/* Wait for read operation to complete */
 			k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
+			struct dma_status status;
 
-			while (!check_noc_dma_done_immediate(chan_data->state.last_noc_cmd,
-							     chan_data->state.last_expected_acks) &&
-			       !sys_timepoint_expired(timeout)) {
-				k_busy_wait(1);
-			}
+			do {
+				dma_get_status(dev, channel, &status);
+			} while (status.busy && !sys_timepoint_expired(timeout));
 
 			if (sys_timepoint_expired(timeout)) {
-				LOG_ERR("NOC read operation timeout");
-				handle_transfer_callbacks(dev, chan_data, channel, -ETIMEDOUT,
-							  true);
-				chan_data->state.active = false;
 				return -ETIMEDOUT;
 			}
 
-			ret_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
-			ret_addr = current_block->dest_address;
-
-			targ_coord = noc_dma_format_coord(coords->source_x, coords->source_y);
-			targ_addr = 0;
-
-			NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x,
-					coords->source_y, TARGET_ADDR_LO);
-
-			ret = noc_dma_transfer(NOC_CMD_WR, ret_coord, ret_addr, targ_coord,
-					       targ_addr, current_block->block_size, false, 0,
-					       false, &chan_data->state.last_noc_cmd,
-					       &chan_data->state.last_expected_acks);
-
+			ret = tt_bh_dma_noc_start_per_to_mem(dev, channel);
 			if (ret != 0) {
-				handle_transfer_callbacks(dev, chan_data, channel, ret, true);
-				chan_data->state.active = false;
 				return ret;
 			}
 
 			/* Wait for write operation to complete */
 			timeout = sys_timepoint_calc(K_MSEC(NOC_DMA_TIMEOUT_MS));
-			while (!check_noc_dma_done_immediate(chan_data->state.last_noc_cmd,
-							     chan_data->state.last_expected_acks) &&
-			       !sys_timepoint_expired(timeout)) {
-				k_busy_wait(1);
-			}
+
+			do {
+				dma_get_status(dev, channel, &status);
+			} while (status.busy && !sys_timepoint_expired(timeout));
 
 			if (sys_timepoint_expired(timeout)) {
-				LOG_ERR("NOC write operation timeout");
-				handle_transfer_callbacks(dev, chan_data, channel, -ETIMEDOUT,
-							  true);
-				chan_data->state.active = false;
 				return -ETIMEDOUT;
 			}
-
-			/* Enable hardware completion tracking for non-MEMORY_TO_MEMORY transfers */
-			chan_data->state.hw_completion_tracking = true;
 
 			/* Invoke callback function at transfer or block completion */
 			handle_transfer_callbacks(dev, chan_data, channel, 0,
 						  chan_data->state.block_index + 1 ==
 							  chan_data->state.block_count);
+
+			break;
+		}
+		case MEMORY_TO_PERIPHERAL: {
+			return tt_bh_dma_noc_start_mem_to_per(dev, channel);
+		}
+		case PERIPHERAL_TO_MEMORY: {
+			return tt_bh_dma_noc_start_per_to_mem(dev, channel);
+		}
+		case TT_BH_DMA_NOC_CHANNEL_DIRECTION_BROADCAST: {
+			/* Use pre translation coords as NOC translation has enabled. */
+			uint8_t remote_start_x = 2;
+			uint8_t remote_start_y = 2;
+			uint8_t remote_end_x = 1;
+			uint8_t remote_end_y = 11;
+			uint64_t local_addr = current_block->source_address;
+			uint64_t remote_addr = current_block->dest_address;
+
+			ret = noc_dma_write_multicast(
+				coords->dest_x, coords->dest_y, local_addr, remote_start_x,
+				remote_start_y, remote_end_x, remote_end_y, remote_addr,
+				current_block->block_size, false, &chan_data->state.last_noc_cmd,
+				&chan_data->state.last_expected_acks);
+
+			return ret;
+		}
+		default:
+			LOG_ERR("Invalid channel direction %d",
+				chan_data->config.channel_direction);
+			return -EINVAL;
 		}
 
 		if (chan_data->config.linked_channel != DMA_CHANNEL_INVALID) {
 			uint32_t linked_chan = chan_data->config.linked_channel;
-			const struct tt_bh_dma_noc_config *cfg =
-				(const struct tt_bh_dma_noc_config *)dev->config;
 			if (linked_chan < cfg->num_channels &&
 			    cfg->channels[linked_chan].state.configured) {
 				if (chan_data->config.dest_chaining_en ||
 				    chan_data->config.source_chaining_en) {
-					LOG_DBG("Triggering linked channel %u from channel %u",
-						linked_chan, channel);
 					tt_bh_dma_noc_start(dev, linked_chan);
 				}
 			}
 		}
-
-		chan_data->state.active = false;
-		return 0;
 	}
-	case MEMORY_TO_PERIPHERAL: {
-		uint32_t ret_coord = noc_dma_format_coord(coords->source_x, coords->source_y);
-		uint64_t ret_addr = current_block->source_address;
 
-		uint32_t targ_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
-		uint64_t targ_addr = current_block->dest_address;
-
-		NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x, coords->source_y,
-				TARGET_ADDR_LO);
-
-		int ret = noc_dma_transfer(NOC_CMD_RD, ret_coord, ret_addr, targ_coord, targ_addr,
-					   current_block->block_size, false, 0, false,
-					   &chan_data->state.last_noc_cmd,
-					   &chan_data->state.last_expected_acks);
-
-		/* Enable hardware completion tracking for non-MEMORY_TO_MEMORY transfers */
-		chan_data->state.hw_completion_tracking = true;
-
-		/* For async mode, callbacks will be handled when transfer actually completes */
-		if (ret != 0) {
-			/* Immediate error */
-			handle_transfer_callbacks(dev, chan_data, channel, ret, true);
-			chan_data->state.active = false;
-		}
-		return ret;
-	}
-	case PERIPHERAL_TO_MEMORY: {
-		uint32_t ret_coord = noc_dma_format_coord(coords->dest_x, coords->dest_y);
-		uint64_t ret_addr = current_block->dest_address;
-
-		uint32_t targ_coord = noc_dma_format_coord(coords->source_x, coords->source_y);
-		uint64_t targ_addr = current_block->source_address;
-
-		NOC2AXITlbSetup(NOC_DMA_NOC_ID, NOC_DMA_TLB, coords->source_x, coords->source_y,
-				TARGET_ADDR_LO);
-
-		int ret = noc_dma_transfer(NOC_CMD_WR, ret_coord, ret_addr, targ_coord, targ_addr,
-					   current_block->block_size, false, 0, false,
-					   &chan_data->state.last_noc_cmd,
-					   &chan_data->state.last_expected_acks);
-
-		/* Enable hardware completion tracking for non-MEMORY_TO_MEMORY transfers */
-		chan_data->state.hw_completion_tracking = true;
-
-		/* For async mode, callbacks will be handled when transfer actually completes */
-		if (ret != 0) {
-			/* Immediate error */
-			handle_transfer_callbacks(dev, chan_data, channel, ret, true);
-			chan_data->state.active = false;
-		}
-		return ret;
-	}
-	case TT_BH_DMA_NOC_CHANNEL_DIRECTION_BROADCAST: {
-		/* Use pre translation coords as NOC translation has enabled. */
-		uint8_t remote_start_x = 2;
-		uint8_t remote_start_y = 2;
-		uint8_t remote_end_x = 1;
-		uint8_t remote_end_y = 11;
-		uint64_t local_addr = current_block->source_address;
-		uint64_t remote_addr = current_block->dest_address;
-
-		int ret = noc_dma_write_multicast(
-			coords->dest_x, coords->dest_y, local_addr, remote_start_x, remote_start_y,
-			remote_end_x, remote_end_y, remote_addr, current_block->block_size, false,
-			&chan_data->state.last_noc_cmd, &chan_data->state.last_expected_acks);
-
-		/* Enable hardware completion tracking for non-MEMORY_TO_MEMORY transfers */
-		chan_data->state.hw_completion_tracking = true;
-
-		/* For async mode, callbacks will be handled when transfer actually completes */
-		if (ret != 0) {
-			/* Immediate error */
-			handle_transfer_callbacks(dev, chan_data, channel, ret, true);
-			chan_data->state.active = false;
-		}
-		return ret;
-	}
-	default:
-		LOG_ERR("%s: Invalid channel direction %d", __func__,
-			chan_data->config.channel_direction);
-		return -EINVAL;
-	}
+	return 0;
 }
 
 static int tt_bh_dma_noc_init(const struct device *dev)
 {
-	struct tt_bh_dma_noc_data *data = (struct tt_bh_dma_noc_data *)dev->data;
-
-	data->lock = (struct k_spinlock){};
-
 	return 0;
 }
 
 static int tt_bh_dma_noc_get_status(const struct device *dev, uint32_t channel,
 				    struct dma_status *status)
 {
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
+	const struct tt_bh_dma_noc_config *dma_cfg =
+		(const struct tt_bh_dma_noc_config *)dev->config;
 
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
+	if (channel >= dma_cfg->num_channels) {
 		return -EINVAL;
 	}
 
-	if (!status) {
-		LOG_ERR("Status pointer is NULL");
-		return -EINVAL;
-	}
+	struct tt_bh_dma_channel_data *chan_data = &dma_cfg->channels[channel];
 
-	/* Set transfer direction from configuration */
-	if (chan_data->state.configured) {
-		status->dir = (enum dma_channel_direction)chan_data->config.channel_direction;
-	} else {
-		status->dir = MEMORY_TO_MEMORY; /* Default direction */
-	}
+	uint32_t ack_reg_addr = (chan_data->state.last_noc_cmd & NOC_CMD_WR)
+					? NIU_MST_WR_ACK_RECEIVED
+					: NIU_MST_RD_RESP_RECEIVED;
+	uint32_t ack_received = NOC2AXIRead32(NOC_DMA_NOC_ID, NOC_DMA_TLB, ack_reg_addr);
 
-	/* Determine if channel is busy (active and not suspended) */
-	status->busy = chan_data->state.active && !chan_data->state.suspended;
-
-	/* For NOC transfers, check hardware completion status immediately (non-blocking) */
-	if (chan_data->state.active && chan_data->state.hw_completion_tracking) {
-		bool hw_done = check_noc_dma_done_immediate(chan_data->state.last_noc_cmd,
-							    chan_data->state.last_expected_acks);
-		if (hw_done) {
-			/* Hardware is done, but software hasn't caught up yet */
-			status->busy = false;
-		}
-	}
-
-	/* Calculate pending length and total copied based on block progress */
-	if (chan_data->state.configured) {
-		uint32_t remaining_bytes = 0;
-		uint32_t completed_bytes = 0;
-
-		/* Sum up completed block sizes */
-		for (int i = 0;
-		     i < chan_data->state.block_index && i < chan_data->state.block_count; i++) {
-			completed_bytes += chan_data->blocks[i].block_size;
-		}
-
-		/* Sum up remaining block sizes */
-		for (int i = chan_data->state.block_index; i < chan_data->state.block_count; i++) {
-			remaining_bytes += chan_data->blocks[i].block_size;
-		}
-
-		status->pending_length = chan_data->state.active ? remaining_bytes : 0;
-		status->total_copied = completed_bytes;
-	} else {
-		status->pending_length = 0;
-		status->total_copied = 0;
-	}
+	status->busy = is_behind(ack_received, chan_data->state.last_expected_acks);
 
 	return 0;
 }
 
 static int tt_bh_dma_noc_stop(const struct device *dev, uint32_t channel)
 {
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!chan_data->state.active) {
-		return 0;
-	}
-
-	chan_data->state.active = false;
-	chan_data->state.suspended = false;
-	chan_data->state.hw_completion_tracking = false;
-
 	return 0;
-}
-
-static int tt_bh_dma_noc_resume(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!chan_data->state.active) {
-		LOG_ERR("Cannot resume inactive channel %u", channel);
-		return -EINVAL;
-	}
-
-	if (!chan_data->state.suspended) {
-		/* Already resumed/active */
-		return 0;
-	}
-
-	chan_data->state.suspended = false;
-	LOG_DBG("Resumed channel %u", channel);
-	return 0;
-}
-
-static void tt_bh_dma_noc_chan_release(const struct device *dev, uint32_t channel)
-{
-	struct tt_bh_dma_channel_data *chan_data = get_channel_data(dev, channel);
-
-	if (!chan_data) {
-		LOG_ERR("Invalid channel %u", channel);
-		return;
-	}
-
-	/* Stop the channel if it's active */
-	if (chan_data->state.active) {
-		tt_bh_dma_noc_stop(dev, channel);
-	}
-
-	/* Reset channel state */
-	memset(&chan_data->state, 0, sizeof(chan_data->state));
-	chan_data->state.configured = false;
 }
 
 static const struct dma_driver_api tt_bh_dma_noc_api = {
@@ -734,11 +522,11 @@ static const struct dma_driver_api tt_bh_dma_noc_api = {
 	.start = tt_bh_dma_noc_start,
 	.stop = tt_bh_dma_noc_stop,
 	.suspend = NULL,
-	.resume = tt_bh_dma_noc_resume,
+	.resume = NULL,
 	.get_status = tt_bh_dma_noc_get_status,
 	.get_attribute = NULL,
 	.chan_filter = NULL,
-	.chan_release = tt_bh_dma_noc_chan_release,
+	.chan_release = NULL,
 };
 
 #define TT_BH_DMA_NOC_INIT(inst)                                                                   \
