@@ -74,7 +74,6 @@ enum arc_dma_channel_state {
 };
 
 struct arc_dma_channel {
-	uint32_t id;
 	enum arc_dma_channel_state state;
 	dma_callback_t callback;
 	void *callback_arg;
@@ -82,7 +81,6 @@ struct arc_dma_channel {
 	struct dma_block_config block_config; /* Copy of first block config */
 	uint32_t handle;
 	uint32_t block_count;      /* Total number of blocks */
-	uint32_t blocks_completed; /* Number of blocks completed */
 	struct k_spinlock hw_lock; /* Per-channel hardware access lock */
 };
 
@@ -322,7 +320,6 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 	chan->handle = dma_arc_hs_get_handle_hw();
 	chan->state = ARC_DMA_ACTIVE;
 	chan->block_count = chan->config.block_count;
-	chan->blocks_completed = 0;
 
 	LOG_DBG("HW transfer started: ch=%u, last_handle=%u, blocks=%u", current_channel,
 		chan->handle, chan->block_count);
@@ -505,10 +502,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 			size_t transfer_size =
 				dma_arc_hs_calc_linked_transfer_size(chan, block, burst_len);
 
-			/* Optional software copy for verification / simulation */
-			memcpy((void *)(uintptr_t)dst_addr, (const void *)(uintptr_t)src_addr,
-				transfer_size);
-
 			uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
 
 			dma_arc_hs_start_hw(linked_ch, (const void *)src_addr,
@@ -517,7 +510,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 			linked_chan->handle = dma_arc_hs_get_handle_hw();
 			linked_chan->state = ARC_DMA_ACTIVE;
 			linked_chan->block_count = linked_chan->config.block_count;
-			linked_chan->blocks_completed = 0;
 
 			LOG_DBG("Linked channel %u started (size %zu)", linked_ch, transfer_size);
 
@@ -654,10 +646,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 					size_t transfer_size = dma_arc_hs_calc_linked_transfer_size(
 						chan, block, burst_len);
 
-					/* Optional software copy for verification / simulation */
-					memcpy((void *)(uintptr_t)dst_addr,
-						(const void *)(uintptr_t)src_addr, transfer_size);
-
 					uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
 
 					dma_arc_hs_start_hw(linked_ch, (const void *)src_addr,
@@ -668,7 +656,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 					linked_chan->handle = dma_arc_hs_get_handle_hw();
 					linked_chan->state = ARC_DMA_ACTIVE;
 					linked_chan->block_count = linked_chan->config.block_count;
-					linked_chan->blocks_completed = 0;
 
 					LOG_DBG("Linked channel %u started (size %zu)", linked_ch,
 						transfer_size);
@@ -1061,12 +1048,10 @@ static int dma_arc_hs_init(const struct device *dev)
 	memset(data->channels_atomic, 0, sizeof(data->channels_atomic));
 
 	for (i = 0; i < config->channels; i++) {
-		data->channels[i].id = i;
 		data->channels[i].state = ARC_DMA_FREE;
 		data->channels[i].callback = NULL;
 		data->channels[i].callback_arg = NULL;
 		data->channels[i].block_count = 0;
-		data->channels[i].blocks_completed = 0;
 		/* Spinlocks are zero-initialized by default in Zephyr */
 	}
 
