@@ -27,6 +27,7 @@ sys.path.append(str(ZEPHYR_BASE / "scripts" / "dts" / "python-devicetree" / "src
 import tt_boot_fs  # noqa: E402
 import update_bar4_size  # noqa: E402
 import fwtable_tooling  # noqa: E402
+import update_tensix_disable_count  # noqa: E402
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -471,6 +472,43 @@ def test_update_bar4_size(tmp_path: Path):
         output_path,
         ["P100A-1"],
         update_bar4_size.iterate_bar4_sizes,
+        cb_object,
+        True,
+    )
+
+
+def test_tensix_disable(tmp_path: Path):
+    """
+    Tests that Tensix disable count can be updated by scripts/update_tensix_disable_count.py.
+    """
+
+    version = "19.2.0"
+    release_dl_url_base = (
+        "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/"
+    )
+    url = release_dl_url_base + f"v{version}/fw_pack-{version}.fwbundle"
+
+    input_path = tmp_path / "input.fwbundle"
+    output_path = input_path
+
+    print(f"Downloading v{version} firmware bundle from {url}...")
+
+    response = requests.get(url)
+    response.raise_for_status()
+    with open(input_path, "wb") as f:
+        f.write(response.content)
+
+    print("Updating Tensix Disable Count for P150A-1 to 2...")
+
+    cb_object = {
+        "disable_count": 2,
+    }
+
+    assert os.EX_OK == fwtable_tooling.do_update(
+        input_path,
+        output_path,
+        ["P150A-1"],
+        update_tensix_disable_count.set_tensix_disable_count,
         cb_object,
         True,
     )
