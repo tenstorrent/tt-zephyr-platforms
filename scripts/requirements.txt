@@ -8,7 +8,7 @@ west
 # zephyr-keep-sorted-stop
 
 # zephyr-keep-sorted-start
-pyluwen>=0.7.12
+pyluwen==0.7.12
 tt-burnin>=0.2.4
 tt-flash>=3.4.7
 tt-smi>=3.0.23
