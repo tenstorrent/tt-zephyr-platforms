@@ -25,7 +25,10 @@
 #define dma_addr_t uint32_t
 #endif
 
-/* ARC DMA Auxiliary Register Definitions */
+/* ========================================
+ * SECTION 1: ARC DMA Auxiliary Register Definitions
+ * ========================================
+ */
 #define DMA_AUX_BASE     (0xd00)
 #define DMA_C_CTRL_AUX   (0xd00 + 0x0)
 #define DMA_C_CHAN_AUX   (0xd00 + 0x1)
@@ -64,7 +67,10 @@
 
 LOG_MODULE_REGISTER(dma_arc, CONFIG_DMA_LOG_LEVEL);
 
-/* Channel states */
+/* ========================================
+ * SECTION 2: Data Structures
+ * ========================================
+ */
 enum arc_dma_channel_state {
 	ARC_DMA_FREE = 0,  /* Channel not allocated */
 	ARC_DMA_IDLE,      /* Allocated but stopped */
@@ -93,6 +99,7 @@ struct arc_dma_config {
 	uint32_t buffer_size;
 	uint32_t max_block_size;
 	bool coherency_support;
+	uint32_t buffer_address_alignment;
 };
 
 /* We'll define per-instance data structures with the actual channel count */
@@ -108,7 +115,10 @@ struct arc_dma_data {
 	struct dma_block_config *transfer_blocks;
 };
 
-/* Low-level ARC DMA Functions */
+/* ========================================
+ * SECTION 3: Low-Level Hardware Functions
+ * ========================================
+ */
 static void dma_arc_hs_config_hw(void)
 {
 	uint32_t reg = 0;
@@ -170,6 +180,10 @@ static uint32_t dma_arc_hs_get_done_hw(uint32_t handle)
 	return state & 0x1;
 }
 
+/* ========================================
+ * SECTION 4: Zephyr DMA Driver API Implementation
+ * ========================================
+ */
 static int dma_arc_hs_config(const struct device *dev, uint32_t channel, struct dma_config *config)
 {
 	const struct arc_dma_config *dev_config = dev->config;
@@ -403,6 +417,55 @@ static size_t dma_arc_hs_calc_linked_transfer_size(struct arc_dma_channel *chan,
 	return transfer_size;
 }
 
+static void dma_arc_hs_trigger_linked_channel(const struct device *dev,
+					      struct arc_dma_data *data,
+					      struct arc_dma_channel *triggering_chan,
+					      uint32_t linked_ch_id)
+{
+	k_spinlock_key_t key;
+	struct arc_dma_channel *linked_chan;
+
+	LOG_DBG("Channel linking: trying to trigger channel %u", linked_ch_id);
+
+	/* Re-acquire global lock only to safely read the linked channel state */
+	key = k_spin_lock(&data->lock);
+	linked_chan = &data->channels[linked_ch_id];
+
+	if (linked_chan->state != ARC_DMA_PREPARED) {
+		k_spin_unlock(&data->lock, key);
+		LOG_WRN("Linked channel %u not ready (state=%d)", linked_ch_id,
+			linked_chan->state);
+		return;
+	}
+
+	/* Grab everything we need from the linked channel while protected */
+	struct dma_block_config *block = linked_chan->config.head_block;
+	uint32_t burst_len = linked_chan->config.source_burst_length;
+	dma_addr_t src_addr = block->source_address;
+	dma_addr_t dst_addr = block->dest_address;
+
+	k_spin_unlock(&data->lock, key);
+
+	/* Now safely start the linked transfer under its own hw_lock */
+	k_spinlock_key_t linked_hw_key = k_spin_lock(&linked_chan->hw_lock);
+
+	size_t transfer_size =
+		dma_arc_hs_calc_linked_transfer_size(triggering_chan, block, burst_len);
+
+	uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
+
+	dma_arc_hs_start_hw(linked_ch_id, (const void *)src_addr, (void *)(uintptr_t)dst_addr,
+			    transfer_size, attr);
+
+	linked_chan->handle = dma_arc_hs_get_handle_hw();
+	linked_chan->state = ARC_DMA_ACTIVE;
+	linked_chan->block_count = linked_chan->config.block_count;
+
+	LOG_DBG("Linked channel %u started (size %zu)", linked_ch_id, transfer_size);
+
+	k_spin_unlock(&linked_chan->hw_lock, linked_hw_key);
+}
+
 static void dma_arc_hs_check_completion(const struct device *dev, uint32_t channel)
 {
 	struct arc_dma_data *data = dev->data;
@@ -465,45 +528,9 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 		callback(dev, callback_arg, channel, 0);
 	}
 
+	/* Trigger linked channel if channel linking is enabled */
 	if (trigger_linked && linked_ch < dev_config->channels) {
-		LOG_DBG("Channel linking: trying to trigger channel %u", linked_ch);
-
-		/* Re-acquire global lock only to safely read the linked channel state */
-		key = k_spin_lock(&data->lock);
-		struct arc_dma_channel *linked_chan = &data->channels[linked_ch];
-
-		if (linked_chan->state == ARC_DMA_PREPARED) {
-			/* Grab everything we need from the linked channel while protected */
-			struct dma_block_config *block = linked_chan->config.head_block;
-			uint32_t burst_len = linked_chan->config.source_burst_length;
-			dma_addr_t src_addr = block->source_address;
-			dma_addr_t dst_addr = block->dest_address;
-
-			k_spin_unlock(&data->lock, key);
-
-			/* Now safely start the linked transfer under its own hw_lock */
-			k_spinlock_key_t linked_hw_key = k_spin_lock(&linked_chan->hw_lock);
-
-			size_t transfer_size =
-				dma_arc_hs_calc_linked_transfer_size(chan, block, burst_len);
-
-			uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
-
-			dma_arc_hs_start_hw(linked_ch, (const void *)src_addr,
-					    (void *)(uintptr_t)dst_addr, transfer_size, attr);
-
-			linked_chan->handle = dma_arc_hs_get_handle_hw();
-			linked_chan->state = ARC_DMA_ACTIVE;
-			linked_chan->block_count = linked_chan->config.block_count;
-
-			LOG_DBG("Linked channel %u started (size %zu)", linked_ch, transfer_size);
-
-			k_spin_unlock(&linked_chan->hw_lock, linked_hw_key);
-		} else {
-			k_spin_unlock(&data->lock, key);
-			LOG_WRN("Linked channel %u not ready (state=%d)", linked_ch,
-				linked_chan->state);
-		}
+		dma_arc_hs_trigger_linked_channel(dev, data, chan, linked_ch);
 	}
 }
 
@@ -513,7 +540,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
 	struct arc_dma_channel *chan;
-	struct arc_dma_channel *linked_chan;
 	uint32_t done_status;
 	k_spinlock_key_t key, hw_key;
 
@@ -581,59 +607,9 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 				callback(dev, callback_arg, channel, 0);
 			}
 
-			/* Check if channel linking is enabled - trigger linked channel */
+			/* Trigger linked channel if channel linking is enabled */
 			if (trigger_linked && linked_ch < dev_config->channels) {
-				LOG_DBG("Channel linking enabled: triggering linked channel %u",
-					linked_ch);
-
-				/* Re-acquire global lock only to safely read the linked channel
-				 * state
-				 */
-				key = k_spin_lock(&data->lock);
-				linked_chan = &data->channels[linked_ch];
-
-				if (linked_chan->state == ARC_DMA_PREPARED) {
-					/* Grab everything we need from the linked channel while
-					 * protected
-					 */
-					struct dma_block_config *block =
-						linked_chan->config.head_block;
-					uint32_t burst_len =
-						linked_chan->config.source_burst_length;
-					dma_addr_t src_addr = block->source_address;
-					dma_addr_t dst_addr = block->dest_address;
-
-					k_spin_unlock(&data->lock, key);
-
-					/* Now safely start the linked transfer under its own
-					 * hw_lock
-					 */
-					k_spinlock_key_t linked_hw_key =
-						k_spin_lock(&linked_chan->hw_lock);
-
-					size_t transfer_size = dma_arc_hs_calc_linked_transfer_size(
-						chan, block, burst_len);
-
-					uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
-
-					dma_arc_hs_start_hw(linked_ch, (const void *)src_addr,
-							    (void *)(uintptr_t)dst_addr,
-							    transfer_size, attr);
-
-					/* Get handle for the linked channel */
-					linked_chan->handle = dma_arc_hs_get_handle_hw();
-					linked_chan->state = ARC_DMA_ACTIVE;
-					linked_chan->block_count = linked_chan->config.block_count;
-
-					LOG_DBG("Linked channel %u started (size %zu)", linked_ch,
-						transfer_size);
-
-					k_spin_unlock(&linked_chan->hw_lock, linked_hw_key);
-				} else {
-					k_spin_unlock(&data->lock, key);
-					LOG_WRN("Linked channel %u not ready (state=%d)", linked_ch,
-						linked_chan->state);
-				}
+				dma_arc_hs_trigger_linked_channel(dev, data, chan, linked_ch);
 			}
 		}
 	} else {
@@ -649,16 +625,7 @@ static int dma_arc_hs_get_attribute(const struct device *dev, uint32_t type, uin
 
 	switch (type) {
 	case DMA_ATTR_BUFFER_ADDRESS_ALIGNMENT:
-		*value = 4; /* 32-bit aligned */
-		break;
-	case DMA_ATTR_BUFFER_SIZE_ALIGNMENT:
-		*value = 4; /* 32-bit aligned */
-		break;
-	case DMA_ATTR_COPY_ALIGNMENT:
-		*value = 4; /* 32-bit aligned */
-		break;
-	case DMA_ATTR_MAX_BLOCK_COUNT:
-		*value = dev_config->descriptors; /* Limited by descriptor count */
+		*value = dev_config->buffer_address_alignment;
 		break;
 	default:
 		return -ENOTSUP;
@@ -714,19 +681,21 @@ int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *
 		return 0;
 	}
 
+	/* Get alignment requirement from driver */
 	uint32_t required_alignment;
 	int ret = dma_get_attribute(dev, DMA_ATTR_BUFFER_ADDRESS_ALIGNMENT, &required_alignment);
 
 	if (ret < 0) {
 		LOG_ERR("Failed to get buffer address alignment: %d", ret);
 		return ret;
-	} else if (ret == 0) {
-		uint32_t alignment_mask = required_alignment - 1;
+	}
 
-		if (((uintptr_t)src & alignment_mask) || ((uintptr_t)dst & alignment_mask)) {
-			LOG_ERR("src/dst not aligned to %u", required_alignment);
-			return -EINVAL;
-		}
+	/* Validate address alignment */
+	uint32_t alignment_mask = required_alignment - 1;
+
+	if (((uintptr_t)src & alignment_mask) || ((uintptr_t)dst & alignment_mask)) {
+		LOG_ERR("src/dst not aligned to %u bytes", required_alignment);
+		return -EINVAL;
 	}
 
 	if (channel >= dev_config->channels) {
@@ -817,9 +786,9 @@ static const struct dma_driver_api dma_arc_hs_api = {
 	.suspend = NULL,
 	.resume = NULL,
 	.get_status = dma_arc_hs_get_status,
+	.get_attribute = dma_arc_hs_get_attribute,
 	.chan_filter = NULL,
 	.chan_release = NULL,
-	.get_attribute = dma_arc_hs_get_attribute,
 };
 
 static int dma_arc_hs_init(const struct device *dev)
@@ -868,6 +837,7 @@ static int dma_arc_hs_init(const struct device *dev)
 		.buffer_size = DT_INST_PROP(inst, buffer_size),                                    \
 		.max_block_size = DT_INST_PROP(inst, dma_max_block_size),                          \
 		.coherency_support = DT_INST_PROP(inst, coherency_support),                        \
+		.buffer_address_alignment = DT_INST_PROP(inst, buffer_address_alignment),          \
 	};                                                                                         \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
