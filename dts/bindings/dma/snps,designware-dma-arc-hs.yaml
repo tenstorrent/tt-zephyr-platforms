@@ -54,3 +54,10 @@ properties:
     type: boolean
     description: |
       Enable coherency check for all L1 caches within the cluster by hardware.
+
+  buffer-address-alignment:
+    type: int
+    default: 4
+    description: |
+      Required alignment in bytes for buffer addresses (source and destination).
+      This is typically 4 bytes (32-bit word aligned) for ARC HS DMA.
