@@ -410,7 +410,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	struct arc_dma_channel *chan;
 	k_spinlock_key_t key;
 	uint32_t handle;
-	bool cyclic;
 	dma_callback_t callback;
 	void *callback_arg;
 	bool trigger_linked = false;
@@ -427,7 +426,6 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 
 	/* Copy the minimal state we need for the rest of the function */
 	handle = chan->handle;
-	cyclic = chan->config.cyclic;
 	callback = chan->callback;
 	callback_arg = chan->callback_arg;
 
@@ -458,20 +456,7 @@ static void dma_arc_hs_check_completion(const struct device *dev, uint32_t chann
 	LOG_DBG("Channel %u transfer completed (handle 0x%x)", channel, handle);
 	dma_arc_hs_clear_done_hw(handle);
 
-	if (cyclic) {
-		/* Restart the same transfer immediately */
-		struct dma_block_config *block = chan->config.head_block;
-		uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
-
-		LOG_DBG("Cyclic transfer – restarting channel %u", channel);
-
-		dma_arc_hs_start_hw(channel, (const void *)block->source_address,
-				    (void *)block->dest_address, block->block_size, attr);
-		chan->handle = dma_arc_hs_get_handle_hw();
-		/* state remains ARC_DMA_ACTIVE */
-	} else {
-		chan->state = ARC_DMA_IDLE;
-	}
+	chan->state = ARC_DMA_IDLE;
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
 	/* chan->hw_lock released – safe to call user callback */
@@ -555,7 +540,6 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 	if (chan->state == ARC_DMA_ACTIVE) {
 		/* Copy state we need while holding the global lock */
 		uint32_t handle = chan->handle;
-		bool cyclic = chan->config.cyclic;
 		dma_callback_t callback = chan->callback;
 		void *callback_arg = chan->callback_arg;
 		bool trigger_linked = false;
@@ -587,23 +571,8 @@ static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 			LOG_DBG("Channel %u transfer completed", channel);
 			dma_arc_hs_clear_done_hw(handle);
 
-			/* For cyclic transfers, keep channel active and restart */
-			if (cyclic) {
-				struct dma_block_config *block = chan->config.head_block;
-				uint32_t attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
-
-				LOG_DBG("Cyclic transfer: restarting channel %u", channel);
-
-				/* Restart the transfer for cyclic mode */
-				dma_arc_hs_start_hw(channel, (const void *)block->source_address,
-						    (void *)block->dest_address, block->block_size,
-						    attr);
-				chan->handle = dma_arc_hs_get_handle_hw();
-				/* state remains ARC_DMA_ACTIVE */
-			} else {
-				/* Non-cyclic transfer completes and goes idle */
-				chan->state = ARC_DMA_IDLE;
-			}
+			/* Transfer completes and goes idle */
+			chan->state = ARC_DMA_IDLE;
 
 			k_spin_unlock(&chan->hw_lock, hw_key);
 			/* hw_lock released – safe to call user callback */
