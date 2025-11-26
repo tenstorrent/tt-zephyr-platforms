@@ -11,10 +11,12 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/kernel.h>
 
 #include "noc_init.h"
 #include "aiclk_ppm.h"
 #include "gddr.h"
+#include "bh_reset.h"
 
 LOG_MODULE_REGISTER(power, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *pll4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
@@ -60,22 +62,44 @@ int32_t bh_set_l2cpu_enable(bool enable)
 
 static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
+	static bool tensix_enabled = true;
 	int32_t ret = 0;
 
 	if (power_setting->power_flags_valid > power_bit_flag_aiclk) {
 		aiclk_set_busy(power_setting->power_flags_bitfield.max_ai_clk);
+		LOG_INF("AICLK: %u", power_setting->power_flags_bitfield.max_ai_clk);
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
 		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
+		LOG_INF("MRISC: %u", power_setting->power_flags_bitfield.mrisc_phy_power);
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
+		bool reset_hit = false;
+
+		/*We track whether or not the tensix is already clock gated because
+		 *we can't send the reset message with the clocks gated. So, only reset the tensix
+		 *cores if the tensix is not clock gated.
+		 */
+		if (!power_setting->power_flags_bitfield.tensix_enable && tensix_enabled) {
+			bh_soft_reset_all_tensix();
+			k_usleep(100);
+			reset_hit = true;
+		}
+
 		ret = set_tensix_enable(power_setting->power_flags_bitfield.tensix_enable);
+		tensix_enabled = power_setting->power_flags_bitfield.tensix_enable;
+		/*Note, if we're turning on the tensixes, we don't take them out of reset,
+		 *we just lift the clock gating.
+		 */
+		LOG_INF("TENSIX: %u - Reset hit - %u",
+			power_setting->power_flags_bitfield.tensix_enable, reset_hit);
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_l2cpu) {
 		ret = bh_set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
+		LOG_INF("L2CPU: %u", power_setting->power_flags_bitfield.l2cpu_enable);
 	}
 
 	return ret;
