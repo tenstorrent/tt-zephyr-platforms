@@ -13,7 +13,7 @@ manifest:
     - name: librpmi
       remote: cfriedt
       path: modules/lib/librpmi
-      revision: e94e842eadc20e0269ae02d8d069de2604cd5f41
+      revision: 23e94f7007731e91be4de7c1d9c8c48b2173f6a2
     - name: zephyr
       remote: zephyrproject-rtos
       revision: v4.3.0
