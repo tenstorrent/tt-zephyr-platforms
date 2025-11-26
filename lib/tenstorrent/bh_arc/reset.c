@@ -16,6 +16,7 @@
 #include "reg.h"
 #include "status_reg.h"
 #include "tensix_init.h"
+#include "bh_reset.h"
 
 #include <stdint.h>
 
@@ -45,6 +46,19 @@ LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 STATUS_ERROR_STATUS0_reg_u error_status0;
 
+static const uint8_t kNocRing;
+static const uint8_t kNocTlb;
+static const uint32_t kSoftReset0Addr = 0xFFB121B0; /* NOC address in each tile */
+static const uint32_t kAllRiscSoftReset = 0x47800;
+
+void bh_soft_reset_all_tensix(void)
+{
+	/* Broadcast to SOFT_RESET_0 of all Tensixes */
+	/* Harvesting is handled by broadcast disables of NocInit */
+	NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kSoftReset0Addr, kNoc2AxiOrderingStrict);
+	NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr, kAllRiscSoftReset);
+}
+
 /* Assert soft reset for all RISC-V cores */
 /* L2CPU is skipped due to JIRA issues BH-25 and BH-28 */
 static int AssertSoftResets(void)
@@ -55,16 +69,7 @@ static int AssertSoftResets(void)
 	}
 
 	/* Assert Soft Reset for ERISC, MRISC Tensix (skip L2CPU due to bug) */
-
-	const uint8_t kNocRing = 0;
-	const uint8_t kNocTlb = 0;
-	const uint32_t kSoftReset0Addr = 0xFFB121B0; /* NOC address in each tile */
-	const uint32_t kAllRiscSoftReset = 0x47800;
-
-	/* Broadcast to SOFT_RESET_0 of all Tensixes */
-	/* Harvesting is handled by broadcast disables of NocInit */
-	NOC2AXITensixBroadcastTlbSetup(kNocRing, kNocTlb, kSoftReset0Addr, kNoc2AxiOrderingStrict);
-	NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr, kAllRiscSoftReset);
+	bh_soft_reset_all_tensix();
 
 	/* Write to SOFT_RESET_0 of ETH */
 	for (uint8_t eth_inst = 0; eth_inst < 14; eth_inst++) {
