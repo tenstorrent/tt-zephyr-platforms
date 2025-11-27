@@ -543,6 +543,8 @@
 			reg = <0>;
 			#dma-cells = <1>;
 			dma-channels = <4>;
+			interrupts = <21 1>;
+			interrupt-parent = <&intc>;
 			status = "disabled";
 		};
 	};
