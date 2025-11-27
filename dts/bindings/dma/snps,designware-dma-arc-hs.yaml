@@ -6,7 +6,7 @@ description: |
 
 compatible: "snps,designware-dma-arc-hs"
 
-include: [dma-controller.yaml]
+include: [dma-controller.yaml, base.yaml]
 
 properties:
   "#dma-cells":
