@@ -18,6 +18,7 @@ zephyr_library_sources_ifndef(
   gddr.c
   harvesting.c
   i2c_messages.c
+  led.c
   noc.c
   noc_init.c
   pcie_dma.c
@@ -43,6 +44,7 @@ zephyr_library_sources(
   cm2dm_msg.c
   dw_apb_i2c.c
   harvesting.c
+  led.c
   log.c
   msgqueue.c
   noc.c
