@@ -108,8 +108,52 @@ jobs:
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
+  build-debian-pkg:
+    needs: [build-release]
+    runs-on: ubuntu-24.04
+    steps:
+      - id: set_vars
+        run: ${{ env.SET_VARS_CMDS }}
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update
+      - run: sudo apt install -y debsigs dpkg-dev gnupg
+
+      - name: Import GPG key
+        id: gpg_key_import
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.PKG_SIGNING_KEY_DEB }}
+
+      - run: gpg --list-keys
+      - run: gpg --list-secret-keys
+
+      - name: Download combined firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+      - name: Show firmware bundles
+        run: find * -name '*.fwbundle' -ls
+
+      - name: Build Debian Package
+        shell: bash
+        run: |
+          DEB_VERSION="${{ steps.set_vars.outputs.VERSION }}"
+          DEB_VERSION="${DEB_VERSION/v/}"  # Remove leading 'v' if present
+          PKG_SIGNING_KEY_DEB="$(for i in $(gpg --list-keys | grep -A 1 '^pub' | head -n2 | tail -n 1); do echo $i; done)"
+          ./scripts/build_deb.sh \
+            -b fw_pack*.fwbundle \
+            -k "$PKG_SIGNING_KEY_DEB" \
+            -o . \
+            -v "$DEB_VERSION"
+
+      - name: Upload Debian Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-debian-pkg
+          path: "*.deb"
+
   publish-release:
-    needs: [build-release, prepare-release, build-recovery-bundle]
+    needs: [build-debian-pkg, build-release, prepare-release, build-recovery-bundle]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -136,6 +180,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
+
+      - name: Download Debian Package
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-debian-pkg
 
       - name: Package firmware artifacts
         shell: bash
@@ -171,5 +220,6 @@ jobs:
           files: |
             fw-pack-${{ github.ref_name }}-recovery.tar.gz
             *.fwbundle
+            *.deb
             tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip
             tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
