@@ -17,6 +17,7 @@
 #include <zephyr/drivers/jtag.h>
 #include <zephyr/drivers/mfd/max6639.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
@@ -35,10 +36,13 @@
 #define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
 
 #define INITIAL_FAN_SPEED 35
+#define LED_BLINK_RATE_MS 400
 
 LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 BUILD_ASSERT(FIXED_PARTITION_EXISTS(bmfw), "bmfw fixed-partition does not exist");
+
+static bool blink_led;
 
 struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), chips, INIT_CHIP)};
 
@@ -53,6 +57,7 @@ static const struct device *const max6639_pwm_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_pwm));
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
+static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);
 
 /* No mechanism for getting bl version... yet */
 static dmStaticInfo static_info = {.version = 1, .bl_version = 0, .app_version = APPVERSION};
@@ -190,6 +195,12 @@ static bool process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint3
 	return false;
 }
 
+static bool process_led_blink_request(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	blink_led = msg_data;
+	return false;
+}
+
 void process_cm2dm_message(struct bh_chip *chip)
 {
 	typedef bool (*msg_processor_t)(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data);
@@ -202,6 +213,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 		[kCm2DmMsgIdReady] = process_id_ready,
 		[kCm2DmMsgIdAutoResetTimeoutUpdate] = process_auto_reset_timeout_update,
 		[kCm2DmMsgTelemHeartbeatUpdate] = process_heartbeat_update,
+		[kCm2DmMsgIdLedBlink] = process_led_blink_request,
 	};
 
 	for (uint32_t i = 0U; i < kCm2DmMsgCount; i++) {
@@ -552,6 +564,18 @@ static void board_power_update_expired(struct k_timer *timer)
 }
 static K_TIMER_DEFINE(board_power_update_timer, board_power_update_expired, NULL);
 
+static void blink_led_expired(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+
+	if (blink_led) {
+		gpio_pin_toggle_dt(&red_led);
+	} else {
+		gpio_pin_set_dt(&red_led, 0);
+	}
+}
+static K_TIMER_DEFINE(blink_led_timer, blink_led_expired, NULL);
+
 int main(void)
 {
 	int ret;
@@ -646,6 +670,9 @@ int main(void)
 
 	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
 	k_timer_start(&board_power_update_timer, K_MSEC(1), K_MSEC(1));
+	k_timer_start(&blink_led_timer, K_MSEC(LED_BLINK_RATE_MS), K_MSEC(LED_BLINK_RATE_MS));
+
+	gpio_pin_configure_dt(&red_led, GPIO_OUTPUT_ACTIVE);
 
 	while (true) {
 		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
