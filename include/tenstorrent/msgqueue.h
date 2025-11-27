@@ -303,6 +303,20 @@ struct i2c_message_rqst {
 	uint8_t write_data[24];
 };
 
+/** @brief Host request to blink the LED
+ * @details Messages of this type are processed by @ref toggle_blinky_handler
+ */
+struct led_blink_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_BLINKY */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Whether led should be blinking or not */
+	uint8_t is_blinking : 1;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -351,6 +365,9 @@ union request {
 
 	/** @brief An I2C message request */
 	struct i2c_message_rqst i2c_message;
+
+	/** @brief The led blinking request */
+	struct led_blink_rqst blink;
 };
 
 /** @} */
