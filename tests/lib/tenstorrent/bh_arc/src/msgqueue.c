@@ -12,6 +12,7 @@
 #include <tenstorrent/msgqueue.h>
 #include "asic_state.h"
 #include "clock_wave.h"
+#include "cm2dm_msg.h"
 #include "noc_init.h"
 
 #include "reg_mock.h"
@@ -334,6 +335,36 @@ ZTEST(msgqueue, test_msg_type_i2c_message)
 	zexpect_equal(i2c_write_buf_emul[1], 0xbb);
 	zexpect_equal(i2c_write_buf_emul[2], 0xcc);
 	zexpect_equal(i2c_write_buf_emul[3], 0xdd);
+}
+
+ZTEST(msgqueue, test_msg_type_blink_led)
+{
+	union request req = {0};
+	struct response rsp = {0};
+	uint8_t request_data[6];
+	uint8_t request_size = sizeof(request_data);
+	cm2dmMessage *msg;
+	int ret;
+
+	req.data[0] = TT_SMC_MSG_BLINKY;
+	req.data[1] = 0x1;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+	zassert_equal(rsp.data[1], 0);
+
+	PostCm2DmMsg(kCm2DmMsgIdLedBlink, 1);
+
+	ret = Cm2DmMsgReqSmbusHandler(request_data, &request_size);
+	zassert_equal(ret, 0);
+	zassert_equal(request_size, 6);
+
+	msg = (cm2dmMessage *)request_data;
+	zassert_equal(msg->msg_id, kCm2DmMsgIdLedBlink);
+	zassert_equal(msg->data, 1);
 }
 
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
