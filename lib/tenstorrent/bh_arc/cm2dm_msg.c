@@ -167,6 +167,11 @@ void UpdateTelemHeartbeatRequest(uint32_t heartbeat)
 	PostCm2DmMsg(kCm2DmMsgTelemHeartbeatUpdate, heartbeat); /* in ms */
 }
 
+void RequestLedBlink(uint32_t blink_mode)
+{
+	PostCm2DmMsg(kCm2DmMsgIdLedBlink, blink_mode);
+}
+
 void reset_request_handler(struct k_timer *timer)
 {
 	ARG_UNUSED(timer);

@@ -129,6 +129,8 @@ enum tt_smc_msg {
 	TT_SMC_MSG_FLASH_LOCK = 0xC3,
 	/** @brief Confirm SPI flash succeeded */
 	TT_SMC_MSG_CONFIRM_FLASHED_SPI = 0xC4,
+	/** @brief Toggle red blinky on the board */
+	TT_SMC_MSG_BLINKY = 0xC5,
 };
 
 /** @} */
