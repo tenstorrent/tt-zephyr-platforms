@@ -134,7 +134,7 @@ def do_update(
         OUTPUT_DIR = Path(proto_tempdir)
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         SPIROM_PROTOBUFS = (
-            TT_Z_P_ROOT / "lib" / "tenstorrent" / "bh_arc" / "spirom_protobufs"
+            TT_Z_P_ROOT / "drivers" / "misc" / "bh_fwtable" / "spirom_protobufs"
         )
 
         subprocess.run(
