@@ -1,6 +1,6 @@
 .. _ttzp_home:
 
-Welcome to TT Zephyr Platforms!
+Welcome to TT Zephyr Platforms - CI
 ===============================
 
 .. toctree::
