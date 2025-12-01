@@ -70,11 +70,6 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 		LOG_INF("AICLK: %u", power_setting->power_flags_bitfield.max_ai_clk);
 	}
 
-	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
-		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
-		LOG_INF("MRISC: %u", power_setting->power_flags_bitfield.mrisc_phy_power);
-	}
-
 	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
 		bool reset_hit = false;
 
@@ -100,6 +95,11 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 	if (power_setting->power_flags_valid > power_bit_flag_l2cpu) {
 		ret = bh_set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
 		LOG_INF("L2CPU: %u", power_setting->power_flags_bitfield.l2cpu_enable);
+	}
+
+	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
+		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
+		LOG_INF("MRISC: %u", power_setting->power_flags_bitfield.mrisc_phy_power);
 	}
 
 	return ret;
