@@ -23,6 +23,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/drivers/i2c/i2c_dw.h>
 
 #define LINEAR_FORMAT_CONSTANT (1 << 9)
 #define SCALE_LOOP             0.335f
@@ -72,6 +73,7 @@ LOG_MODULE_REGISTER(regulator);
 /* The default value is the regulator default */
 static uint8_t vout_cmd_source = VoutCommand;
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+static const struct device *pmbus = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
 static float ConvertLinear11ToFloat(uint16_t value)
 {
@@ -88,22 +90,36 @@ static float ConvertLinear11ToFloat(uint16_t value)
 /* The function returns the core current in A. */
 float GetVcoreCurrent(void)
 {
-	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
-	uint16_t iout;
+	i2c_dw_register_recover_bus_cb(pmbus, tt_bh_i2c_recover_bus, pmbus);
 
-	I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
-		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
+	uint16_t iout;
+	uint8_t cmd = READ_IOUT;
+	int ret;
+
+	ret = i2c_write_read(pmbus, P0V8_VCORE_ADDR, &cmd, 1, &iout, sizeof(iout));
+	if (ret != 0) {
+		LOG_ERR("PMBus read READ_IOUT failed: %d", ret);
+		return 0.0f;
+	}
+
 	return ConvertLinear11ToFloat(iout);
 }
 
 /* The function returns the core power in W. */
 float GetVcorePower(void)
 {
-	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
-	uint16_t pout;
+	i2c_dw_register_recover_bus_cb(pmbus, tt_bh_i2c_recover_bus, pmbus);
 
-	I2CReadBytes(PMBUS_MST_ID, READ_POUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&pout,
-		     READ_POUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
+	uint16_t pout;
+	uint8_t cmd = READ_POUT;
+	int ret;
+
+	ret = i2c_write_read(pmbus, P0V8_VCORE_ADDR, &cmd, 1, &pout, sizeof(pout));
+	if (ret != 0) {
+		LOG_ERR("PMBus read READ_POUT failed: %d", ret);
+		return 0.0f; /* Return 0 on error */
+	}
+
 	return ConvertLinear11ToFloat(pout);
 }
 
@@ -198,19 +214,36 @@ void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv)
 
 void SwitchVoutControl(VoltageCmdSource source)
 {
-	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
-	OperationBits operation;
+	i2c_dw_register_recover_bus_cb(pmbus, tt_bh_i2c_recover_bus, pmbus);
 
-	I2CReadBytes(PMBUS_MST_ID, OPERATION, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&operation,
-		     OPERATION_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
-	operation.transition_control =
-		1; /* copy vout command when control is passed from AVSBus to PMBus */
+	OperationBits operation;
+	int ret;
+
+	uint8_t cmd = OPERATION;
+
+	ret = i2c_write_read(pmbus, P0V8_VCORE_ADDR, &cmd, 1, &operation, sizeof(operation));
+	if (ret != 0) {
+		LOG_ERR("PMBus read OPERATION failed: %d", ret);
+		return;
+	}
+
+	operation.transition_control = 1;
 	operation.voltage_command_source = source;
-	I2CWriteBytes(PMBUS_MST_ID, OPERATION, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&operation,
-		      OPERATION_DATA_BYTE_SIZE);
+
+	uint8_t write_buf[1 + sizeof(operation)];
+
+	write_buf[0] = OPERATION;
+	memcpy(write_buf + 1, &operation, sizeof(operation));
+
+	ret = i2c_write(pmbus, write_buf, sizeof(write_buf), P0V8_VCORE_ADDR);
+	if (ret != 0) {
+		LOG_ERR("PMBus write OPERATION failed: %d", ret);
+		return;
+	}
 
 	/* 100us to flush the tx of i2c */
-	WaitUs(100);
+	k_busy_wait(100);
+
 	vout_cmd_source = source;
 }
 
