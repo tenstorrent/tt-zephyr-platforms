@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Get the bundle version
-set(VERSION_FILE ${ZEPHYR_CURRENT_MODULE_DIR}/VERSION)
+set(VERSION_FILE ${CMAKE_CURRENT_LIST_DIR}/../VERSION)
 set(VERSION_TYPE BUNDLE)
 include(${ZEPHYR_BASE}/cmake/modules/version.cmake)
 if("${BUNDLE_VERSION_EXTRA}" STREQUAL "")
