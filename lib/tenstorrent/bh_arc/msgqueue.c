@@ -268,12 +268,17 @@ static void handle_set_last_serial(struct message_queue *queue, const union requ
 	queue->header.last_serial = request->data[1];
 }
 
+/** @brief Handles the test message request
+ * @param[in] queue The message queue processing this request
+ * @param[in] request The request, of type @ref test_rqst, with command code @ref TT_SMC_MSG_TEST
+ * @param[out] response The response to the host, containing the incremented test value and serial
+ */
 static void handle_test(struct message_queue *queue, const union request *request,
 			struct response *response)
 {
 	/* MSG_TYPE_TEST is a scratch-style message that we want to extend with extra info. */
 	response->data[0] = 0;
-	response->data[1] = request->data[1] + 1;
+	response->data[1] = request->test.test_value + 1;
 	response->data[2] = queue->header.last_serial + 1;
 }
 
