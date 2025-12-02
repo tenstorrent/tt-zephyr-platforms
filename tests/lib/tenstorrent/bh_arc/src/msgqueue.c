@@ -367,4 +367,19 @@ ZTEST(msgqueue, test_msg_type_blink_led)
 	zassert_equal(msg->data, 1);
 }
 
+ZTEST(msgqueue, test_msg_type_test)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.data[0] = TT_SMC_MSG_TEST;
+	req.data[1] = 42; /* test_value to be incremented */
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(rsp.data[1], 43); /* test_value + 1 */
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
