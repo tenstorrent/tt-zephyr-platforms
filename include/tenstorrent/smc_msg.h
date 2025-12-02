@@ -78,6 +78,7 @@ enum tt_smc_msg {
 
 	/** @brief Reserved*/
 	TT_SMC_MSG_RESERVED_60 = 0x60,
+	/** @brief @ref test_rqst "Test request" */
 	TT_SMC_MSG_TEST = 0x90,
 	TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER = 0x9B,
 	TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER = 0x9C,

@@ -317,6 +317,20 @@ struct led_blink_rqst {
 	uint8_t is_blinking : 1;
 };
 
+/** @brief Host request for test message
+ * @details Messages of this type are processed by @ref handle_test
+ */
+struct test_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_TEST */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Test input value that will be incremented in the response */
+	uint32_t test_value;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -368,6 +382,9 @@ union request {
 
 	/** @brief The led blinking request */
 	struct led_blink_rqst blink;
+
+	/** @brief A test request */
+	struct test_rqst test;
 };
 
 /** @} */
