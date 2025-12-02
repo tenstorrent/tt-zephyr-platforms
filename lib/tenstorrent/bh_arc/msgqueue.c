@@ -30,9 +30,9 @@
 #define APB_BASE_ADDR 0x80000000
 
 /* this should probably be pulled from Devicetree */
+#define RESET_UNIT_START_ADDR ((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
+
 #define RESET_UNIT_OFFSET_ADDR            0x30000
-#define RESET_UNIT_START_ADDR             \
-	((volatile uint32_t *)(APB_BASE_ADDR + RESET_UNIT_OFFSET_ADDR))
 #define RESET_UNIT_ARC_MISC_CNTL_REG_ADDR 0x80030100
 
 typedef struct {
@@ -58,14 +58,14 @@ typedef union {
 #define MSI_CATCHER_BASE (APB_BASE_ADDR + 0xB0000)
 
 /* Read/Write to FIFO pops/pushes on the FIFO. 64 entries. APB SLVERR on overflow/underflow. */
-#define MSI_CATCHER_FIFO_OFFSET 0
+#define MSI_CATCHER_FIFO_OFFSET   0
 #define MSI_CATCHER_FIFO_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_FIFO_OFFSET)
 
 /* Read to flush clears the FIFO. */
-#define MSI_CATCHER_FLUSH_OFFSET 4
+#define MSI_CATCHER_FLUSH_OFFSET   4
 #define MSI_CATCHER_FLUSH_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_FLUSH_OFFSET)
 
-#define MSI_CATCHER_STATUS_OFFSET 8
+#define MSI_CATCHER_STATUS_OFFSET   8
 #define MSI_CATCHER_STATUS_REG_ADDR (MSI_CATCHER_BASE + MSI_CATCHER_STATUS_OFFSET)
 
 BUILD_ASSERT(sizeof(union request) <= (sizeof(uint32_t) * REQUEST_MSG_LEN));
