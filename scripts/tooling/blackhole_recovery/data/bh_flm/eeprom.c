@@ -209,8 +209,8 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 		return -1; /* Invalid parameters */
 	}
 
-	if (len % 0x1000 != 0 || addr % 0x1000 != 0) {
-		return -1; /* Address and length must be aligned to 4KB */
+	if (len % 0x100 != 0 || addr % 0x100 != 0) {
+		return -1; /* Address and length must be aligned to 256 bytes */
 	}
 
 	if (data == NULL || len == 0) {
