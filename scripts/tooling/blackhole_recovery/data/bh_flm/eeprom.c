@@ -25,6 +25,7 @@ struct spi_nor_chip {
 };
 
 #define SPI_NOR_WIP_BIT 0x01 /* Write In Progress bit in status register */
+#define SPI_NOR_FLASH_PAGE_SIZE 0x100      /* Flash page size in bytes (256 bytes) */
 
 /*
  * The data section doesn't work with PIC code for Cortex-M0+,
@@ -209,8 +210,8 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 		return -1; /* Invalid parameters */
 	}
 
-	if (len % 0x100 != 0 || addr % 0x100 != 0) {
-		return -1; /* Address and length must be aligned to 256 bytes */
+	if ((len % SPI_NOR_FLASH_PAGE_SIZE) != 0 || (addr % SPI_NOR_FLASH_PAGE_SIZE) != 0) {
+		return -1; /* Address and length must be aligned to spi nor flashpage size */
 	}
 
 	if (data == NULL || len == 0) {
@@ -224,7 +225,7 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 	/* Populate command buffer */
 	cmd_buf[0] = cfg.pp_cmd; /* Program command */
 
-	for (uint32_t off = 0; off < len; off += 0x100) {
+	for (uint32_t off = 0; off < len; off += SPI_NOR_FLASH_PAGE_SIZE) {
 		ret = spi_write_enable();
 		if (ret != 0) {
 			return ret; /* Write enable failed */
@@ -237,7 +238,7 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 		buf[0].len = 5; /* 1 byte command + 4 bytes address */
 		buf[1].tx_buf = &data[off];
 		buf[1].rx_buf = NULL;
-		buf[1].len = 0x100; /* Program 256 bytes */
+		buf[1].len = SPI_NOR_FLASH_PAGE_SIZE; /* Program one page */
 		ret = spi_transfer(buf, 2);
 		if (ret != 0) {
 			return ret; /* SPI transfer failed */
