@@ -1,7 +1,5 @@
 # v19.3.0
 
-> This is a working draft for the up-coming v19.3.0 release.
-
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.3.0 🥳🎉.
 
 Major enhancements with this release include:
@@ -23,6 +21,18 @@ Major enhancements with this release include:
 
 * Update Blackhole ERISC FW to v1.7.0
   * ETH msg DYNAMIC_NOC_INIT: Initialize dynamic NOC state for the ethernet core
+* Doppler Power Management
+  * Low-latency power management optimizing bursty workloads on p100a and p150* boards
+  * 100 kHz tick rate, switched to a tick-less kernel
+* Support BAR4 resizing
+* New ARC message for blinking the board fault LED for board identification purposes
+* New firmware bundle for Debian
+* Improved GDDR bandwidth utilization
+
+### Drivers
+
+* ``snps,designware-dma-arc-hs``: integrated ARC DMA driver into codebase
+  * ARC DMA driver follows the upstream Zephyr DMA driver API
 
 <!-- External Project Collaboration Efforts, if applicable -->
 
@@ -38,6 +48,10 @@ Major enhancements with this release include:
   * Minimized SerDes access during retraining to reduce NOC traffic
   * Improve one sided reset and retrain logic for ANLT
   * Reduced ETH training timeouts
+* Fixed a potential hang when Tensix is generating NOC traffic to idle GDDR
+* Added more tests for ARC and I2C messaging
+* Made tensix idle before clock gating in our reset flows
+  * More graceful cleanup in cases of crashes, and more robust power down flows
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
