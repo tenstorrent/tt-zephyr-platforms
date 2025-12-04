@@ -29,6 +29,13 @@ enum power_bit_flags_e {
 	power_bit_flag_max
 };
 
+static bool power_state[power_bit_flag_max] = {
+	false,
+	true,
+	true,
+	true,
+};
+
 enum power_settings_e {
 	power_settings_max
 };
@@ -62,12 +69,11 @@ int32_t bh_set_l2cpu_enable(bool enable)
 
 static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
-	static bool tensix_enabled = true;
 	int32_t ret = 0;
 
 	if (power_setting->power_flags_valid > power_bit_flag_aiclk) {
 		aiclk_set_busy(power_setting->power_flags_bitfield.max_ai_clk);
-		LOG_INF("AICLK: %u", power_setting->power_flags_bitfield.max_ai_clk);
+		power_state[power_bit_flag_aiclk] = power_setting->power_flags_bitfield.max_ai_clk;
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
@@ -77,29 +83,32 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 		 *we can't send the reset message with the clocks gated. So, only reset the tensix
 		 *cores if the tensix is not clock gated.
 		 */
-		if (!power_setting->power_flags_bitfield.tensix_enable && tensix_enabled) {
+		if (!power_setting->power_flags_bitfield.tensix_enable &&
+		    power_state[power_bit_flag_tensix]) {
 			bh_soft_reset_all_tensix();
 			k_usleep(100);
 			reset_hit = true;
 		}
 
 		ret = set_tensix_enable(power_setting->power_flags_bitfield.tensix_enable);
-		tensix_enabled = power_setting->power_flags_bitfield.tensix_enable;
+		power_state[power_bit_flag_tensix] =
+			power_setting->power_flags_bitfield.tensix_enable;
+
 		/*Note, if we're turning on the tensixes, we don't take them out of reset,
 		 *we just lift the clock gating.
 		 */
-		LOG_INF("TENSIX: %u - Reset hit - %u",
-			power_setting->power_flags_bitfield.tensix_enable, reset_hit);
 	}
-
 	if (power_setting->power_flags_valid > power_bit_flag_l2cpu) {
 		ret = bh_set_l2cpu_enable(power_setting->power_flags_bitfield.l2cpu_enable);
-		LOG_INF("L2CPU: %u", power_setting->power_flags_bitfield.l2cpu_enable);
+		power_state[power_bit_flag_l2cpu] =
+			power_setting->power_flags_bitfield.l2cpu_enable;
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
 		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
-		LOG_INF("MRISC: %u", power_setting->power_flags_bitfield.mrisc_phy_power);
+
+		power_state[power_bit_flag_mrisc] =
+			power_setting->power_flags_bitfield.mrisc_phy_power;
 	}
 
 	return ret;
@@ -116,16 +125,10 @@ static uint8_t power_setting_msg_handler(const union request *request, struct re
 	const struct power_setting_rqst *power_setting = &request->power_setting;
 
 	apply_power_settings(power_setting);
+	LOG_INF("Power State: GDDR-%u Tensix-%u AICLK-%u, L2CPU-%u",
+		power_state[power_bit_flag_mrisc], power_state[power_bit_flag_tensix],
+		power_state[power_bit_flag_aiclk], power_state[power_bit_flag_l2cpu]);
 
-	if (power_setting->power_flags_valid > power_bit_flag_max) {
-		LOG_WRN("Host request to apply %u power flags. SMC FW supports only %u",
-			power_setting->power_flags_valid, power_bit_flag_max);
-	}
-
-	if (power_setting->power_settings_valid > power_settings_max) {
-		LOG_WRN("Host request to apply %u power settings. SMC FW supports only %u",
-			power_setting->power_settings_valid, power_settings_max);
-	}
 	return 0;
 }
 
