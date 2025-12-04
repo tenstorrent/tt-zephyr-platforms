@@ -6,15 +6,18 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdint.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/dma.h>
 #include <zephyr/drivers/dma/dma_arc_hs.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/barrier.h>
+#include <zephyr/sys/util.h>
 #include <zephyr/irq.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/arch/arc/v2/aux_regs.h>
+#include <zephyr/arch/common/ffs.h>
 #include <zephyr/sys/__assert.h>
 
 #define DT_DRV_COMPAT snps_designware_dma_arc_hs
@@ -25,10 +28,6 @@
 #define dma_addr_t uint32_t
 #endif
 
-/* ========================================
- * SECTION 1: ARC DMA Auxiliary Register Definitions
- * ========================================
- */
 #define DMA_AUX_BASE           (0xd00)
 #define DMA_C_CTRL_AUX         (0xd00 + 0x0)
 #define DMA_C_CHAN_AUX         (0xd00 + 0x1)
@@ -41,6 +40,7 @@
 #define DMA_C_HANDLE_AUX       (0xd00 + 0x8)
 #define DMA_C_STAT_AUX         (0xd00 + 0xc)
 #define DMA_C_INTSTAT_AUX      (0xd00 + 0xd)
+#define DMA_C_INTSTAT_CLR_AUX  (0xd00 + 0xe)
 /* DMA_C_INTSTAT_AUX bit definitions */
 #define DMA_C_INTSTAT_DONE     (1 << 0) /* D: Transfer complete */
 #define DMA_C_INTSTAT_BUS_ERR  (1 << 1) /* B: Bus error */
@@ -73,10 +73,6 @@
 
 LOG_MODULE_REGISTER(dma_arc, CONFIG_DMA_LOG_LEVEL);
 
-/* ========================================
- * SECTION 2: Data Structures
- * ========================================
- */
 enum arc_dma_channel_state {
 	ARC_DMA_FREE = 0,  /* Channel not allocated */
 	ARC_DMA_IDLE,      /* Allocated but stopped */
@@ -119,10 +115,6 @@ struct arc_dma_data {
 	struct dma_block_config *transfer_blocks;
 };
 
-/* ========================================
- * SECTION 3: Low-Level Hardware Functions
- * ========================================
- */
 static void dma_arc_hs_config_hw(void)
 {
 	uint32_t reg = 0;
@@ -175,11 +167,6 @@ static void dma_arc_hs_clear_done_hw(uint32_t handle)
 			       DMA_ARC_HS_BITMASK(handle));
 }
 
-
-/* ========================================
- * SECTION 4: Zephyr DMA Driver API Implementation
- * ========================================
- */
 static int dma_arc_hs_config(const struct device *dev, uint32_t channel, struct dma_config *config)
 {
 	const struct arc_dma_config *dev_config = dev->config;
@@ -192,6 +179,7 @@ static int dma_arc_hs_config(const struct device *dev, uint32_t channel, struct 
 	}
 
 	__ASSERT(config != NULL, "Invalid config pointer");
+	__ASSERT(dev_config->descriptors <= 32, "Driver supports up to 32 descriptors (1 group)");
 
 	if (config->block_count == 0) {
 		LOG_ERR("block_count must be at least 1");
@@ -632,7 +620,7 @@ int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *
 }
 
 static void dma_arc_hs_process_handle(const struct device *dev, struct arc_dma_data *data,
-				      uint32_t handle, uint32_t *bits_to_clear, uint32_t bit)
+				      uint32_t handle)
 {
 	const struct arc_dma_config *config = dev->config;
 
@@ -644,11 +632,9 @@ static void dma_arc_hs_process_handle(const struct device *dev, struct arc_dma_d
 			continue;
 		}
 
-		*bits_to_clear |= (1U << bit);
 		chan->state = ARC_DMA_IDLE;
 
 		/* Dispatch callback */
-		/* TODO: Implement callback handling using semaphore */
 		if (chan->callback != NULL) {
 			chan->callback(dev, chan->callback_arg, ch, 0);
 		}
@@ -668,60 +654,56 @@ static void dma_arc_hs_process_handle(const struct device *dev, struct arc_dma_d
 
 static void dma_arc_hs_isr(const struct device *dev)
 {
-	const struct arc_dma_config *config = dev->config;
+	_Static_assert(sizeof(unsigned int) <= sizeof(uint32_t),
+		"unsigned int must be <= uint32_t to safely pass as handle");
+
 	struct arc_dma_data *data = dev->data;
-	uint32_t int_status = z_arc_v2_aux_reg_read(DMA_C_INTSTAT_AUX);
+	uint32_t int_status;
+	uint32_t bits_to_clear = 0;
 
-	if (!int_status) {
-		LOG_WRN("DMA interrupt status is 0");
-		return;
-	}
+	while (true) {
+		int_status = z_arc_v2_aux_reg_read(DMA_C_INTSTAT_AUX);
 
-	/* Handle bus error */
-	if (int_status & DMA_C_INTSTAT_BUS_ERR) {
-		LOG_ERR("DMA bus error");
-		/* TODO: Implement error handling - abort active channels */
-	}
-
-	/* Handle overflow */
-	if (int_status & DMA_C_INTSTAT_OVERFLOW) {
-		LOG_ERR("DMA overflow");
-		/* TODO: Implement overflow handling */
-	}
-
-	if (int_status & DMA_C_INTSTAT_DONE) {
-		/* Iterate over all groups */
-		uint32_t num_groups = (config->descriptors + 31) / 32;
-
-		for (uint32_t group = 0; group < num_groups; group++) {
-			uint32_t done_status;
-			uint32_t bits_to_clear = 0;
-
-			done_status = z_arc_v2_aux_reg_read(DMA_S_DONESTATD_AUX(group));
-			if (done_status == 0) {
-				continue;
-			}
-
-			/* Loop over all 32 bits in the group */
-			for (int bit = 0; bit < 32; bit++) {
-				if (!(done_status & (1U << bit))) {
-					continue;
-				}
-
-				uint32_t handle = (group << 5) | bit;
-
-				dma_arc_hs_process_handle(dev, data, handle, &bits_to_clear, bit);
-			}
-
-			/* Clear the bits in the group */
-			if (bits_to_clear != 0) {
-				z_arc_v2_aux_reg_write(DMA_S_DONESTATD_CLR_AUX(group),
-						       bits_to_clear);
-			}
+		if (int_status == 0) {
+			break;
 		}
 
-		/* Clear the done interrupt */
-		z_arc_v2_aux_reg_write(DMA_C_INTSTAT_AUX, DMA_C_INTSTAT_DONE);
+		/* clear the interrupt */
+		z_arc_v2_aux_reg_write(DMA_C_INTSTAT_CLR_AUX, int_status);
+
+		/* Read current done status for group 0 */
+		if ((int_status & DMA_C_INTSTAT_DONE) != 0) {
+			bits_to_clear = z_arc_v2_aux_reg_read(DMA_S_DONESTATD_AUX(0));
+		} else {
+			bits_to_clear = 0;
+		}
+
+		if (bits_to_clear != 0) {
+			/* clear the done status */
+			z_arc_v2_aux_reg_write(DMA_S_DONESTATD_CLR_AUX(0), bits_to_clear);
+		}
+
+		/* Handle bus error */
+		if ((int_status & DMA_C_INTSTAT_BUS_ERR) != 0) {
+			LOG_ERR("DMA bus error");
+			/* TODO: Implement error handling - abort active channels */
+		}
+
+		/* Handle overflow */
+		if ((int_status & DMA_C_INTSTAT_OVERFLOW) != 0) {
+			LOG_ERR("DMA overflow");
+			/* TODO: Implement overflow handling */
+		}
+
+		if (((int_status & DMA_C_INTSTAT_DONE) != 0) && (bits_to_clear != 0)) {
+			/* Process all set bits */
+			while (bits_to_clear != 0) {
+				unsigned int bit = find_lsb_set(bits_to_clear) - 1;
+
+				dma_arc_hs_process_handle(dev, data, bit);
+				bits_to_clear &= ~(1U << bit);
+			}
+		}
 	}
 }
 
@@ -759,7 +741,7 @@ static int dma_arc_hs_init(const struct device *dev)
 	}
 
 	/* CLear all pending DMA done status bits*/
-	uint32_t num_groups = (config->descriptors + 31) / 32;
+	uint32_t num_groups = DIV_ROUND_UP(config->descriptors, 32);
 
 	for (uint32_t group = 0; group < num_groups; group++) {
 		z_arc_v2_aux_reg_write(DMA_S_DONESTATD_CLR_AUX(group), 0xFFFFFFFF);
