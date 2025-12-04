@@ -10,6 +10,7 @@
 #include "regulator_config.h"
 #include "status_reg.h"
 #include "timer.h"
+#include "reg.h"
 
 #include <math.h>  /* for ldexp */
 #include <float.h> /* for FLT_MAX */
@@ -47,6 +48,7 @@
 #define OPERATION_DATA_BYTE_SIZE       1
 #define PMBUS_CMD_BYTE_SIZE            1
 #define PMBUS_FLIP_BYTES               0
+#define CSM_DUMP_START_ADDR 0x100500000
 
 /* VR feedback resistors */
 #define GDDR_VDDR_FB1         0.422
@@ -98,12 +100,16 @@ float GetVcoreCurrent(void)
 
 float GetVcoreCurrentDump(void)
 { //add a loop here
+	WriteReg(0x80030418, 0x3);
 	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
 	uint16_t iout;
 
 	I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
 		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
-	return ConvertLinear11ToFloat(iout);
+	
+	float current = ConvertLinear11ToFloat(iout);
+	WriteReg(0x80030418, current);
+	return current;
 }
 
 /* The function returns the core power in W. */
@@ -381,20 +387,31 @@ static uint8_t switch_vout_control_handler(const union request *request, struct 
 
 static uint8_t get_vcore_current_dump_handler(const union request *request, struct response *response)
 {
+	WriteReg(0x80030418, 0x2);
+	float current = GetVcoreCurrentDump();
+	response->data[1] = *(uint32_t*)&current;
+	return 0;
+
+	//define an array starting at the CSM start address 
+	//do similar stuff for pmbus current dump - line 100
+	//AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
+	/*
 	uint32_t slave_addr = request->data[1];
 
 	switch (slave_addr) {
 	case P0V8_VCORE_ADDR:
-		response->data[1] = get_vcore();
-		return 0;
+		//AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
+
+
+
 	case P0V8_VCOREM_ADDR:
 		response->data[1] = get_vcorem();
 		return 0;
 	default:
 		return 1;
 	}
+	*/
 }
-
 REGISTER_MESSAGE(TT_SMC_MSG_SET_VOLTAGE, set_voltage_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_GET_VOLTAGE, get_voltage_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_SWITCH_VOUT_CONTROL, switch_vout_control_handler);

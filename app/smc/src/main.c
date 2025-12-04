@@ -36,6 +36,7 @@ BUILD_ASSERT(FIXED_PARTITION_EXISTS(cmfw), "cmfw fixed-partition does not exist"
 
 int main(void)
 {
+	WriteReg(0x80030418, 1);
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
 	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
 
