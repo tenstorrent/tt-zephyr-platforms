@@ -112,10 +112,12 @@ static int pcie_nftw_callback(const char *fpath, const struct stat *sb, int type
 
 	/* Only process symbolic links (PCIe devices) */
 	if (typeflag != FTW_SL) {
+		D(2, "Skipping non-symlink %s", fpath);
 		return 0;
 	}
 
-	if (strstr("/sys/bus/pci/devices/", fpath) != fpath) {
+	if (strstr(fpath, "/sys/bus/pci/devices/") != fpath) {
+		D(2, "Skipping non-PCI device %s", fpath);
 		return 0;
 	}
 
@@ -123,6 +125,7 @@ static int pcie_nftw_callback(const char *fpath, const struct stat *sb, int type
 	snprintf(vendor_path, sizeof(vendor_path), "%s/vendor", fpath);
 	ret = pcie_read_unsigned_long_from_file(vendor_path, sizeof(vendor_path), &vid);
 	if (ret != 0) {
+		D(2, "Could not read vendor id from %s", vendor_path);
 		return 0;
 	}
 
@@ -130,6 +133,7 @@ static int pcie_nftw_callback(const char *fpath, const struct stat *sb, int type
 	snprintf(device_path, sizeof(device_path), "%s/device", fpath);
 	ret = pcie_read_unsigned_long_from_file(device_path, sizeof(device_path), &pid);
 	if (ret != 0) {
+		D(2, "Could not read device id from %s", device_path);
 		return 0;
 	}
 
@@ -178,32 +182,64 @@ static int pcie_walk_sysfs(uint16_t match_vid, uint16_t match_pid,
 
 static int pcie_remove_cb(char *path, size_t path_size, void *data)
 {
-	int fd;
 	int ret;
 
 	(void)data;
 
 	strncat(path, "/remove", path_size);
+	if (geteuid() == 0) {
+		/* Root can remove devices without additional permissions */
+		int fd = open(path, O_WRONLY);
 
-	fd = open(path, O_WRONLY);
-	if (fd < 0) {
-		E("Failed to open %s: %s", path, strerror(errno));
-		return -errno;
-	}
+		if (fd < 0) {
+			E("Failed to open %s: %s", path, strerror(errno));
+			return -errno;
+		}
 
-	if (write(fd, "1", 1) < 0) {
-		E("Failed to write to %s: %s", path, strerror(errno));
-		ret = -errno;
+		if (write(fd, "1", 1) < 0) {
+			E("Failed to write to %s: %s", path, strerror(errno));
+			ret = -errno;
+			goto out_root;
+		}
+
+out_root:
+		close(fd);
 		goto out;
 	}
 
-	path[strlen(path) - 7] = '\0';
-	D(1, "Removed PCIe device %s", path);
+	size_t path_len = strlen(path);
+	/* Non-root users can only remove devices with sudo */
+	size_t shift_len = strlen("echo 1 | sudo tee ");
 
-	ret = 1; /* success: count the number of devices removed */
+	if (path_size < path_len + shift_len + 1) {
+		E("Path buffer too small. Have %zu, need %zu", path_size, path_len + shift_len + 1);
+		return -ENOMEM;
+	}
+
+	D(2, "Modifying path '%s' for sudo command", path);
+	memmove(&path[shift_len], path, path_len + 1);
+	strncpy(path, "echo 1 | sudo tee", shift_len);
+
+	D(2, "Running command '%s'", path);
+	ret = system(path);
+	if (ret != 0) {
+		E("Command %s failed: %d", path, ret);
+		ret = errno ? -errno : -EIO;
+	}
+
+	memmove(path, &path[shift_len], path_len);
+	path[path_len] = '\0';
 
 out:
-	close(fd);
+	/* Remove the appended '/remove' string */
+	path[strlen(path) - 7] = '\0';
+
+	if (ret == 0) {
+		D(1, "Removed PCIe device %s", path);
+		ret = 1; /* success: count the number of devices removed */
+	} else {
+		D(1, "Failed to remove PCIe device %s", path);
+	}
 
 	return ret;
 }
@@ -224,26 +260,40 @@ static int pcie_count_cb(char *path, size_t path_size, void *data)
 
 static int pcie_rescan(void)
 {
-	int fd;
 	int ret;
 
-	fd = open("/sys/bus/pci/rescan", O_WRONLY);
-	if (fd < 0) {
-		E("Failed to open %s: %s", "/sys/bus/pci/rescan", strerror(errno));
-		return -errno;
-	}
+	if (geteuid() == 0) {
+		/* Root can rescan devices without additional permissions */
+		int fd = open("/sys/bus/pci/rescan", O_WRONLY);
 
-	if (write(fd, "1", 1) < 0) {
-		E("Failed to write to %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+		if (fd < 0) {
+			E("Failed to open %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+			return -errno;
+		}
+
+		if (write(fd, "1", 1) < 0) {
+			E("Failed to write to %s: %s", "/sys/bus/pci/rescan", strerror(errno));
+			close(fd);
+			return -errno;
+		}
+
 		close(fd);
-		return -errno;
-	}
+	} else {
+		/* Non-root users can rescan devices with sudo (or via ioctl) */
+		static const char *cmd = "echo 1 | sudo tee /sys/bus/pci/rescan";
 
-	close(fd);
+		D(2, "Running command '%s'", cmd);
+		ret = system(cmd);
+		if (ret != 0) {
+			E("Command '%s' failed: %d", cmd, ret);
+			ret = errno ? -errno : -EIO;
+			return ret;
+		}
+	}
 
 	ret = pcie_walk_sysfs(TENSTORRENT_PCI_VENDOR_ID, 0xffff, pcie_count_cb, NULL);
 
-	if (ret >= 0) {
+	if (ret > 0) {
 		D(1, "Found %d Tenstorrent PCIe devices", ret);
 	}
 
@@ -294,5 +344,5 @@ static int pcie_rescan_sysfs(void)
 int rescan_pcie(const char *tt_dev_name)
 {
 	/* Try rescan via IOCTL, and fall back to sysfs if that fails */
-	return pcie_rescan_ioctl(tt_dev_name) || pcie_rescan_sysfs();
+	return (pcie_rescan_ioctl(tt_dev_name) > 0) || pcie_rescan_sysfs();
 }

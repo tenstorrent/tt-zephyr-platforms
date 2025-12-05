@@ -21,7 +21,6 @@ DEFAULT_CFG = (
 )
 
 TT_CONSOLE_SEARCH_DIRS = [
-    Path("/opt/tenstorrent/bin"),
     Path(__file__).parents[0] / "tooling",
 ]
 DEFAULT_SEARCH_BASE = 0x10000000
