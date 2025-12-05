@@ -1,3 +1,11 @@
+# v19.3.1
+
+## What's Changed
+
+### Bug Fixes
+
+* Reverted MRISC version due to regression on Blackhole Galaxy.
+
 # v19.3.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.3.0 🥳🎉.
