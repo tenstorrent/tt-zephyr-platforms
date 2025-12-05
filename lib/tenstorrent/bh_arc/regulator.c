@@ -48,7 +48,7 @@
 #define OPERATION_DATA_BYTE_SIZE       1
 #define PMBUS_CMD_BYTE_SIZE            1
 #define PMBUS_FLIP_BYTES               0
-#define CSM_DUMP_START_ADDR 0x100500000
+#define CSM_DUMP_START_ADDR 0x10050000
 
 /* VR feedback resistors */
 #define GDDR_VDDR_FB1         0.422
@@ -107,8 +107,14 @@ float GetVcoreCurrentDump(void)
 	I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
 		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
 	
+	volatile uint16_t * const csm_addr = (volatile uint16_t *)CSM_DUMP_START_ADDR;
+	*csm_addr = iout;
+
 	float current = ConvertLinear11ToFloat(iout);
-	WriteReg(0x80030418, current);
+
+	uint32_t current_bits_reinterpret = *(uint32_t*)&current;
+	WriteReg(0x80030418, current_bits_reinterpret);
+
 	return current;
 }
 
@@ -387,7 +393,7 @@ static uint8_t switch_vout_control_handler(const union request *request, struct 
 
 static uint8_t get_vcore_current_dump_handler(const union request *request, struct response *response)
 {
-	WriteReg(0x80030418, 0x2);
+	//WriteReg(0x80030418, 0x2);
 	float current = GetVcoreCurrentDump();
 	response->data[1] = *(uint32_t*)&current;
 	return 0;
