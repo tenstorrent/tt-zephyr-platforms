@@ -5,6 +5,15 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
+      - collab*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -68,9 +77,16 @@ jobs:
           source .env/bin/activate
           pip install tt-flash==3.4.7
           tt-flash $HOME/fw_pack-*.fwbundle --force
+      - name: Set test name
+        run: |
+          if [[ "${{ matrix.config.name }}" == *"p300"* ]]; then
+            echo "CONTAINER_TEST=blackhole_p300" >> $GITHUB_ENV
+          else
+            echo "CONTAINER_TEST=blackhole" >> $GITHUB_ENV
+          fi
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh $CONTAINER_TEST"
       - name: cleanup
         if: ${{ always() }}
         run: |
