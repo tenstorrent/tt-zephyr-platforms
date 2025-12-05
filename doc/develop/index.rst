@@ -8,3 +8,4 @@ Firmware Development
 
    getting_started/index.rst
    testing/index.rst
+   guides/index.rst
