@@ -40,7 +40,7 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
 
 	if (k_uptime_delta(&reftime) >= max_staleness) {
 #ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-		struct sensor_value avg_tmp;
+		q31_t avg_tmp;
 		const struct sensor_decoder_api *decoder;
 
 		sensor_get_decoder(pvt, &decoder);
@@ -57,7 +57,7 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
 		internal_data.vcore_power =
 			internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
 #ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-		internal_data.asic_temperature = sensor_value_to_float(&avg_tmp);
+		internal_data.asic_temperature = Q31_TO_TEMP(avg_tmp);
 #endif
 
 		/* reftime was updated to the current uptime by the k_uptime_delta() call */

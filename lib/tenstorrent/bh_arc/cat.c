@@ -169,7 +169,7 @@ static float CalibrateCAT(void)
 	float ts_temp = 0;
 
 #ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-	struct sensor_value avg_tmp;
+	q31_t avg_tmp;
 	const struct sensor_decoder_api *decoder;
 
 	sensor_get_decoder(pvt, &decoder);
@@ -178,7 +178,7 @@ static float CalibrateCAT(void)
 	decoder->decode(cat_ts_avg_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0},
 			NULL, 1, &avg_tmp);
 
-	ts_temp = sensor_value_to_float(&avg_tmp);
+	ts_temp = Q31_TO_TEMP(avg_tmp);
 #endif
 
 	float catmon_error = catmon_temp - ts_temp;
