@@ -39,11 +39,17 @@ void lock_down_for_reset(void)
 	/* (and the I2C code it relies on). */
 }
 
+/** @brief Handles the request to change ASIC state
+ * @param[in] request The request, of type @ref asic_state_rqst, with command code
+ *	@ref TT_SMC_MSG_ASIC_STATE0 or @ref TT_SMC_MSG_ASIC_STATE3
+ * @param[out] response The response to the host
+ * @return 0 for success
+ */
 static uint8_t asic_state_handler(const union request *request, struct response *response)
 {
-	if (request->command_code == TT_SMC_MSG_ASIC_STATE0) {
+	if (request->asic_state.command_code == TT_SMC_MSG_ASIC_STATE0) {
 		enter_state0();
-	} else if (request->command_code == TT_SMC_MSG_ASIC_STATE3) {
+	} else if (request->asic_state.command_code == TT_SMC_MSG_ASIC_STATE3) {
 		enter_state3();
 	}
 	return 0;

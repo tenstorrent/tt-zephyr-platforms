@@ -86,9 +86,11 @@ enum tt_smc_msg {
 	TT_SMC_MSG_PCIE_ERROR_CNT_RESET = 0x9D,
 	/** @brief Trigger IRQ request (not supported) */
 	TT_SMC_MSG_TRIGGER_IRQ = 0x9F,
+	/** @brief @ref asic_state_rqst "ASIC State 0 (A0State) request" */
 	TT_SMC_MSG_ASIC_STATE0 = 0xA0,
 	/** @brief ASIC state 1 request (not supported) */
 	TT_SMC_MSG_ASIC_STATE1 = 0xA1,
+	/** @brief @ref asic_state_rqst "ASIC State 3 (A3State) request" */
 	TT_SMC_MSG_ASIC_STATE3 = 0xA3,
 	/** @brief ASIC state 5 request (not supported) */
 	TT_SMC_MSG_ASIC_STATE5 = 0xA5,
