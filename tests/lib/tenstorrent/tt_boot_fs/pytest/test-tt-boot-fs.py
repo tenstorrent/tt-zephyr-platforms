@@ -395,8 +395,8 @@ def test_tt_boot_fs_gen_yaml(tmp_path: Path):
     Expects build/tt_boot_fs.yaml to already exist from sysbuild.
     """
 
-    # Fetch expected YAML from v18.7 on GitHub
-    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/heads/v18.7-branch/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
+    # Fetch expected YAML from v18.7.0 tag on GitHub
+    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/tags/v18.7.0/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
     response = requests.get(expected_yaml_raw)
     response.raise_for_status()
     expected_yaml = yaml.safe_load(response.text)
