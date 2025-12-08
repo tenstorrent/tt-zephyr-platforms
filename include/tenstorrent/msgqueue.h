@@ -331,6 +331,18 @@ struct test_rqst {
 	uint32_t test_value;
 };
 
+/** @brief Host request to change ASIC state
+ * @details Messages of this type are processed by @ref asic_state_handler.
+ */
+struct asic_state_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_ASIC_STATE0 or @ref
+	 * TT_SMC_MSG_ASIC_STATE3
+	 * @details TT_SMC_MSG_ASIC_STATE0 transitions to @ref A0State.
+	 *          TT_SMC_MSG_ASIC_STATE3 transitions to @ref A3State.
+	 */
+	uint8_t command_code;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -385,6 +397,9 @@ union request {
 
 	/** @brief A test request */
 	struct test_rqst test;
+
+	/** @brief An ASIC state transition request */
+	struct asic_state_rqst asic_state;
 };
 
 /** @} */
