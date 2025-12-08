@@ -191,6 +191,20 @@
 	};
 };
 
+&gpiof {
+	i2c0-bus-switch-enable {
+		gpio-hog;
+		gpios = <8 GPIO_ACTIVE_LOW>;
+		output-low;
+	};
+
+	i2c1-bus-switch-enable {
+		gpio-hog;
+		gpios = <7 GPIO_ACTIVE_LOW>;
+		output-low;
+	};
+};
+
 /*
  * Chip 0
  * nss: PA4 CS (spi1_nss_pa4)
