@@ -102,17 +102,22 @@ struct arc_dma_config {
 	uint32_t max_block_size;
 	bool coherency_support;
 	uint32_t buffer_address_alignment;
+	bool interrupts_available;
 	void (*irq_config)(void);
 };
 
 /* We'll define per-instance data structures with the actual channel count */
 struct arc_dma_data {
 	struct dma_context dma_ctx;
-	struct arc_dma_channel *channels; /* Will point to instance-specific array */
+	/* Array of channels - will point to instance-specific array */
+	struct arc_dma_channel *channels;
 	atomic_t channels_atomic[ARC_DMA_ATOMIC_WORDS];
 	struct k_spinlock lock;
 	/* Static block array for splitting large transfers - sized by max descriptors */
 	struct dma_block_config *transfer_blocks;
+	/* Polling support - only used when interrupts are not available */
+	struct k_work_delayable completion_work;
+	const struct device *dev;
 };
 
 static void dma_arc_hs_config_hw(void)
@@ -166,6 +171,17 @@ static void dma_arc_hs_clear_done_hw(uint32_t handle)
 	z_arc_v2_aux_reg_write(DMA_S_DONESTATD_CLR_AUX(DMA_ARC_HS_GET_GROUP(handle)),
 			       DMA_ARC_HS_BITMASK(handle));
 }
+
+#if !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts)
+static uint32_t dma_arc_hs_get_done_hw(uint32_t handle)
+{
+	uint32_t volatile state =
+		(z_arc_v2_aux_reg_read(DMA_S_DONESTATD_AUX(DMA_ARC_HS_GET_GROUP(handle) & 0x7))) >>
+		DMA_ARC_HS_GET_BIT_POS(handle);
+
+	return state & 0x1;
+}
+#endif /* !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts) */
 
 static int dma_arc_hs_config(const struct device *dev, uint32_t channel, struct dma_config *config)
 {
@@ -239,15 +255,15 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 	struct dma_block_config *block;
 	uint32_t attr;
 	uint32_t block_idx = 0;
-	k_spinlock_key_t key, hw_key;
 	uint32_t current_channel = channel;
+	k_spinlock_key_t data_key, hw_key;
 
 	if (channel >= dev_config->channels) {
 		LOG_ERR("Invalid channel %u", channel);
 		return -EINVAL;
 	}
 
-	key = k_spin_lock(&data->lock);
+	data_key = k_spin_lock(&data->lock);
 
 	/* Mark all channels in the linking chain as PREPARED, similar to dma_emul */
 	while (true) {
@@ -255,7 +271,7 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 
 		if (chan->state == ARC_DMA_FREE) {
 			LOG_ERR("Channel %u not allocated", current_channel);
-			k_spin_unlock(&data->lock, key);
+			k_spin_unlock(&data->lock, data_key);
 			return -EINVAL;
 		}
 
@@ -274,18 +290,23 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 
 	if (chan->state == ARC_DMA_ACTIVE) {
 		LOG_WRN("Channel %u already active", current_channel);
-		k_spin_unlock(&data->lock, key);
+		k_spin_unlock(&data->lock, data_key);
 		return 0;
 	}
 
 	block = chan->config.head_block;
 	if (!block) {
 		LOG_ERR("No block configuration for channel %u", current_channel);
-		k_spin_unlock(&data->lock, key);
+		k_spin_unlock(&data->lock, data_key);
 		return -EINVAL;
 	}
 
-	attr = ARC_DMA_INT_EN_ATTR | ARC_DMA_NP_ATTR;
+	/* Select attribute based on interrupt availability */
+	if (dev_config->interrupts_available) {
+		attr = ARC_DMA_INT_EN_ATTR | ARC_DMA_NP_ATTR;
+	} else {
+		attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
+	}
 
 	/* Lock hardware access for this channel */
 	hw_key = k_spin_lock(&chan->hw_lock);
@@ -323,8 +344,12 @@ static int dma_arc_hs_start(const struct device *dev, uint32_t channel)
 		chan->handle, chan->block_count);
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
+	k_spin_unlock(&data->lock, data_key);
 
-	k_spin_unlock(&data->lock, key);
+	/* Schedule completion work for polling mode if interrupts are not available */
+	if (!dev_config->interrupts_available) {
+		k_work_schedule(&data->completion_work, K_MSEC(1));
+	}
 
 	LOG_DBG("Started DMA transfer on channel %u, handle %u", current_channel, chan->handle);
 	return 0;
@@ -335,35 +360,34 @@ static int dma_arc_hs_stop(const struct device *dev, uint32_t channel)
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
 	struct arc_dma_channel *chan;
-	k_spinlock_key_t key, hw_key;
+	k_spinlock_key_t data_key, hw_key;
 
 	if (channel >= dev_config->channels) {
 		LOG_ERR("Invalid channel %u", channel);
 		return -EINVAL;
 	}
 
-	key = k_spin_lock(&data->lock);
+	data_key = k_spin_lock(&data->lock);
 	chan = &data->channels[channel];
 
 	if (chan->state == ARC_DMA_FREE) {
 		LOG_ERR("Channel %u not allocated", channel);
-		k_spin_unlock(&data->lock, key);
+		k_spin_unlock(&data->lock, data_key);
 		return -EINVAL;
 	}
 
 	if (chan->state != ARC_DMA_ACTIVE) {
-		k_spin_unlock(&data->lock, key);
+		k_spin_unlock(&data->lock, data_key);
 		return 0;
 	}
 
 	/* Lock hardware access for this channel */
 	hw_key = k_spin_lock(&chan->hw_lock);
-
 	chan->state = ARC_DMA_IDLE;
 	dma_arc_hs_clear_done_hw(chan->handle);
 
 	k_spin_unlock(&chan->hw_lock, hw_key);
-	k_spin_unlock(&data->lock, key);
+	k_spin_unlock(&data->lock, data_key);
 
 	LOG_DBG("Stopped DMA transfer on channel %u", channel);
 	return 0;
@@ -402,17 +426,17 @@ static void dma_arc_hs_trigger_linked_channel(const struct device *dev, struct a
 					      struct arc_dma_channel *triggering_chan,
 					      uint32_t linked_ch_id)
 {
-	k_spinlock_key_t key;
+	k_spinlock_key_t data_key, linked_hw_key;
 	struct arc_dma_channel *linked_chan;
 
 	LOG_DBG("Channel linking: trying to trigger channel %u", linked_ch_id);
 
 	/* Re-acquire global lock only to safely read the linked channel state */
-	key = k_spin_lock(&data->lock);
+	data_key = k_spin_lock(&data->lock);
 	linked_chan = &data->channels[linked_ch_id];
 
 	if (linked_chan->state != ARC_DMA_PREPARED) {
-		k_spin_unlock(&data->lock, key);
+		k_spin_unlock(&data->lock, data_key);
 		LOG_WRN("Linked channel %u not ready (state=%d)", linked_ch_id, linked_chan->state);
 		return;
 	}
@@ -423,15 +447,22 @@ static void dma_arc_hs_trigger_linked_channel(const struct device *dev, struct a
 	dma_addr_t src_addr = block->source_address;
 	dma_addr_t dst_addr = block->dest_address;
 
-	k_spin_unlock(&data->lock, key);
+	k_spin_unlock(&data->lock, data_key);
 
 	/* Now safely start the linked transfer under its own hw_lock */
-	k_spinlock_key_t linked_hw_key = k_spin_lock(&linked_chan->hw_lock);
+	linked_hw_key = k_spin_lock(&linked_chan->hw_lock);
 
 	size_t transfer_size =
 		dma_arc_hs_calc_linked_transfer_size(triggering_chan, block, burst_len);
+	const struct arc_dma_config *dev_config = dev->config;
+	uint32_t attr;
 
-	uint32_t attr = ARC_DMA_INT_EN_ATTR | ARC_DMA_NP_ATTR;
+	/* Select attribute based on interrupt availability */
+	if (dev_config->interrupts_available) {
+		attr = ARC_DMA_INT_EN_ATTR | ARC_DMA_NP_ATTR;
+	} else {
+		attr = ARC_DMA_SET_DONE_ATTR | ARC_DMA_NP_ATTR;
+	}
 
 	dma_arc_hs_start_hw(linked_ch_id, (const void *)src_addr, (void *)(uintptr_t)dst_addr,
 			    transfer_size, attr);
@@ -445,44 +476,117 @@ static void dma_arc_hs_trigger_linked_channel(const struct device *dev, struct a
 	k_spin_unlock(&linked_chan->hw_lock, linked_hw_key);
 }
 
+#if !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts)
+static int dma_arc_hs_status_poll(const struct device *dev, struct arc_dma_channel *chan,
+				  struct dma_status *stat)
+{
+	struct arc_dma_data *data = dev->data;
+	k_spinlock_key_t data_key, hw_key;
+
+	data_key = k_spin_lock(&data->lock);
+	uint32_t channel = chan - data->channels;
+
+	hw_key = k_spin_lock(&chan->hw_lock);
+	uint32_t done_status = dma_arc_hs_get_done_hw(chan->handle);
+
+	if (done_status == 0) {
+		/* Transfer still in progress */
+		stat->busy = true;
+		if (chan->config.head_block) {
+			stat->pending_length = chan->config.head_block->block_size;
+		}
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&data->lock, data_key);
+	} else {
+		/* Capture values while holding lock */
+		dma_callback_t callback = chan->callback;
+		const struct arc_dma_config *dev_config = dev->config;
+		void *callback_arg = chan->callback_arg;
+		uint32_t linked_ch = chan->config.linked_channel;
+		bool trigger_linked = (chan->config.source_chaining_en != 0U) ||
+				      (chan->config.dest_chaining_en != 0U);
+
+		/* Transfer completed - update state and call callbacks */
+		LOG_DBG("Channel %u transfer completed", channel);
+		dma_arc_hs_clear_done_hw(chan->handle);
+		chan->state = ARC_DMA_IDLE;
+
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		k_spin_unlock(&data->lock, data_key);
+		/* hw_lock released – safe to call user callback */
+
+		if (callback != NULL) {
+			callback(dev, callback_arg, channel, 0);
+		}
+
+		/* Trigger linked channel if channel linking is enabled */
+		if (trigger_linked && linked_ch < dev_config->channels) {
+			dma_arc_hs_trigger_linked_channel(dev, data, chan, linked_ch);
+		}
+		stat->busy = false;
+	}
+	return 0;
+}
+#else
+static int dma_arc_hs_status_poll(const struct device *dev, struct arc_dma_channel *chan,
+				  struct dma_status *stat)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(chan);
+	ARG_UNUSED(stat);
+	return 0;
+}
+#endif
+
 static int dma_arc_hs_get_status(const struct device *dev, uint32_t channel,
 				 struct dma_status *stat)
 {
 	const struct arc_dma_config *dev_config = dev->config;
 	struct arc_dma_data *data = dev->data;
 	struct arc_dma_channel *chan;
-	k_spinlock_key_t key;
+	k_spinlock_key_t data_key;
 
-	if (channel >= dev_config->channels) {
+	/* Validate inputs */
+	if (channel >= dev_config->channels || !stat) {
 		return -EINVAL;
 	}
 
-	if (!stat) {
-		return -EINVAL;
-	}
-
-	key = k_spin_lock(&data->lock);
-	chan = &data->channels[channel];
-
-	if (chan->state == ARC_DMA_FREE) {
-		k_spin_unlock(&data->lock, key);
-		return -EINVAL;
-	}
-
+	/* Initialize status structure */
 	stat->pending_length = 0;
 	stat->dir = MEMORY_TO_MEMORY;
 	stat->busy = false;
 
-	if (chan->state == ARC_DMA_ACTIVE) {
+	data_key = k_spin_lock(&data->lock);
+	chan = &data->channels[channel];
+
+	/* Check if channel is allocated */
+	if (chan->state == ARC_DMA_FREE) {
+		k_spin_unlock(&data->lock, data_key);
+		return -EINVAL;
+	}
+
+	/* Check if the channel is active */
+	if (chan->state != ARC_DMA_ACTIVE) {
+		k_spin_unlock(&data->lock, data_key);
+		return 0;
+	}
+
+	/*
+	 * Interrupt Mode: Simple busy check.
+	 * The interrupt handler will manage state changes and callbacks.
+	 */
+	if (dev_config->interrupts_available) {
 		stat->busy = true;
 		if (chan->config.head_block) {
 			stat->pending_length = chan->config.head_block->block_size;
 		}
+		k_spin_unlock(&data->lock, data_key);
+		return 0;
 	}
 
-	k_spin_unlock(&data->lock, key);
-
-	return 0;
+	/* Poll the status of the channel */
+	k_spin_unlock(&data->lock, data_key);
+	return dma_arc_hs_status_poll(dev, chan, stat);
 }
 
 static int dma_arc_hs_get_attribute(const struct device *dev, uint32_t type, uint32_t *value)
@@ -619,6 +723,103 @@ int dma_arc_hs_transfer(const struct device *dev, uint32_t channel, const void *
 	return -ETIMEDOUT;
 }
 
+#if !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts)
+static void dma_arc_hs_check_completion(const struct device *dev, uint32_t channel)
+{
+	struct arc_dma_data *data = dev->data;
+	const struct arc_dma_config *dev_config = dev->config;
+	struct arc_dma_channel *chan;
+	uint32_t handle;
+	void *callback_arg;
+	bool trigger_linked = false;
+	uint32_t linked_ch = 0U;
+	dma_callback_t callback;
+	k_spinlock_key_t data_key, hw_key;
+
+	data_key = k_spin_lock(&data->lock);
+	chan = &data->channels[channel];
+
+	if (chan->state != ARC_DMA_ACTIVE) {
+		k_spin_unlock(&data->lock, data_key);
+		return;
+	}
+
+	/* Copy the minimal state we need for the rest of the function */
+	handle = chan->handle;
+	callback = chan->callback;
+	callback_arg = chan->callback_arg;
+
+	if ((chan->config.source_chaining_en != 0U) || (chan->config.dest_chaining_en != 0U)) {
+		trigger_linked = true;
+		linked_ch = chan->config.linked_channel;
+	}
+
+	k_spin_unlock(&data->lock, data_key);
+
+	/* Lock hardware access for this channel */
+	hw_key = k_spin_lock(&chan->hw_lock);
+
+	/* Re-check state after acquiring hw_lock in case channel was stopped concurrently */
+	if (chan->state != ARC_DMA_ACTIVE) {
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		return;
+	}
+
+	/* Check hardware status directly */
+	uint32_t done_status = dma_arc_hs_get_done_hw(handle);
+
+	if (done_status == 0) {
+		/* Transfer still running */
+		k_spin_unlock(&chan->hw_lock, hw_key);
+		return;
+	}
+
+	/* Transfer really finished */
+	LOG_DBG("Channel %u transfer completed (handle 0x%x)", channel, handle);
+	dma_arc_hs_clear_done_hw(handle);
+	chan->state = ARC_DMA_IDLE;
+
+	k_spin_unlock(&chan->hw_lock, hw_key);
+
+	/* chan->hw_lock released – safe to call user callback */
+	if (callback) {
+		callback(dev, callback_arg, channel, 0);
+	}
+
+	/* Trigger linked channel if channel linking is enabled */
+	if (trigger_linked && linked_ch < dev_config->channels) {
+		dma_arc_hs_trigger_linked_channel(dev, data, chan, linked_ch);
+	}
+}
+
+static void dma_arc_hs_completion_work_handler(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct arc_dma_data *data = CONTAINER_OF(dwork, struct arc_dma_data, completion_work);
+	const struct device *dev = data->dev;
+	const struct arc_dma_config *config = dev->config;
+	bool any_active = false;
+	int i;
+
+	/* Check all channels for completion */
+	for (i = 0; i < config->channels; i++) {
+		if (data->channels[i].state == ARC_DMA_ACTIVE) {
+			any_active = true;
+			dma_arc_hs_check_completion(dev, i);
+		}
+	}
+
+	/* Reschedule work if there are still active transfers */
+	if (any_active) {
+		/* Poll every 1ms when transfers are active */
+		k_work_schedule(&data->completion_work, K_MSEC(1));
+	} else {
+		LOG_DBG("No active transfers, work handler idle");
+	}
+}
+#endif /* !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts) */
+
+#if DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts)
 static void dma_arc_hs_process_handle(const struct device *dev, struct arc_dma_data *data,
 				      uint32_t handle)
 {
@@ -655,7 +856,7 @@ static void dma_arc_hs_process_handle(const struct device *dev, struct arc_dma_d
 static void dma_arc_hs_isr(const struct device *dev)
 {
 	_Static_assert(sizeof(unsigned int) <= sizeof(uint32_t),
-		"unsigned int must be <= uint32_t to safely pass as handle");
+		       "unsigned int must be <= uint32_t to safely pass as handle");
 
 	struct arc_dma_data *data = dev->data;
 	uint32_t int_status;
@@ -706,6 +907,7 @@ static void dma_arc_hs_isr(const struct device *dev)
 		}
 	}
 }
+#endif /* DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts) */
 
 static const struct dma_driver_api dma_arc_hs_api = {
 	.config = dma_arc_hs_config,
@@ -758,8 +960,18 @@ static int dma_arc_hs_init(const struct device *dev)
 		dma_arc_hs_init_channel_hw(i, 0, config->descriptors - 1);
 	}
 
-	/* Configure and enable interrupt */
-	config->irq_config();
+	/* Configure and enable interrupt if available */
+	if (config->interrupts_available) {
+		config->irq_config();
+	}
+#if !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts)
+	if (!config->interrupts_available) {
+		/* Initialize polling work for non-interrupt mode */
+		data->dev = dev;
+		k_work_init_delayable(&data->completion_work, dma_arc_hs_completion_work_handler);
+		LOG_DBG("ARC DMA initialized in polling mode (no interrupts)");
+	}
+#endif /* !DT_ALL_INST_HAS_PROP_STATUS_OKAY(interrupts) */
 
 	LOG_DBG("ARC DMA initialized successfully");
 	return 0;
@@ -775,7 +987,9 @@ static int dma_arc_hs_init(const struct device *dev)
 	))
 
 #define ARC_DMA_INIT(inst)                                                                         \
-	static void arc_dma_irq_config_##inst(void);                                               \
+	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
+		static void arc_dma_irq_config_##inst(void); \
+	))                                    \
                                                                                                    \
 	static const struct arc_dma_config arc_dma_config_##inst = {                               \
 		.base = DMA_AUX_BASE, /*not in addressable memory*/                                \
@@ -787,8 +1001,10 @@ static int dma_arc_hs_init(const struct device *dev)
 		.max_block_size = DT_INST_PROP(inst, dma_max_block_size),                          \
 		.coherency_support = DT_INST_PROP(inst, coherency_support),                        \
 		.buffer_address_alignment = DT_INST_PROP(inst, buffer_address_alignment),          \
-		.irq_config = arc_dma_irq_config_##inst,                                           \
-	};                                                                                         \
+		.interrupts_available = DT_INST_NODE_HAS_PROP(inst, interrupts),                   \
+		IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
+			.irq_config = arc_dma_irq_config_##inst, \
+		)) };      \
                                                                                                    \
 	/* Allocate only the needed number of channels */                                          \
 	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];   \
@@ -803,10 +1019,12 @@ static int dma_arc_hs_init(const struct device *dev)
 			      &arc_dma_config_##inst, POST_KERNEL, CONFIG_DMA_INIT_PRIORITY,       \
 			      &dma_arc_hs_api);                                                    \
                                                                                                    \
-	static void arc_dma_irq_config_##inst(void)                                                \
-	{                                                                                          \
-		LISTIFY(DT_NUM_IRQS(DT_DRV_INST(inst)),                                            \
-			CONFIGURE_ARC_DMA_IRQ, (), inst);             \
-	}
+	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
+		static void arc_dma_irq_config_##inst(void)                                        \
+		{                                                                                  \
+			LISTIFY(DT_NUM_IRQS(DT_DRV_INST(inst)),                                    \
+				CONFIGURE_ARC_DMA_IRQ, (), inst); \
+		} \
+	))
 
 DT_INST_FOREACH_STATUS_OKAY(ARC_DMA_INIT)
