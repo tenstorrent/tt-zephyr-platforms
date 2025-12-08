@@ -16,11 +16,19 @@ tests:
       - "EXTRA_CONF_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
          tt_bh_noc.conf"
-  drivers.dma.scatter_gather.arc_hs:
+  drivers.dma.scatter_gather.arc_hs.interrupts:
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
          arc_hs.overlay"
+      - "EXTRA_CONF_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
+         arc_hs.conf"
+  drivers.dma.scatter_gather.arc_hs.polling:
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
+         arc_hs_polling.overlay"
       - "EXTRA_CONF_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/dma/scatter_gather/\
          arc_hs.conf"
