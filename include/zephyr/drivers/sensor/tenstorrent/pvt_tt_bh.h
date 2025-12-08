@@ -9,6 +9,19 @@
 
 #include <zephyr/drivers/sensor.h>
 
+#define FLOAT_TO_Q31(value, min_val, range)                                                        \
+	((q31_t)(((value) - (min_val)) * (2147483647.0f / (range))))
+
+#define Q31_TO_FLOAT(q31, min_val, range) ((min_val) + (q31) * ((range) / 2147483647.0f))
+
+#define TEMP_TO_Q31(t) FLOAT_TO_Q31(t, 40.0f, 40.0f)
+#define FREQ_TO_Q31(f) FLOAT_TO_Q31(f, 100.0f, 140.0f)
+#define VOLT_TO_Q31(v) FLOAT_TO_Q31(v, 0.0f, 1.0f)
+
+#define Q31_TO_TEMP(q) Q31_TO_FLOAT(q, 40.0f, 40.0f)
+#define Q31_TO_FREQ(q) Q31_TO_FLOAT(q, 100.0f, 140.0f)
+#define Q31_TO_VOLT(q) Q31_TO_FLOAT(q, 0.0f, 1.0f)
+
 enum pvt_tt_bh_attribute {
 	SENSOR_ATTR_PVT_TT_BH_NUM_PD = SENSOR_ATTR_PRIV_START,
 	SENSOR_ATTR_PVT_TT_BH_NUM_VM,
@@ -83,34 +96,14 @@ struct pvt_tt_bh_rtio_data {
 float pvt_tt_bh_raw_to_temp(uint16_t raw);
 
 /*
- * Convert celcius into raw temperature sensor data.
- */
-uint16_t pvt_tt_bh_temp_to_raw(const struct sensor_value *value);
-
-/*
  * Convert raw voltage monitor data to volts.
  */
 float pvt_tt_bh_raw_to_volt(uint16_t raw);
 
 /*
- * Convert voltage insto raw voltage monitor data;
- */
-uint16_t pvt_tt_bh_volt_to_raw(const struct sensor_value *value);
-
-/*
  * Convert raw process detector data to MHz.
  */
 float pvt_tt_bh_raw_to_freq(uint16_t raw);
-
-/*
- * Convert frequency into raw process detector data.
- */
-uint16_t pvt_tt_bh_freq_to_raw(const struct sensor_value *value);
-
-/*
- * Represent float data as two integers in struct sensor_value.
- */
-void pvt_tt_bh_float_to_sensor_value(float data, struct sensor_value *val);
 
 int pvt_tt_bh_get_decoder(const struct device *dev, const struct sensor_decoder_api **api);
 
