@@ -4,6 +4,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# GitHub Actions send SIGTERM to the runner process on job cancellation. If the process does not
+# exit within TimeoutStopSec (which is 5 minutes, by default), it will be sent SIGKILL. This can
+# be inferred by examining the GitHub Actions systemd unit.
+#
+# $ grep "SIG\|Timeout" /etc/systemd/system/actions.runner*.service
+# KillSignal=SIGTERM
+# TimeoutStopSec=5min
+#
+# It is impossible to catch SIGKILL (signal 9). However, we can catch SIGTERM (signal 15).
+#
+# If we do not catch and ignore this signal, then the recovery process may be interrupted leaving
+# the device in an unrecovered state. Recovery must complete within 5 minutes after receiving
+# SIGTERM. Currently, it only takes a few minutes to recover.
+SIGTERM_handler() {
+    echo "Ignoring caught SIGTERM to ensure smooth recovery..."
+}
+trap SIGTERM_handler SIGTERM
+
 IMAGE_URL="ghcr.io/tenstorrent/tt-zephyr-platforms/recovery-image"
 IMAGE_TAG=${IMAGE_TAG:-"v18.12.0-rc1"}
 if [[ -n $BOARD_SERIAL ]]; then
