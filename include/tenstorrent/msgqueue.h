@@ -314,7 +314,7 @@ struct led_blink_rqst {
 	uint8_t pad[3];
 
 	/** @brief Whether led should be blinking or not */
-	uint8_t is_blinking : 1;
+	uint8_t is_blinking: 1;
 };
 
 /** @brief Host request for test message
