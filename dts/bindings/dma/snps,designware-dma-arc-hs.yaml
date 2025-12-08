@@ -4,6 +4,11 @@
 description: |
   Synopsys Designware ARC DMA Controller
 
+  The driver supports both interrupt-driven and polling modes. When interrupts
+  are provided in the device tree, the driver uses interrupt mode for better
+  performance. When interrupts are not provided, the driver automatically
+  falls back to polling mode using a work queue mechanism.
+
 compatible: "snps,designware-dma-arc-hs"
 
 include: [dma-controller.yaml, base.yaml]
@@ -11,6 +16,11 @@ include: [dma-controller.yaml, base.yaml]
 properties:
   "#dma-cells":
     const: 1
+
+  interrupts:
+    description: |
+      Optional interrupt for DMA transfer completion notifications.
+      If not provided, the driver will operate in polling mode.
 
   dma-channels:
     type: int
