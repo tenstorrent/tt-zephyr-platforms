@@ -133,3 +133,11 @@ patches:
     comments: |
       Make data alignment configurable in dma driver tests and change
       alias from dma0 to tst_dma0.
+  - path: zephyr/sensor-data-types.patch
+    sha256sum: 5d76fc9b40261f8f0e7aae11fd198ae97e7ea67500b600afa4753364028c99bc
+    module: zephyr
+    author: Alex Apostolu
+    email: aapostolu@tenstorrent.com
+    date: 2025-12-07
+    comments: |
+      Add frequency to sensor q31 type.
