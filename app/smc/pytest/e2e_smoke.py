@@ -263,7 +263,7 @@ def upgrade_from_version_test(
                 [
                     "west",
                     "flash",
-                    "--skip-rebuild",
+                    "--no-rebuild",
                     "-d",
                     str(
                         unlaunched_dut.device_config.app_build_dir.parent

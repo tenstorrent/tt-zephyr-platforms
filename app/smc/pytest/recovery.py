@@ -84,7 +84,7 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
         "--runner",
         "tt_flash",
         "--force",
-        "--skip-rebuild",
+        "--no-rebuild",
         "--file",
         str(build_dir / "tt_boot_fs_patched.bundle"),
     ]
@@ -101,7 +101,7 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
         "--runner",
         "tt_flash",
         "--force",
-        "--skip-rebuild",
+        "--no-rebuild",
     ]
     unlaunched_dut._flash_and_run()
     time.sleep(1)
