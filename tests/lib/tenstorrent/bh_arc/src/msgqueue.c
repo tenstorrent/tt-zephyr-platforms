@@ -382,4 +382,27 @@ ZTEST(msgqueue, test_msg_type_test)
 	zexpect_equal(rsp.data[1], 43); /* test_value + 1 */
 }
 
+ZTEST(msgqueue, test_msg_type_asic_state)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.data[0] = TT_SMC_MSG_ASIC_STATE3;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(get_asic_state(), A3State);
+
+	/* Test ASIC_STATE0 to return to state 0 */
+	req.data[0] = TT_SMC_MSG_ASIC_STATE0;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zexpect_equal(rsp.data[0], 0);
+	zexpect_equal(get_asic_state(), A0State);
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
