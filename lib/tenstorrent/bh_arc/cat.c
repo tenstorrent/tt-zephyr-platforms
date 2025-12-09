@@ -46,17 +46,11 @@ typedef union {
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-
-static const struct device *const pvt = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pvt));
-
-SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
-
-RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
-
+static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 static uint8_t cat_ts_avg_buf[sizeof(struct sensor_value)];
 
-#endif
+SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
+RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
 
 #endif /* CONFIG_TT_SMC_RECOVERY */
 
@@ -168,7 +162,6 @@ static float CalibrateCAT(void)
 	float catmon_temp = TrimCodeToTemp(code);
 	float ts_temp = 0;
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
 	q31_t avg_tmp;
 	const struct sensor_decoder_api *decoder;
 
@@ -179,7 +172,6 @@ static float CalibrateCAT(void)
 			NULL, 1, &avg_tmp);
 
 	ts_temp = Q31_TO_TEMP(avg_tmp);
-#endif
 
 	float catmon_error = catmon_temp - ts_temp;
 
