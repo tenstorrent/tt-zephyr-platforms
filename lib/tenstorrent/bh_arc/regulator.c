@@ -48,7 +48,10 @@
 #define OPERATION_DATA_BYTE_SIZE       1
 #define PMBUS_CMD_BYTE_SIZE            1
 #define PMBUS_FLIP_BYTES               0
-#define CSM_DUMP_START_ADDR 0x10050000
+#define CSM_DUMP_START_ADDR 0x10030000
+#define CSM_DUMP_END_ADDR   0x1007FFFF
+#define CSM_DUMP_SIZE       (CSM_DUMP_END_ADDR - CSM_DUMP_START_ADDR + 1)  // 327,680 bytes
+#define MAX_SAMPLES         (CSM_DUMP_SIZE / sizeof(uint16_t))             // 163,840 samples
 
 /* VR feedback resistors */
 #define GDDR_VDDR_FB1         0.422
@@ -103,12 +106,14 @@ float GetVcoreCurrentDump(void)
 	WriteReg(0x80030418, 0x3);
 	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
 	uint16_t iout;
-
-	I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
-		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
-	
 	volatile uint16_t * const csm_addr = (volatile uint16_t *)CSM_DUMP_START_ADDR;
-	*csm_addr = iout;
+	for (int i = 0; i < MAX_SAMPLES - 10 ; i++) {
+
+		I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
+		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
+
+		*(csm_addr + i) = iout;
+	}
 
 	float current = ConvertLinear11ToFloat(iout);
 
