@@ -354,7 +354,7 @@ def test_power_virus(arc_chip_dut, asic_id):
     # Run tt-burnin for 180s and read_ts at the same time
     logger.info("Starting tt-burnin process for power virus test")
     burnin_process = subprocess.Popen(
-        ["tt-burnin"],
+        ["tt-burnin", "--no-reset"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
