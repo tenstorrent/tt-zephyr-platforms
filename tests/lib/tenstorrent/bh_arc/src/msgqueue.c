@@ -166,6 +166,86 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 		      CLOCK_CONTROL_STATUS_OFF);
 }
 
+ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* LSB to MSB:
+	 * 0x21: TT_SMC_MSG_POWER_SETTING
+	 * 0x01: 1 power flags valid,  power settings valid
+	 * 0x0000: max_ai_clk off or 0x0001: max_ai_clk on
+	 */
+	static const uint32_t on_power_cmd = 0x00010121;
+	static const uint32_t off_power_cmd = 0x00000121;
+
+	req.data[0] = off_power_cmd;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
+
+	zexpect_equal(rsp.data[0], 0x0);
+
+	/* Go busy should set targ to max */
+	req.data[0] = TT_SMC_MSG_AICLK_GO_BUSY;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
+
+	/*
+	 * Because we got GO_BUSY, AICLK should remain at FMax after aiclk off POWER_SETTING
+	 */
+	req.data[0] = off_power_cmd;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
+
+	/*
+	 * Send POWER_SETTING with AICLK high
+	 */
+
+	req.data[0] = on_power_cmd;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
+
+	/*
+	 * Send GO_LONG_IDLE. We should remain at FMax because POWER_SETTING was set high
+	 */
+	req.data[0] = TT_SMC_MSG_AICLK_GO_LONG_IDLE;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
+
+	/*
+	 * Send POWER_SETTING with AICLK low. Now we should go to Fmin
+	 */
+
+	req.data[0] = off_power_cmd;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
+
+}
+
 ZTEST(msgqueue, test_msg_type_set_voltage)
 {
 	union request req = {0};
