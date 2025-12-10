@@ -180,21 +180,25 @@ void InitArbMaxVoltage(void)
 
 static int InitAiclkPPM(void)
 {
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		return 0;
 	}
 
 	/* Initialize some AICLK tracking variables */
-
 	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 			       &aiclk_ppm.boot_freq);
+
 	aiclk_ppm.curr_freq = aiclk_ppm.boot_freq;
 	aiclk_ppm.targ_freq = aiclk_ppm.curr_freq;
 
-	aiclk_ppm.fmax = CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmax,
-			       AICLK_FMAX_MIN, AICLK_FMAX_MAX);
-	aiclk_ppm.fmin = CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmin,
-			       AICLK_FMIN_MIN, AICLK_FMIN_MAX);
+	if (IS_ENABLED(CONFIG_ARC)) {
+		aiclk_ppm.fmax =
+			CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmax,
+			      AICLK_FMAX_MIN, AICLK_FMAX_MAX);
+		aiclk_ppm.fmin =
+			CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.asic_fmin,
+			      AICLK_FMIN_MIN, AICLK_FMIN_MAX);
+	}
 
 	/* disable forcing of AICLK */
 	aiclk_ppm.forced_freq = 0;
