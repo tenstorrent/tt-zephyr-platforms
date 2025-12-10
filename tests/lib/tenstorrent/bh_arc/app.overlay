@@ -5,7 +5,13 @@
 		flash-dev = <&flashcontroller0>;
 	};
 
-pll4: pll4
+	pll0: pll0
+	{
+		compatible = "tenstorrent,clock-control-emul";
+		status = "okay";
+	};
+
+	pll4: pll4
 	{
 		compatible = "tenstorrent,clock-control-emul";
 		status = "okay";
