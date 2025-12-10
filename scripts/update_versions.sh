@@ -34,10 +34,6 @@ while [[ "$CURRENT" != "/" ]]; do
     CURRENT="$(dirname "$CURRENT")"
 done
 
-echo "Project root: $PROJECT_ROOT"
-echo "Mode       : $MODE"
-echo
-
 ROOT_VERSION="$PROJECT_ROOT/VERSION"
 SMC_VERSION="$PROJECT_ROOT/app/smc/VERSION"
 DMC_VERSION="$PROJECT_ROOT/app/dmc/VERSION"
@@ -90,14 +86,8 @@ update_file() {
     fi
 
     # EXTRAVERSION line
-    if grep -q "^EXTRAVERSION" "$file"; then
-        sed -i.bak "s/^EXTRAVERSION *=.*/EXTRAVERSION = $new_extra/" "$file"
-        rm -f "${file}.bak"
-    elif [[ -n "$new_extra" ]]; then
-        echo "EXTRAVERSION = $new_extra" >> "$file"
-    else
-        echo "EXTRAVERSION =" >> "$file"
-    fi
+    sed -i.bak "s/^EXTRAVERSION[[:space:]]*=.*/EXTRAVERSION =${new_extra:+ $new_extra}/" "$file"
+    rm -f "${file}.bak"
 
     local ver="$major.$new_minor.$new_patch"
     [[ -n "$new_extra" ]] && ver+="-$new_extra"
@@ -115,23 +105,19 @@ do_commit() {
         post-release) msg="final release $ver" ;;
     esac
 
-    (cd "$PROJECT_ROOT" && git commit -m "${prefix}version: $msg
+    (cd "$PROJECT_ROOT" && git commit -sm "${prefix}version: $msg
 
-${prefix}Version now $ver")
+Bump version to $ver")
 }
+
+new_smc=$(update_file "$SMC_VERSION" "SMC")
+do_commit "$SMC_VERSION" "$new_smc" "app: smc: "
+
+new_dmc=$(update_file "$DMC_VERSION" "DMC")
+do_commit "$DMC_VERSION" "$new_dmc" "app: dmc: "
 
 new_ver=$(update_file "$ROOT_VERSION" "root")
 do_commit "$ROOT_VERSION" "$new_ver" ""
-
-[[ -f "$SMC_VERSION" ]] && {
-    new_smc=$(update_file "$SMC_VERSION" "SMC")
-    do_commit "$SMC_VERSION" "$new_smc" "app: smc: "
-} || new_smc="(skipped)"
-
-[[ -f "$DMC_VERSION" ]] && {
-    new_dmc=$(update_file "$DMC_VERSION" "DMC")
-    do_commit "$DMC_VERSION" "$new_dmc" "app: dmc: "
-} || new_dmc="(skipped)"
 
 echo
 echo "All done!"
