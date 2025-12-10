@@ -31,6 +31,17 @@ static uint8_t i2c_write_buf_idx;
 static uint32_t clock_wave_value;
 static uint32_t noc_2_axi_last_write;
 
+union request req = {0};
+struct response rsp = {0};
+
+static void push_msg_success(void)
+{
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+	zexpect_equal(rsp.data[0], 0);
+}
+
 static uint32_t ReadReg_msgqueue_fake(uint32_t addr)
 {
 	/* IC_STATUS; Fake out TX_FIFO to say empty and not full Fake out RX_FIFO to say not empty.
@@ -86,15 +97,10 @@ static uint8_t msgqueue_handler_73(const union request *req, struct response *rs
 
 ZTEST(msgqueue, test_msgqueue_register_handler)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	msgqueue_register_handler(0x73, msgqueue_handler_73);
 
 	req.data[0] = 0x73737373;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	zassert_equal(rsp.data[1], 0x73737373);
 }
@@ -102,8 +108,6 @@ ZTEST(msgqueue, test_msgqueue_register_handler)
 ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 {
 	const struct device *pll4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
-	union request req = {0};
-	struct response rsp = {0};
 
 	/* LSB to MSB:
 	 * 0x21: TT_SMC_MSG_POWER_SETTING
@@ -111,9 +115,7 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 	 * 0x0003: max_ai_clk on, mrisc power on, tensix power off, l2cpu off
 	 */
 	req.data[0] = 0x00030421;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
@@ -141,14 +143,10 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 	 * 0x0000: max_ai_clk off, mrisc power off, tensix power off, l2cpu off
 	 */
 	req.data[0] = 0x00000421;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
-
-	zexpect_equal(rsp.data[0], 0x0);
 
 	/* Validate that status of emulated L2CPUCLKs are disabled */
 	zexpect_true(device_is_ready(pll4));
@@ -168,9 +166,6 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 
 ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* LSB to MSB:
 	 * 0x21: TT_SMC_MSG_POWER_SETTING
 	 * 0x01: 1 power flags valid,  power settings valid
@@ -180,20 +175,14 @@ ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 	static const uint32_t off_power_cmd = 0x00000121;
 
 	req.data[0] = off_power_cmd;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
 
-	zexpect_equal(rsp.data[0], 0x0);
-
 	/* Go busy should set targ to max */
 	req.data[0] = TT_SMC_MSG_AICLK_GO_BUSY;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
@@ -202,9 +191,7 @@ ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 	 * Because we got GO_BUSY, AICLK should remain at FMax after aiclk off POWER_SETTING
 	 */
 	req.data[0] = off_power_cmd;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
@@ -214,9 +201,7 @@ ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 	 */
 
 	req.data[0] = on_power_cmd;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
@@ -225,9 +210,7 @@ ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 	 * Send GO_LONG_IDLE. We should remain at FMax because POWER_SETTING was set high
 	 */
 	req.data[0] = TT_SMC_MSG_AICLK_GO_LONG_IDLE;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
@@ -237,28 +220,19 @@ ZTEST(msgqueue, test_msgqueue_power_settings_with_go_busy)
 	 */
 
 	req.data[0] = off_power_cmd;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	CalculateTargAiclk();
 	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
-
 }
 
 ZTEST(msgqueue, test_msg_type_set_voltage)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.data[0] = TT_SMC_MSG_SET_VOLTAGE;
 	req.data[1] = 0x64; /* regulator id */
 	req.data[2] = 800;  /* voltage in mV */
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zexpect_equal(rsp.data[0], 0);
 	zexpect_equal(i2c_write_buf_emul[0], 33); /*VOUT_COMMAND*/
 
 	uint32_t received_voltage;
@@ -270,9 +244,6 @@ ZTEST(msgqueue, test_msg_type_set_voltage)
 
 ZTEST(msgqueue, test_msg_type_get_voltage)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/*Setup the simulated voltage for the i2c read*/
 	uint32_t simulated_voltage_mv = 950;
 
@@ -280,27 +251,18 @@ ZTEST(msgqueue, test_msg_type_get_voltage)
 
 	req.data[0] = TT_SMC_MSG_GET_VOLTAGE;
 	req.data[1] = 0x64; /* regulator id */
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zexpect_equal(rsp.data[0], 0);
 	zexpect_equal(rsp.data[1], simulated_voltage_mv / 2);
 }
 
 ZTEST(msgqueue, test_msg_type_switch_vout_control)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.data[0] = TT_SMC_MSG_SWITCH_VOUT_CONTROL;
 	req.data[1] = 0x01; /* regulator id */
 	req.data[2] = 1;    /* enable */
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zexpect_equal(rsp.data[0], 0);
 	zexpect_equal(i2c_write_buf_emul[0], 1); /*OPERATION command, for readback*/
 
 	zexpect_equal(i2c_write_buf_emul[2], 1);    /*OPERATION command, writ*/
@@ -309,35 +271,23 @@ ZTEST(msgqueue, test_msg_type_switch_vout_control)
 
 ZTEST(msgqueue, test_msg_type_switch_clk_scheme)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* Reset timer counter and set up the fake */
 	timer_counter = 0;
 
 	req.data[0] = TT_SMC_MSG_SWITCH_CLK_SCHEME;
 	req.data[1] = TT_CLK_SCHEME_CLOCK_WAVE;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zassert_equal(rsp.data[0], 0);
 	zassert_equal(clock_wave_value, 2U);
 
 	req.data[1] = TT_CLK_SCHEME_ZERO_SKEW;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zassert_equal(rsp.data[0], 0);
 	zassert_equal(clock_wave_value, 1U);
 }
 
 ZTEST(msgqueue, test_msg_type_debug_noc_translation)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.data[0] = TT_SMC_MSG_DEBUG_NOC_TRANSLATION | (BIT(0) << 8U) /* Enable translation*/
 		      | (BIT(1) << 8U)                                  /* PCIE Instance  = 1*/
 		      | (BIT(2) << 8U)                                  /*PCIE instance override*/
@@ -352,11 +302,7 @@ ZTEST(msgqueue, test_msg_type_debug_noc_translation)
 
 	req.data[1] = NO_BAD_GDDR | ((BIT(1) | BIT(3)) << 8U) /*skip eth 1 and 3*/;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zassert_equal(rsp.data[0], 0); /*OK*/
+	push_msg_success();
 }
 
 static void test_setup(void *ctx)
@@ -374,26 +320,16 @@ static void test_setup(void *ctx)
 
 ZTEST(msgqueue, test_msg_type_send_pcie_msi)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	noc_2_axi_last_write = 0xffffffffU;
 	req.data[0] = TT_SMC_MSG_SEND_PCIE_MSI | (BIT(0) << 8U) /*PCIe instance 1*/;
 	req.data[1] = 0x00; /* MSI number */
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
-	zexpect_equal(rsp.data[0], 0);
 	zexpect_equal(noc_2_axi_last_write, 0);
 
 	req.data[1] = 0x01; /* MSI number */
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zexpect_equal(rsp.data[0], 0);
+	push_msg_success();
 	zexpect_equal(noc_2_axi_last_write, 1);
 }
 
@@ -419,9 +355,6 @@ ZTEST(msgqueue, test_msg_type_i2c_message_bad_line_id)
 
 ZTEST(msgqueue, test_msg_type_i2c_message)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	i2c_read_buf_emul[0] = 0x1U;
 	i2c_read_buf_emul[1] = 0x2U;
 	i2c_read_buf_emul[2] = 0x3U;
@@ -438,11 +371,8 @@ ZTEST(msgqueue, test_msg_type_i2c_message)
 
 	req.data[1] = 4Ul;         /*Read 4 bytes*/
 	req.data[2] = 0xDDCCBBAAU; /*Write data*/
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
 
-	zexpect_equal(rsp.data[0], 0);
+	push_msg_success();
 	zexpect_equal(rsp.data[1], 0x04030201);
 
 	zexpect_equal(i2c_write_buf_emul[0], 0xaa);
@@ -453,8 +383,6 @@ ZTEST(msgqueue, test_msg_type_i2c_message)
 
 ZTEST(msgqueue, test_msg_type_blink_led)
 {
-	union request req = {0};
-	struct response rsp = {0};
 	uint8_t request_data[6];
 	uint8_t request_size = sizeof(request_data);
 	cm2dmMessage *msg;
@@ -463,11 +391,7 @@ ZTEST(msgqueue, test_msg_type_blink_led)
 	req.data[0] = TT_SMC_MSG_BLINKY;
 	req.data[1] = 0x1;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zassert_equal(rsp.data[0], 0);
+	push_msg_success();
 	zassert_equal(rsp.data[1], 0);
 
 	PostCm2DmMsg(kCm2DmMsgIdLedBlink, 1);
@@ -483,16 +407,10 @@ ZTEST(msgqueue, test_msg_type_blink_led)
 
 ZTEST(msgqueue, test_msg_type_test)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.data[0] = TT_SMC_MSG_TEST;
 	req.data[1] = 42; /* test_value to be incremented */
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
 
-	zexpect_equal(rsp.data[0], 0);
+	push_msg_success();
 	zexpect_equal(rsp.data[1], 43); /* test_value + 1 */
 }
 
