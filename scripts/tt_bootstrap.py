@@ -44,6 +44,7 @@ TT_Z_P_ROOT = Path(__file__).parents[1]
 try:
     from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
+    from pyocd.flash.eraser import FlashEraser
 except ImportError:
     print("Required module 'pyocd' not found. Please run 'pip install pyocd'.")
     sys.exit(1)
@@ -75,6 +76,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         asic_id,
         adapter_id,
         no_prompt,
+        erase,
     ):
         super().__init__(cfg)
         self.build_dir = Path(cfg.build_dir)
@@ -83,6 +85,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         self.board_name = board_name
         self.adapter_id = adapter_id
         self.no_prompt = no_prompt
+        self.erase = erase
         self.pyocd_path = (
             Path(__file__).parent / "tooling/blackhole_recovery/data/bh_flm"
         )
@@ -133,7 +136,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
 
     @classmethod
     def capabilities(cls):
-        return RunnerCaps(commands={"flash"}, file=True)
+        return RunnerCaps(commands={"flash"}, file=True, erase=True)
 
     @classmethod
     def do_add_parser(cls, parser):
@@ -176,6 +179,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             args.asic_id,
             args.adapter_id,
             args.no_prompt,
+            args.erase,
         )
 
     def parse_bin(self, bin_file, asic_id):
@@ -394,6 +398,12 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
                 self.logger.info("Writing data to SPI flash")
                 temp_file.write(flash_op.data)
                 temp_file.close()
+                if self.erase:
+                    self.logger.debug("Erasing flash")
+                    # Erase first 64 MB of flash, so we don't erase DMC flash
+                    FlashEraser(session, FlashEraser.Mode.SECTOR).erase(
+                        ["0x0+0x4000000"]
+                    )
                 # Use the FileProgrammer to write the data
                 self.logger.debug(f"Programming from {temp_file_name}")
                 FileProgrammer(session).program(str(temp_file_name))
