@@ -24,23 +24,26 @@ Tagging
 
 .. note::
 
-    This section uses a fake release version, ``v1.2.3``, or ``v1.2.3-rc1`` as an example. Replace with
-    the appropriate release candidate or final release version.
+    This section uses an script to generate commits. Always check that the commits are correct.
 
 .. important::
 
     Any changes to ``app/*/VERSION`` files is required to take place prior to the release process.
 
-1. Update the version variables in the bundle version file ``VERSION`` file located in the root of
-   the Git repository to match the version for this release. The ``EXTRAVERSION`` variable is used
-   to identify release candidates. It is left empty for final releases.
+1. Run ``scripts/update_versions.sh rc`` to increment the minor version of the FW, SMC and DMC,
+   and to set ``EXTRAVERSION = rc1``. Major version bumps or RC2 candidates must be done manually.
+
+   Below is an example of how each ``VERSION`` file should look after the script ran.
 
    .. code-block:: shell
 
+       VERSION_MAJOR = 19
+       VERSION_MINOR = 4
+       PATCHLEVEL =
+       VERSION_TWEAK = 0
        EXTRAVERSION = rc1
 
-2. Post a PR with the updated ``VERSION`` file using ``release: 1.2.3-rc1`` or ``release: 1.2.3``
-   as the commit subject. Merge the PR after CI is successful.
+2. Post a PR with the updated ``VERSION`` files and merge after CI is successful.
 
 3. Tag and push the version, using an annotated tag:
 
@@ -65,12 +68,18 @@ Tagging
 
 Lastly, for final releases,
 
-6. Find the generated
+6. Run ``scripts/update_versions.sh pre-release`` to set ``EXTRAVERSION`` back to blank. Post a PR
+   and merge after CI is successful.
+
+7. Find the generated
    `draft release <https://github.com/tenstorrent/tt-zephyr-platforms/releases>`_, edit the release
    notes, and publish the release. It is recommended to copy the contents of
    ``doc/release/release-notes-1.2.3.md`` into the release-notes area.
 
-7. Announce the release via official Tenstorrent channels and provide a link to the
+8. Run ``scripts/update_versions.sh post-release`` to set ``PATCHLEVEL`` back to ``99``. Post a PR
+   and merge after CI is successful.
+
+9. Announce the release via official Tenstorrent channels and provide a link to the
    GitHub release page.
 
 Publishing a Combined Firmware Bundle to ``tt-firmware``
