@@ -67,13 +67,18 @@ int32_t bh_set_l2cpu_enable(bool enable)
 	return ret;
 }
 
+bool bh_get_aiclk_busy(void)
+{
+	return power_state[power_bit_flag_aiclk];
+}
+
 static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
 	int32_t ret = 0;
 
 	if (power_setting->power_flags_valid > power_bit_flag_aiclk) {
-		aiclk_set_busy(power_setting->power_flags_bitfield.max_ai_clk);
 		power_state[power_bit_flag_aiclk] = power_setting->power_flags_bitfield.max_ai_clk;
+		aiclk_update_busy();
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_tensix) {
