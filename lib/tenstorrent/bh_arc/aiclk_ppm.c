@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 
+#include <tenstorrent/bh_power.h>
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
 #include <tenstorrent/sys_init_defines.h>
@@ -62,6 +63,8 @@ static AiclkPPM aiclk_ppm = {
 };
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
+
+static bool last_msg_busy;
 
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq)
 {
@@ -250,9 +253,9 @@ uint32_t GetAiclkFmax(void)
 	return aiclk_ppm.fmax;
 }
 
-void aiclk_set_busy(bool is_busy)
+void aiclk_update_busy(void)
 {
-	if (is_busy) {
+	if (last_msg_busy || bh_get_aiclk_busy()) {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmax);
 	} else {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
@@ -267,7 +270,8 @@ void aiclk_set_busy(bool is_busy)
  */
 static uint8_t aiclk_busy_handler(const union request *request, struct response *response)
 {
-	aiclk_set_busy(request->aiclk_set_speed.command_code == TT_SMC_MSG_AICLK_GO_BUSY);
+	last_msg_busy = (request->aiclk_set_speed.command_code == TT_SMC_MSG_AICLK_GO_BUSY);
+	aiclk_update_busy();
 	return 0;
 }
 

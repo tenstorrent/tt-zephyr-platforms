@@ -29,7 +29,7 @@ typedef enum {
 	kAiclkArbMinCount,
 } AiclkArbMin;
 
-void aiclk_set_busy(bool is_busy);
+void aiclk_update_busy(void);
 void SetAiclkArbMax(AiclkArbMax arb_max, float freq);
 void SetAiclkArbMin(AiclkArbMin arb_min, float freq);
 void EnableArbMax(AiclkArbMax arb_max, bool enable);
