@@ -14,6 +14,7 @@
 #include "clock_wave.h"
 #include "cm2dm_msg.h"
 #include "noc_init.h"
+#include "aiclk_ppm.h"
 
 #include "reg_mock.h"
 
@@ -114,20 +115,53 @@ ZTEST(msgqueue, test_msgqueue_power_settings_cmd)
 	process_message_queues();
 	msgqueue_response_pop(0, &rsp);
 
-	zassert_equal(rsp.data[0], 0x0);
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmax());
+
+	zexpect_equal(rsp.data[0], 0x0);
 
 	/* Validate that status of emulated L2CPUCLKs are disabled */
-	zassert_true(device_is_ready(pll4));
-	zassert_equal(clock_control_get_status(
+	zexpect_true(device_is_ready(pll4));
+	zexpect_equal(clock_control_get_status(
 			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0),
 		      CLOCK_CONTROL_STATUS_OFF);
-	zassert_equal(clock_control_get_status(
+	zexpect_equal(clock_control_get_status(
 			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1),
 		      CLOCK_CONTROL_STATUS_OFF);
-	zassert_equal(clock_control_get_status(
+	zexpect_equal(clock_control_get_status(
 			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2),
 		      CLOCK_CONTROL_STATUS_OFF);
-	zassert_equal(clock_control_get_status(
+	zexpect_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3),
+		      CLOCK_CONTROL_STATUS_OFF);
+
+	/* LSB to MSB:
+	 * 0x21: TT_SMC_MSG_POWER_SETTING
+	 * 0x04: 4 power flags valid, 0 power settings valid
+	 * 0x0000: max_ai_clk off, mrisc power off, tensix power off, l2cpu off
+	 */
+	req.data[0] = 0x00000421;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	CalculateTargAiclk();
+	zexpect_equal(GetAiclkTarg(), GetAiclkFmin());
+
+	zexpect_equal(rsp.data[0], 0x0);
+
+	/* Validate that status of emulated L2CPUCLKs are disabled */
+	zexpect_true(device_is_ready(pll4));
+	zexpect_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_0),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zexpect_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_1),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zexpect_equal(clock_control_get_status(
+			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_2),
+		      CLOCK_CONTROL_STATUS_OFF);
+	zexpect_equal(clock_control_get_status(
 			      pll4, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_L2CPUCLK_3),
 		      CLOCK_CONTROL_STATUS_OFF);
 }
