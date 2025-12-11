@@ -549,27 +549,17 @@ def arc_watchdog_test(asic_id):
         # does not currently have specific exception types
         logger.error("DMC reset too early, ARC should still be online")
         return False
-    # Delay 600 more ms. Make sure the ARC has been reset.
-    time.sleep(0.6)
+    # TODO: this delay should not need to be this long. The watchdog should
+    # fire shortly after 1000 ms (and we have already delayed 500 ms by this point).
+    # However, in practice there is variability in the time it takes the DMC to
+    # service the watchdog on P300 systems.
+    time.sleep(1.0)
     # Delete arc chip object, to make sure pyluwen drops open file descriptors
     del arc_chip
     try:
         arc_chip = pyluwen.detect_chips()[asic_id]
-        hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
-        # If the ARC chip was reset, the hang program counter should have been set
-        if hang_pc == 0:
-            logger.warning(
-                "ARC did not reset, waiting 10 additional seconds to see if ARC core resets"
-            )
-            del arc_chip
-            time.sleep(10)
-            rescan_pcie()
-            arc_chip = pyluwen.detect_chips()[asic_id]
-            hang_pc = arc_chip.axi_read32(ARC_HANG_PC_REG_ADDR)
-            del arc_chip
-            if hang_pc == 0:
-                logger.error("ARC core was not reset after ten seconds")
-                return False
+        logger.error("ARC core was not reset by watchdog")
+        return False
     except Exception:
         # We expect an exception here since the ARC should be resetting
         pass
