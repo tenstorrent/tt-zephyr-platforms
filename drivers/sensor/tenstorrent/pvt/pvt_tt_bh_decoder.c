@@ -115,7 +115,7 @@ void pvt_tt_bh_float_to_sensor_value(float data, struct sensor_value *val)
 static int pvt_tt_bh_decode_sample(const uint8_t *buf, struct sensor_chan_spec chan_spec,
 				   uint32_t *fit, uint16_t max_count, void *data_out)
 {
-	struct sensor_value *out = data_out;
+	q31_t *out = data_out;
 	const struct pvt_tt_bh_rtio_data *data;
 	float data_converted = 0;
 
@@ -129,15 +129,18 @@ static int pvt_tt_bh_decode_sample(const uint8_t *buf, struct sensor_chan_spec c
 		switch (chan_spec.chan_type) {
 		case SENSOR_CHAN_PVT_TT_BH_PD: {
 			data_converted = pvt_tt_bh_raw_to_freq(data->raw);
+			*out = FREQ_TO_Q31(data_converted);
 			break;
 		}
 		case SENSOR_CHAN_PVT_TT_BH_VM: {
 			data_converted = pvt_tt_bh_raw_to_volt(data->raw);
+			*out = VOLT_TO_Q31(data_converted);
 			break;
 		}
 		case SENSOR_CHAN_PVT_TT_BH_TS:
 		case SENSOR_CHAN_PVT_TT_BH_TS_AVG: {
 			data_converted = pvt_tt_bh_raw_to_temp(data->raw);
+			*out = TEMP_TO_Q31(data_converted);
 			break;
 		}
 		default:
@@ -147,7 +150,6 @@ static int pvt_tt_bh_decode_sample(const uint8_t *buf, struct sensor_chan_spec c
 		break;
 	}
 
-	pvt_tt_bh_float_to_sensor_value(data_converted, out);
 	return 0;
 }
 

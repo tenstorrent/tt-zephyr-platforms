@@ -276,7 +276,7 @@ static ReadStatus read_pd(uint32_t id, uint32_t delay_chain, uint16_t *data)
 				  PVT_CNTL_PD_00_SDIF_DATA_REG_ADDR);
 }
 
-static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
+static void pvt_tt_bh_submit_sample(const struct device *dev, struct rtio_iodev_sqe *iodev_sqe)
 {
 	const struct sensor_read_config *sensor_cfg =
 		(const struct sensor_read_config *)iodev_sqe->sqe.iodev->data;
@@ -285,7 +285,6 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 	uint32_t buf_len;
 	int ret;
 
-	/* Get RTIO output buffer. */
 	ret = rtio_sqe_rx_buf(iodev_sqe, min_buffer_len, min_buffer_len, &buf, &buf_len);
 	if (ret != 0) {
 		LOG_ERR("Failed to get a read buffer of size %u bytes", min_buffer_len);
@@ -293,7 +292,6 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 		return;
 	}
 
-	/* struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf; */
 	struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf;
 	ReadStatus status;
 
@@ -354,7 +352,7 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 	rtio_iodev_sqe_ok(iodev_sqe, 0);
 }
 
-void pvt_tt_bh_submit(const struct device *sensor, struct rtio_iodev_sqe *sqe)
+void pvt_tt_bh_submit(const struct device *dev, struct rtio_iodev_sqe *sqe)
 {
 	const struct rtio_sqe *event = &sqe->sqe;
 
@@ -370,9 +368,7 @@ void pvt_tt_bh_submit(const struct device *sensor, struct rtio_iodev_sqe *sqe)
 		return;
 	}
 
-	struct rtio_work_req *req = rtio_work_req_alloc();
-
-	rtio_work_req_submit(req, sqe, pvt_tt_bh_submit_sample);
+	pvt_tt_bh_submit_sample(dev, sqe);
 }
 
 void pvt_tt_bh_delay_chain_set(uint32_t new_delay_chain_)

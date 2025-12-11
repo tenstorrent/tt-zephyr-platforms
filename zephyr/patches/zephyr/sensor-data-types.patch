@@ -1,0 +1,12 @@
+diff --git a/include/zephyr/drivers/sensor_data_types.h b/include/zephyr/drivers/sensor_data_types.h
+index 4e84a8a0303..1356cb2a9c0 100644
+--- a/include/zephyr/drivers/sensor_data_types.h
++++ b/include/zephyr/drivers/sensor_data_types.h
+@@ -143,6 +143,7 @@ struct sensor_q31_data {
+ 			q31_t angle;           /**< Unit: degrees */
+ 			q31_t electric_charge; /**< Unit: mAh */
+ 			q31_t humidity;        /**< Unit: RH */
++			q31_t frequency;       /**< Unit: MHz */
+ 		};
+ 	} readings[1];
+ };
