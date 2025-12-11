@@ -24,6 +24,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/kernel.h>
 
 #define LINEAR_FORMAT_CONSTANT (1 << 9)
 #define SCALE_LOOP             0.335f
@@ -103,22 +104,31 @@ float GetVcoreCurrent(void)
 
 float GetVcoreCurrentDump(void)
 { //add a loop here
-	WriteReg(0x80030418, 0x3);
+	//WriteReg(0x80030418, 0x3);
 	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
 	uint16_t iout;
 	volatile uint16_t * const csm_addr = (volatile uint16_t *)CSM_DUMP_START_ADDR;
-	for (int i = 0; i < MAX_SAMPLES - 10 ; i++) {
-
+	uint32_t start_cycles = k_cycle_get_32();
+	for (int i = 0; i < 800; i++) {
 		I2CReadBytes(PMBUS_MST_ID, READ_IOUT, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&iout,
 		     READ_IOUT_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);
 
 		*(csm_addr + i) = iout;
 	}
+	uint32_t end_cycles = k_cycle_get_32();
+	uint32_t cycle_diff = end_cycles - start_cycles;
+	uint64_t ns = k_cyc_to_ns_floor64(cycle_diff);
 
 	float current = ConvertLinear11ToFloat(iout);
 
-	uint32_t current_bits_reinterpret = *(uint32_t*)&current;
-	WriteReg(0x80030418, current_bits_reinterpret);
+	//uint32_t current_bits_reinterpret = *(uint32_t*)&current;
+	//WriteReg(0x80030418, current_bits_reinterpret);
+	//WriteReg(0x80030418, ns);
+	WriteReg(0x80030414, cycle_diff);         // ns[31:0]  - Lower 32 bits
+    //WriteReg(0x80030418, start_cycles); // ns[63:32] - Upper 32 bits
+	//WriteReg(0x8003041C, cycle_diff);
+	WriteReg(0x80030418, (uint32_t)(ns & 0xFFFFFFFF));         // ns[31:0]  - Lower 32 bits
+    WriteReg(0x8003041C, (uint32_t)((ns >> 32) & 0xFFFFFFFF)); // ns[63:32] - Upper 32 bits
 
 	return current;
 }
