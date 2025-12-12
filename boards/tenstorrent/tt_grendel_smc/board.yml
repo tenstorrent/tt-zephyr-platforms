@@ -1,0 +1,6 @@
+board:
+  name: tt_grendel_smc
+  full_name: Tenstorrent Grendel System Management Controller
+  vendor: tenstorrent
+  socs:
+    - name: tt_grendel_smc

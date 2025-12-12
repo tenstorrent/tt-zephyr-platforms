@@ -1,0 +1,17 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+CONFIG_CONSOLE=y
+CONFIG_SERIAL=n
+CONFIG_TENSTORRENT_VIRT_CONSOLE=y
+CONFIG_XIP=n
+# Reduce system clock ticks and hardware cycles, as SMC simulation is slow
+# and we don't want to waste simulation time waiting for kernel timeouts.
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=50
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=500
+# Disable printing the default Zephyr boot banner
+CONFIG_BOOT_BANNER=n
+# Print the Tenstorrent boot banner + git version on startup
+CONFIG_TT_BOOT_BANNER=y
+CONFIG_TT_BOOT_BANNER_GIT_VERSION=y
+CONFIG_TT_BOOT_BANNER_SDK_VERSION=y
