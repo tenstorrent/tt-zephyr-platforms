@@ -4,6 +4,7 @@ add_subdirectory(misc)
 
 # zephyr-keep-sorted-start
 add_subdirectory_ifdef(CONFIG_CLOCK_CONTROL clock_control)
+add_subdirectory_ifdef(CONFIG_CONSOLE console)
 add_subdirectory_ifdef(CONFIG_DMA dma)
 add_subdirectory_ifdef(CONFIG_FLASH flash)
 add_subdirectory_ifdef(CONFIG_GPIO gpio)
