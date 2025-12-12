@@ -12,12 +12,15 @@
 #include <tenstorrent/tt_boot_fs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
 
 LOG_MODULE_REGISTER(eth_serdes, CONFIG_TT_APP_LOG_LEVEL);
 
 #define SERDES_ETH_SETUP_TLB 0
 
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+static const struct device *dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 
 static inline void SetupSerdesTlb(uint32_t serdes_inst, uint32_t ring, uint64_t addr)
 {
@@ -29,23 +32,33 @@ static inline void SetupSerdesTlb(uint32_t serdes_inst, uint32_t ring, uint64_t 
 	NOC2AXITlbSetup(ring, SERDES_ETH_SETUP_TLB, x, y, addr);
 }
 
-static int NOC2AxiWrite32SerdesReg(uint8_t *src, uint8_t *dst, size_t len)
+static int DmaSerdesRegTransfer(uint8_t *src, uint8_t *dst, size_t len)
 {
-	SerdesRegData *reg_table = (SerdesRegData *)src;
-	uint32_t reg_count = len / sizeof(SerdesRegData);
+	int rc = 0;
 
-	for (uint32_t i = 0; i < reg_count; i++) {
-		NOC2AXIWrite32(0, SERDES_ETH_SETUP_TLB, reg_table[i].addr, reg_table[i].data);
+	if (!device_is_ready(dma_dev)) {
+		return -1;
 	}
-	return 0;
+
+	rc = dma_arc_hs_transfer(dma_dev, 0, src, dst, len, K_MSEC(500));
+	if (rc < 0) {
+		LOG_ERR("DMA transfer failed: %d", rc);
+		return rc;
+	}
+
+	return rc;
 }
 
 void LoadSerdesEthRegs(uint32_t serdes_inst, uint32_t ring, uint8_t *buf, size_t buf_size,
 		       size_t spi_address, size_t image_size)
 {
 	SetupSerdesTlb(serdes_inst, ring, SERDES_INST_BASE_ADDR(serdes_inst) + CMN_OFFSET);
-	spi_transfer_by_parts(flash, spi_address, image_size, buf, buf_size, NULL,
-			      NOC2AxiWrite32SerdesReg);
+
+	volatile uint32_t *serdes_tlb = GetTlbWindowAddr(
+		ring, SERDES_ETH_SETUP_TLB, SERDES_INST_BASE_ADDR(serdes_inst) + CMN_OFFSET);
+
+	spi_transfer_by_parts(flash, spi_address, image_size, buf, buf_size, (uint8_t *)serdes_tlb,
+			      DmaSerdesRegTransfer);
 }
 
 int LoadSerdesEthFw(uint32_t serdes_inst, uint32_t ring, uint8_t *buf, size_t buf_size,
@@ -56,6 +69,7 @@ int LoadSerdesEthFw(uint32_t serdes_inst, uint32_t ring, uint8_t *buf, size_t bu
 	SetupSerdesTlb(serdes_inst, 0, SERDES_INST_SRAM_ADDR(serdes_inst));
 	volatile uint32_t *serdes_tlb =
 		GetTlbWindowAddr(ring, SERDES_ETH_SETUP_TLB, SERDES_INST_SRAM_ADDR(serdes_inst));
+
 	rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
 					  (uint8_t *)serdes_tlb);
 
