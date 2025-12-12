@@ -1,0 +1,4 @@
+family:
+  - name: tt_grendel
+    socs:
+      - name: tt_grendel_smc
