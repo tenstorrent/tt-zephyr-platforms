@@ -1,0 +1,12 @@
+identifier: tt_grendel_smc
+name: Tenstorrent Grendel System Management Controller
+type: mcu
+arch: riscv
+toolchain:
+  - zephyr
+ram: 1048576
+testing:
+  ignore_tags:
+    - net
+    - bluetooth
+vendor: tenstorrent
