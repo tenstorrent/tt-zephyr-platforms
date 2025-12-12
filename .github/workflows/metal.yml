@@ -5,6 +5,15 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - v*-branch
+      - collab*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -70,7 +79,7 @@ jobs:
           tt-flash $HOME/fw_pack-*.fwbundle --force
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
       - name: cleanup
         if: ${{ always() }}
         run: |
