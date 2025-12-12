@@ -1,0 +1,21 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+if TENSTORRENT_ROCKETCORE
+
+config RISCV_SOC_INTERRUPT_INIT
+	default y
+
+config 2ND_LVL_ISR_TBL_OFFSET
+	default 12
+
+config 2ND_LVL_INTR_00_OFFSET
+	default 11
+
+config NUM_IRQS
+	default 128
+
+config MAX_IRQ_PER_AGGREGATOR
+	default 82 # PLIC has 82 interrupts
+
+endif # TENSTORRENT_ROCKETCORE

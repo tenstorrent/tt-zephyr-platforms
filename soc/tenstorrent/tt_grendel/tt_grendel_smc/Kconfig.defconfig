@@ -1,0 +1,18 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_TT_GRENDEL_SMC
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	default 800000
+
+config NUM_IRQS
+	default 210
+
+config MAX_IRQ_PER_AGGREGATOR
+	default 198 # PLIC has 198 interrupts
+
+config MP_MAX_NUM_CPUS
+	default 4
+
+endif # SOC_TT_GRENDEL_SMC
