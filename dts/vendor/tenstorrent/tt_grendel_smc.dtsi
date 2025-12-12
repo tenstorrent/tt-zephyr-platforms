@@ -167,6 +167,38 @@
 			reg = <0x0 0xc8000000 0x0 0x10000>;
 			reg-names = "control";
 		};
+		uart0: uart@c000a000 {
+			compatible = "ns16550";
+			reg-shift = <2>;
+			interrupts = <147 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc000a000 0x0 0x1000>;
+			status = "disabled";
+		};
+		uart1: uart@c000a400 {
+			compatible = "ns16550";
+			reg-shift = <2>;
+			interrupts = <148 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc000a400 0x0 0x1000>;
+			status = "disabled";
+		};
+		uart2: uart@c000a800 {
+			compatible = "ns16550";
+			reg-shift = <2>;
+			interrupts = <149 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc000a800 0x0 0x1000>;
+			status = "disabled";
+		};
+		uart3: uart@c000ac00 {
+			compatible = "ns16550";
+			reg-shift = <2>;
+			interrupts = <150 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc000ac00 0x0 0x1000>;
+			status = "disabled";
+		};
 		mtimer: timer@c800bff8 {
 			compatible = "riscv,machine-timer";
 			interrupts-extended = <&cpu0_intc 7 &cpu0_intc 7>;
