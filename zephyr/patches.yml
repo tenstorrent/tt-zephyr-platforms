@@ -133,3 +133,11 @@ patches:
     comments: |
       Make data alignment configurable in dma driver tests and change
       alias from dma0 to tst_dma0.
+  - path: zephyr/drivers-smbus-hook-cancel-uncancel-to-API.patch
+    sha256sum: 816884581c545a1100df203cce3cdd99717cba40fb8e542e166b40b65a33a58c
+    module: zephyr
+    author: James Growden
+    email: jgrowden@tenstorrent.com
+    date: 2025-12-12
+    comments: |
+      Hook the smbus cancel/uncancel interface to their implementations
