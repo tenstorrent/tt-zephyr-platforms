@@ -390,3 +390,33 @@ jobs:
         shell: bash
         run: |
           ./build-flm.sh
+
+  grendel-build-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-zephyr-platforms
+      - name: Grendel Build Test
+        shell: bash
+        run: |
+          ./zephyr/scripts/twister -p tt_grendel_smc -T zephyr/samples/hello_world
+      - name: Upload Grendel Build Test Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: grendel-build-test-artifacts
+          include-hidden-files: true
+          path: |
+            twister-out/**/handler.log
+            twister-out/**/twister_harness.log
+            twister-out/**/zephyr.dts
+            twister-out/**/.config
+            twister-out/**/*.map
+            twister-out/**/zephyr.elf
+            twister-out/**/*.lst
+            twister-out/**/device.log
+            twister-out/twister.log
+            twister-out/twister.json
