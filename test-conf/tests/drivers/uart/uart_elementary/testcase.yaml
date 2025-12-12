@@ -11,3 +11,14 @@ tests:
       - "CONF_FILE=\
         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/uart/uart_elementary/\
         uart_tt_virt.conf"
+  drivers.uart.uart_elementary.grendel_uart:
+    tags: smoke
+    platform_allow:
+      - tt_grendel_smc
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/uart/uart_elementary/\
+        tt_grendel_smc.overlay"
+      - "CONF_FILE=\
+        ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/uart/uart_elementary/\
+        tt_grendel_smc.conf"
