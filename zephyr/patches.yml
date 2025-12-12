@@ -141,3 +141,11 @@ patches:
     date: 2025-12-12
     comments: |
       Hook the smbus cancel/uncancel interface to their implementations
+  - path: zephyr/drivers-serial-ns16550-fixes.patch
+    sha256sum: 6356e69ef7436de6b1c3925e79a4cb6a5e70e233c74cde6779969aa25c72a1cb
+    module: zephyr
+    author: Daniel DeGrasse
+    email: ddegrasse@tenstorrent.com
+    date: 2025-11-13
+    comments: |
+      Set of fixes to the NS16550 driver to support interrupt operation
