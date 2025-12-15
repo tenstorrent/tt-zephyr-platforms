@@ -92,19 +92,9 @@ void CalculateTargAiclk(void)
 	/* Start by calculating the highest arbiter_min */
 	/* Then limit to the lowest arbiter_max */
 	/* Finally make sure that the target frequency is at least Fmin */
-	uint32_t targ_freq = aiclk_ppm.fmin;
+	uint32_t targ_freq = get_aiclk_effective_arb_min();
 
-	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
-		if (aiclk_ppm.arbiter_min[i].enabled) {
-			targ_freq = MAX(targ_freq, aiclk_ppm.arbiter_min[i].value);
-		}
-	}
-
-	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
-		if (aiclk_ppm.arbiter_max[i].enabled) {
-			targ_freq = MIN(targ_freq, aiclk_ppm.arbiter_max[i].value);
-		}
-	}
+	targ_freq = MIN(targ_freq, get_aiclk_effective_arb_max());
 
 	/* Make sure target is not below Fmin */
 	/* (it will not be above Fmax, since we calculated the max limits last) */
@@ -264,6 +254,34 @@ void aiclk_update_busy(void)
 	} else {
 		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
 	}
+}
+
+uint32_t get_aiclk_effective_arb_min(void)
+{
+	/* Calculate the highest enabled arbiter_min */
+	uint32_t effective_min = aiclk_ppm.fmin;
+
+	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
+		if (aiclk_ppm.arbiter_min[i].enabled) {
+			effective_min = MAX(effective_min, aiclk_ppm.arbiter_min[i].value);
+		}
+	}
+
+	return effective_min;
+}
+
+uint32_t get_aiclk_effective_arb_max(void)
+{
+	/* Calculate the lowest enabled arbiter_max */
+	uint32_t effective_max = aiclk_ppm.fmax;
+
+	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
+		if (aiclk_ppm.arbiter_max[i].enabled) {
+			effective_max = MIN(effective_max, aiclk_ppm.arbiter_max[i].value);
+		}
+	}
+
+	return effective_max;
 }
 
 /** @brief Handles the request to set AICLK busy or idle

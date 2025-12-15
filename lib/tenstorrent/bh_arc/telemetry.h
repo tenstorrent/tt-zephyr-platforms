@@ -224,12 +224,30 @@
 /** @brief Maximum TDP limit in watts. */
 #define TAG_TDP_LIMIT_MAX 64
 
+/**
+ * @brief Effective minimum AICLK arbiter value in megahertz.
+ *
+ * This represents the highest frequency requested by all enabled minimum arbiters.
+ * Multiple arbiters may request minimum frequencies, and the highest value is effective.
+ */
+#define TAG_AICLK_ARB_MIN 65
+
+/**
+ * @brief Effective maximum AICLK arbiter value in megahertz.
+ *
+ * This represents the lowest frequency limit imposed by all enabled maximum arbiters.
+ * Multiple arbiters may impose maximum frequency limits (e.g., TDP, TDC, thermal throttling),
+ * and the lowest (most restrictive) value is effective. This value takes precedence over
+ * TAG_AICLK_ARB_MIN when determining the final target frequency.
+ */
+#define TAG_AICLK_ARB_MAX 66
+
 /** @} */ /* end of telemetry_tag group */
 
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
  */
-#define TAG_COUNT 65
+#define TAG_COUNT 67
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)

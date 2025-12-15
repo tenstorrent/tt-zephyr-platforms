@@ -44,5 +44,7 @@ uint32_t GetAiclkTarg(void);
 uint32_t GetMaxAiclkForVoltage(uint32_t voltage);
 uint32_t GetAiclkFmin(void);
 uint32_t GetAiclkFmax(void);
+uint32_t get_aiclk_effective_arb_min(void);
+uint32_t get_aiclk_effective_arb_max(void);
 
 #endif
