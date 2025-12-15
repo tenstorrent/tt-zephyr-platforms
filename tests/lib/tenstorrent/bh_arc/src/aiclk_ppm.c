@@ -7,7 +7,8 @@
 #include <zephyr/ztest.h>
 
 #include "aiclk_ppm.h"
-
+#include <tenstorrent/msgqueue.h>
+#include <tenstorrent/smc_msg.h>
 static uint32_t fmax;
 static uint32_t fmin;
 
@@ -34,6 +35,34 @@ static void reset_arb(void *fixture)
 		SetAiclkArbMin(i, fmin);
 		EnableArbMin(i, false);
 	}
+}
+
+static void set_busy(bool busy)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.aiclk_set_speed.command_code =
+		busy ? TT_SMC_MSG_AICLK_GO_BUSY : TT_SMC_MSG_AICLK_GO_LONG_IDLE;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+	zexpect_equal(rsp.data[0], 0);
+}
+
+static void reinit_arb(void *fixture)
+{
+	(void)fixture;
+	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+		SetAiclkArbMax(i, fmax);
+		EnableArbMax(i, true);
+	}
+	for (int i = 0; i < kAiclkArbMinCount; i++) {
+		SetAiclkArbMin(i, fmin);
+		EnableArbMin(i, true);
+	}
+
+	set_busy(false);
 }
 
 ZTEST(aiclk_ppm, test_no_arb_enabled)
@@ -87,7 +116,7 @@ ZTEST(aiclk_ppm, test_arb_max_disable_enable)
 	/* Set busy arbiter (kAiclkArbMinBusy = fmax [1400]) */
 	/* Set fmax arbiter to value in between fmin and fmax [800] */
 	/* This should limit target aiclk to modified fmax when both arbiters are enabled */
-	aiclk_set_busy(true);
+	set_busy(true);
 	SetAiclkArbMax(kAiclkArbMaxFmax, mod_fmax);
 
 	EnableArbMin(kAiclkArbMinBusy, false);
@@ -148,7 +177,8 @@ ZTEST(aiclk_ppm, test_arb_lowest_max)
 	uint32_t expected_max;
 
 	/* Set a high min arbiter */
-	aiclk_set_busy(true);
+
+	set_busy(true);
 	EnableArbMin(kAiclkArbMinBusy, true);
 
 	/* Set multiple max arbiters to different values */
@@ -232,4 +262,4 @@ ZTEST(aiclk_ppm, test_min_arb_greater_than_max_arb)
 		      targ_freq, fmin);
 }
 
-ZTEST_SUITE(aiclk_ppm, NULL, aiclk_ppm_setup, reset_arb, NULL, NULL);
+ZTEST_SUITE(aiclk_ppm, NULL, aiclk_ppm_setup, reset_arb, NULL, reinit_arb);
