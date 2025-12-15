@@ -1,25 +1,11 @@
 # v19.4.0
 
-> This is a working draft for the up-coming v19.4.0 release.
-
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.4.0 🥳🎉.
 
 Major enhancements with this release include:
 
 ## What's Changed
 
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
-
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
 ### Stability Improvements
 
 * Update Wormhole FW blob
@@ -36,6 +22,43 @@ Major enhancements with this release include:
     * Increase read latency from 23 to 25 for 14G
     * Explicitly disable EDC tracking
   * Add vendor-specific GDDR settings and report GDDR vendor
+* Re-release MRISC FW 2.11
+  * Reduce Galaxy datarate to 14G to address regression in FW bundle v19.3.0
+  * Reapply memory bandwidth utilization improvements to all board types
+
+### Drivers
+
+* Fix SMBus cancel/uncancel interface
+  * Driver-specific implementations are now properly called
+  * Cancel state is now properly taken into account when starting a transaction, which fixes some PCIe enumeration issues
+
+### Libraries
+
+* BH ARC library improvements
+  * AICLK power management enhancements
+    * Apply AICLK busy state from GO_BUSY and POWER messages for legacy application compatibility
+    * Track last BUSY/IDLE message received and apply AICLK state based on both that and power settings
+    * Extended native simulation support for aiclk_ppm initialization
+  * Message queue improvements
+    * Add doxygen documentation and structured access for ASIC state messages (TT_SMC_MSG_ASIC_STATE0 and TT_SMC_MSG_ASIC_STATE3)
+    * Add doxygen documentation and structured access for TT_SMC_MSG_TEST
+    * Code formatting improvements (clang-format)
+  * Power management logging improvements
+    * Condense noisy prints in bh_power into a single print statement
+
+### Debug / Developer Features
+
+* Scripts and tooling improvements
+  * `tt_bootstrap`: Add support for erasing flash with `west flash -r tt_bootstrap --erase`
+  * `vuart`: Open file descriptor with O_APPEND flag to prevent power-on when opening console
+  * Add `update_versions.sh` script to upgrade versions of SMC, DMC, and FW during the release process
+
+
+### Other Notable Changes
+
+* Documentation
+  * Update release process documentation to use version update script
+  * Add firmware signing key conflicts guide explaining how to move from a production-signed firmware to a development-signed firmware (v19.0.0+)
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
