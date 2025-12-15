@@ -68,9 +68,16 @@ jobs:
           source .env/bin/activate
           pip install tt-flash==3.4.7
           tt-flash $HOME/fw_pack-*.fwbundle --force
-      - name: Run Container Test
+      # Runs the following tests in order,
+      #   1) umd unit tests
+      #   2) didt tests
+      #   3) ttnn unit tests
+      #   4) metal unit tests
+      #   5) small model (resnet50) test
+      #   6) big model (llama 70b) test
+      - name: Run Metal Tests
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole"
       - name: cleanup
         if: ${{ always() }}
         run: |
