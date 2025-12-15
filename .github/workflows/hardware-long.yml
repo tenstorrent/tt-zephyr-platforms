@@ -1,12 +1,12 @@
 name: HW Soak
 
-# Run long tests once nightly, at 00:00
+# Run long tests once daily, at 05:21 UTC
 on:
   pull_request:
     types:
       - labeled
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "21 5 * * *"
   workflow_dispatch: {}
 
 concurrency:
