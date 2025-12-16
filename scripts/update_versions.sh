@@ -100,9 +100,9 @@ do_commit() {
     (cd "$PROJECT_ROOT" && git add "$file")
 
     case "$MODE" in
-        rc)           msg="bump to $ver" ;;
-        pre-release)  msg="prepare release $ver" ;;
-        post-release) msg="final release $ver" ;;
+        rc)           msg="update to $ver" ;;
+        pre-release)  msg="update to $ver" ;;
+        post-release) msg="update to $ver" ;;
     esac
 
     (cd "$PROJECT_ROOT" && git commit -sm "${prefix}version: $msg
