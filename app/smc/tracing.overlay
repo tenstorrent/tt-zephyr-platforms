@@ -12,6 +12,7 @@
 
 &vuart1 {
 	status = "okay";
+	tx-cap = <131072>;
 };
 
 /*
