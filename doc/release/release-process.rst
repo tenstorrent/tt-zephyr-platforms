@@ -82,6 +82,9 @@ Lastly, for final releases,
 9. Announce the release via official Tenstorrent channels and provide a link to the
    GitHub release page.
 
+10. Run ``scripts/generate-release-docs.py`` to generate the release notes and migration guide files for the next release.
+    Post a PR with the generated files and merge after CI is successful.
+
 Publishing a Combined Firmware Bundle to ``tt-firmware``
 ********************************************************
 
