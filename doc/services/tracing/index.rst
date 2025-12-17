@@ -58,7 +58,7 @@ install this tool using your system's package manager. For example, on Ubuntu:
 
 .. code-block:: bash
 
-   $ sudo apt install babeltrace2
+   $ sudo apt install babeltrace2==2.0.4
 
 Collecting Trace Data
 ---------------------
