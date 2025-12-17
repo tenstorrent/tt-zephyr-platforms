@@ -196,6 +196,7 @@ ZTEST(aiclk_ppm, test_arb_lowest_max)
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
 
+	zexpect_equal(expected_max, get_aiclk_effective_arb_max());
 	zassert_equal(targ_freq, expected_max,
 		      "Target frequency (%d) should be equal to lowest max arbiter (%d)", targ_freq,
 		      expected_max);
@@ -218,6 +219,7 @@ ZTEST(aiclk_ppm, test_arb_highest_min)
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
 
+	zexpect_equal(expected_min, get_aiclk_effective_arb_min());
 	zassert_equal(targ_freq, expected_min,
 		      "Target frequency (%d) should be equal to highest min arbiter (%d)",
 		      targ_freq, expected_min);

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "aiclk_ppm.h"
 #include "cat.h"
 #include "cm2dm_msg.h"
 #include "fan_ctrl.h"
@@ -162,6 +163,8 @@ static struct telemetry_table telemetry_table = {
 		[57] = {TAG_TDC_LIMIT_MAX, TELEM_OFFSET(TAG_TDC_LIMIT_MAX)},
 		[58] = {TAG_THM_LIMIT_THROTTLE, TELEM_OFFSET(TAG_THM_LIMIT_THROTTLE)},
 		[59] = {TAG_TDP_LIMIT_MAX, TELEM_OFFSET(TAG_TDP_LIMIT_MAX)},
+		[60] = {TAG_AICLK_ARB_MIN, TELEM_OFFSET(TAG_AICLK_ARB_MIN)},
+		[61] = {TAG_AICLK_ARB_MAX, TELEM_OFFSET(TAG_AICLK_ARB_MAX)},
 	},
 };
 
@@ -389,6 +392,9 @@ static void update_telemetry(void)
 	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 			       &telemetry[TAG_AICLK]);
 	/* first 16 bits - MAX ASIC FREQ (Not Available yet), lower 16 bits - current AICLK */
+
+	telemetry[TAG_AICLK_ARB_MIN] = get_aiclk_effective_arb_min();
+	telemetry[TAG_AICLK_ARB_MAX] = get_aiclk_effective_arb_max();
 
 	clock_control_get_rate(
 		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,
