@@ -24,16 +24,20 @@
 	 .pci_device_id = _pci_device_id,                                                          \
 	 .channel = _channel,                                                                      \
 	 .fd = -1,                                                                                 \
+	 .bar_idx = 4,                                                                             \
+	 .map_size = 0,                                                                            \
 	 .tlb = MAP_FAILED}
 
 struct vuart_data {
 	const char *dev_name;
 	int fd;
+	int bar_idx;
+	size_t map_size;
 	uint32_t addr;  /* vuart discovery address */
 	uint32_t magic; /* vuart magic */
 	uint16_t pci_device_id;
 	uint32_t tlb_id;
-	volatile uint8_t *tlb; /* 2MiB tlb window */
+	volatile uint8_t *tlb; /* 2MiB or 4GiB tlb window */
 
 	/*
 	 * TODO: consider associating stream numbers with rings. In firmware, a mapped ring can

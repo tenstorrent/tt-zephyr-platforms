@@ -183,6 +183,7 @@ static void usage(const char *progname)
 	  "\n"
 	  "args:\n"
 	  "-a <addr>          : vuart discovery address (default: %08x)\n"
+	  "-b <bar_idx>       : BAR index to use (0 or 4, default: 0)\n"
 	  "-c <channel>       : channel number (default: %d)\n"
 	  "-d <path>          : path to device node (default: %s)\n"
 	  "-h                 : print this help message\n"
@@ -200,7 +201,9 @@ static int parse_args(struct tracing *tracing, int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt(argc, argv, ":a:c:d:hi:m:qt:v")) != -1) {
+	tracing->vuart.bar_idx = 0;
+
+	while ((c = getopt(argc, argv, ":a:b:c:d:hi:m:qt:v")) != -1) {
 		switch (c) {
 		case 'a': {
 			unsigned long addr;
@@ -213,6 +216,23 @@ static int parse_args(struct tracing *tracing, int argc, char **argv)
 				return -errno;
 			}
 			tracing->vuart.addr = addr;
+		} break;
+		case 'b': {
+			long bar;
+
+			errno = 0;
+			bar = strtol(optarg, NULL, 0);
+			if (errno != 0) {
+				E("invalid operand to -b %s: %s", optarg, strerror(errno));
+				usage(basename(argv[0]));
+				return -errno;
+			}
+			if (bar != 0 && bar != 4) {
+				E("invalid operand to -b %s: must be 0 or 4", optarg);
+				usage(basename(argv[0]));
+				return -EINVAL;
+			}
+			tracing->vuart.bar_idx = (int)bar;
 		} break;
 		case 'c': {
 			unsigned long channel;

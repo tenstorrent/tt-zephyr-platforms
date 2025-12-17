@@ -54,6 +54,9 @@
 #define TLB_2M_SHIFT               21
 #define TLB_2M_WINDOW_SIZE         BIT(TLB_2M_SHIFT)
 #define TLB_2M_WINDOW_MASK         BIT_MASK(TLB_2M_SHIFT)
+#define TLB_4G_SHIFT               32
+#define TLB_4G_WINDOW_SIZE         BIT(TLB_4G_SHIFT)
+#define TLB_4G_WINDOW_MASK         BIT_MASK(TLB_4G_SHIFT)
 #define BH_2M_TLB_UC_DYNAMIC_START 190
 #define BH_2M_TLB_UC_DYNAMIC_END   199
 #define BH_NUM_2M_TLBS             202
@@ -189,9 +192,10 @@ struct tenstorrent_configure_tlb {
 static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, enum tlb_order order,
 		       uint64_t phys, uint64_t *adjust)
 {
+	uint64_t mask = (data->bar_idx == 0) ? TLB_2M_WINDOW_MASK : TLB_4G_WINDOW_MASK;
 	struct tenstorrent_configure_tlb tlb = {.in.id = data->tlb_id,
 						.in.config = (struct tenstorrent_noc_tlb_config){
-							.addr = phys & ~TLB_2M_WINDOW_MASK,
+							.addr = phys & ~mask,
 							.x_end = x,
 							.y_end = y,
 							.ordering = order,
@@ -202,11 +206,12 @@ static int program_noc(const struct vuart_data *data, uint32_t x, uint32_t y, en
 		return -errno;
 	}
 
-	*adjust = phys & (uint64_t)TLB_2M_WINDOW_MASK;
+	*adjust = phys & mask;
 
 	/* There isn't a new API for getting the current TLB programming */
 	/* D(2, "tlb[%u]: %s", data->tlb_id, tlb2m2str(reg)); */
-	D(2, "tlb[%u]: %llx", data->tlb_id, (long long)phys & ~TLB_2M_WINDOW_MASK);
+	D(2, "tlb[%u]: %llx", data->tlb_id, (long long)phys & ~mask);
+	printf("tlb[%u]: %llx\n", data->tlb_id, (long long)phys & ~mask);
 
 	return 0;
 }
@@ -338,7 +343,7 @@ static void close_tt_dev(struct vuart_data *vart)
 }
 
 /*
- * Map the 2MiB TLB window. This can remain mapped for the duration of the
+ * Map the 4GiB TLB window. This can remain mapped for the duration of the
  * application. We simply change where the TLB window points by writing to the TLB config
  * register.
  */
@@ -349,14 +354,23 @@ static int map_tlb(struct vuart_data *vuart)
 		return 0;
 	}
 
-	struct tenstorrent_allocate_tlb tlb = {.in.size = TLB_2M_WINDOW_SIZE};
+	size_t tlb_size;
+
+	if (vuart->bar_idx == 0) {
+		tlb_size = TLB_2M_WINDOW_SIZE;
+	} else {
+		tlb_size = TLB_4G_WINDOW_SIZE;
+	}
+	vuart->map_size = tlb_size;
+
+	struct tenstorrent_allocate_tlb tlb = {.in.size = tlb_size};
 
 	if (ioctl(vuart->fd, TENSTORRENT_IOCTL_ALLOCATE_TLB, &tlb) < 0) {
 		E("ioctl(TENSTORRENT_IOCTL_ALLOCATE_TLB): %s", strerror(errno));
 		return -errno;
 	}
 
-	vuart->tlb = mmap(NULL, TLB_2M_WINDOW_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, vuart->fd,
+	vuart->tlb = mmap(NULL, tlb_size, PROT_READ | PROT_WRITE, MAP_SHARED, vuart->fd,
 			  tlb.out.mmap_offset_uc);
 	if (vuart->tlb == MAP_FAILED) {
 		E("%s", strerror(errno));
@@ -365,8 +379,9 @@ static int map_tlb(struct vuart_data *vuart)
 
 	vuart->tlb_id = tlb.out.id;
 
-	D(1, "mapped %zu@%08x to %zu@%p for 2MiB TLB window %d", (size_t)TLB_2M_WINDOW_SIZE,
-	  (uint32_t)tlb.out.mmap_offset_uc, (size_t)TLB_2M_WINDOW_SIZE, vuart->tlb, vuart->tlb_id);
+	D(1, "mapped %zu@%08x to %zu@%p for TLB window %d (size: %llu)", (size_t)TLB_2M_WINDOW_SIZE,
+	  (uint32_t)tlb.out.mmap_offset_uc, (size_t)TLB_2M_WINDOW_SIZE, vuart->tlb, vuart->tlb_id,
+	  (unsigned long long)tlb_size);
 
 	return 0;
 }
@@ -378,12 +393,12 @@ static int unmap_tlb(struct vuart_data *vuart)
 		return 0;
 	}
 
-	if (munmap((void *)vuart->tlb, TLB_2M_WINDOW_SIZE) < 0) {
+	if (munmap((void *)vuart->tlb, vuart->map_size) < 0) {
 		E("%s", strerror(errno));
 		return -EFAULT;
 	}
 
-	D(1, "unmapped %zu@%p", (size_t)TLB_2M_WINDOW_SIZE, vuart->tlb);
+	D(1, "unmapped %zu@%p", vuart->map_size, vuart->tlb);
 
 	struct tenstorrent_free_tlb tlb = {.in.id = vuart->tlb_id};
 
