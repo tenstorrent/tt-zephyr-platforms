@@ -53,6 +53,7 @@
 
 struct tracing {
 	bool stop;
+	bool enabled;
 	struct vuart_data vuart;
 	char *filename;
 	FILE *fp;
@@ -60,6 +61,7 @@ struct tracing {
 
 static struct tracing tracing = {
 	.stop = false,
+	.enabled = false,
 	.vuart = VUART_DATA_INIT(TT_DEVICE, UART_TT_VIRT_DISCOVERY_ADDR, UART_TT_VIRT_MAGIC,
 				 BH_SCRAPPY_PCI_DEVICE_ID, UART_CHANNEL),
 	.filename = NULL,
@@ -104,9 +106,12 @@ static int loop(struct tracing *tracing)
 			continue;
 		}
 
-		/* Enable tracing */
-		for (size_t i = 0; i < sizeof(enable) - 1; ++i) {
-			vuart_putc(&tracing->vuart, enable[i]);
+		/* Enable tracing only once */
+		if (!tracing->enabled) {
+			for (size_t i = 0; i < sizeof(enable) - 1; ++i) {
+				vuart_putc(&tracing->vuart, enable[i]);
+			}
+			tracing->enabled = true;
 		}
 
 		/* Read from VUART in a block */
