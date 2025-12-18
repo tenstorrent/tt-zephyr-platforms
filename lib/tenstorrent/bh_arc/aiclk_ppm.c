@@ -22,6 +22,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/clock_control.h>
+#include <zephyr/tracing/tracing.h>
 
 static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
 
@@ -115,6 +116,8 @@ void CalculateTargAiclk(void)
 void DecreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq < aiclk_ppm.curr_freq) {
+		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq,
+				      aiclk_ppm.targ_freq);
 		clock_control_set_rate(pll_dev_0,
 				       (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 				       (clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
@@ -125,6 +128,8 @@ void DecreaseAiclk(void)
 void IncreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq > aiclk_ppm.curr_freq) {
+		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq,
+				      aiclk_ppm.targ_freq);
 		clock_control_set_rate(pll_dev_0,
 				       (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 				       (clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
