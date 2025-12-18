@@ -14,22 +14,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  metal-test-check:
+  check-conditions:
     runs-on: ubuntu-24.04
-    if: ${{ github.event_name == 'schedule' ||  github.event.label.name == 'metal-tests' }}
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
     steps:
-      - name: Metal Test Check
+      - name: Check if metal tests should run
+        id: check
         run: |
-          echo "Metal tests are required."
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ github.event_name }}" == "pull_request" && "${{ contains(github.event.pull_request.labels.*.name, 'metal-tests') }}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "Metal tests will run"
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            echo "Metal tests not needed for this event"
+          fi
 
   build-fw-artifact:
-    needs: metal-test-check
+    needs: check-conditions
+    if: needs.check-conditions.outputs.should-run == 'true'
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
   gen-config:
-    needs: metal-test-check
+    needs: check-conditions
+    if: needs.check-conditions.outputs.should-run == 'true'
     runs-on: ubuntu-24.04
     outputs:
       matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
@@ -44,6 +56,7 @@ jobs:
 
   metal-test:
     needs: [build-fw-artifact, gen-config]
+    if: needs.check-conditions.outputs.should-run == 'true'
     strategy:
       fail-fast: false
       matrix:
