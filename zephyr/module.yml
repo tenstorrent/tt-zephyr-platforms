@@ -80,7 +80,7 @@ blobs:
     description: "Ethernet SerDes firmware"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_init.bin
-    sha256: d434066f624c096f6a9d2955413280477b472359179504184f4dda2d9b160dd2
+    sha256: e8936fcb179472e30a44255954c5174dfb08f7e320ee3460c68b36eb53384f11
     type: img
     version: '2.11'
     license-path: zephyr/blobs/license.txt

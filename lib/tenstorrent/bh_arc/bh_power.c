@@ -11,6 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/misc/bh_fwtable.h>
 #include <zephyr/kernel.h>
 
 #include "noc_init.h"
@@ -20,6 +21,7 @@
 
 LOG_MODULE_REGISTER(power, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *pll4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
+static const struct device *fwtable_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(fwtable));
 
 enum power_bit_flags_e {
 	power_bit_flag_aiclk,
@@ -110,10 +112,16 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 	}
 
 	if (power_setting->power_flags_valid > power_bit_flag_mrisc) {
-		ret = set_mrisc_power_setting(power_setting->power_flags_bitfield.mrisc_phy_power);
+		/* Get board type from firmware table */
+		uint8_t board_type = tt_bh_fwtable_get_board_type(fwtable_dev);
 
-		power_state[power_bit_flag_mrisc] =
-			power_setting->power_flags_bitfield.mrisc_phy_power;
+		/* Skip mrisc power setting for GALAXY boards (BOARDTYPE_UBB) */
+		if (board_type != BOARDTYPE_UBB) {
+			ret = set_mrisc_power_setting(
+				power_setting->power_flags_bitfield.mrisc_phy_power);
+			power_state[power_bit_flag_mrisc] =
+				power_setting->power_flags_bitfield.mrisc_phy_power;
+		}
 	}
 
 	return ret;

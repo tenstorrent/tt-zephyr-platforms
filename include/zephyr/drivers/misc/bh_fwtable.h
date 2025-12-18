@@ -25,6 +25,17 @@ const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev);
 const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *dev);
 const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev);
 
+/* Board type values extracted from board_id */
+#define BOARDTYPE_ORION 0x37
+#define BOARDTYPE_P100A 0x43
+#define BOARDTYPE_P150A 0x40
+#define BOARDTYPE_P150  0x41
+#define BOARDTYPE_P150C 0x42
+#define BOARDTYPE_P300  0x44
+#define BOARDTYPE_P300A 0x45
+#define BOARDTYPE_P300C 0x46
+#define BOARDTYPE_UBB   0x47
+
 typedef enum {
 	PcbTypeOrion = 0,
 	PcbTypeP100 = 1,
@@ -35,6 +46,7 @@ typedef enum {
 } PcbType;
 
 PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev);
+uint8_t tt_bh_fwtable_get_board_type(const struct device *dev);
 bool tt_bh_fwtable_is_p300_left_chip(void);
 uint32_t tt_bh_fwtable_get_asic_location(const struct device *dev);
 
