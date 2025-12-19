@@ -79,6 +79,7 @@ jobs:
           tt-flash $HOME/fw_pack-*.fwbundle --force
       - name: Install power monitoring dependencies
         run: |
+          sudo apt-get update && sudo apt-get install -y lm-sensors
           python -m venv .env
           source .env/bin/activate
           pip install pandas plotly
@@ -93,6 +94,12 @@ jobs:
         run: |
           # Start power monitoring in background
           source .env/bin/activate
+
+          # Debug: Show available sensors and their current values
+          echo "=== SENSORS DEBUG OUTPUT ==="
+          sensors || echo "sensors command failed"
+          echo "============================"
+
           python $HOME/scripts/ci/monitor_power.py -o $HOME/power_recording.csv -i 1.0 &
           POWER_MONITOR_PID=$!
 
