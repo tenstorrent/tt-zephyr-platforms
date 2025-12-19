@@ -1,3 +1,12 @@
+# v19.4.1
+
+## What's Changed
+
+### Bug Fixes
+
+* Update Wormhole FW blob to revert ERISC FW to 6.7.2.0
+  * Due to ETH training instability on WH Galaxy with ERISC FW 6.7.3.0
+
 # v19.4.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.4.0 🥳🎉.
