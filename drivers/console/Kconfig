@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TENSTORRENT_VIRT_CONSOLE
+	bool "Tenstorrent Virtual Console"
+	help
+	  Enable the Tenstorrent Virtual Console driver. This driver
+	  writes console output to scratch register 2, which is used
+	  by simulation hosts to display console output.

@@ -1,0 +1,26 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_TT_GRENDEL_SMC
+	select RISCV
+	select RISCV_PRIVILEGED
+	select RISCV_HAS_PLIC
+	select RISCV_PMP
+	select 64BIT
+	select RISCV_SOC_HAS_GP_RELATIVE_ADDRESSING
+
+	# Zephyr approximation of rv64imafdczicond_zicsr_zifencei_zihpm_xrocket
+	# Note: we do not (yet) include Kconfig support for zicond, zihpm, or xrocket
+	select RISCV_ISA_RV64I
+	select RISCV_ISA_EXT_C
+	select RISCV_ISA_EXT_G
+	# select RISCV_ISA_EXT_XROCKET
+	# select RISCV_ISA_EXT_ZICOND
+	select RISCV_ISA_EXT_ZICSR
+	# select RISCV_ISA_EXT_ZIHPM
+
+	select ATOMIC_OPERATIONS_BUILTIN
+	select INCLUDE_RESET_VECTOR
+	help
+	  Tenstorrent Grendel System Management Core. This Kconfig should
+	  be selected for all flavors of the Grendel SMC SoC.

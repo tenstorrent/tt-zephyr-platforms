@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# Grendel SMC core- quad core RISV-V core based on tenstorrent-rocketcore
+config SOC_TT_GRENDEL_SMC
+	bool
+	select SOC_FAMILY_TT_GRENDEL
+	help
+	  Tenstorrent Grendel System Management Core
+
+config SOC
+	default "tt_grendel_smc" if SOC_TT_GRENDEL_SMC
