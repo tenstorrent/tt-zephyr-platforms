@@ -2,6 +2,9 @@ name: Metal 🤘
 
 # Run long tests once nightly, at 00:00
 on:
+  pull_request:
+    types:
+      - labeled
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch: {}
@@ -11,12 +14,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  metal-test-check:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name == 'schedule' ||  github.event.label.name == 'metal-tests' }}
+    steps:
+      - name: Metal Test Check
+        run: |
+          echo "Metal tests are required."
+
   build-fw-artifact:
+    needs: metal-test-check
     uses: ./.github/workflows/build-fw.yml
     secrets:
       SIGNATURE_KEY: ${{ secrets.SIGNATURE_KEY }}
 
   gen-config:
+    needs: metal-test-check
     runs-on: ubuntu-24.04
     outputs:
       matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
@@ -41,10 +54,12 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
+        - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
+      HF_MODEL: /opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/
     defaults:
       run:
         shell: bash
@@ -68,9 +83,19 @@ jobs:
           source .env/bin/activate
           pip install tt-flash==3.4.7
           tt-flash $HOME/fw_pack-*.fwbundle --force
+      - name: Patch Test Command
+        run: |
+          # Patch whisper demo test to run with CI=false to skip the performance checks.
+          # These tests fail on syseng CI because the runners have different configurations
+          # than metal CI systems.
+          sed -i 's/pytest\(.*\)test_demo_for_conditional_generation/CI=false pytest\1test_demo_for_conditional_generation/g' \
+            dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
+          # To verify patch was applied
+          git diff
+
       - name: Run Container Test
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh blackhole_no_models"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
       - name: cleanup
         if: ${{ always() }}
         run: |
