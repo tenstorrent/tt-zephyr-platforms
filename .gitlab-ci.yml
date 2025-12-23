@@ -1,0 +1,52 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+    - when: never
+
+variables:
+  OUTDIR: $CI_PROJECT_DIR/twister-out
+
+
+build-job:
+  stage: build
+  image: ghcr.io/tenstorrent/tt-system-firmware/ci-image:v19.7.0
+  script:
+    - cd /tt-zephyr/tt-system-firmware
+    # Pull repo revision to run CI on
+    - git remote add ci $CI_REPOSITORY_URL
+    - git fetch ci $CI_COMMIT_SHA
+    - git checkout FETCH_HEAD
+    - west packages pip --install
+    - west update
+    - cd /tt-zephyr
+    - ./tt-system-firmware/scripts/ci/build-grendel.sh
+    - ls -la $OUTDIR
+  artifacts:
+    paths:
+      - $OUTDIR
+  tags:
+    - 8-core
+
+# Use the build-job output artifacts in downstream jobs
+test-job:
+  stage: test
+  dependencies:
+    - build-job
+
+  script:
+    # Pull tt-smc repo to run Zephyr tests
+    - git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    - cd tt_smc
+    - source bin/setup_env.sh
+    - module list || true
+    - bender checkout --force || bender checkout --force
+    - $CI_PROJECT_DIR/scripts/ci/run-ttem-tests.sh
+
+  artifacts:
+    when: always
+    paths:
+      - tt_smc/tb_uvm/out/
+  tags:
+    - chiplet-ip
+  timeout: 120m
