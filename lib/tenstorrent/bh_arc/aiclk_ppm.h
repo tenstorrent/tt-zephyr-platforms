@@ -46,5 +46,7 @@ uint32_t GetAiclkFmin(void);
 uint32_t GetAiclkFmax(void);
 uint32_t get_aiclk_effective_arb_min(void);
 uint32_t get_aiclk_effective_arb_max(void);
+uint32_t get_enabled_arb_min_bitmask(void);
+uint32_t get_enabled_arb_max_bitmask(void);
 
 #endif

@@ -165,6 +165,8 @@ static struct telemetry_table telemetry_table = {
 		[59] = {TAG_TDP_LIMIT_MAX, TELEM_OFFSET(TAG_TDP_LIMIT_MAX)},
 		[60] = {TAG_AICLK_ARB_MIN, TELEM_OFFSET(TAG_AICLK_ARB_MIN)},
 		[61] = {TAG_AICLK_ARB_MAX, TELEM_OFFSET(TAG_AICLK_ARB_MAX)},
+		[62] = {TAG_ENABLED_MIN_ARB, TELEM_OFFSET(TAG_ENABLED_MIN_ARB)},
+		[63] = {TAG_ENABLED_MAX_ARB, TELEM_OFFSET(TAG_ENABLED_MAX_ARB)},
 	},
 };
 
@@ -395,6 +397,8 @@ static void update_telemetry(void)
 
 	telemetry[TAG_AICLK_ARB_MIN] = get_aiclk_effective_arb_min();
 	telemetry[TAG_AICLK_ARB_MAX] = get_aiclk_effective_arb_max();
+	telemetry[TAG_ENABLED_MIN_ARB] = get_enabled_arb_min_bitmask();
+	telemetry[TAG_ENABLED_MAX_ARB] = get_enabled_arb_max_bitmask();
 
 	clock_control_get_rate(
 		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,
