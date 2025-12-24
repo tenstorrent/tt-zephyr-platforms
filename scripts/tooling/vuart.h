@@ -33,7 +33,7 @@ struct vuart_data {
 	uint32_t magic; /* vuart magic */
 	uint16_t pci_device_id;
 	uint32_t tlb_id;
-	volatile uint8_t *tlb; /* 2MiB tlb window */
+	volatile uint8_t *tlb; /* 4GiB tlb window */
 
 	/*
 	 * TODO: consider associating stream numbers with rings. In firmware, a mapped ring can
