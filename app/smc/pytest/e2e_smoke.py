@@ -789,6 +789,12 @@ def test_tensix_reset(arc_chip_dut, asic_id):
     # Unused register in Tensix. Use bit 0 as a scratch bit
     # "PREFECTH" is a typo carried over from the register name in the RTL
     arc_chip = pyluwen.detect_chips()[asic_id]
+
+    try:
+        arc_chip.set_power_state("high")
+    except Exception:
+        logger.info("No driver support for power IOCTL; continue.")
+
     ETH_RISC_PREFECTH_CTRL_ADDR = 0xFFB120B8
     # This Tensix coordinate (1-2) should be available in all current harvesting configs
     scratch_set = arc_chip.noc_read32(
