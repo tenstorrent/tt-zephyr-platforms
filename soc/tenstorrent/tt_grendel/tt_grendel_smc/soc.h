@@ -1,0 +1,24 @@
+/*
+ * Copyright (c) 2025 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#ifndef SOC_TENSTORRENT_TENSTORRENT_GRENDEL_SOC_H_
+#define SOC_TENSTORRENT_TENSTORRENT_GRENDEL_SOC_H_
+
+#include <stdint.h>
+
+/* Convenience macro since we use scratch registers for debugging */
+#define WRITE_SCRATCH(num, val) (*(((volatile uint32_t *)0xC0010100) + (num * 2)) = (val))
+
+/* Debug registers defined for this SOC */
+
+/*
+ * Written with the current program counter when
+ * an unrecoverable system error occurs
+ */
+#define WRITE_CRASH_ADDR()                                                                         \
+	uint32_t pc;                                                                               \
+	__asm__ volatile("auipc %0, 0\n" : "=r"(pc) : :);                                          \
+	WRITE_SCRATCH(0, pc);
+
+#endif /* SOC_TENSTORRENT_TENSTORRENT_GRENDEL_SOC_H_ */
