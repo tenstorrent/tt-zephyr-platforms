@@ -38,4 +38,7 @@ uint32_t I2CRMWV(uint32_t id, uint16_t command, uint32_t command_byte_size, cons
 void SetI2CSlaveCallbacks(uint32_t id, const struct i2c_target_callbacks *cb);
 void PollI2CSlave(uint32_t id);
 void I2CRecoverBus(uint32_t id);
+
+int tt_bh_i2c_recover_bus(const struct device *wrapper_dev);
+
 #endif

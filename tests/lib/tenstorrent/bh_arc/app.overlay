@@ -20,6 +20,14 @@
 	dma1: noc_dma {
 		status = "okay";
 	};
+
+	i2c1: i2c1 {
+		status = "okay";
+	};
+
+	i2c2: i2c2 {
+		status = "okay";
+	};
 };
 
 &i2c0 {

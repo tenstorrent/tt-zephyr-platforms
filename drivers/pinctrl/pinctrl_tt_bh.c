@@ -83,6 +83,20 @@ static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 	case 48: /* uart0_tx_default */
 	case 49: /* uart0_rx_default */
 		break;
+	case 15: /* i2c1_sda */
+	case 16: { /* i2c1_scl */
+		uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
+		uint32_t i2c_id = 1; /* I2C1 controller */
+
+		/* Initialize I2C pads for i2c controller */
+		sys_write32((drive_strength << 10) | 0xC0 | 0x3, 0x800305CC); /* I2C1_PAD_CNTL */
+		sys_write32(0, 0x800305D0); /* I2C1_PAD_DATA */
+
+		/* Enable I2C controller control of pads */
+		uint32_t i2c_cntl = sys_read32(0x800300F0) | BIT(i2c_id);
+		sys_write32(i2c_cntl, 0x800300F0);
+		return 0;
+	}
 	default:
 		LOG_DBG("No alternate function for pin %u", pin);
 		return -EIO;
