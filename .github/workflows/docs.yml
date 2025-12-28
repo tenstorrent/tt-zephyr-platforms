@@ -162,9 +162,177 @@ jobs:
             ci_stats.html
             *results.csv
 
+  power-stats:
+    needs: [gen-config]
+    strategy:
+      matrix:
+        board: ${{ fromJson(needs.gen-config.outputs.ci-boards) }}
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install adm-zip csv-parse csv-stringify
+          pip install plotly pandas
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Download Past Power Recordings
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const AdmZip = require('adm-zip');
+            const fs = require('fs');
+            const { parse } = require('csv-parse/sync');
+            const { stringify } = require('csv-stringify/sync');
+
+            // Aggregate power data by workflow run
+            const powerResults = {};
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Power recording (${{ matrix.board }})',
+            });
+            console.log(`Total artifacts found: ${artifacts.data.artifacts.length}`);
+
+            for (const artifact of artifacts.data.artifacts) {
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+                archive_format: 'zip'
+              });
+
+              const fname = `${artifact.name}-${artifact.id}-${artifact.workflow_run?.head_sha || 'unknown'}.zip`;
+              fs.writeFileSync(fname, Buffer.from(download.data));
+
+              const zip = new AdmZip(fname);
+              const zipEntries = zip.getEntries();
+
+              zipEntries.forEach(function (zipEntry) {
+                if (zipEntry.name === "power_recording.csv") {
+                  console.log(`Processing ${zipEntry.entryName} from artifact ${artifact.name} (${artifact.id})`);
+                  const content = zipEntry.getData().toString('utf8');
+
+                  // Parse CSV content
+                  const records = parse(content, {
+                    columns: true,
+                    trim: true
+                  });
+
+                  // Filter out N/A values and calculate statistics
+                  const powerValues = records
+                    .map(record => {
+                      const power = record.power_watts;
+                      if (power && power !== 'N/A') {
+                        const numPower = parseFloat(power);
+                        if (!isNaN(numPower)) {
+                          return numPower;
+                        }
+                      }
+                      return null;
+                    })
+                    .filter(val => val !== null);
+
+                  if (powerValues.length === 0) {
+                    console.log(`No valid power values found in ${zipEntry.entryName}`);
+                    return;
+                  }
+
+                  const workflowRunId = artifact.workflow_run?.id;
+                  if (!workflowRunId) {
+                    console.log(`Skipping artifact ${artifact.id}, no workflow_run`);
+                    return;
+                  }
+
+                  if (artifact.workflow_run.head_branch != 'main') {
+                    console.log(`Skipping artifact ${artifact.id}, branch ${artifact.workflow_run.head_branch}`);
+                    return;
+                  }
+
+                  // Calculate aggregate statistics
+                  const avgPower = powerValues.reduce((a, b) => a + b, 0) / powerValues.length;
+                  const maxPower = Math.max(...powerValues);
+                  const minPower = Math.min(...powerValues);
+
+                  if (!powerResults[workflowRunId]) {
+                    powerResults[workflowRunId] = {
+                      commit: artifact.workflow_run.head_sha,
+                      branch: artifact.workflow_run.head_branch,
+                      timestamp: artifact.created_at,
+                      workflow_run_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${workflowRunId}`,
+                      avg_power: avgPower,
+                      max_power: maxPower,
+                      min_power: minPower,
+                      sample_count: powerValues.length
+                    };
+                  } else {
+                    // If multiple recordings for same run, aggregate them
+                    const existing = powerResults[workflowRunId];
+                    const totalSamples = existing.sample_count + powerValues.length;
+                    existing.avg_power = (existing.avg_power * existing.sample_count + avgPower * powerValues.length) / totalSamples;
+                    existing.max_power = Math.max(existing.max_power, maxPower);
+                    existing.min_power = Math.min(existing.min_power, minPower);
+                    existing.sample_count = totalSamples;
+                  }
+                }
+              });
+
+              // Clean up zip file
+              fs.unlinkSync(fname);
+            }
+
+            // Create CSV file with aggregated power data
+            const csvData = [
+              ['Average Power (W)', 'Max Power (W)', 'Min Power (W)', 'Sample Count', 'Commit', 'Branch', 'Workflow Run URL', 'Timestamp']
+            ];
+
+            // Flatten the results into an array, sorted by timestamp
+            Object.values(powerResults)
+              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+              .forEach(result => {
+                csvData.push([
+                  result.avg_power.toFixed(2),
+                  result.max_power.toFixed(2),
+                  result.min_power.toFixed(2),
+                  result.sample_count,
+                  result.commit,
+                  result.branch,
+                  result.workflow_run_url,
+                  result.timestamp
+                ]);
+              });
+
+            // Write CSV file
+            const csvContent = stringify(csvData);
+            fs.writeFileSync('power results.csv', csvContent);
+            console.log(`Created power results.csv with ${csvData.length - 1} workflow runs`);
+
+      - name: Generate Power Graph
+        run: |
+          python3 tt-zephyr-platforms/scripts/ci/render_power_graph.py . power_stats.html ${{ matrix.board }}
+
+      - name: Upload Power Graph
+        uses: actions/upload-artifact@v4
+        with:
+          name: power-graph-summaries ${{ matrix.board }}
+          path: |
+            power_stats.html
+            power results.csv
+
   build:
     runs-on: ubuntu-22.04
-    needs: [ci-stats, gen-config]
+    needs: [ci-stats, power-stats, gen-config]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -224,6 +392,12 @@ jobs:
           path: ci-results
           pattern: test-result-summaries*
 
+      - name: Download Power Results
+        uses: actions/download-artifact@v4
+        with:
+          path: power-results
+          pattern: power-graph-summaries*
+
       - name: Copy CI Results
         run: |
           CI_BOARDS="$(jq -r -c ".[]" <<< '${{ needs.gen-config.outputs.ci-boards }}')"
@@ -234,6 +408,9 @@ jobs:
           for board in ${CI_BOARD_REVS[@]}; do
             cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
               tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
+
+            cp "power-results/power-graph-summaries ${board}/power_stats.html" \
+              tt-zephyr-platforms/doc/deploy/${board}_power_stats.html
           done
 
       - name: Setup pages
