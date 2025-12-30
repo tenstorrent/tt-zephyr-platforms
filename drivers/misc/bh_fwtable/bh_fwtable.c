@@ -17,16 +17,6 @@
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 
-#define BOARDTYPE_ORION 0x37
-#define BOARDTYPE_P100A 0x43
-#define BOARDTYPE_P150A 0x40
-#define BOARDTYPE_P150  0x41
-#define BOARDTYPE_P150C 0x42
-#define BOARDTYPE_P300  0x44
-#define BOARDTYPE_P300A 0x45
-#define BOARDTYPE_P300C 0x46
-#define BOARDTYPE_UBB   0x47
-
 #define RESET_UNIT_STRAP_REGISTERS_L_REG_ADDR 0x80030D20
 
 LOG_MODULE_REGISTER(bh_fwtable, CONFIG_BH_FWTABLE_LOG_LEVEL);
@@ -118,6 +108,19 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 	}
 
 	return pcb_type;
+}
+
+/* Returns the board type extracted from board_id (bits 36-43) */
+uint8_t tt_bh_fwtable_get_board_type(const struct device *dev)
+{
+	struct bh_fwtable_data *data = dev->data;
+
+	if (!device_is_ready(dev)) {
+		return 0xFF;
+	}
+
+	/* Extract board type from board_id */
+	return (uint8_t)((data->read_only_table.board_id >> 36) & 0xFF);
 }
 
 /* Reads GPIO6 to determine whether it is p300 left chip. GPIO6 is only set on p300 left chip. */
