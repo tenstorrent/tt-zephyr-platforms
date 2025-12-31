@@ -24,6 +24,23 @@ when building for the ``p150a`` board revision, you would use the following comm
    :goals: build flash
    :compact:
 
+Adding Custom Trace Events
+--------------------------
+
+You can add custom trace events to your application using the Zephyr tracing API.
+Include the tracing header and use the ``sys_trace_named_event`` macro:
+
+.. code-block:: c
+
+   #include <zephyr/tracing/tracing.h>
+
+   /* ... */
+
+   /* Log a named event with two integer arguments */
+   sys_trace_named_event("my_event", 123, 456);
+
+For more details, refer to the `Zephyr API documentation <https://docs.zephyrproject.org/latest/doxygen/html/group__subsys__tracing__apis__named.html#ga205bc648bdf0152f8652f04f15cf48af>`_.
+
 Getting Tracing Tools
 ---------------------
 
@@ -43,6 +60,7 @@ tool from the source code included in the repository:
 
    args:
    -a <addr>          : vuart discovery address (default: 800304a0)
+   -b <bar_idx>       : BAR index to use (0 or 4, default: 0)
    -c <channel>       : channel number (default: 1)
    -d <path>          : path to device node (default: /dev/tenstorrent/0)
    -h                 : print this help message
@@ -68,6 +86,12 @@ Collecting Trace Data
    Trace data collection can interfere with real-time performance. Please
    avoid running timing-critical operations (like flashing the firmware)
    while tracing is active.
+
+.. note::
+
+   When running ``tt-burnin`` in parallel, tracing on bar0 (with the increased
+   tx-cap) starts significantly slower compared to tracing on bar4.
+   Users are recommended to use bar4 when possible for better performance.
 
 In order to collect trace data, you will need to copy the CTF metadata file
 into a location where your tracing tools can access it:
@@ -125,8 +149,8 @@ Troubleshooting
 
 If you see a log like the following when running ``tt-tracing``, it indicates
 that tracing data is being output faster than it can be collected. Try disabling
-specific portions of the tracing subsystem (``CONFIG_TRACING_*`` options) to
-reduce the volume of trace data being generated.
+specific portions of the tracing subsystem (``CONFIG_TRACING_*`` options) in
+``tt-zephyr-platforms/app/smc/tracing.conf`` to reduce the volume of trace data being generated.
 
 .. code-block:: console
 
