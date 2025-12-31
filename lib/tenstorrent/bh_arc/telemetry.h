@@ -242,12 +242,26 @@
  */
 #define TAG_AICLK_ARB_MAX 66
 
+/**
+ * @brief Bitmask of enabled minimum arbiters.
+ *
+ * Each bit represents whether a specific minimum frequency arbiter is currently enabled.
+ */
+#define TAG_ENABLED_MIN_ARB 67
+
+/**
+ * @brief Bitmask of enabled maximum arbiters.
+ *
+ * Each bit represents whether a specific maximum frequency arbiter is currently enabled.
+ */
+#define TAG_ENABLED_MAX_ARB 68
+
 /** @} */ /* end of telemetry_tag group */
 
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
  */
-#define TAG_COUNT 67
+#define TAG_COUNT 69
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)

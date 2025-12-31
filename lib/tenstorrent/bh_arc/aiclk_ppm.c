@@ -289,6 +289,34 @@ uint32_t get_aiclk_effective_arb_max(void)
 	return effective_max;
 }
 
+uint32_t get_enabled_arb_min_bitmask(void)
+{
+	/* Return a bitmask of enabled min arbiters */
+	uint32_t bitmask = 0;
+
+	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
+		if (aiclk_ppm.arbiter_min[i].enabled) {
+			bitmask |= (1 << i);
+		}
+	}
+
+	return bitmask;
+}
+
+uint32_t get_enabled_arb_max_bitmask(void)
+{
+	/* Return a bitmask of enabled max arbiters */
+	uint32_t bitmask = 0;
+
+	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
+		if (aiclk_ppm.arbiter_max[i].enabled) {
+			bitmask |= (1 << i);
+		}
+	}
+
+	return bitmask;
+}
+
 /** @brief Handles the request to set AICLK busy or idle
  * @param[in] request The request, of type @ref aiclk_set_speed_rqst_t, with command code
  *	@ref MSG_TYPE_AICLK_GO_BUSY to go busy, or @ref MSG_TYPE_AICLK_GO_LONG_IDLE to go idle.

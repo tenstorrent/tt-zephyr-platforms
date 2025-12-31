@@ -264,4 +264,111 @@ ZTEST(aiclk_ppm, test_min_arb_greater_than_max_arb)
 		      targ_freq, fmin);
 }
 
+ZTEST(aiclk_ppm, test_enabled_arb_min_bitmask)
+{
+	uint32_t bitmask;
+
+	/* Initially all arbiters should be disabled (reset_arb) */
+	bitmask = get_enabled_arb_min_bitmask();
+	zassert_equal(bitmask, 0, "Bitmask should be 0 when all min arbiters are disabled");
+
+	/* Enable kAiclkArbMinFmin (bit 0) */
+	EnableArbMin(kAiclkArbMinFmin, true);
+	bitmask = get_enabled_arb_min_bitmask();
+	zassert_equal(bitmask, (1 << kAiclkArbMinFmin),
+		      "Bitmask should have bit %d set when kAiclkArbMinFmin is enabled",
+		      kAiclkArbMinFmin);
+
+	/* Enable kAiclkArbMinBusy (bit 1) as well */
+	EnableArbMin(kAiclkArbMinBusy, true);
+	bitmask = get_enabled_arb_min_bitmask();
+	zassert_equal(bitmask, (1 << kAiclkArbMinFmin) | (1 << kAiclkArbMinBusy),
+		      "Bitmask should have bits %d and %d set when both arbiters are enabled",
+		      kAiclkArbMinFmin, kAiclkArbMinBusy);
+
+	/* Disable kAiclkArbMinFmin, only kAiclkArbMinBusy should be set */
+	EnableArbMin(kAiclkArbMinFmin, false);
+	bitmask = get_enabled_arb_min_bitmask();
+	zassert_equal(bitmask, (1 << kAiclkArbMinBusy),
+		      "Bitmask should have only bit %d set when only kAiclkArbMinBusy is enabled",
+		      kAiclkArbMinBusy);
+
+	/* Enable all min arbiters */
+	for (int i = 0; i < kAiclkArbMinCount; i++) {
+		EnableArbMin(i, true);
+	}
+	bitmask = get_enabled_arb_min_bitmask();
+	uint32_t expected_all = (1 << kAiclkArbMinCount) - 1;
+
+	zassert_equal(
+		bitmask, expected_all,
+		"Bitmask (0x%x) should have all %d bits set (0x%x) when all arbiters are enabled",
+		bitmask, kAiclkArbMinCount, expected_all);
+}
+
+ZTEST(aiclk_ppm, test_enabled_arb_max_bitmask)
+{
+	uint32_t bitmask;
+
+	/* Initially all arbiters should be disabled (reset_arb) */
+	bitmask = get_enabled_arb_max_bitmask();
+	zassert_equal(bitmask, 0, "Bitmask should be 0 when all max arbiters are disabled");
+
+	/* Enable kAiclkArbMaxFmax (bit 0) */
+	EnableArbMax(kAiclkArbMaxFmax, true);
+	bitmask = get_enabled_arb_max_bitmask();
+	zassert_equal(bitmask, (1 << kAiclkArbMaxFmax),
+		      "Bitmask should have bit %d set when kAiclkArbMaxFmax is enabled",
+		      kAiclkArbMaxFmax);
+
+	/* Enable kAiclkArbMaxTDP and kAiclkArbMaxThm as well */
+	EnableArbMax(kAiclkArbMaxTDP, true);
+	EnableArbMax(kAiclkArbMaxThm, true);
+	bitmask = get_enabled_arb_max_bitmask();
+	uint32_t expected =
+		(1 << kAiclkArbMaxFmax) | (1 << kAiclkArbMaxTDP) | (1 << kAiclkArbMaxThm);
+	zassert_equal(bitmask, expected,
+		      "Bitmask (0x%x) should have bits %d, %d, and %d set (0x%x)", bitmask,
+		      kAiclkArbMaxFmax, kAiclkArbMaxTDP, kAiclkArbMaxThm, expected);
+
+	/* Disable kAiclkArbMaxTDP */
+	EnableArbMax(kAiclkArbMaxTDP, false);
+	bitmask = get_enabled_arb_max_bitmask();
+	expected = (1 << kAiclkArbMaxFmax) | (1 << kAiclkArbMaxThm);
+	zassert_equal(
+		bitmask, expected,
+		"Bitmask (0x%x) should have only bits %d and %d set (0x%x) after disabling TDP",
+		bitmask, kAiclkArbMaxFmax, kAiclkArbMaxThm, expected);
+
+	/* Enable all max arbiters */
+	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+		EnableArbMax(i, true);
+	}
+	bitmask = get_enabled_arb_max_bitmask();
+	uint32_t expected_all = (1 << kAiclkArbMaxCount) - 1;
+
+	zassert_equal(
+		bitmask, expected_all,
+		"Bitmask (0x%x) should have all %d bits set (0x%x) when all arbiters are enabled",
+		bitmask, kAiclkArbMaxCount, expected_all);
+}
+
+ZTEST(aiclk_ppm, test_arb_bitmask_independent)
+{
+	uint32_t min_bitmask, max_bitmask;
+
+	/* Enable some min and max arbiters independently and verify they don't interfere */
+	EnableArbMin(kAiclkArbMinFmin, true);
+	EnableArbMax(kAiclkArbMaxTDP, true);
+	EnableArbMax(kAiclkArbMaxThm, true);
+
+	min_bitmask = get_enabled_arb_min_bitmask();
+	max_bitmask = get_enabled_arb_max_bitmask();
+
+	zassert_equal(min_bitmask, (1 << kAiclkArbMinFmin),
+		      "Min bitmask should only reflect min arbiters");
+	zassert_equal(max_bitmask, (1 << kAiclkArbMaxTDP) | (1 << kAiclkArbMaxThm),
+		      "Max bitmask should only reflect max arbiters");
+}
+
 ZTEST_SUITE(aiclk_ppm, NULL, aiclk_ppm_setup, reset_arb, NULL, reinit_arb);
