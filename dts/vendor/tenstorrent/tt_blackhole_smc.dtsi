@@ -7,6 +7,7 @@
 #include "skeleton.dtsi"
 
 #include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/pinctrl/tt_blackhole_smc-pinctrl.h>
 
 / {
 	aliases {
@@ -388,7 +389,15 @@
 
 	pinctrl: pinctrl {
 		compatible = "tenstorrent,bh-pinctrl";
-		status = "disabled";
+		i2c1_default: i2c1_default {
+			bias-pull-up;
+			input-enable;
+			input-schmitt-enable;
+			drive-strength = <8>;
+			pinmux = <TT_BH_PINMUX(A, 15, I2C1_SDA)>,
+				 <TT_BH_PINMUX(A, 16, I2C1_SCL)>;
+		};
+		status = "okay";
 	};
 
 	timer0: timer0 {
@@ -706,6 +715,8 @@
 				     <36 1 0>, <37 1 0>, <38 1 0>, <39 1 0>, <40 1 0>, <41 1 0>,
 				     <42 1 0>, <43 1 0>, <44 1 0>, <45 1 0>, <46 1 0>, <47 1 0>;
 			interrupt-parent = <&ictl2>;
+			pinctrl-0 = <&i2c1_default>;
+			pinctrl-names = "default";
 			status = "okay";
 		};
 

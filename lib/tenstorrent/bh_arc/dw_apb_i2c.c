@@ -5,6 +5,7 @@
  */
 
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/logging/log.h>
 #include <string.h>
 #include "timer.h"
 #include "dw_apb_i2c.h"
@@ -155,6 +156,12 @@ extern uint8_t asic_state;
 /* i2c_target_config for Zephyr callbacks in I2C slave mode */
 struct i2c_target_config i2c_target_config[3];
 
+static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c0));
+static const struct device *const pmbus = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c1));
+static const struct device *const i2c2_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c2));
+
+LOG_MODULE_REGISTER(dw_i2c);
+
 static inline uint32_t GetI2CBaseAddress(uint32_t id)
 {
 	switch (id) {
@@ -258,6 +265,26 @@ void I2CRecoverBus(uint32_t id)
 	WriteReg(RESET_UNIT_I2C_CNTL_REG_ADDR, i2c_rst_cntl | BIT(id));
 	/* Reenable I2C controller */
 	WriteReg(GetI2CRegAddr(id, GET_I2C_OFFSET(IC_ENABLE)), 1);
+}
+
+int tt_bh_i2c_recover_bus(const struct device *dev)
+{
+	uint8_t id;
+
+	if (dev == i2c0_dev) {
+		id = 0;
+	} else if (dev == pmbus) {
+		id = 1;
+	} else if (dev == i2c2_dev) {
+		id = 2;
+	} else {
+		LOG_ERR("Unrecognized I2C dev");
+		return 1;
+	}
+
+	I2CRecoverBus(id);
+
+	return 0;
 }
 
 static void WaitTxFifoEmpty(uint32_t id)
