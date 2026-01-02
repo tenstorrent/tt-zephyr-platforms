@@ -88,3 +88,8 @@ tests:
       - tracing.conf
     extra_args:
       - EXTRA_DTC_OVERLAY_FILE=tracing.overlay
+  app.tt_shell:
+    build_only: true
+    sysbuild: false
+    extra_configs:
+      - CONFIG_SHELL=y
