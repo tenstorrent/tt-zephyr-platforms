@@ -85,3 +85,10 @@ tests:
     sysbuild: false
     extra_configs:
       - CONFIG_SHELL=y
+  app.tracing:
+    build_only: true
+    sysbuild: true
+    extra_overlay_confs:
+      - tracing.conf
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=tracing.overlay
