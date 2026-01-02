@@ -404,6 +404,9 @@ jobs:
         shell: bash
         run: |
           ./zephyr/scripts/twister -p tt_grendel_smc -T zephyr/samples/hello_world
+          ./zephyr/scripts/twister -p tt_grendel_smc -T zephyr/samples/hello_world \
+            -T zephyr/tests/drivers/uart/uart_elementary \
+            --alt-config-root tt-zephyr-platforms/test-conf/tests/drivers/uart/uart_elementary
       - name: Upload Grendel Build Test Artifacts
         uses: actions/upload-artifact@v4
         with:
