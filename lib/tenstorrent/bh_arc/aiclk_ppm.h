@@ -9,36 +9,36 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef enum {
-	kAiclkArbMaxFmax,
-	kAiclkArbMaxTDP,
-	kAiclkArbMaxFastTDC,
-	kAiclkArbMaxTDC,
-	kAiclkArbMaxThm,
-	kAiclkArbMaxBoardPower,
-	kAiclkArbMaxVoltage,
-	kAiclkArbMaxGDDRThm,
-	kAiclkArbMaxDopplerSlow,
-	kAiclkArbMaxDopplerCritical,
-	kAiclkArbMaxCount,
-} AiclkArbMax;
+enum aiclk_arb_max {
+	aiclk_arb_max_fmax,
+	aiclk_arb_max_tdp,
+	aiclk_arb_max_fast_tdc,
+	aiclk_arb_max_tdc,
+	aiclk_arb_max_thm,
+	aiclk_arb_max_board_power,
+	aiclk_arb_max_voltage,
+	aiclk_arb_max_gddr_thm,
+	aiclk_arb_max_doppler_slow,
+	aiclk_arb_max_doppler_critical,
+	aiclk_arb_max_count,
+};
 
-typedef enum {
-	kAiclkArbMinFmin,
-	kAiclkArbMinBusy,
-	kAiclkArbMinCount,
-} AiclkArbMin;
+enum aiclk_arb_min {
+	aiclk_arb_min_fmin,
+	aiclk_arb_min_busy,
+	aiclk_arb_min_count,
+};
 
 void aiclk_update_busy(void);
-void SetAiclkArbMax(AiclkArbMax arb_max, float freq);
-void SetAiclkArbMin(AiclkArbMin arb_min, float freq);
-void EnableArbMax(AiclkArbMax arb_max, bool enable);
-void EnableArbMin(AiclkArbMin arb_min, bool enable);
+void SetAiclkArbMax(enum aiclk_arb_max arb_max, float freq);
+void SetAiclkArbMin(enum aiclk_arb_min arb_min, float freq);
+void EnableArbMax(enum aiclk_arb_max arb_max, bool enable);
+void EnableArbMin(enum aiclk_arb_min arb_min, bool enable);
 void CalculateTargAiclk(void);
 void DecreaseAiclk(void);
 void IncreaseAiclk(void);
 void InitArbMaxVoltage(void);
-float GetThrottlerArbMax(AiclkArbMax arb_max);
+float GetThrottlerArbMax(enum aiclk_arb_max arb_max);
 uint8_t ForceAiclk(uint32_t freq);
 uint32_t GetAiclkTarg(void);
 uint32_t GetMaxAiclkForVoltage(uint32_t voltage);
