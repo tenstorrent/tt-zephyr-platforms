@@ -317,20 +317,20 @@ def voltage_monitors_test(arc_chip_dut, asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     fail_count = 0
 
-    vmin = 0
-    vmax = 1
+    vmin = 0.65
+    vmax = 0.95
 
     for sensor_id in range(NUM_VM):
         response = arc_chip.as_bh().arc_msg_buf(
             [TT_SMC_MSG_READ_VM, sensor_id, 0, 0, 0, 0, 0, 0]
         )
 
-        voltage = convert_telemetry_to_float(response[2])
+        voltage = response[2] / 1000
 
-        if voltage <= vmin or voltage > vmax or response[0] != 0:
+        if voltage < vmin or voltage > vmax or response[0] != 0:
             fail_count += 1
             logger.error(
-                f"Error in voltage monitor response. expect voltage {voltage} in ({vmin}..{vmax} with response 0 == {response[0]}"
+                f"Expected voltage between {vmin}..{vmax}, received {voltage} with response {response[0]}"
             )
 
     return fail_count
