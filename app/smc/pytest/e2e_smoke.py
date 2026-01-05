@@ -321,13 +321,16 @@ def voltage_monitors_test(arc_chip_dut, asic_id):
     vmax = 1
 
     for sensor_id in range(NUM_VM):
-        response = arc_chip.arc_msg(TT_SMC_MSG_READ_VM, True, False, sensor_id, 0, 5000)
+        response = arc_chip.as_bh().arc_msg_buf(
+            [TT_SMC_MSG_READ_VM, sensor_id, 0, 0, 0, 0, 0, 0]
+        )
 
-        voltage = convert_telemetry_to_float(response[0])
-        if voltage < vmin or voltage > vmax or response[1] != 0:
+        voltage = convert_telemetry_to_float(response[2])
+
+        if voltage < vmin or voltage > vmax or response[0] != 0:
             fail_count += 1
             logger.error(
-                f"Error in voltage monitor response. expect voltage {voltage} in ({vmin}..{vmax} with response 0 == {response[1]}"
+                f"Error in voltage monitor response. expect voltage {voltage} in ({vmin}..{vmax} with response 0 == {response[0]}"
             )
 
     return fail_count
@@ -342,15 +345,16 @@ def process_detectors_test(arc_chip_dut, asic_id):
     delay_chains = [19, 20, 21]
     for delay_chain in delay_chains:
         for sensor_id in range(NUM_PD):
-            response = arc_chip.arc_msg(
-                TT_SMC_MSG_READ_PD, True, False, delay_chain, sensor_id, 5000
+            response = arc_chip.as_bh().arc_msg_buf(
+                [TT_SMC_MSG_READ_PD, delay_chain, sensor_id, 0, 0, 0, 0, 0]
             )
 
-            freq = convert_telemetry_to_float(response[0])
-            if freq < fmin or freq > fmax or response[1] != 0:
+            freq = convert_telemetry_to_float(response[2])
+
+            if freq < fmin or freq > fmax or response[0] != 0:
                 fail_count += 1
                 logger.error(
-                    f"Error in pd message response. Expect frequency {freq} in ({fmin}..{fmax}) with response 0 == {response[1]}"
+                    f"Error in pd message response. Expect frequency {freq} in ({fmin}..{fmax}) with response 0 == {response[0]}"
                 )
 
     return fail_count
@@ -362,13 +366,15 @@ def temperature_sensors_test(arc_chip_dut, asic_id):
     tmin = 40
     tmax = 70
     for sensor_id in range(NUM_TS):
-        response = arc_chip.arc_msg(TT_SMC_MSG_READ_TS, True, False, sensor_id, 0, 5000)
+        response = arc_chip.as_bh().arc_msg_buf(
+            [TT_SMC_MSG_READ_TS, sensor_id, 0, 0, 0, 0, 0, 0]
+        )
 
-        temp = convert_telemetry_to_float(response[0])
-        if temp < tmin or temp > tmax or response[1] != 0:
+        temp = convert_telemetry_to_float(response[2])
+        if temp < tmin or temp > tmax or response[0] != 0:
             fail_count += 1
             logger.error(
-                f"Error in temp msg response. Expect temperature {temp} in ({tmin}..{tmax} with response 0 == {response[1]}"
+                f"Error in temp msg response. Expect temperature {temp} in ({tmin}..{tmax} with response 0 == {response[0]}"
             )
 
     return fail_count
