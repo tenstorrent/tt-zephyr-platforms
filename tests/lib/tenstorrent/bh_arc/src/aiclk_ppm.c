@@ -27,11 +27,11 @@ static void reset_arb(void *fixture)
 	(void)fixture;
 
 	/* Reset all arbiter values and disable */
-	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+	for (int i = 0; i < aiclk_arb_max_count; i++) {
 		SetAiclkArbMax(i, fmax);
 		EnableArbMax(i, false);
 	}
-	for (int i = 0; i < kAiclkArbMinCount; i++) {
+	for (int i = 0; i < aiclk_arb_min_count; i++) {
 		SetAiclkArbMin(i, fmin);
 		EnableArbMin(i, false);
 	}
@@ -53,11 +53,11 @@ static void set_busy(bool busy)
 static void reinit_arb(void *fixture)
 {
 	(void)fixture;
-	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+	for (int i = 0; i < aiclk_arb_max_count; i++) {
 		SetAiclkArbMax(i, fmax);
 		EnableArbMax(i, true);
 	}
-	for (int i = 0; i < kAiclkArbMinCount; i++) {
+	for (int i = 0; i < aiclk_arb_min_count; i++) {
 		SetAiclkArbMin(i, fmin);
 		EnableArbMin(i, true);
 	}
@@ -85,9 +85,9 @@ ZTEST(aiclk_ppm, test_arb_min_disable_enable)
 
 	/* Increase fmin arbiter */
 	/* This should limit target aiclk to modified fmin when arbiter is enabled */
-	SetAiclkArbMin(kAiclkArbMinFmin, mod_fmin);
+	SetAiclkArbMin(aiclk_arb_min_fmin, mod_fmin);
 
-	EnableArbMin(kAiclkArbMinFmin, false);
+	EnableArbMin(aiclk_arb_min_fmin, false);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -97,7 +97,7 @@ ZTEST(aiclk_ppm, test_arb_min_disable_enable)
 		      "Fmin arbiter is disabled",
 		      targ_freq, fmin);
 
-	EnableArbMin(kAiclkArbMinFmin, true);
+	EnableArbMin(aiclk_arb_min_fmin, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -113,14 +113,14 @@ ZTEST(aiclk_ppm, test_arb_max_disable_enable)
 	uint32_t mod_fmax = (fmin + fmax) / 2;
 	uint32_t targ_freq;
 
-	/* Set busy arbiter (kAiclkArbMinBusy = fmax [1400]) */
+	/* Set busy arbiter (aiclk_arb_min_busy = fmax [1400]) */
 	/* Set fmax arbiter to value in between fmin and fmax [800] */
 	/* This should limit target aiclk to modified fmax when both arbiters are enabled */
 	set_busy(true);
-	SetAiclkArbMax(kAiclkArbMaxFmax, mod_fmax);
+	SetAiclkArbMax(aiclk_arb_max_fmax, mod_fmax);
 
-	EnableArbMin(kAiclkArbMinBusy, false);
-	EnableArbMax(kAiclkArbMaxFmax, false);
+	EnableArbMin(aiclk_arb_min_busy, false);
+	EnableArbMax(aiclk_arb_max_fmax, false);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -130,8 +130,8 @@ ZTEST(aiclk_ppm, test_arb_max_disable_enable)
 		      "Fmax arbiter and Busy arbiter is disabled",
 		      targ_freq, fmin);
 
-	EnableArbMin(kAiclkArbMinBusy, true);
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	EnableArbMin(aiclk_arb_min_busy, true);
+	EnableArbMax(aiclk_arb_max_fmax, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -147,8 +147,8 @@ ZTEST(aiclk_ppm, test_arb_freq_clamping)
 	uint32_t targ_freq;
 
 	/* Try setting min arbiter above fmax */
-	SetAiclkArbMin(kAiclkArbMinFmin, fmax + 100);
-	EnableArbMin(kAiclkArbMinFmin, true);
+	SetAiclkArbMin(aiclk_arb_min_fmin, fmax + 100);
+	EnableArbMin(aiclk_arb_min_fmin, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -157,11 +157,11 @@ ZTEST(aiclk_ppm, test_arb_freq_clamping)
 		     "Target frequency (%d) should be clamped within [%d, %d]", targ_freq, fmin,
 		     fmax);
 
-	EnableArbMin(kAiclkArbMinFmin, false);
+	EnableArbMin(aiclk_arb_min_fmin, false);
 
 	/* Try setting max arbiter below fmin */
-	SetAiclkArbMax(kAiclkArbMaxFmax, fmin - 100);
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	SetAiclkArbMax(aiclk_arb_max_fmax, fmin - 100);
+	EnableArbMax(aiclk_arb_max_fmax, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -179,17 +179,17 @@ ZTEST(aiclk_ppm, test_arb_lowest_max)
 	/* Set a high min arbiter */
 
 	set_busy(true);
-	EnableArbMin(kAiclkArbMinBusy, true);
+	EnableArbMin(aiclk_arb_min_busy, true);
 
 	/* Set multiple max arbiters to different values */
-	SetAiclkArbMax(kAiclkArbMaxFmax, fmax - 100);
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	SetAiclkArbMax(aiclk_arb_max_fmax, fmax - 100);
+	EnableArbMax(aiclk_arb_max_fmax, true);
 
-	SetAiclkArbMax(kAiclkArbMaxTDP, fmax - 200);
-	EnableArbMax(kAiclkArbMaxTDP, true);
+	SetAiclkArbMax(aiclk_arb_max_tdp, fmax - 200);
+	EnableArbMax(aiclk_arb_max_tdp, true);
 
-	SetAiclkArbMax(kAiclkArbMaxThm, fmax - 150);
-	EnableArbMax(kAiclkArbMaxThm, true);
+	SetAiclkArbMax(aiclk_arb_max_thm, fmax - 150);
+	EnableArbMax(aiclk_arb_max_thm, true);
 
 	expected_max = fmax - 200;
 
@@ -208,11 +208,11 @@ ZTEST(aiclk_ppm, test_arb_highest_min)
 	uint32_t expected_min;
 
 	/* Set multiple min arbiters to different values */
-	SetAiclkArbMin(kAiclkArbMinFmin, fmin + 100);
-	EnableArbMin(kAiclkArbMinFmin, true);
+	SetAiclkArbMin(aiclk_arb_min_fmin, fmin + 100);
+	EnableArbMin(aiclk_arb_min_fmin, true);
 
-	SetAiclkArbMin(kAiclkArbMinBusy, fmin + 200);
-	EnableArbMin(kAiclkArbMinBusy, true);
+	SetAiclkArbMin(aiclk_arb_min_busy, fmin + 200);
+	EnableArbMin(aiclk_arb_min_busy, true);
 
 	expected_min = fmin + 200;
 
@@ -230,8 +230,8 @@ ZTEST(aiclk_ppm, test_max_arb_less_than_fmin)
 	uint32_t targ_freq;
 
 	/* Set fmax arbiter below fmin */
-	SetAiclkArbMax(kAiclkArbMaxFmax, fmin - 100);
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	SetAiclkArbMax(aiclk_arb_max_fmax, fmin - 100);
+	EnableArbMax(aiclk_arb_max_fmax, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -249,11 +249,11 @@ ZTEST(aiclk_ppm, test_min_arb_greater_than_max_arb)
 	uint32_t max_arb_value = fmin + 100;
 
 	/* Set fmin arbiter above fmax arbiter */
-	SetAiclkArbMin(kAiclkArbMinFmin, min_arb_value);
-	EnableArbMin(kAiclkArbMinFmin, true);
+	SetAiclkArbMin(aiclk_arb_min_fmin, min_arb_value);
+	EnableArbMin(aiclk_arb_min_fmin, true);
 
-	SetAiclkArbMax(kAiclkArbMaxFmax, max_arb_value);
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	SetAiclkArbMax(aiclk_arb_max_fmax, max_arb_value);
+	EnableArbMax(aiclk_arb_max_fmax, true);
 
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
@@ -272,38 +272,38 @@ ZTEST(aiclk_ppm, test_enabled_arb_min_bitmask)
 	bitmask = get_enabled_arb_min_bitmask();
 	zassert_equal(bitmask, 0, "Bitmask should be 0 when all min arbiters are disabled");
 
-	/* Enable kAiclkArbMinFmin (bit 0) */
-	EnableArbMin(kAiclkArbMinFmin, true);
+	/* Enable aiclk_arb_min_fmin (bit 0) */
+	EnableArbMin(aiclk_arb_min_fmin, true);
 	bitmask = get_enabled_arb_min_bitmask();
-	zassert_equal(bitmask, (1 << kAiclkArbMinFmin),
-		      "Bitmask should have bit %d set when kAiclkArbMinFmin is enabled",
-		      kAiclkArbMinFmin);
+	zassert_equal(bitmask, (1 << aiclk_arb_min_fmin),
+		      "Bitmask should have bit %d set when aiclk_arb_min_fmin is enabled",
+		      aiclk_arb_min_fmin);
 
-	/* Enable kAiclkArbMinBusy (bit 1) as well */
-	EnableArbMin(kAiclkArbMinBusy, true);
+	/* Enable aiclk_arb_min_busy (bit 1) as well */
+	EnableArbMin(aiclk_arb_min_busy, true);
 	bitmask = get_enabled_arb_min_bitmask();
-	zassert_equal(bitmask, (1 << kAiclkArbMinFmin) | (1 << kAiclkArbMinBusy),
+	zassert_equal(bitmask, (1 << aiclk_arb_min_fmin) | (1 << aiclk_arb_min_busy),
 		      "Bitmask should have bits %d and %d set when both arbiters are enabled",
-		      kAiclkArbMinFmin, kAiclkArbMinBusy);
+		      aiclk_arb_min_fmin, aiclk_arb_min_busy);
 
-	/* Disable kAiclkArbMinFmin, only kAiclkArbMinBusy should be set */
-	EnableArbMin(kAiclkArbMinFmin, false);
+	/* Disable aiclk_arb_min_fmin, only aiclk_arb_min_busy should be set */
+	EnableArbMin(aiclk_arb_min_fmin, false);
 	bitmask = get_enabled_arb_min_bitmask();
-	zassert_equal(bitmask, (1 << kAiclkArbMinBusy),
-		      "Bitmask should have only bit %d set when only kAiclkArbMinBusy is enabled",
-		      kAiclkArbMinBusy);
+	zassert_equal(bitmask, (1 << aiclk_arb_min_busy),
+		      "Bitmask should have only bit %d set when only aiclk_arb_min_busy is enabled",
+		      aiclk_arb_min_busy);
 
 	/* Enable all min arbiters */
-	for (int i = 0; i < kAiclkArbMinCount; i++) {
+	for (int i = 0; i < aiclk_arb_min_count; i++) {
 		EnableArbMin(i, true);
 	}
 	bitmask = get_enabled_arb_min_bitmask();
-	uint32_t expected_all = (1 << kAiclkArbMinCount) - 1;
+	uint32_t expected_all = (1 << aiclk_arb_min_count) - 1;
 
 	zassert_equal(
 		bitmask, expected_all,
 		"Bitmask (0x%x) should have all %d bits set (0x%x) when all arbiters are enabled",
-		bitmask, kAiclkArbMinCount, expected_all);
+		bitmask, aiclk_arb_min_count, expected_all);
 }
 
 ZTEST(aiclk_ppm, test_enabled_arb_max_bitmask)
@@ -314,43 +314,43 @@ ZTEST(aiclk_ppm, test_enabled_arb_max_bitmask)
 	bitmask = get_enabled_arb_max_bitmask();
 	zassert_equal(bitmask, 0, "Bitmask should be 0 when all max arbiters are disabled");
 
-	/* Enable kAiclkArbMaxFmax (bit 0) */
-	EnableArbMax(kAiclkArbMaxFmax, true);
+	/* Enable aiclk_arb_max_fmax (bit 0) */
+	EnableArbMax(aiclk_arb_max_fmax, true);
 	bitmask = get_enabled_arb_max_bitmask();
-	zassert_equal(bitmask, (1 << kAiclkArbMaxFmax),
-		      "Bitmask should have bit %d set when kAiclkArbMaxFmax is enabled",
-		      kAiclkArbMaxFmax);
+	zassert_equal(bitmask, (1 << aiclk_arb_max_fmax),
+		      "Bitmask should have bit %d set when aiclk_arb_max_fmax is enabled",
+		      aiclk_arb_max_fmax);
 
-	/* Enable kAiclkArbMaxTDP and kAiclkArbMaxThm as well */
-	EnableArbMax(kAiclkArbMaxTDP, true);
-	EnableArbMax(kAiclkArbMaxThm, true);
+	/* Enable aiclk_arb_max_tdp and aiclk_arb_max_thm as well */
+	EnableArbMax(aiclk_arb_max_tdp, true);
+	EnableArbMax(aiclk_arb_max_thm, true);
 	bitmask = get_enabled_arb_max_bitmask();
 	uint32_t expected =
-		(1 << kAiclkArbMaxFmax) | (1 << kAiclkArbMaxTDP) | (1 << kAiclkArbMaxThm);
+		(1 << aiclk_arb_max_fmax) | (1 << aiclk_arb_max_tdp) | (1 << aiclk_arb_max_thm);
 	zassert_equal(bitmask, expected,
 		      "Bitmask (0x%x) should have bits %d, %d, and %d set (0x%x)", bitmask,
-		      kAiclkArbMaxFmax, kAiclkArbMaxTDP, kAiclkArbMaxThm, expected);
+		      aiclk_arb_max_fmax, aiclk_arb_max_tdp, aiclk_arb_max_thm, expected);
 
-	/* Disable kAiclkArbMaxTDP */
-	EnableArbMax(kAiclkArbMaxTDP, false);
+	/* Disable aiclk_arb_max_tdp */
+	EnableArbMax(aiclk_arb_max_tdp, false);
 	bitmask = get_enabled_arb_max_bitmask();
-	expected = (1 << kAiclkArbMaxFmax) | (1 << kAiclkArbMaxThm);
+	expected = (1 << aiclk_arb_max_fmax) | (1 << aiclk_arb_max_thm);
 	zassert_equal(
 		bitmask, expected,
 		"Bitmask (0x%x) should have only bits %d and %d set (0x%x) after disabling TDP",
-		bitmask, kAiclkArbMaxFmax, kAiclkArbMaxThm, expected);
+		bitmask, aiclk_arb_max_fmax, aiclk_arb_max_thm, expected);
 
 	/* Enable all max arbiters */
-	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+	for (int i = 0; i < aiclk_arb_max_count; i++) {
 		EnableArbMax(i, true);
 	}
 	bitmask = get_enabled_arb_max_bitmask();
-	uint32_t expected_all = (1 << kAiclkArbMaxCount) - 1;
+	uint32_t expected_all = (1 << aiclk_arb_max_count) - 1;
 
 	zassert_equal(
 		bitmask, expected_all,
 		"Bitmask (0x%x) should have all %d bits set (0x%x) when all arbiters are enabled",
-		bitmask, kAiclkArbMaxCount, expected_all);
+		bitmask, aiclk_arb_max_count, expected_all);
 }
 
 ZTEST(aiclk_ppm, test_arb_bitmask_independent)
@@ -358,16 +358,16 @@ ZTEST(aiclk_ppm, test_arb_bitmask_independent)
 	uint32_t min_bitmask, max_bitmask;
 
 	/* Enable some min and max arbiters independently and verify they don't interfere */
-	EnableArbMin(kAiclkArbMinFmin, true);
-	EnableArbMax(kAiclkArbMaxTDP, true);
-	EnableArbMax(kAiclkArbMaxThm, true);
+	EnableArbMin(aiclk_arb_min_fmin, true);
+	EnableArbMax(aiclk_arb_max_tdp, true);
+	EnableArbMax(aiclk_arb_max_thm, true);
 
 	min_bitmask = get_enabled_arb_min_bitmask();
 	max_bitmask = get_enabled_arb_max_bitmask();
 
-	zassert_equal(min_bitmask, (1 << kAiclkArbMinFmin),
+	zassert_equal(min_bitmask, (1 << aiclk_arb_min_fmin),
 		      "Min bitmask should only reflect min arbiters");
-	zassert_equal(max_bitmask, (1 << kAiclkArbMaxTDP) | (1 << kAiclkArbMaxThm),
+	zassert_equal(max_bitmask, (1 << aiclk_arb_max_tdp) | (1 << aiclk_arb_max_thm),
 		      "Max bitmask should only reflect max arbiters");
 }
 

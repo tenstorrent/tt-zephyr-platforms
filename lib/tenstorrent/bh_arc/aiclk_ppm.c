@@ -54,8 +54,8 @@ typedef struct {
 	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
 	uint32_t sweep_low;   /* in MHz */
 	uint32_t sweep_high;  /* in MHz */
-	AiclkArb arbiter_max[kAiclkArbMaxCount];
-	AiclkArb arbiter_min[kAiclkArbMinCount];
+	AiclkArb arbiter_max[aiclk_arb_max_count];
+	AiclkArb arbiter_min[aiclk_arb_min_count];
 } AiclkPPM;
 
 static AiclkPPM aiclk_ppm = {
@@ -67,22 +67,22 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 
 static bool last_msg_busy;
 
-void SetAiclkArbMax(AiclkArbMax arb_max, float freq)
+void SetAiclkArbMax(enum aiclk_arb_max arb_max, float freq)
 {
 	aiclk_ppm.arbiter_max[arb_max].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
 }
 
-void SetAiclkArbMin(AiclkArbMin arb_min, float freq)
+void SetAiclkArbMin(enum aiclk_arb_min arb_min, float freq)
 {
 	aiclk_ppm.arbiter_min[arb_min].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
 }
 
-void EnableArbMax(AiclkArbMax arb_max, bool enable)
+void EnableArbMax(enum aiclk_arb_max arb_max, bool enable)
 {
 	aiclk_ppm.arbiter_max[arb_max].enabled = enable;
 }
 
-void EnableArbMin(AiclkArbMin arb_min, bool enable)
+void EnableArbMin(enum aiclk_arb_min arb_min, bool enable)
 {
 	aiclk_ppm.arbiter_min[arb_min].enabled = enable;
 }
@@ -137,7 +137,7 @@ void IncreaseAiclk(void)
 	}
 }
 
-float GetThrottlerArbMax(AiclkArbMax arb_max)
+float GetThrottlerArbMax(enum aiclk_arb_max arb_max)
 {
 	return aiclk_ppm.arbiter_max[arb_max].value;
 }
@@ -170,7 +170,7 @@ uint32_t GetMaxAiclkForVoltage(uint32_t voltage)
 void InitArbMaxVoltage(void)
 {
 	/* ArbMaxVoltage is statically set to the frequency of the maximum voltage */
-	SetAiclkArbMax(kAiclkArbMaxVoltage, GetMaxAiclkForVoltage(voltage_arbiter.vdd_max));
+	SetAiclkArbMax(aiclk_arb_max_voltage, GetMaxAiclkForVoltage(voltage_arbiter.vdd_max));
 }
 
 static int InitAiclkPPM(void)
@@ -201,12 +201,12 @@ static int InitAiclkPPM(void)
 	/* disable AICLK sweep */
 	aiclk_ppm.sweep_en = 0;
 
-	for (int i = 0; i < kAiclkArbMaxCount; i++) {
+	for (int i = 0; i < aiclk_arb_max_count; i++) {
 		aiclk_ppm.arbiter_max[i].value = aiclk_ppm.fmax;
 		aiclk_ppm.arbiter_max[i].enabled = true;
 	}
 
-	for (int i = 0; i < kAiclkArbMinCount; i++) {
+	for (int i = 0; i < aiclk_arb_min_count; i++) {
 		aiclk_ppm.arbiter_min[i].value = aiclk_ppm.fmin;
 		aiclk_ppm.arbiter_min[i].enabled = true;
 	}
@@ -255,9 +255,9 @@ uint32_t GetAiclkFmax(void)
 void aiclk_update_busy(void)
 {
 	if (last_msg_busy || bh_get_aiclk_busy()) {
-		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmax);
+		SetAiclkArbMin(aiclk_arb_min_busy, aiclk_ppm.fmax);
 	} else {
-		SetAiclkArbMin(kAiclkArbMinBusy, aiclk_ppm.fmin);
+		SetAiclkArbMin(aiclk_arb_min_busy, aiclk_ppm.fmin);
 	}
 }
 
@@ -266,7 +266,7 @@ uint32_t get_aiclk_effective_arb_min(void)
 	/* Calculate the highest enabled arbiter_min */
 	uint32_t effective_min = aiclk_ppm.fmin;
 
-	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
+	for (enum aiclk_arb_min i = 0; i < aiclk_arb_min_count; i++) {
 		if (aiclk_ppm.arbiter_min[i].enabled) {
 			effective_min = MAX(effective_min, aiclk_ppm.arbiter_min[i].value);
 		}
@@ -280,7 +280,7 @@ uint32_t get_aiclk_effective_arb_max(void)
 	/* Calculate the lowest enabled arbiter_max */
 	uint32_t effective_max = aiclk_ppm.fmax;
 
-	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
+	for (enum aiclk_arb_max i = 0; i < aiclk_arb_max_count; i++) {
 		if (aiclk_ppm.arbiter_max[i].enabled) {
 			effective_max = MIN(effective_max, aiclk_ppm.arbiter_max[i].value);
 		}
@@ -294,7 +294,7 @@ uint32_t get_enabled_arb_min_bitmask(void)
 	/* Return a bitmask of enabled min arbiters */
 	uint32_t bitmask = 0;
 
-	for (AiclkArbMin i = 0; i < kAiclkArbMinCount; i++) {
+	for (enum aiclk_arb_min i = 0; i < aiclk_arb_min_count; i++) {
 		if (aiclk_ppm.arbiter_min[i].enabled) {
 			bitmask |= (1 << i);
 		}
@@ -308,7 +308,7 @@ uint32_t get_enabled_arb_max_bitmask(void)
 	/* Return a bitmask of enabled max arbiters */
 	uint32_t bitmask = 0;
 
-	for (AiclkArbMax i = 0; i < kAiclkArbMaxCount; i++) {
+	for (enum aiclk_arb_max i = 0; i < aiclk_arb_max_count; i++) {
 		if (aiclk_ppm.arbiter_max[i].enabled) {
 			bitmask |= (1 << i);
 		}

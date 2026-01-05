@@ -69,7 +69,7 @@ typedef struct {
 } ThrottlerParams;
 
 typedef struct {
-	const AiclkArbMax arb_max; /* The arbiter associated with this throttler */
+	const enum aiclk_arb_max arb_max; /* The arbiter associated with this throttler */
 
 	const ThrottlerParams params;
 	float limit;
@@ -82,7 +82,7 @@ typedef struct {
 /* clang-format off */
 static Throttler throttler[kThrottlerCount] = {
 	[kThrottlerTDP] = {
-			.arb_max = kAiclkArbMaxTDP,
+			.arb_max = aiclk_arb_max_tdp,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.2,
@@ -90,7 +90,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerFastTDC] = {
-			.arb_max = kAiclkArbMaxFastTDC,
+			.arb_max = aiclk_arb_max_fast_tdc,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.5,
@@ -98,7 +98,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerTDC] = {
-			.arb_max = kAiclkArbMaxTDC,
+			.arb_max = aiclk_arb_max_tdc,
 			.params = {
 					.alpha_filter = 0.1,
 					.p_gain = 0.2,
@@ -106,7 +106,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerThm] = {
-			.arb_max = kAiclkArbMaxThm,
+			.arb_max = aiclk_arb_max_thm,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.2,
@@ -114,7 +114,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerBoardPower] = {
-			.arb_max = kAiclkArbMaxBoardPower,
+			.arb_max = aiclk_arb_max_board_power,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.1,
@@ -122,7 +122,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerGDDRThm] = {
-			.arb_max = kAiclkArbMaxGDDRThm,
+			.arb_max = aiclk_arb_max_gddr_thm,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.2,
@@ -130,7 +130,7 @@ static Throttler throttler[kThrottlerCount] = {
 				},
 		},
 	[kThrottlerDopplerSlow] = {
-			.arb_max = kAiclkArbMaxDopplerSlow,
+			.arb_max = aiclk_arb_max_doppler_slow,
 			.params = {
 					.alpha_filter = 1.0,
 					.p_gain = 0.0025,
@@ -232,8 +232,8 @@ void InitThrottlers(void)
 
 	EnableArbMax(throttler[kThrottlerDopplerSlow].arb_max, doppler_slow);
 
-	SetAiclkArbMax(kAiclkArbMaxDopplerCritical, GetAiclkFmin());
-	EnableArbMax(kAiclkArbMaxDopplerCritical, false); /* enabled when limit triggered */
+	SetAiclkArbMax(aiclk_arb_max_doppler_critical, GetAiclkFmin());
+	EnableArbMax(aiclk_arb_max_doppler_critical, false); /* enabled when limit triggered */
 }
 
 static void UpdateThrottler(ThrottlerId id, float value)
@@ -333,7 +333,7 @@ static void UpdateDoppler(const TelemetryInternalData *telemetry)
 		SendKernelThrottlingMessage(kernel_nops_enabled);
 	}
 
-	EnableArbMax(kAiclkArbMaxDopplerCritical, critical_throttling);
+	EnableArbMax(aiclk_arb_max_doppler_critical, critical_throttling);
 }
 
 void CalculateThrottlers(void)
