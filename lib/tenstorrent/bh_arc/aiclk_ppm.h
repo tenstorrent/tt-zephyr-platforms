@@ -9,24 +9,40 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**
+ * @brief AICLK maximum frequency arbiters
+ *
+ * These arbiters set upper limits on the AICLK frequency. The effective
+ * maximum frequency is determined by the lowest enabled arbiter value.
+ *
+ * @warning The order of these enum values must be preserved for compatibility.
+ */
 enum aiclk_arb_max {
-	aiclk_arb_max_fmax,
-	aiclk_arb_max_tdp,
-	aiclk_arb_max_fast_tdc,
-	aiclk_arb_max_tdc,
-	aiclk_arb_max_thm,
-	aiclk_arb_max_board_power,
-	aiclk_arb_max_voltage,
-	aiclk_arb_max_gddr_thm,
-	aiclk_arb_max_doppler_slow,
-	aiclk_arb_max_doppler_critical,
-	aiclk_arb_max_count,
+	aiclk_arb_max_fmax,              /**< Maximum frequency limit */
+	aiclk_arb_max_tdp,               /**< Thermal Design Power limit */
+	aiclk_arb_max_fast_tdc,          /**< Fast Thermal Design Current limit */
+	aiclk_arb_max_tdc,               /**< Thermal Design Current limit */
+	aiclk_arb_max_thm,               /**< Thermal limit */
+	aiclk_arb_max_board_power,       /**< Board power limit */
+	aiclk_arb_max_voltage,           /**< Voltage limit */
+	aiclk_arb_max_gddr_thm,          /**< GDDR thermal limit */
+	aiclk_arb_max_doppler_slow,      /**< Doppler slow throttling limit */
+	aiclk_arb_max_doppler_critical,  /**< Doppler critical throttling limit */
+	aiclk_arb_max_count,             /**< Number of max arbiters */
 };
 
+/**
+ * @brief AICLK minimum frequency arbiters
+ *
+ * These arbiters set lower limits on the AICLK frequency. The effective
+ * minimum frequency is determined by the highest enabled arbiter value.
+ *
+ * @warning The order of these enum values must be preserved for compatibility.
+ */
 enum aiclk_arb_min {
-	aiclk_arb_min_fmin,
-	aiclk_arb_min_busy,
-	aiclk_arb_min_count,
+	aiclk_arb_min_fmin,   /**< Minimum frequency limit */
+	aiclk_arb_min_busy,   /**< Busy state frequency requirement */
+	aiclk_arb_min_count,  /**< Number of min arbiters */
 };
 
 void aiclk_update_busy(void);

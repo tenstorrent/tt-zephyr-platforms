@@ -229,6 +229,8 @@
  *
  * This represents the highest frequency requested by all enabled minimum arbiters.
  * Multiple arbiters may request minimum frequencies, and the highest value is effective.
+ *
+ * @see @ref aiclk_arb_min
  */
 #define TAG_AICLK_ARB_MIN 65
 
@@ -239,6 +241,8 @@
  * Multiple arbiters may impose maximum frequency limits (e.g., TDP, TDC, thermal throttling),
  * and the lowest (most restrictive) value is effective. This value takes precedence over
  * TAG_AICLK_ARB_MIN when determining the final target frequency.
+ *
+ * @see @ref aiclk_arb_max
  */
 #define TAG_AICLK_ARB_MAX 66
 
@@ -246,6 +250,9 @@
  * @brief Bitmask of enabled minimum arbiters.
  *
  * Each bit represents whether a specific minimum frequency arbiter is currently enabled.
+ * Bit positions correspond to the values in @ref aiclk_arb_min.
+ *
+ * @see @ref aiclk_arb_min
  */
 #define TAG_ENABLED_MIN_ARB 67
 
@@ -253,6 +260,9 @@
  * @brief Bitmask of enabled maximum arbiters.
  *
  * Each bit represents whether a specific maximum frequency arbiter is currently enabled.
+ * Bit positions correspond to the values in @ref aiclk_arb_max.
+ *
+ * @see @ref aiclk_arb_max
  */
 #define TAG_ENABLED_MAX_ARB 68
 
