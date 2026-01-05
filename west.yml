@@ -5,8 +5,8 @@ manifest:
   remotes:
     - name: cfriedt
       url-base: https://github.com/cfriedt
-    - name: zephyrproject-rtos
-      url-base: https://github.com/zephyrproject-rtos
+    - name: tenstorrent
+      url-base: https://github.com/tenstorrent
 
   # zephyr-keep-sorted-start re(^\s+\- name:)
   projects:
@@ -15,8 +15,9 @@ manifest:
       path: modules/lib/librpmi
       revision: 23e94f7007731e91be4de7c1d9c8c48b2173f6a2
     - name: zephyr
-      remote: zephyrproject-rtos
-      revision: v4.3.0
+      remote: tenstorrent
+      repo-path: zephyr-fork
+      revision: tt-zephyr-v4.3.0
       import:
         name-allowlist:
           - cmsis_6
