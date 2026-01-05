@@ -327,7 +327,7 @@ def voltage_monitors_test(arc_chip_dut, asic_id):
 
         voltage = convert_telemetry_to_float(response[2])
 
-        if voltage < vmin or voltage > vmax or response[0] != 0:
+        if voltage <= vmin or voltage > vmax or response[0] != 0:
             fail_count += 1
             logger.error(
                 f"Error in voltage monitor response. expect voltage {voltage} in ({vmin}..{vmax} with response 0 == {response[0]}"
