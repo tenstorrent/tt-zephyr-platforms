@@ -61,9 +61,6 @@ Verify that ``python3.12`` is available on your ``PATH`` before continuing.
    # Step 8: Download binary blobs (firmware components)
    west blobs fetch tt-zephyr-platforms
 
-   # Step 9: Apply TT-specific patches
-   west patch apply
-
 .. note::
    The setup process may take several minutes to complete, especially when downloading the Zephyr SDK and modules.
 
@@ -211,12 +208,8 @@ After pulling in the latest code from ``main``, you will avoid many mysterious b
 
 .. code-block:: shell
 
-   # Clean up any existing patches
-   west patch clean
    # Update Zephyr and other modules to the version in the manifest
    west update
-   # Apply the latest patches
-   west patch apply
 
 
 Testing Your Setup

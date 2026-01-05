@@ -84,8 +84,3 @@ runs:
       run: |
         # verify blobs (for tt-zephyr-platforms only - we do not depend on other blobs)
         west blobs fetch tt-zephyr-platforms
-
-    - name: Apply patches
-      shell: bash
-      run: |
-        west -v patch apply

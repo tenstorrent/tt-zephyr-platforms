@@ -73,9 +73,6 @@ jobs:
             west config manifest.group-filter -- ${{ env.manifest_group_filter }}
           fi
           west update -o=--depth=1 -n 2>&1 1> west.update.log || west update -o=--depth=1 -n 2>&1 1> west.update2.log
-          if [ -f zephyr/patches.yml ]; then
-            west -v patch apply
-          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
