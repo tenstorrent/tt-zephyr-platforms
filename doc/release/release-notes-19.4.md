@@ -1,3 +1,12 @@
+# v19.4.2
+
+## What's Changed (Blackhole)
+
+### Bug Fixes
+
+* Revert backward-incompatible message interface changes to `READ_{TS,PD,VM}` introduced in v19.1.0
+* Do not apply MRISC PHY powerdown to BH Galaxy due to data errors with the feature enabled
+
 # v19.4.1
 
 ## What's Changed
