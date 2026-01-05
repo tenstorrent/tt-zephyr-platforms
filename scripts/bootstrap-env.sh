@@ -47,11 +47,6 @@ pull_manifest_revisions() {
   west update
 }
 
-# Function to apply patches to Zephyr
-apply_patches() {
-  west patch apply
-}
-
 # Function to build firmware
 build_firmware() {
   # Builds for SMC
@@ -77,9 +72,6 @@ main() {
 
   # Pull manifest revisions needed to build DMFW and CMFW
   pull_manifest_revisions
-
-  # Apply patches to Zephyr
-  apply_patches
 
   # Build firmware for SMC and DMC to test the environment
   build_firmware

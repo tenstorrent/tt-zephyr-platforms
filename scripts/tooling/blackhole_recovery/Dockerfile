@@ -33,7 +33,6 @@ RUN pip install west && \
 # Build the blackhole recovery image
 RUN --mount=type=secret,id=signing_key \
     cd /tt-zephyr/tt-zephyr-platforms && \
-    west patch apply && \
     python3 ./scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py /recovery.tar.gz \
         --signing-key /signing_key.pem
 
