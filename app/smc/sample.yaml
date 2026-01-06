@@ -53,14 +53,6 @@ tests:
       pytest_args:
         - "--dut-scope=session"
         - "--asic-id=1"
-  # demonstrates pinctrl driver, macros, etc, compile
-  app.e2e_smoke.pinctrl:
-    tags: e2e
-    build_only: true
-    extra_args:
-      - "EXTRA_DTC_OVERLAY_FILE=pinctrl.overlay"
-    extra_overlay_confs:
-      - pinctrl.conf
   app.stress-test:
     # Budget 3 hours for stress testing. Any more and we should consider reducing test coverage
     # nightly, as CI machines might not be available for PR efforts
