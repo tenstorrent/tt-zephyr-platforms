@@ -24,7 +24,7 @@ tests:
   app.recovery:
     build_only: true
     extra_overlay_confs:
-      - recovery.conf
+      - sysbuild/recovery.conf
   app.recovery-flash:
     sysbuild: true
     tags: recovery
