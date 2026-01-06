@@ -100,19 +100,17 @@ TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 # Telemetry tags
 TAG_CM_FW_VERSION = 29
 TAG_DM_APP_FW_VERSION = 26
+TAG_TDP = 7
+TAG_INPUT_POWER = 54
 
 NUM_PD = 16
 NUM_VM = 8
 NUM_TS = 8
 
 
-def read_telem(asic_id, telem_idx):
-    chip = pyluwen.detect_chips()[asic_id]
-
-    table_addr = chip.axi_read32(TELEMETRY_DATA_REG_ADDR)
-    telem = chip.axi_read32(table_addr + telem_idx * 4)
-
-    del chip
+def read_telem(arc_chip, telem_idx):
+    table_addr = arc_chip.axi_read32(TELEMETRY_DATA_REG_ADDR)
+    telem = arc_chip.axi_read32(table_addr + telem_idx * 4)
 
     return telem
 
@@ -301,10 +299,11 @@ def upgrade_from_version_test(
         wait_arc_boot(0, timeout=20)
 
     time.sleep(0.5)
+    arc_chip = pyluwen.detect_chips()[0]
     if not board_name == "galaxy":
-        assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
-    assert cmfw_version_base == read_telem(0, TAG_CM_FW_VERSION)
-
+        assert dmfw_version_base == read_telem(arc_chip, TAG_DM_APP_FW_VERSION)
+    assert cmfw_version_base == read_telem(arc_chip, TAG_CM_FW_VERSION)
+    del arc_chip
     # Make sure we see all ASICs after flashing
     check_chip_count(board_name)
 
@@ -312,14 +311,15 @@ def upgrade_from_version_test(
     unlaunched_dut.launch()
 
     time.sleep(0.5)
+    arc_chip = pyluwen.detect_chips()[0]
     if not board_name == "galaxy":
         assert get_ttzp_version.get_ttzp_version_u32(
             TTZP / "app/dmc/VERSION"
-        ) == read_telem(0, TAG_DM_APP_FW_VERSION)
+        ) == read_telem(arc_chip, TAG_DM_APP_FW_VERSION)
     assert get_ttzp_version.get_ttzp_version_u32(
         TTZP / "app/smc/VERSION"
-    ) == read_telem(0, TAG_CM_FW_VERSION)
-
+    ) == read_telem(arc_chip, TAG_CM_FW_VERSION)
+    del arc_chip
     # Check chip count again
     check_chip_count(board_name)
 
@@ -1036,6 +1036,63 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     assert 0 == pvt_comprehensive_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
 
 
+def power_state_toggle_test(arc_chip_dut, asic_id, board_name):
+    """
+    Test toggling between high and low power states and verify TDP delta.
+
+    Toggles between high and low power states and verifies that the TDP
+    difference between the two states is greater than 80W.
+    For galaxy boards, only tests power state setting without TDP validation.
+    """
+    expected_power_delta = 80
+    settling_time = 0.5
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    is_galaxy = "galaxy" in board_name.lower() if board_name else False
+
+    try:
+        logger.info("Setting power state to high")
+        arc_chip.set_power_state("high")
+    except Exception as e:
+        logger.info(f"No driver support for power state IOCTL: {e}")
+        pytest.skip("Driver does not support power state control")
+
+    time.sleep(settling_time)  # Allow power state to stabilize
+
+    # Measure input power in high power state
+    if not is_galaxy:
+        high_power = read_telem(arc_chip, TAG_INPUT_POWER)
+        logger.info(f"High power state input power: {high_power}W")
+
+    logger.info("Setting power state to low")
+    arc_chip.set_power_state("low")
+    time.sleep(settling_time)  # Allow power state to stabilize
+
+    # Measure input power in low power state
+    if not is_galaxy:
+        low_power = read_telem(arc_chip, TAG_INPUT_POWER)
+        logger.info(f"Low power state input power: {low_power}W")
+
+        power_delta = high_power - low_power
+        logger.info(f"Power delta: {power_delta}W")
+
+        # Verify delta is greater than expected
+        assert power_delta > expected_power_delta, (
+            f"Power delta ({power_delta}W) is not greater than {expected_power_delta}W"
+        )
+
+    return 0
+
+
+def test_power_state_toggle(arc_chip_dut, asic_id, board_name):
+    """
+    Validates that toggling between high and low power states results in a TDP delta > 90W
+    For galaxy boards, only validates power state setting functionality.
+    """
+    assert 0 == power_state_toggle_test(arc_chip_dut, asic_id, board_name), (
+        "power_state_toggle_test failed"
+    )
+
+
 def test_gddr_reset(arc_chip_dut, asic_id):
     """
     Validates the GDDR reset message by toggling MRISC reset on each
@@ -1069,7 +1126,7 @@ def test_gddr_reset(arc_chip_dut, asic_id):
         # Check GDDR telemetry
         if detail != GDDR_RESET_ERR_HARVESTED:
             time.sleep(0.2)
-            gddr_status = read_telem(asic_id, TAG_GDDR_STATUS)
+            gddr_status = read_telem(arc_chip, TAG_GDDR_STATUS)
             bist_complete = (gddr_status >> (16 + gddr_inst * 2)) & 1
             bist_failed = (gddr_status >> (17 + gddr_inst * 2)) & 1
 
