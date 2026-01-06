@@ -394,6 +394,64 @@ jobs:
         run: |
           ./build-flm.sh
 
+  smc-build-only-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - p100a
+          - p150a
+          - p300a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-system-firmware
+
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
+        with:
+          app-path: tt-system-firmware
+
+      - name: Generate BOARD
+        working-directory: tt-system-firmware
+        shell: bash
+        run: |
+          BOARD="$(./scripts/rev2board.sh "${{ matrix.board }}" smc)"
+          echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          docker-images: false
+
+      - name: Build SMC Build Only Tests
+        shell: bash
+        run: |
+          ./zephyr/scripts/twister \
+            -p $BOARD \
+            --build-only \
+            -T tt-system-firmware/app/smc \
+            --outdir twister-smc-tests-${{ matrix.board }} \
+            --runtime-artifact-cleanup pass \
+            -j 2
+
+      - name: Upload Artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-smc-tests-${{ matrix.board }}
+          include-hidden-files: true
+          path: |
+            twister-smc-tests-${{ matrix.board }}/**/handler.log
+            twister-smc-tests-${{ matrix.board }}/**/twister_harness.log
+            twister-smc-tests-${{ matrix.board }}/**/zephyr.dts
+            twister-smc-tests-${{ matrix.board }}/**/.config
+            twister-smc-tests-${{ matrix.board }}/**/*.map
+            twister-smc-tests-${{ matrix.board }}/**/zephyr.elf
+            twister-smc-tests-${{ matrix.board }}/**/*.lst
+            twister-smc-tests-${{ matrix.board }}/twister.log
+            twister-smc-tests-${{ matrix.board }}/twister.json
+
   grendel-build-test:
     runs-on: ubuntu-24.04
     steps:
