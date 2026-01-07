@@ -10,6 +10,10 @@
 [P150A CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p150a_ci_stats.html)
 [P300A CI History](https://docs.tenstorrent.com/tt-zephyr-platforms/p300a_ci_stats.html)
 
+[P100A Power History](https://docs.tenstorrent.com/tt-zephyr-platforms/p100a_power_stats.html)
+[P150A Power History](https://docs.tenstorrent.com/tt-zephyr-platforms/p150a_power_stats.html)
+[P300A Power History](https://docs.tenstorrent.com/tt-zephyr-platforms/p300a_power_stats.html)
+
 Welcome to TT-Zephyr-Platforms!
 
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
