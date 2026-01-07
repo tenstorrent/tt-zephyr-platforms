@@ -21,9 +21,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/tenstorrent/pvt_tt_bh.h>
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-
-static const struct device *const pvt = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pvt));
+static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
 SENSOR_DT_READ_IODEV(vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM, 0},
 		     {SENSOR_CHAN_PVT_TT_BH_VM, 1}, {SENSOR_CHAN_PVT_TT_BH_VM, 2},
@@ -129,5 +127,3 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 REGISTER_MESSAGE(TT_SMC_MSG_READ_TS, read_ts_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_READ_PD, read_pd_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_READ_VM, read_vm_handler);
-
-#endif
