@@ -24,7 +24,7 @@ tests:
   app.recovery:
     build_only: true
     extra_overlay_confs:
-      - recovery.conf
+      - sysbuild/recovery.conf
   app.recovery-flash:
     sysbuild: true
     tags: recovery
@@ -80,3 +80,15 @@ tests:
           - >-
             INFO: (?P<test_name>.*) completed.
             Failed (?P<fail_count>\d+)/(?P<total_tries>\d+) times.
+  app.tt_shell:
+    build_only: true
+    sysbuild: false
+    extra_configs:
+      - CONFIG_SHELL=y
+  app.tracing:
+    build_only: true
+    sysbuild: true
+    extra_overlay_confs:
+      - tracing.conf
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=tracing.overlay
