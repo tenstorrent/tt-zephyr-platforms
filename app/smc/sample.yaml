@@ -80,3 +80,10 @@ tests:
           - >-
             INFO: (?P<test_name>.*) completed.
             Failed (?P<fail_count>\d+)/(?P<total_tries>\d+) times.
+  app.tracing:
+    build_only: true
+    sysbuild: true
+    extra_overlay_confs:
+      - tracing.conf
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=tracing.overlay
