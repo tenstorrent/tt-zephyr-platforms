@@ -23,6 +23,9 @@ on:
       - main
       - v*-branch
       - collab*
+  merge_group:
+    types:
+      - checks_requested
 
 concurrency:
   group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.sha }}
