@@ -3,6 +3,7 @@
 zephyr_library_named(bh_arc)
 
 zephyr_library_include_directories_ifdef(CONFIG_TT_BH_ARC ${ZEPHYR_CURRENT_MODULE_DIR}/include)
+zephyr_library_include_directories_ifdef(CONFIG_TT_BH_ARC ${ZEPHYR_CURRENT_MODULE_DIR}/../)
 
 zephyr_library_sources_ifndef(
   CONFIG_TT_SMC_RECOVERY

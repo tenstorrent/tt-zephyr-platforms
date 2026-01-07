@@ -218,7 +218,7 @@ partitions {
 	main_test: partition@31d000 {
 		label = "maintail";
 		reg = <0x31d000 DT_SIZE_K(4)>;
-		binary-path = "$BUILD_DIR/mcuboot_magic_test.bin";
+		binary-path = "$BUILD_DIR/mcuboot_magic_confirmed.bin";
 	};
 
 	/* Leave some space for future fixed partitions, if needed. */
