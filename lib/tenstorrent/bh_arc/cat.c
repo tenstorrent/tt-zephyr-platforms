@@ -46,17 +46,11 @@ typedef union {
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-
-static const struct device *const pvt = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pvt));
-
-SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
-
-RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
-
+static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 static uint8_t cat_ts_avg_buf[sizeof(struct sensor_value)];
 
-#endif
+SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
+RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
 
 #endif /* CONFIG_TT_SMC_RECOVERY */
 
@@ -168,8 +162,7 @@ static float CalibrateCAT(void)
 	float catmon_temp = TrimCodeToTemp(code);
 	float ts_temp = 0;
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-	struct sensor_value avg_tmp;
+	q31_t avg_tmp;
 	const struct sensor_decoder_api *decoder;
 
 	sensor_get_decoder(pvt, &decoder);
@@ -178,8 +171,7 @@ static float CalibrateCAT(void)
 	decoder->decode(cat_ts_avg_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0},
 			NULL, 1, &avg_tmp);
 
-	ts_temp = sensor_value_to_float(&avg_tmp);
-#endif
+	ts_temp = Q31_TO_TEMP(avg_tmp);
 
 	float catmon_error = catmon_temp - ts_temp;
 

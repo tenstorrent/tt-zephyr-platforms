@@ -21,8 +21,6 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/tenstorrent/pvt_tt_bh.h>
 
-#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
-
 static const struct device *const pvt = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pvt));
 
 SENSOR_DT_READ_IODEV(vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM, 0},
@@ -59,7 +57,7 @@ static struct pvt_tt_bh_rtio_data ts_buf[DT_PROP(DT_NODELABEL(pvt), num_ts)];
 /* return selected TS raw reading and temperature in telemetry format */
 static uint8_t read_ts_handler(const union request *request, struct response *response)
 {
-	struct sensor_value celcius;
+	q31_t celcius;
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -73,7 +71,7 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 			NULL, pvt_cfg->num_ts, &celcius);
 
 	response->data[1] = pvt_tt_bh_temp_to_raw(&celcius);
-	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&celcius));
+	response->data[2] = ConvertFloatToTelemetry(Q31_TO_TEMP(celcius));
 
 	return ret;
 }
@@ -81,7 +79,7 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 /* return selected PD raw reading and frequency in telemetry format */
 static uint8_t read_pd_handler(const union request *request, struct response *response)
 {
-	struct sensor_value freq;
+	q31_t freq;
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -99,7 +97,7 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 			NULL, pvt_cfg->num_pd, &freq);
 
 	response->data[1] = pvt_tt_bh_freq_to_raw(&freq);
-	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&freq));
+	response->data[2] = ConvertFloatToTelemetry(Q31_TO_FREQ(freq));
 
 	return ret;
 }
@@ -107,7 +105,7 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 /* return selected VM raw reading and voltage in mV */
 static uint8_t read_vm_handler(const union request *request, struct response *response)
 {
-	struct sensor_value volts;
+	q31_t volts;
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -121,7 +119,7 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 			NULL, pvt_cfg->num_vm, &volts);
 
 	response->data[1] = pvt_tt_bh_volt_to_raw(&volts);
-	response->data[2] = (uint16_t)(sensor_value_to_float(&volts) * 1000);
+	response->data[2] = (uint16_t)(Q31_TO_VOLT(volts) * 1000);
 
 	return ret;
 }
@@ -129,5 +127,3 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 REGISTER_MESSAGE(TT_SMC_MSG_READ_TS, read_ts_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_READ_PD, read_pd_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_READ_VM, read_vm_handler);
-
-#endif
