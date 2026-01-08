@@ -63,8 +63,14 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 	int ret;
 
 	ret = sensor_get_decoder(pvt, &decoder);
-	ret = sensor_read(&ts_iodev, &pvt_ctx, (uint8_t *)ts_buf, sizeof(ts_buf));
+	if (ret != 0) {
+		return ret;
+	}
 
+	ret = sensor_read(&ts_iodev, &pvt_ctx, (uint8_t *)ts_buf, sizeof(ts_buf));
+	if (ret != 0) {
+		return ret;
+	}
 	uint32_t id = request->data[1];
 
 	decoder->decode((uint8_t *)ts_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, id},
@@ -89,8 +95,14 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 	pvt_tt_bh_delay_chain_set(delay_chain);
 
 	ret = sensor_get_decoder(pvt, &decoder);
-	ret = sensor_read(&pd_iodev, &pvt_ctx, (uint8_t *)pd_buf, sizeof(pd_buf));
+	if (ret != 0) {
+		return ret;
+	}
 
+	ret = sensor_read(&pd_iodev, &pvt_ctx, (uint8_t *)pd_buf, sizeof(pd_buf));
+	if (ret != 0) {
+		return ret;
+	}
 	uint32_t id = request->data[2];
 
 	decoder->decode((uint8_t *)pd_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, id},
@@ -111,7 +123,14 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 	int ret;
 
 	ret = sensor_get_decoder(pvt, &decoder);
+	if (ret != 0) {
+		return ret;
+	}
+
 	ret = sensor_read(&vm_iodev, &pvt_ctx, (uint8_t *)vm_buf, sizeof(vm_buf));
+	if (ret != 0) {
+		return ret;
+	}
 
 	uint32_t id = request->data[1];
 
