@@ -28,6 +28,8 @@ LOG_MODULE_REGISTER(pvt_tt_bh, LOG_LEVEL_DBG);
 
 static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
 
+#define PVT_ID_NUM                           0x80080008
+#define PVT_TM_SCRATCH                       0x8008000C
 #define PVT_CNTL_IRQ_EN_REG_ADDR             0x80080040
 #define PVT_CNTL_TS_00_IRQ_ENABLE_REG_ADDR   0x800800C0
 #define PVT_CNTL_PD_00_IRQ_ENABLE_REG_ADDR   0x80080340
@@ -377,6 +379,50 @@ int pvt_tt_bh_attr_get(const struct device *dev, enum sensor_channel chan,
 	return 0;
 }
 
+/**
+ * @brief Verifies if the PVT device is alive according to section 18.1 of the datasheet.
+ *
+ * Performs the following steps in order,
+ *   1) Verifies ID is 0
+ *   2) Verifies scratch register is 0x0
+ *   3) Verifies writing scratch register by walking 1s
+ *
+ * If these checks fail, the PVT sensor should not be considered reliable.
+ *
+ * @retval 0	On success.
+ * @retval -EIO	On hardware failure with error logs.
+ */
+static int pvt_tt_bh_is_alive(void)
+{
+	uint32_t id;
+	uint32_t scratch;
+
+	/* We don't set the ID, so verify it is 0 */
+	id = sys_read32(PVT_ID_NUM);
+	if (id != 0) {
+		LOG_ERR("ID is %d, expected 0", id);
+		return -EIO;
+	}
+
+	/* Verify scratch register is initially 0x0 */
+	scratch = sys_read32(PVT_TM_SCRATCH);
+	if (scratch != 0) {
+		LOG_ERR("Scratch register is %x, expected 0x0", scratch);
+		return -EIO;
+	}
+
+	/* Verify writing to the scratch register by walking 1s */
+	for (int i = 0; i < 32; ++i) {
+		sys_write32(BIT(i), PVT_TM_SCRATCH);
+		if (sys_read32(PVT_TM_SCRATCH) != BIT(i)) {
+			LOG_ERR("Writing to scratch register failed at bit %d", i);
+			return -EIO;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * Setup Interrupt and clk configurations, TS, PD, VM IP configurations.
  * Enable continuous mode for TS and VM. For PD, run once mode should be used.
@@ -384,11 +430,17 @@ int pvt_tt_bh_attr_get(const struct device *dev, enum sensor_channel chan,
 static int pvt_tt_bh_init(const struct device *dev)
 {
 	const struct pvt_tt_bh_config *pvt_cfg = (const struct pvt_tt_bh_config *)dev->config;
+	int ret;
 
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP5);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
 		return 0;
+	}
+
+	ret = pvt_tt_bh_is_alive();
+	if (ret != 0) {
+		return ret;
 	}
 
 	/* Enable Process + Voltage + Thermal monitors */
