@@ -5,6 +5,7 @@ config MEMC_TT_BH
 	bool "Tenstorrent Blackhole DDR memory controller driver"
 	default y
 	depends on DT_HAS_TENSTORRENT_BH_MEMC_ENABLED
+	depends on BH_FWTABLE
 	help
 	  Enable the Tenstorrent Blackhole DDR memory controller driver.
 
@@ -13,8 +14,7 @@ if MEMC_TT_BH
 
 config MEMC_TT_BH_INIT_PRIORITY
 	int "Initialization priority for Tenstorrent Blackhole DDR memory controller"
-	# this corresponds to POST_KERNEL+18
-	default 91
+	default 105
 	help
 	  Set the initialization priority for the Tenstorrent Blackhole DDR memory controller.
 

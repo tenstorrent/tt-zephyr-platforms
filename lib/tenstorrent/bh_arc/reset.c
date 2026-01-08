@@ -46,6 +46,8 @@ LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 STATUS_ERROR_STATUS0_reg_u error_status0;
 
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
+
 static const uint8_t kNocRing;
 static const uint8_t kNocTlb;
 static const uint32_t kSoftReset0Addr = 0xFFB121B0; /* NOC address in each tile */

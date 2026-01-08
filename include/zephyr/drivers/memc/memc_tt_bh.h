@@ -7,7 +7,7 @@
 #ifndef ZEPHYR_DRIVERS_MEMC_MEMC_TT_BH_H_
 #define ZEPHYR_DRIVERS_MEMC_MEMC_TT_BH_H_
 
-#include "gddr_telemetry_table.h"
+#include "tenstorrent/gddr_telemetry_table.h"
 
 #include <stddef.h>
 
