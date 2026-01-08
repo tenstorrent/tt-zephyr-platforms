@@ -15,6 +15,7 @@
 #include "status_reg.h"
 #include "telemetry.h"
 #include "telemetry_internal.h"
+#include "gddr_telemetry_table.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>  /* for floor */
@@ -38,6 +39,7 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
 static const struct device *const pll_dev_1 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll1));
 static const struct device *const pll_dev_4 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll4));
+static const struct device *memc_devices[] = {DT_INST_FOREACH_STATUS_OKAY(MEMC_TT_BH_DEVICE_GET)};
 
 /**
  * @defgroup telemetry_table Telemetry Table

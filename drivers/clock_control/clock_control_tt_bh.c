@@ -361,7 +361,7 @@ static void clock_control_tt_bh_update(const struct clock_control_tt_bh_config *
 static int clock_control_tt_bh_enable(const struct device *dev, clock_control_subsys_t sys,
 				      uint8_t enable)
 {
-	enum clock_control_tt_bh_clock clock = (enum clock_control_tt_bh_clock)(uintptr_t)sys;
+	int clock = POINTER_TO_INT(sys);
 	struct clock_control_tt_bh_config *config =
 		(struct clock_control_tt_bh_config *)dev->config;
 	struct clock_control_tt_bh_data *data = (struct clock_control_tt_bh_data *)dev->data;

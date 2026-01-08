@@ -6,14 +6,12 @@
 
 #define DT_DRV_COMPAT tenstorrent_bh_memc
 
-#include "arc_dma.h"
 #include "harvesting.h"
 #include "init.h"
 #include "noc.h"
-#include "noc_dma.h"
+#include "noc_init.h"
 #include "noc2axi.h"
 #include "reg.h"
-#include "gddr_telemetry_table.h"
 
 #include <stdbool.h>
 
@@ -29,9 +27,13 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/memc/memc_tt_bh.h>
 #include <zephyr/drivers/misc/bh_fwtable.h>
+#include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/dma/dma_arc_hs.h>
+#include <zephyr/drivers/dma/dma_tt_bh_noc.h>
 
-#define ARC_NOC0_X    8
-#define ARC_NOC0_Y    0
+static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
+static const struct device *dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
+
 #define MRISC_L1_SIZE (128 * 1024)
 
 #define MIN_GDDR_SPEED             12000
@@ -73,6 +75,7 @@
 #define MRISC_FW_CFG_TAG "memfwcfg"
 
 struct memc_tt_bh_data {
+	/* Currently empty - placeholder for future runtime state */
 };
 
 LOG_MODULE_REGISTER(memc_tt_bh, CONFIG_MEMC_LOG_LEVEL);
@@ -162,17 +165,18 @@ static uint32_t GetDramMask(const struct device *const fwtable_dev)
 	return dram_mask;
 }
 
-static int _memc_tt_bh_telemetry_get(const struct device *dev,
+static int _memc_tt_bh_telemetry_get(const struct device *gddr_inst,
 				     gddr_telemetry_table_t *gddr_telemetry)
 {
-	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(dev);
-	bool dma_pass = ArcDmaTransfer((const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-				       gddr_telemetry, sizeof(*gddr_telemetry));
-	if (!dma_pass) {
+	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
+
+	if (dma_arc_hs_transfer(arc_dma_dev, 0,
+				(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
+				gddr_telemetry, sizeof(*gddr_telemetry), K_MSEC(500)) < 0) {
 		/* If DMA failed, can read 32b at a time via NOC2AXI */
 		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
 			((uint32_t *)gddr_telemetry)[i] =
-				MriscL1Read32(dev, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
+				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
 		}
 	}
 	/* Check that version matches expectation. */
@@ -195,8 +199,28 @@ static void wipe_l1(const struct device *dev)
 	uint8_t noc_id = 0;
 	uint64_t addr = 0;
 	uint32_t dram_mask = GetDramMask(dev);
-	uint8_t tensix_x = 1;
-	uint8_t tensix_y = 2;
+	uint8_t tensix_x, tensix_y;
+
+	GetEnabledTensix(&tensix_x, &tensix_y);
+
+	struct tt_bh_dma_noc_coords coords = tt_bh_dma_noc_coords_init(tensix_x, tensix_y, 0, 0);
+
+	struct dma_block_config block = {
+		.source_address = addr,
+		.dest_address = addr,
+		.block_size = MRISC_L1_SIZE,
+	};
+
+	struct dma_config dma_cfg = {
+		.channel_direction = PERIPHERAL_TO_MEMORY,
+		.source_data_size = 1,
+		.dest_data_size = 1,
+		.source_burst_length = 1,
+		.dest_burst_length = 1,
+		.block_count = 1,
+		.head_block = &block,
+		.user_data = &coords,
+	};
 
 	for (uint32_t gddr_inst = 0; gddr_inst < NUM_GDDR; gddr_inst++) {
 		if (IS_BIT_SET(dram_mask, gddr_inst)) {
@@ -205,9 +229,13 @@ static void wipe_l1(const struct device *dev)
 				uint8_t x, y;
 
 				GetGddrNocCoords(gddr_inst, noc2axi_port, noc_id, &x, &y);
+
+				coords.dest_x = x;
+				coords.dest_y = y;
+
 				/* AXI enable must not be set, using MRISC address 0 */
-				noc_dma_write(tensix_x, tensix_y, addr, x, y, addr, MRISC_L1_SIZE,
-					      true);
+				dma_config(dma_noc, 1, &dma_cfg);
+				dma_start(dma_noc, 1);
 			}
 		}
 	}

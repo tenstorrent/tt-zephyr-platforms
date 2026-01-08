@@ -7,7 +7,7 @@
 #ifndef ZEPHYR_DRIVERS_MEMC_MEMC_TT_BH_H_
 #define ZEPHYR_DRIVERS_MEMC_MEMC_TT_BH_H_
 
-#include "gddr_telemetry_table.h"
+#include "tenstorrent/gddr_telemetry_table.h"
 
 #include <stddef.h>
 
@@ -87,7 +87,7 @@ static inline int memc_tt_bh_telemetry_get(const struct device *dev,
 }
 #endif
 
-#if CONFIG_MEMC_TT_BH
+#ifdef CONFIG_MEMC_TT_BH
 #include <zephyr/syscalls/memc_tt_bh.h>
 #endif
 
