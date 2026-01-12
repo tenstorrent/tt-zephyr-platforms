@@ -92,7 +92,7 @@ typedef struct {
 	uint32_t table_count;
 } tt_boot_fs_header;
 
-#define TT_BOOT_FS_MAGIC 0x54544246  /* 'TTBF' in ASCII */
+#define TT_BOOT_FS_MAGIC           0x54544246 /* 'TTBF' in ASCII */
 #define TT_BOOT_FS_CURRENT_VERSION 1
 
 extern tt_boot_fs boot_fs_data;

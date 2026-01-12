@@ -98,7 +98,7 @@ int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, siz
 		return -ENXIO;
 	}
 	header_end = TT_BOOT_FS_HEADER_ADDR + sizeof(tt_boot_fs_header) +
-		header.table_count * sizeof(uint32_t);
+		     header.table_count * sizeof(uint32_t);
 	header_addr += sizeof(tt_boot_fs_header);
 
 	while (header_addr < header_end) {
@@ -110,7 +110,7 @@ int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, siz
 			return -EIO;
 		}
 
-		while (found < nfds)  {
+		while (found < nfds) {
 			tt_boot_fs_fd fd;
 
 			ret = flash_read(dev, fd_addr, &fd, sizeof(tt_boot_fs_fd));
@@ -124,8 +124,8 @@ int tt_boot_fs_ls(const struct device *dev, tt_boot_fs_fd *fds, size_t nfds, siz
 			}
 
 			ret = calculate_and_compare_checksum(
-				(uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t),
-				fd.fd_crc, false);
+				(uint8_t *)&fd, sizeof(tt_boot_fs_fd) - sizeof(uint32_t), fd.fd_crc,
+				false);
 			if (ret != TT_BOOT_FS_CHK_OK) {
 				return -ENXIO;
 			}
