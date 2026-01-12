@@ -40,6 +40,9 @@ MAX_TAG_LEN = 8
 FD_SIZE = 32
 CKSUM_SIZE = 4
 IMAGE_ADDR = 0x14000
+TT_BOOT_FS_HEADER_ADDR = 0x120000
+BOOTFS_HEADER_MAGIC = 0x54544246  # 'TTBF' in ASCII
+BOOTFS_VERSION = 1
 
 SCHEMA_PATH = (
     Path(__file__).parents[1] / "scripts" / "schemas" / "tt-boot-fs-schema.yml"
@@ -169,6 +172,17 @@ class tt_boot_fs_fd(ExtendedStructure):
                 break
             output += chr(c)
         return output
+
+
+# Header for boot fs. Not used by ROM, describes count of tt_boot_fs tables
+# in image. Addresses of each table directly follow this header.
+class tt_boot_fs_header(ExtendedStructure):
+    _fields_ = [
+        ("magic", ctypes.c_uint32),
+        ("version", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 3),
+        ("num_tables", ctypes.c_uint32),
+    ]
 
 
 def read_fd(reader, addr: int) -> tt_boot_fs_fd:
@@ -333,10 +347,14 @@ class RangeTracker:
         # needed for the number of entries that we are dealing with
         insert_index = 0
         for index, range in enumerate(self.ranges):
-            if (range[0] <= start < range[1]) or (range[0] < end <= range[1]):
+            if (
+                (range[0] <= start < range[1])
+                or (range[0] < end <= range[1])
+                or (start <= range[0] and end >= range[1])
+            ):
                 # Overlap! Raise Error
                 raise Exception(
-                    f"Range {start:x}:{end:x} overlaps with existing range {range[0]}:{range[1]}"
+                    f"Range {start:x}:{end:x} overlaps with existing range {range[0]:x}:{range[1]:x}"
                 )
             elif range[0] > start:
                 # Range not found...
@@ -381,17 +399,20 @@ class RangeTracker:
         )
 
 
-class BootFs:
+class BootTable:
     def __init__(
-        self, order: list[str], entries: dict[str, FsEntry], failover: FsEntry
+        self,
+        order: list[str],
+        entries: dict[str, FsEntry],
+        offset: int,
     ) -> None:
         self.order = order
+        self.offset = offset
         self.entries = entries
-        self.entries["failover"] = failover
 
     def writes(self) -> list[tuple[bool, int, bytes]]:
         # Write image descriptors and data
-        descriptor_addr = 0
+        descriptor_addr = self.offset
         writes: list[tuple[bool, int, bytes]] = []
         for tag in self.order:
             entry = self.entries[tag]
@@ -400,15 +421,9 @@ class BootFs:
             writes.append((not entry.provisioning_only, entry.spi_addr, entry.data))
             descriptor_addr += len(descriptor)
 
-        # Handle failover
-        writes.append((True, FAILOVER_HEAD_ADDR, self.entries["failover"].descriptor()))
-        writes.append(
-            (True, self.entries["failover"].spi_addr, self.entries["failover"].data)
-        )
-
-        # Handle RTR training value
-        writes.append((True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")))
-
+        # Place an invalid descriptor at the end to indicate end of table
+        invalid_bytes = bytes([0xFF] * ctypes.sizeof(tt_boot_fs_fd))
+        writes.append((True, descriptor_addr, invalid_bytes))
         writes.sort(key=lambda x: x[1])
 
         # check_overlap
@@ -418,10 +433,82 @@ class BootFs:
 
         return writes
 
+    @staticmethod
+    def check_entry(
+        tag: str, fd: tt_boot_fs_fd, data: bytes, alignment: int = 0x1000
+    ) -> FsEntry:
+        data_offs = fd.spi_addr
+        if data_offs % alignment != 0:
+            raise ValueError(f"{tag} image not aligned to 0x{alignment:x}")
+
+        image_size = fd.flags.f.image_size
+        required_size = image_size + CKSUM_SIZE
+        if len(data) < required_size:
+            raise ValueError(
+                f"data len {len(data)} is too small to contain image '{tag}'"
+            )
+        image_data = data[data_offs : data_offs + image_size]
+        data_offs += image_size
+        actual_image_cksum = cksum(image_data)
+
+        expected_image_cksum = fd.data_crc
+        if expected_image_cksum != actual_image_cksum:
+            if tag == "boardcfg":
+                # currently, the boardcfg checksum does not seem to be added correctly in images ignore for now.
+                pass
+            else:
+                raise ValueError(
+                    f"{tag} image checksum 0x{actual_image_cksum:08x} does not match expected checksum 0x{expected_image_cksum:08x}"
+                )
+
+        return FsEntry(
+            provisioning_only=False,
+            # do not use fd.image_tag_str() as it may be blank for e.g. "failover"
+            tag=tag,
+            data=image_data,
+            spi_addr=fd.spi_addr,
+            load_addr=fd.copy_dest,
+            executable=fd.flags.f.executable,
+        )
+
+
+class BootFs:
+    def __init__(
+        self,
+        header: tt_boot_fs_header,
+        tables: list[BootTable],
+    ) -> None:
+        self.header = header
+        self.tables = tables
+
+        self.rom_header_writes: list[tuple[bool, int, bytes]] = [
+            (True, SPI_RX_ADDR, (SPI_RX_VALUE).to_bytes(4, "little")),
+            (True, TT_BOOT_FS_HEADER_ADDR, bytes(header)),
+        ]
+
+        # Add the table addresses
+        addr = TT_BOOT_FS_HEADER_ADDR + len(bytes(header))
+        for table in self.tables:
+            self.rom_header_writes.append(
+                (True, addr, table.offset.to_bytes(4, "little"))
+            )
+            addr += 4
+
     def to_binary(self, all_sections) -> bytes:
+        writes = self.rom_header_writes.copy()
+        for table in self.tables:
+            writes.extend(table.writes())
+
+        writes.sort(key=lambda x: x[1])
+
+        # Check overlap
+        tracker = RangeTracker(1)
+        for write in writes:
+            tracker.add(write[1], write[1] + len(write[2]), None)
+
         write = bytearray()
         last_addr = 0
-        for always_write, addr, data in self.writes():
+        for always_write, addr, data in writes:
             if not (always_write or all_sections):
                 continue
             write.extend([0xFF] * (addr - last_addr))
@@ -433,7 +520,18 @@ class BootFs:
         output = ""
         current_segment = -1  # Track the current 16-bit segment
 
-        for always_write, address, data in self.writes():
+        writes = self.rom_header_writes.copy()
+        for table in self.tables:
+            writes.extend(table.writes())
+
+        writes.sort(key=lambda x: x[1])
+
+        # Check overlap
+        tracker = RangeTracker(1)
+        for write in writes:
+            tracker.add(write[1], write[1] + len(write[2]), None)
+
+        for always_write, address, data in writes:
             if not (always_write or all_sections):
                 continue
             end_address = address + len(data)
@@ -504,67 +602,44 @@ class BootFs:
         return output.encode("ascii")
 
     @staticmethod
-    def check_entry(
-        tag: str, fd: tt_boot_fs_fd, data: bytes, alignment: int = 0x1000
-    ) -> FsEntry:
-        data_offs = fd.spi_addr
-        if data_offs % alignment != 0:
-            raise ValueError(f"{tag} image not aligned to 0x{alignment:x}")
-
-        image_size = fd.flags.f.image_size
-        required_size = image_size + CKSUM_SIZE
-        if len(data) < required_size:
-            raise ValueError(
-                f"data len {len(data)} is too small to contain image '{tag}'"
-            )
-        image_data = data[data_offs : data_offs + image_size]
-        data_offs += image_size
-        actual_image_cksum = cksum(image_data)
-
-        expected_image_cksum = fd.data_crc
-        if expected_image_cksum != actual_image_cksum:
-            if tag == "boardcfg":
-                # currently, the boardcfg checksum does not seem to be added correctly in images ignore for now.
-                pass
-            else:
-                raise ValueError(
-                    f"{tag} image checksum 0x{actual_image_cksum:08x} does not match expected checksum 0x{expected_image_cksum:08x}"
-                )
-
-        return FsEntry(
-            provisioning_only=False,
-            # do not use fd.image_tag_str() as it may be blank for e.g. "failover"
-            tag=tag,
-            data=image_data,
-            spi_addr=fd.spi_addr,
-            load_addr=fd.copy_dest,
-            executable=fd.flags.f.executable,
-        )
-
-    @staticmethod
     def from_binary(data: bytes, alignment: int = 0x1000) -> BootFs:
         data_offs = 0
-        order: list[str] = []
         entries: dict[str, FsEntry] = {}
-        fds: dict[str, tt_boot_fs_fd] = {}
-        failover: FsEntry = None
         failover_fd: tt_boot_fs_fd = None
 
-        # scan fds at the start of the binary
-        for value in iter_fd(lambda addr, size: data[addr : addr + size]):
-            tag = value[1].image_tag_str()
-            fds[tag] = value[1]
-            order.append(tag)
-        data_offs += FD_SIZE * len(fds)
+        default_bootfs_header = tt_boot_fs_header(
+            magic=BOOTFS_HEADER_MAGIC,
+            version=BOOTFS_VERSION,
+            num_tables=2,
+        )
+        default_table_addrs = [FD_HEAD_ADDR, FAILOVER_HEAD_ADDR]
+
+        # Pull file descriptor header
+        if len(data) < TT_BOOT_FS_HEADER_ADDR + ctypes.sizeof(tt_boot_fs_header):
+            # Use default table set
+            bootfs_header = default_bootfs_header
+            table_addrs = default_table_addrs
+        else:
+            bootfs_header = tt_boot_fs_header.from_buffer_copy(
+                data, TT_BOOT_FS_HEADER_ADDR
+            )
+            if bootfs_header.magic != BOOTFS_HEADER_MAGIC:
+                # This is an older bootfs that lacks a header. Use the default table set,
+                # which included a ROM table and Fallback table
+                table_addrs = default_table_addrs
+                bootfs_header = default_bootfs_header
+            else:
+                table_addrs = []
+                data_offs = TT_BOOT_FS_HEADER_ADDR + ctypes.sizeof(tt_boot_fs_header)
+                for _ in range(bootfs_header.num_tables):
+                    table_addr = struct.unpack_from("<I", data, data_offs)[0]
+                    table_addrs.append(table_addr)
+                    data_offs += 4
 
         if len(data) < FAILOVER_HEAD_ADDR + FD_SIZE:
             raise ValueError(
                 f"recovery descriptor not found at fixed offset 0x{FAILOVER_HEAD_ADDR:x}"
             )
-
-        failover_fd = read_fd(
-            lambda addr, size: data[addr : addr + size], FAILOVER_HEAD_ADDR
-        )
 
         if len(data) < SPI_RX_ADDR + SPI_RX_SIZE:
             raise ValueError(
@@ -577,11 +652,40 @@ class BootFs:
         if spi_rx_training != SPI_RX_VALUE:
             raise ValueError(f"spi rx training data not found at 0x{SPI_RX_ADDR:x}")
 
-        for tag in order:
-            entries[tag] = BootFs.check_entry(tag, fds[tag], data, alignment)
-        failover = BootFs.check_entry("failover", failover_fd, data, alignment)
+        tables = []
 
-        return BootFs(order, entries, failover)
+        for offset in table_addrs:
+            order: list[str] = []
+            fds: dict[str, tt_boot_fs_fd] = {}
+            entries: dict[str, FsEntry] = {}
+            # Scan FDs in this table
+            for value in iter_fd(
+                lambda addr, size: data[addr + offset : addr + offset + size]
+            ):
+                tag = value[1].image_tag_str()
+                fds[tag] = value[1]
+                order.append(tag)
+
+            for tag in order:
+                entries[tag] = BootTable.check_entry(tag, fds[tag], data, alignment)
+
+            if offset == FAILOVER_HEAD_ADDR:
+                # Rewrite the failover entry
+                failover_fd = read_fd(
+                    lambda addr, size: data[addr : addr + size], offset
+                )
+                entries = {
+                    "failover": BootTable.check_entry(
+                        "failover", failover_fd, data, alignment
+                    )
+                }
+                order = ["failover"]
+
+            table = BootTable(order, entries, offset)
+
+            tables.append(table)
+
+        return BootFs(bootfs_header, tables)
 
     def to_b16(self) -> str:
         ih = IntelHex()
@@ -605,8 +709,7 @@ class FileImage:
 
     alignment: FileAlignment
 
-    images: list[BootImage]
-    failover: BootImage
+    tables: list[dict[str, Any]]
 
     @staticmethod
     def load(path: str, env: dict):
@@ -621,20 +724,25 @@ class FileImage:
             return None
 
         alignment = FileAlignment.loads(data["alignment"])
-        images = {}
-        for ent in data["images"]:
-            ent_name = ent["name"]
-            if ent_name in images:
-                raise ValueError(f"Found duplicate image name '{ent_name}'")
-            images[ent_name] = BootImage.loads(ent_name, ent, alignment, env)
+        tables = []
+        for t in data["tables"]:
+            table_ent = {"header_addr": t["header_addr"], "images": {}}
+
+            for ent in t["images"]:
+                ent_name = ent["name"]
+                if ent_name in table_ent["images"]:
+                    raise ValueError(f"Found duplicate image name '{ent_name}'")
+                table_ent["images"][ent_name] = BootImage.loads(
+                    ent_name, ent, alignment, env
+                )
+            tables.append(table_ent)
 
         return FileImage(
             name=data["name"],
             product_name=data["product_name"],
             gen_name=data["gen_name"],
             alignment=alignment,
-            images=images,
-            failover=BootImage.loads("", data["fail_over_image"], alignment, env),
+            tables=tables,
         )
 
     def to_boot_fs(self):
@@ -644,8 +752,9 @@ class FileImage:
         #   - Require that all addresses are aligned to block_size
         # - Place all remaining binaries at next available location
         #   - Available location defined as gap aligned to block_size that is large enough for the binary
-        # - Generate boot_fs header based on binary placement
-        # - Generate image based on boot_fs
+        # - Generate boot_fs headers for all filesystems based on binary placement
+        # - Generate descriptor table for all boot_fs headers
+        # - Generate filesystems based on boot_fs
         #   - Leave anything out that is marked provisining only
         # - Generate intelhex based on boot_fs
         #   - For provisining
@@ -656,64 +765,72 @@ class FileImage:
         # initial tRoot image is at 0x3fc0 -> 0x4000
         # fail-over descriptor is at 0x4000 -> 0x4040
         # fail-over image is at the end of all images
-        # RTR training value is at 0x13ffc -> 14000
+        # RTR training value is at 0x13ffc -> 0x14000
         tracker.add(0, 0x14000, None)
 
-        # Make sure that the binaries with a given spi_addr are properly aligned
-        # And add to our range tracker
-        for image in self.images.values():
-            if image.spi_addr is not None:
-                if image.spi_addr % self.alignment.block_size != 0:
-                    raise ValueError(
-                        f"The spi_addr of {image.tag} at {image.spi_addr:x} "
-                        "is not aligned to the spi block size of {self.alignment.block_size}"
+        # Reserve space for boot fs header
+        header = tt_boot_fs_header(
+            magic=BOOTFS_HEADER_MAGIC,
+            version=BOOTFS_VERSION,
+            reserved=(ctypes.c_uint8 * 3)(0, 0, 0),
+            num_tables=len(self.tables),
+        )
+        # Header starts in the mutable flash region
+        table_end = TT_BOOT_FS_HEADER_ADDR + len(bytes(header)) + 4 * len(self.tables)
+        tracker.add(TT_BOOT_FS_HEADER_ADDR, table_end, header)
+
+        table_headers = []
+        # Track images that still need to be placed
+        remaining_images: list[BootImage] = []
+
+        for table in self.tables:
+            table_headers.append(table["header_addr"])
+            # Make sure that the binaries with a given spi_addr are properly aligned
+            # And add to our range tracker
+            for image in table["images"].values():
+                if image.spi_addr is not None:
+                    if image.spi_addr % self.alignment.block_size != 0:
+                        raise ValueError(
+                            f"The spi_addr of {image.tag} at {image.spi_addr:x} "
+                            "is not aligned to the spi block size of {self.alignment.block_size}"
+                        )
+                    tracker.add(
+                        image.spi_addr, image.spi_addr + len(image.binary), image
                     )
-                tracker.add(image.spi_addr, image.spi_addr + len(image.binary), image)
+                else:
+                    remaining_images.append(image)
+        # Now place remaining images
+        for image in remaining_images:
+            (start, end) = tracker.find_gap_of_size(len(image.binary))
+            tracker.add(start, end, image.binary)
+            image.spi_addr = start
 
-        tag_order: list[str] = []
-        for image in self.images.values():
-            # Add the rest of the images
-            if image.spi_addr is None:
-                tracker.insert(len(image.binary), image)
-
-            # We need to make sure that we preserve the order of the executable
-            # images in the boot_fs header
-            if image.executable:
+        tables = []
+        for table in self.tables:
+            tag_order: list[str] = []
+            entries = {}
+            for image in table["images"].values():
                 tag_order.append(image.tag)
+                image = cast(BootImage, image)
+                entries[image.tag] = FsEntry(
+                    provisioning_only=image.provisioning_only,
+                    tag=image.tag,
+                    data=image.binary,
+                    spi_addr=image.spi_addr,
+                    load_addr=image.load_addr,
+                    executable=image.executable,
+                )
 
-        boot_fs = {}
-        for addr, image in tracker.iter():
-            image = cast(BootImage, image)
-            boot_fs[image.tag] = FsEntry(
-                provisioning_only=image.provisioning_only,
-                tag=image.tag,
-                data=image.binary,
-                spi_addr=addr,
-                load_addr=image.load_addr,
-                executable=image.executable,
+            boot_table = BootTable(
+                tag_order,
+                entries,
+                table["header_addr"],
             )
-
-            if image.tag not in tag_order:
-                tag_order.append(image.tag)
-
-        if self.failover.spi_addr is not None:
-            # Respect the "source" value set for the failover image
-            failover_spi_addr = self.failover.spi_addr
-        else:
-            # Find a gap for the failover image
-            failover_spi_addr = tracker.find_gap_of_size(len(self.failover.binary))[0]
+            tables.append(boot_table)
 
         return BootFs(
-            tag_order,
-            boot_fs,
-            FsEntry(
-                provisioning_only=False,
-                tag=self.failover.tag,
-                data=self.failover.binary,
-                spi_addr=failover_spi_addr,
-                load_addr=self.failover.load_addr,
-                executable=True,
-            ),
+            header,
+            tables,
         )
 
 
@@ -745,15 +862,18 @@ def mkfs(path: Path, env={"$ROOT": str(ROOT)}, hex=False, all_sections=False) ->
     return None
 
 
-def fsck(path: Path, alignment: int = 0x1000) -> bool:
+def fsck(bootfs: Path, alignment: int = 0x1000) -> bool:
     fs = None
     try:
-        if path.suffix == ".hex":
+        if bootfs.suffix == ".hex":
             # Read hex file and convert to binary
-            ih = IntelHex(str(path))
+            ih = IntelHex(str(bootfs))
             data = ih.tobinarray()
+            if ih.addresses()[0] != 0:
+                # Pad the binary to start at 0
+                data = bytes([0xFF] * ih.addresses()[0]) + data
         else:
-            data = open(path, "rb").read()
+            data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data, alignment=alignment)
     except Exception as e:
         _logger.error(f"Exception: {e}")
@@ -798,7 +918,7 @@ def hexdump(start_addr: int, data: bytes, checksum: bool = False):
 def ls(
     bootfs: Path, verbose: int = 0, output_json: bool = False, input_base64=False
 ) -> bool:
-    fds = []
+    tables = {}
 
     try:
         if input_base64:
@@ -818,74 +938,81 @@ def ls(
             # Read hex file and convert to binary
             ih = IntelHex(str(bootfs))
             data = ih.tobinarray()
+            if ih.addresses()[0] != 0:
+                # Pad the binary to start at 0
+                data = bytes([0xFF] * ih.addresses()[0]) + data
         else:
             data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
-        if verbose >= 0 and not output_json:
-            hdr = "spi_addr\timage_tag\tsize\tcopy_dest\tdata_crc\tflags\t\tfd_crc\t\tdigest"
-            print(hdr)
-            bar = "-" * len(hdr.expandtabs())
-            print(bar)
+        for table in fs.tables:
+            fds = []
+            if verbose >= 0 and not output_json:
+                print(f"Table at offset 0x{table.offset:08x}:")
+                hdr = "spi_addr\timage_tag\tsize\tcopy_dest\tdata_crc\tflags\t\tfd_crc\t\tdigest"
+                print(hdr)
+                bar = "-" * len(hdr.expandtabs())
+                print(bar)
 
-        order: list[(int, str)] = []
-        for tag, entry in fs.entries.items():
-            order.append((entry.spi_addr, tag))
-        order.sort(key=lambda x: x[0])
-        order = list(map(lambda x: x[1], order))
+            order: list[(int, str)] = []
+            for tag, entry in table.entries.items():
+                order.append((entry.spi_addr, tag))
+            order.sort(key=lambda x: x[0])
+            order = list(map(lambda x: x[1], order))
 
-        for tag in order:
-            entry = fs.entries[tag]
-            fd = entry.get_descriptor()
+            for tag in order:
+                entry = table.entries[tag]
+                fd = entry.get_descriptor()
 
-            img_digest_str = "N/A"
-            if len(entry.data) >= 4:
-                magic = int.from_bytes(entry.data[:4], "little")
-                if magic == imgtool_image.IMAGE_MAGIC:
-                    # imgtool methods for verifying image expect a file, so create a temp file
-                    with tempfile.NamedTemporaryFile() as temp_file:
-                        temp_file.write(entry.data)
-                        temp_file.flush()
-                        ret, _, digest, _ = imgtool_image.Image.verify(
-                            temp_file.name, None
-                        )
-                        if ret == imgtool_image.VerifyResult.OK:
-                            img_digest_str = digest.hex()
+                img_digest_str = "N/A"
+                if len(entry.data) >= 4:
+                    magic = int.from_bytes(entry.data[:4], "little")
+                    if magic == imgtool_image.IMAGE_MAGIC:
+                        # imgtool methods for verifying image expect a file, so create a temp file
+                        with tempfile.NamedTemporaryFile() as temp_file:
+                            temp_file.write(entry.data)
+                            temp_file.flush()
+                            ret, _, digest, _ = imgtool_image.Image.verify(
+                                temp_file.name, None
+                            )
+                            if ret == imgtool_image.VerifyResult.OK:
+                                img_digest_str = digest.hex()
 
-            obj = {
-                "spi_addr": fd.spi_addr,
-                "image_tag": tag,
-                "size": len(entry.data),
-                "copy_dest": fd.copy_dest,
-                "data_crc": fd.data_crc,
-                "flags": fd.flags.val,
-                "fd_crc": fd.fd_crc,
-                "digest": img_digest_str,
-            }
-            fds.append(obj)
+                obj = {
+                    "spi_addr": fd.spi_addr,
+                    "image_tag": tag,
+                    "size": len(entry.data),
+                    "copy_dest": fd.copy_dest,
+                    "data_crc": fd.data_crc,
+                    "flags": fd.flags.val,
+                    "fd_crc": fd.fd_crc,
+                    "digest": img_digest_str,
+                }
+                fds.append(obj)
 
-            # if very quiet, then don't even print out data
-            if verbose <= -2:
-                continue
+                # if very quiet, then don't even print out data
+                if verbose <= -2:
+                    continue
 
-            if not output_json:
-                print(
-                    f"{fd.spi_addr:08x}\t{tag:<8}\t{len(entry.data)}\t{fd.copy_dest:08x}\t"
-                    f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}\t{img_digest_str:.10}"
-                )
+                if not output_json:
+                    print(
+                        f"{fd.spi_addr:08x}\t{tag:<8}\t{len(entry.data)}\t{fd.copy_dest:08x}\t"
+                        f"{fd.data_crc:08x}\t{fd.flags.val:08x}\t{fd.fd_crc:08x}\t{img_digest_str:.10}"
+                    )
 
-                if verbose >= 2:
-                    hexdump(start_addr=fd.spi_addr, data=entry.data)
+                    if verbose >= 2:
+                        hexdump(start_addr=fd.spi_addr, data=entry.data)
+            tables[table.offset] = fds
 
     except Exception as e:
         # Only log if this is being run as a script
         if __name__ == "__main__":
             _logger.error(f"Exception: {e}")
 
-    if fds and output_json and verbose >= 0:
-        print(json.dumps(fds))
+    if tables and output_json and verbose >= 0:
+        print(json.dumps(tables))
 
-    return fds
+    return tables
 
 
 def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
@@ -907,14 +1034,20 @@ def extract(bootfs: Path, tag: str, output: Path, input_base64=False):
             # Read hex file and convert to binary
             ih = IntelHex(str(bootfs))
             data = ih.tobinarray()
+            if ih.addresses()[0] != 0:
+                # Pad the binary to start at 0
+                data = bytes([0xFF] * ih.addresses()[0]) + data
         else:
             data = open(bootfs, "rb").read()
         fs = BootFs.from_binary(data)
 
         entry_data = None
-        for t, entry in fs.entries.items():
-            if t == tag:
-                entry_data = entry.data
+        for table in fs.tables:
+            for t, entry in table.entries.items():
+                if t == tag:
+                    entry_data = entry.data
+                    break
+            if entry_data is not None:
                 break
         if entry_data is None:
             _logger.error(f"Tag {tag} not found")
@@ -951,7 +1084,7 @@ def extract_all(bootfs: Path, input_base64=False):
 
 
 def _generate_bootfs_yaml(
-    args, partitions_node, name: str, gen_name: str, out_yaml: str
+    args, partitions_nodes, name: str, gen_name: str, out_yaml: str
 ):
     """
     Parameters:
@@ -967,55 +1100,59 @@ def _generate_bootfs_yaml(
         "product_name": prod_name,
         "gen_name": gen_name,
         "alignment": {
-            "flash_device_size": partitions_node.props["flash-device-size"].val,
-            "flash_block_size": partitions_node.props["flash-block-size"].val,
+            "flash_device_size": partitions_nodes[0].props["flash-device-size"].val,
+            "flash_block_size": partitions_nodes[0].props["flash-block-size"].val,
         },
-        "images": [],
+        "tables": [],
     }
 
     _logger.debug(partitions_yml)
 
-    for partition in partitions_node.children.values():
-        # Galaxy does not have BM firmware
-        if args.board == "galaxy" and partition.label == "bmfw":
-            continue
-        # P300 right chip does not have BM firmware
-        if name[-5:] == "right" and partition.label == "bmfw":
-            continue
-        # P300 does not have origcfg
-        if args.board == "p300" and partition.label == "origcfg":
-            continue
-
-        label = partition.label
-        if "binary-path" not in partition.props:
-            continue  # No tt-boot-fs entry for this partition
-
-        path = partition.props["binary-path"].val
-        path = path.replace("$PROD_NAME", prod_name)
-        path = path.replace("$BOARD_REV", gen_name)
-        path = path.replace("$BUILD_DIR", str(args.build_dir))
-        path = path.replace("$BLOBS_DIR", str(args.blobs_dir))
-
-        image_entry = {
-            "name": label,
-            "binary": path,
+    for partitions_node in partitions_nodes:
+        table_entry = {
+            "header_addr": partitions_node.props["header-addr"].val,
+            "images": [],
         }
-        # Build image entry based on which fields the partition actually had
-        for prop in ["offset", "padto", "executable", "provisioning-only"]:
-            if prop in partition.props and partition.props[prop].val is not False:
-                image_entry[prop.replace("-", "_")] = partition.props[prop].val
-        if "source" in partition.props:
-            # Special case, skip adding source property if set to AUTO
-            if partition.props["source"].val != "$AUTO":
-                image_entry["source"] = partition.props["source"].val
-        else:
-            # Use register address to set source
-            image_entry["source"] = str(partition.props["reg"].val[0])
 
-        if label == "failover":
-            partitions_yml["fail_over_image"] = image_entry
-        else:
-            partitions_yml["images"].append(image_entry)
+        for partition in partitions_node.children.values():
+            # Galaxy does not have BM firmware
+            if args.board == "galaxy" and partition.label == "bmfw":
+                continue
+            # P300 right chip does not have BM firmware
+            if name[-5:] == "right" and partition.label == "bmfw":
+                continue
+            # P300 does not have origcfg
+            if args.board == "p300" and partition.label == "origcfg":
+                continue
+
+            label = partition.label
+            if "binary-path" not in partition.props:
+                continue  # No tt-boot-fs entry for this partition
+
+            path = partition.props["binary-path"].val
+            path = path.replace("$PROD_NAME", prod_name)
+            path = path.replace("$BOARD_REV", gen_name)
+            path = path.replace("$BUILD_DIR", str(args.build_dir))
+            path = path.replace("$BLOBS_DIR", str(args.blobs_dir))
+
+            image_entry = {
+                "name": label,
+                "binary": path,
+            }
+            # Build image entry based on which fields the partition actually had
+            for prop in ["offset", "padto", "executable", "provisioning-only"]:
+                if prop in partition.props and partition.props[prop].val is not False:
+                    image_entry[prop.replace("-", "_")] = partition.props[prop].val
+            if "source" in partition.props:
+                # Special case, skip adding source property if set to AUTO
+                if partition.props["source"].val != "$AUTO":
+                    image_entry["source"] = partition.props["source"].val
+            else:
+                # Use register address to set source
+                image_entry["source"] = str(partition.props["reg"].val[0])
+            table_entry["images"].append(image_entry)
+
+        partitions_yml["tables"].append(table_entry)
 
     # Create output file directory
     output_dir = os.path.dirname(args.output_file)
@@ -1047,19 +1184,18 @@ def invoke_generate_bootfs_yaml(args):
     edt = edtlib.EDT(args.dts_file, args.bindings_dirs)
 
     partitions_nodes = edt.compat2nodes.get("tenstorrent,tt-boot-fs")
-    partitions_node = partitions_nodes[0]
 
     if "p300" in args.board:
         _generate_bootfs_yaml(
             args,
-            partitions_node,
+            partitions_nodes,
             args.board.upper() + "-1_left",
             args.board.upper() + "_L",
             args.output_file[:-5] + "_left.yaml",
         )
         _generate_bootfs_yaml(
             args,
-            partitions_node,
+            partitions_nodes,
             args.board.upper() + "-1_right",
             args.board.upper() + "_R",
             args.output_file[:-5] + "_right.yaml",
@@ -1067,7 +1203,7 @@ def invoke_generate_bootfs_yaml(args):
     else:
         _generate_bootfs_yaml(
             args,
-            partitions_node,
+            partitions_nodes,
             args.board.upper() + "-1",
             args.board.upper(),
             args.output_file,
