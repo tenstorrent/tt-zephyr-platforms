@@ -26,6 +26,9 @@
 #define TT_BH_PINMUX_A51_UART0_TX 48 PINCTRL_TT_BH_AF1(0)
 #define TT_BH_PINMUX_B15_UART0_RX 49 PINCTRL_TT_BH_AF1(PINCTRL_TT_BH_TRIEN | PINCTRL_TT_BH_RXEN)
 
+#define TT_BH_PINMUX_A15_I2C1_SDA 15 PINCTRL_TT_BH_AF1(PINCTRL_TT_BH_TRIEN | PINCTRL_TT_BH_PUEN | PINCTRL_TT_BH_RXEN | PINCTRL_TT_BH_DRVS(8))
+#define TT_BH_PINMUX_A16_I2C1_SCL 16 PINCTRL_TT_BH_AF1(PINCTRL_TT_BH_TRIEN | PINCTRL_TT_BH_PUEN | PINCTRL_TT_BH_RXEN | PINCTRL_TT_BH_DRVS(8))
+
 /**
  * @brief Configure a Blackhole pin for a non-gpio purpose
  *
@@ -38,6 +41,8 @@
  * @param func Function of the pin e.g. UART0_TX
  */
 #define TT_BH_PINMUX(col, row, func) TT_BH_PINMUX_##col##row##_##func
+
+#define TT_BH_PINMUX_DEFAULT 0 PINCTRL_TT_BH_AF1(0)
 
 /**
  * @brief Configure a Blackhole pin as a GPIO
