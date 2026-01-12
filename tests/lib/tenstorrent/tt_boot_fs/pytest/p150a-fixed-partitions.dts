@@ -13,6 +13,7 @@
 		#size-cells = <0x1>;
 		flash-device-size = <0x1000000>;
 		flash-block-size = <0x1000>;
+		header-addr = <0x0>;
 
 		cmfwcfg@14000 {
 			label = "cmfwcfg";
