@@ -55,10 +55,10 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
     """
     # Get the build directory of the DUT
     build_dir = unlaunched_dut.device_config.build_dir
-    # Get the path to base tt_boot_fs.bin
-    boot_fs = build_dir / "tt_boot_fs.bin"
-    patched_fs = build_dir / "tt_boot_fs_patched.bin"
-    assert boot_fs.exists(), f"tt_boot_fs.bin not found at {boot_fs}"
+    # Get the path to base tt_boot_fs.hex
+    boot_fs = build_dir / "tt_boot_fs.hex"
+    patched_fs = build_dir / "tt_boot_fs_patched.hex"
+    assert boot_fs.exists(), f"tt_boot_fs.hex not found at {boot_fs}"
     with open(boot_fs, "rb") as f:
         bootfs_data = f.read()
     fs = tt_boot_fs.BootFs.from_binary(bootfs_data)
@@ -66,7 +66,7 @@ def test_recovery_cmfw(unlaunched_dut: DeviceAdapter):
     with open(patched_fs, "wb") as f:
         f.write(bootfs_data)
     # Get offset of base CMFW
-    cmfw_offset = fs.entries["cmfw"].spi_addr
+    cmfw_offset = fs.tables[2].entries["mainimg"].spi_addr
     # Write bad data to base CMFW
     with open(patched_fs, "r+b") as f:
         f.seek(cmfw_offset)
