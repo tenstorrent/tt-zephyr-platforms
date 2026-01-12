@@ -89,48 +89,48 @@
 };
 
 &i2c1 {
-	status = "disabled";
+	status = "okay";
 
 	regulator0: max20816@64 {
 		compatible = "maxim,max20816";
 		reg = <0x64>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator1: max20816@65 {
 		compatible = "maxim,max20816";
 		reg = <0x65>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator2: mpm3695@33 {
 		compatible = "mps,mpm3695";
 		reg = <0x33>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator3: max20730@54 {
 		compatible = "maxim,max20730";
 		reg = <0x54>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator4: max20730@55 {
 		compatible = "maxim,max20730";
 		reg = <0x55>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator5: max20730@56 {
 		compatible = "maxim,max20730";
 		reg = <0x56>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	regulator6: max20730@57 {
 		compatible = "maxim,max20730";
 		reg = <0x57>;
-		status = "disabled";
+		status = "okay";
 	};
 };
 
@@ -140,13 +140,13 @@
 	sw0: switch@72 {
 		compatible = "ti,tps22993";
 		reg = <0x72>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	sw1: switch@73 {
 		compatible = "ti,tps22993";
 		reg = <0x73>;
-		status = "disabled";
+		status = "okay";
 	};
 };
 

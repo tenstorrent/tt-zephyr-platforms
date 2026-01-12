@@ -23,7 +23,6 @@ typedef enum {
 } I2CSpeedMode;
 
 bool IsValidI2CMasterId(uint32_t id);
-void I2CInitGPIO(uint32_t id);
 void I2CInit(I2CMode mode, uint32_t slave_addr, I2CSpeedMode speed, uint32_t id);
 void I2CReset(void);
 uint32_t I2CReadRxFifo(uint32_t id, uint8_t *p_read_buf);
