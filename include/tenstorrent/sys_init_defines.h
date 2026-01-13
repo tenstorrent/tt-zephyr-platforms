@@ -9,32 +9,32 @@
 
 #include <zephyr/init.h>
 
-/* SYS_INIT APPLICATION defines */
-#define register_interrupt_handlers_PRIO      0
-#define arc_dma_init_PRIO                     1
-#define InitSpiFS_PRIO                        2
-#define bh_arc_init_start_PRIO                3
-#define CATEarlyInit_PRIO                     4
-#define CalculateHarvesting_PRIO              5
-#define DeassertTileResets_PRIO               6
-#define PLLInit_PRIO                          7
-#define PVTInit_PRIO                          8
-#define NocInit_PRIO                          9
-#define AssertSoftResets_PRIO                 10
-#define DeassertRiscvResets_PRIO              11
-#define InitAiclkPPM_PRIO                     12
-#define pcie_init_PRIO                        13
-#define tensix_init_PRIO                      14
-#define InitMrisc_PRIO                        15
-#define eth_init_PRIO                         16
-#define InitSmbusTarget_PRIO                  17
-#define regulator_init_PRIO                   18
-#define avs_init_PRIO                         19
-#define InitNocTranslationFromHarvesting_PRIO 20
-#define gddr_training_PRIO                    21
-#define CATInit_PRIO                          22
-#define bh_arc_init_end_PRIO                  23
+/* SYS_INIT POST_KERNEL defines */
+#define register_interrupt_handlers_PRIO      90
+#define arc_dma_init_PRIO                     91
+#define InitSpiFS_PRIO                        92
+#define bh_arc_init_start_PRIO                93
+#define CATEarlyInit_PRIO                     94
+#define CalculateHarvesting_PRIO              95
+#define DeassertTileResets_PRIO               96
+#define PLLInit_PRIO                          97
+#define PVTInit_PRIO                          98
+#define NocInit_PRIO                          99
+#define AssertSoftResets_PRIO                 100
+#define DeassertRiscvResets_PRIO              101
+#define InitAiclkPPM_PRIO                     102
+#define pcie_init_PRIO                        103
+#define tensix_init_PRIO                      104
+#define InitMrisc_PRIO                        105
+#define eth_init_PRIO                         106
+#define InitSmbusTarget_PRIO                  107
+#define regulator_init_PRIO                   108
+#define avs_init_PRIO                         109
+#define InitNocTranslationFromHarvesting_PRIO 110
+#define gddr_training_PRIO                    111
+#define CATInit_PRIO                          112
+#define bh_arc_init_end_PRIO                  113
 
-#define SYS_INIT_APP(func) SYS_INIT(func, APPLICATION, func##_PRIO)
+#define SYS_INIT_APP(func) SYS_INIT(func, POST_KERNEL, func##_PRIO)
 
 #endif
