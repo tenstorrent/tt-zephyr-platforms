@@ -29,18 +29,23 @@ def read_flash_memory(target, address, size) -> Sequence[int]:
         raise RuntimeError(
             f"Flash read function not available for region at address {address:#x} with size {size:#x}."
         )
-    pc_read = region.flash.flash_algo["pc_read"]
     region.flash.init(region.flash.Operation.VERIFY)
-    # Read into device side ram buffer
-    result = region.flash._call_function_and_wait(  # pylint: disable=protected-access
-        pc_read, r0=address, r1=size, r2=region.flash.begin_data, timeout=5.0
-    )
-    if result != 0:
-        raise RuntimeError(
-            f"Failed to read flash memory at address {address:#x} with size {size:#x}. Error code: {result}"
+    data = []
+    while size > 0:
+        read_size = min(size, region.flash.get_page_info(address).size)
+        pc_read = region.flash.flash_algo["pc_read"]
+        # Read into device side ram buffer
+        result = region.flash._call_function_and_wait(  # pylint: disable=protected-access
+            pc_read, r0=address, r1=read_size, r2=region.flash.begin_data, timeout=5.0
         )
-    # Copy from device RAM to sequence
-    data = ap.read_memory_original(region.flash.begin_data, size)
+        if result != 0:
+            raise RuntimeError(
+                f"Failed to read flash memory at address {address:#x} with size {size:#x}. Error code: {result}"
+            )
+        # Copy from device RAM to sequence
+        data += ap.read_memory_original(region.flash.begin_data, read_size)
+        address += read_size
+        size -= read_size
     region.flash.cleanup()
     return data
 
