@@ -8,6 +8,16 @@ Major enhancements with this release include:
 
 ## What's Changed
 
+### P150 Harvesting Configuration
+
+New P150x cards will be shipped with Bin 3 parts, which lack 2 functional
+tensix columns. To present a unified interface to metal and other system
+software, firmware v19.5 and later now disable 2 tensix columns on P150x cards.
+
+Users who wish to retain all columns in their functional state may run
+`scripts/update_tensix_disable_count.py` against a firmware bundle before
+flashing it, but should be aware this is not a supported configuration
+
 <!-- Subsections can break down improvements by (area or board) -->
 <!-- UL PCIe -->
 <!-- UL DDR -->
