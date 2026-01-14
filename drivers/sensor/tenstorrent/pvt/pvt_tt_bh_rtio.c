@@ -229,23 +229,6 @@ static ReadStatus read_ts(const struct device *dev, uint8_t chan, uint16_t *data
 	return status;
 }
 
-static ReadStatus read_ts_avg(const struct device *dev, uint16_t *sum)
-{
-	struct pvt_tt_bh_config *pvt_cfg = (struct pvt_tt_bh_config *)dev->config;
-
-	*sum = 0;
-	for (int i = 0; i < 8; i++) {
-		uint16_t data;
-
-		read_pvt_auto_mode(TS, i, &data, PVT_CNTL_TS_00_SDIF_DONE_REG_ADDR,
-				   PVT_CNTL_TS_00_SDIF_DATA_REG_ADDR);
-
-		*sum += data - pvt_cfg->therm_cali_delta[i];
-	}
-	*sum /= 8;
-	return ReadOk;
-}
-
 /* can not readback supply check in auto mode, use manual read instead */
 static ReadStatus read_vm(uint32_t id, uint16_t *data)
 {
@@ -276,7 +259,7 @@ static ReadStatus read_pd(uint32_t id, uint32_t delay_chain, uint16_t *data)
 				  PVT_CNTL_PD_00_SDIF_DATA_REG_ADDR);
 }
 
-static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
+static void pvt_tt_bh_submit_sample(const struct device *dev, struct rtio_iodev_sqe *iodev_sqe)
 {
 	const struct sensor_read_config *sensor_cfg =
 		(const struct sensor_read_config *)iodev_sqe->sqe.iodev->data;
@@ -285,7 +268,6 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 	uint32_t buf_len;
 	int ret;
 
-	/* Get RTIO output buffer. */
 	ret = rtio_sqe_rx_buf(iodev_sqe, min_buffer_len, min_buffer_len, &buf, &buf_len);
 	if (ret != 0) {
 		LOG_ERR("Failed to get a read buffer of size %u bytes", min_buffer_len);
@@ -293,68 +275,39 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 		return;
 	}
 
-	/* struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf; */
 	struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf;
 	ReadStatus status;
 
 	const struct pvt_tt_bh_config *pvt_cfg =
 		(const struct pvt_tt_bh_config *)sensor_cfg->sensor->config;
 
-	for (size_t i = 0; i < sensor_cfg->count; i++) {
-		const struct sensor_chan_spec *chan = &sensor_cfg->channels[i];
+	const struct sensor_chan_spec *chan = &sensor_cfg->channels[0];
 
-		data[i].spec = *chan;
-
-		/* Validate channel index bounds and read data */
-		switch (chan->chan_type) {
-		case SENSOR_CHAN_PVT_TT_BH_PD:
-			if (chan->chan_idx >= pvt_cfg->num_pd) {
-				LOG_ERR("Invalid channel index %d out of %d sensors",
-					chan->chan_idx, pvt_cfg->num_pd);
-				rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-				return;
-			}
+	switch (chan->chan_type) {
+	case SENSOR_CHAN_PVT_TT_BH_PD: {
+		for (int i = 0; i < pvt_cfg->num_pd; ++i) {
 			status = read_pd(chan->chan_idx, new_delay_chain, &data[i].raw);
-			break;
-		case SENSOR_CHAN_PVT_TT_BH_VM:
-			if (chan->chan_idx >= pvt_cfg->num_vm) {
-				LOG_ERR("Invalid channel index %d out of %d sensors",
-					chan->chan_idx, pvt_cfg->num_vm);
-				rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-				return;
-			}
+		}
+		break;
+	}
+	case SENSOR_CHAN_PVT_TT_BH_VM: {
+		for (int i = 0; i < pvt_cfg->num_vm; ++i) {
 			status = read_vm(chan->chan_idx, &data[i].raw);
-			break;
-		case SENSOR_CHAN_PVT_TT_BH_TS:
-			if (chan->chan_idx >= pvt_cfg->num_ts) {
-				LOG_ERR("Invalid channel index %d out of %d sensors",
-					chan->chan_idx, pvt_cfg->num_ts);
-				rtio_iodev_sqe_err(iodev_sqe, -EINVAL);
-				return;
-			}
+		}
+		break;
+	}
+	case SENSOR_CHAN_PVT_TT_BH_TS: {
+		for (int i = 0; i < pvt_cfg->num_vm; ++i) {
 			status = read_ts(sensor_cfg->sensor, chan->chan_idx, &data[i].raw);
-			break;
-		case SENSOR_CHAN_PVT_TT_BH_TS_AVG:
-			/* Channel index is ignored as this is the average for all TS channels. */
-			status = read_ts_avg(sensor_cfg->sensor, &data[i].raw);
-			break;
-		default:
-			LOG_ERR("Unsupported channel type: %d", chan->chan_type);
-			rtio_iodev_sqe_err(iodev_sqe, -ENOTSUP);
-			return;
 		}
-
-		if (status != ReadOk) {
-			LOG_ERR("Failed to read data %d", status);
-			rtio_iodev_sqe_err(iodev_sqe, status);
-			return;
-		}
+		break;
+	}
 	}
 
 	rtio_iodev_sqe_ok(iodev_sqe, 0);
 }
 
-void pvt_tt_bh_submit(const struct device *sensor, struct rtio_iodev_sqe *sqe)
+void pvt_tt_bh_submit(const struct device *dev, struct rtio_iodev_sqe *sqe)
 {
 	const struct rtio_sqe *event = &sqe->sqe;
 
@@ -370,9 +323,7 @@ void pvt_tt_bh_submit(const struct device *sensor, struct rtio_iodev_sqe *sqe)
 		return;
 	}
 
-	struct rtio_work_req *req = rtio_work_req_alloc();
-
-	rtio_work_req_submit(req, sqe, pvt_tt_bh_submit_sample);
+	pvt_tt_bh_submit_sample(dev, sqe);
 }
 
 void pvt_tt_bh_delay_chain_set(uint32_t new_delay_chain_)

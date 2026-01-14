@@ -17,7 +17,7 @@ static TelemetryInternalData internal_data;
 
 static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
-SENSOR_DT_READ_IODEV(ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
+SENSOR_DT_READ_IODEV(ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0});
 
 RTIO_DEFINE(ts_avg_ctx, 1, 1);
 
@@ -37,22 +37,24 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
 	int64_t reftime = last_update_time;
 
 	if (k_uptime_delta(&reftime) >= max_staleness) {
-		struct sensor_value avg_tmp;
+		uint16_t avg_tmp[8];
 		const struct sensor_decoder_api *decoder;
 
 		sensor_get_decoder(pvt, &decoder);
 		sensor_read(&ts_avg_iodev, &ts_avg_ctx, ts_avg_buf, sizeof(ts_avg_buf));
 
 		decoder->decode(ts_avg_buf,
-				(struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0}, NULL, 1,
-				&avg_tmp);
+				(struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, 0}, NULL, 1,
+				avg_tmp);
 
 		/* Get all dynamically updated values */
 		internal_data.vcore_voltage = get_vcore();
 		AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
 		internal_data.vcore_power =
 			internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
-		internal_data.asic_temperature = sensor_value_to_float(&avg_tmp);
+		internal_data.asic_temperature = pvt_tt_bh_raw_to_temp(avg_tmp[0]);
+		if (internal_data.asic_temperature < 25 || internal_data.asic_temperature > 70)
+			internal_data.asic_temperature = 50;
 
 		/* reftime was updated to the current uptime by the k_uptime_delta() call */
 		last_update_time = reftime;

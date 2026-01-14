@@ -23,27 +23,11 @@
 
 static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
-SENSOR_DT_READ_IODEV(vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 1}, {SENSOR_CHAN_PVT_TT_BH_VM, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 3}, {SENSOR_CHAN_PVT_TT_BH_VM, 4},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 5}, {SENSOR_CHAN_PVT_TT_BH_VM, 6},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 7});
+SENSOR_DT_READ_IODEV(vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM, 0});
 
-SENSOR_DT_READ_IODEV(ts_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 1}, {SENSOR_CHAN_PVT_TT_BH_TS, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 3}, {SENSOR_CHAN_PVT_TT_BH_TS, 4},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 5}, {SENSOR_CHAN_PVT_TT_BH_TS, 6},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 7});
+SENSOR_DT_READ_IODEV(ts_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0});
 
-SENSOR_DT_READ_IODEV(pd_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 1}, {SENSOR_CHAN_PVT_TT_BH_PD, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 3}, {SENSOR_CHAN_PVT_TT_BH_PD, 4},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 5}, {SENSOR_CHAN_PVT_TT_BH_PD, 6},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 7}, {SENSOR_CHAN_PVT_TT_BH_PD, 8},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 9}, {SENSOR_CHAN_PVT_TT_BH_PD, 10},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 11}, {SENSOR_CHAN_PVT_TT_BH_PD, 12},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 13}, {SENSOR_CHAN_PVT_TT_BH_PD, 14},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 15});
+SENSOR_DT_READ_IODEV(pd_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD, 0});
 
 RTIO_DEFINE(pvt_ctx, 16, 16);
 
@@ -57,7 +41,7 @@ static struct pvt_tt_bh_rtio_data ts_buf[DT_PROP(DT_NODELABEL(pvt), num_ts)];
 /* return selected TS raw reading and temperature in telemetry format */
 static uint8_t read_ts_handler(const union request *request, struct response *response)
 {
-	struct sensor_value celcius;
+	uint16_t celcius[8];
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -74,10 +58,10 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 	uint32_t id = request->data[1];
 
 	decoder->decode((uint8_t *)ts_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, id},
-			NULL, pvt_cfg->num_ts, &celcius);
+			NULL, pvt_cfg->num_ts, celcius);
 
-	response->data[1] = pvt_tt_bh_temp_to_raw(&celcius);
-	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&celcius));
+	response->data[1] = celcius[id];
+	response->data[2] = ConvertFloatToTelemetry(pvt_tt_bh_raw_to_temp(celcius[id]));
 
 	return ret;
 }
@@ -85,7 +69,7 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 /* return selected PD raw reading and frequency in telemetry format */
 static uint8_t read_pd_handler(const union request *request, struct response *response)
 {
-	struct sensor_value freq;
+	uint16_t freq[16];
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -106,10 +90,10 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 	uint32_t id = request->data[2];
 
 	decoder->decode((uint8_t *)pd_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, id},
-			NULL, pvt_cfg->num_pd, &freq);
+			NULL, pvt_cfg->num_pd, freq);
 
-	response->data[1] = pvt_tt_bh_freq_to_raw(&freq);
-	response->data[2] = ConvertFloatToTelemetry(sensor_value_to_float(&freq));
+	response->data[1] = freq[id];
+	response->data[2] = ConvertFloatToTelemetry(pvt_tt_bh_raw_to_freq(freq[id]));
 
 	return ret;
 }
@@ -117,7 +101,7 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 /* return selected VM raw reading and voltage in mV */
 static uint8_t read_vm_handler(const union request *request, struct response *response)
 {
-	struct sensor_value volts;
+	uint16_t volts[8];
 	const struct sensor_decoder_api *decoder;
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
@@ -135,10 +119,10 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 	uint32_t id = request->data[1];
 
 	decoder->decode((uint8_t *)vm_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, id},
-			NULL, pvt_cfg->num_vm, &volts);
+			NULL, pvt_cfg->num_vm, volts);
 
-	response->data[1] = pvt_tt_bh_volt_to_raw(&volts);
-	response->data[2] = (uint16_t)(sensor_value_to_float(&volts) * 1000);
+	response->data[1] = volts[id];
+	response->data[2] = (uint16_t)(pvt_tt_bh_raw_to_volt(volts[id]) * 1000);
 
 	return ret;
 }

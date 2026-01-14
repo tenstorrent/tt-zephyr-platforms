@@ -48,7 +48,7 @@ typedef union {
 
 static const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
-SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
+SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0});
 
 RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
 
@@ -164,16 +164,20 @@ static float CalibrateCAT(void)
 	float catmon_temp = TrimCodeToTemp(code);
 	float ts_temp = 0;
 
-	struct sensor_value avg_tmp;
+#ifdef CONFIG_DT_HAS_TENSTORRENT_BH_PVT_ENABLED
+	uint16_t avg_tmp[8];
 	const struct sensor_decoder_api *decoder;
 
 	sensor_get_decoder(pvt, &decoder);
 	sensor_read(&cat_ts_avg_iodev, &cat_ts_avg_ctx, cat_ts_avg_buf, sizeof(cat_ts_avg_buf));
 
-	decoder->decode(cat_ts_avg_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0},
-			NULL, 1, &avg_tmp);
+	decoder->decode(cat_ts_avg_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, 0},
+			NULL, 1, avg_tmp);
 
-	ts_temp = sensor_value_to_float(&avg_tmp);
+	ts_temp = pvt_tt_bh_raw_to_temp(avg_tmp[0]);
+	if (ts_temp < 25 || ts_temp > 70)
+		ts_temp = 50;
+#endif
 
 	float catmon_error = catmon_temp - ts_temp;
 
