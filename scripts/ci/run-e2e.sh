@@ -70,6 +70,17 @@ DMC_BOARD=$($TT_Z_P_ROOT/scripts/rev2board.sh $BOARD dmc)
 echo "Building tt-console..."
 make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
 
+# Recover blackhole back to 18.12 firmware before running tests. This
+# is required on older branches because new firmware is not backwards
+# compatible with old host tooling.
+pyocd pack install STM32G0B1CEUx
+echo "Recovering blackhole firmware to 18.12..."
+URL_BASE="https://github.com/tenstorrent/tt-zephyr-platforms"
+wget $URL_BASE/releases/download/v18.12.0-rc1/fw_pack-18.12.0-rc1-recovery.tar.gz \
+    -O /tmp/fw_pack-18.12.0-rc1-recovery.tar.gz
+python3 $TT_Z_P_ROOT/scripts/tooling/blackhole_recovery/recover-blackhole.py \
+    /tmp/fw_pack-18.12.0-rc1-recovery.tar.gz $BOARD --force
+
 if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
     # TODO: ideally we would use one twister command to build and
     # flash DMC and SMC firmware, but since each chip uses a separate
