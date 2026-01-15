@@ -224,6 +224,60 @@
 			#gpio-cells = <2>;
 			ngpios = <8>;
 		};
+		i3c0: i3c@c0005000 {
+			compatible = "cdns,i3c";
+			interrupts = <141 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0005000 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		i3c1: i3c@c0005400 {
+			compatible = "cdns,i3c";
+			interrupts = <142 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0005400 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		i3c2: i3c@c0005800 {
+			compatible = "cdns,i3c";
+			interrupts = <143 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0005800 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		i3c3: i3c@c0005c00 {
+			compatible = "cdns,i3c";
+			interrupts = <144 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0005c00 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		i3c4: i3c@c0006000 {
+			compatible = "cdns,i3c";
+			interrupts = <145 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0006000 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+		i3c5: i3c@c0006400 {
+			compatible = "cdns,i3c";
+			interrupts = <146 1>;
+			interrupt-parent = <&plic>;
+			reg = <0x0 0xc0006400 0x0 0x1000>;
+			#address-cells = <3>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
 		mtimer: timer@c800bff8 {
 			compatible = "riscv,machine-timer";
 			interrupts-extended = <&cpu0_intc 7 &cpu0_intc 7>;
