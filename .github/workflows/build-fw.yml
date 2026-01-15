@@ -411,6 +411,7 @@ jobs:
             --alt-config-root tt-zephyr-platforms/test-conf/tests \
             -T zephyr/tests -T zephyr/samples \
             -T tt-zephyr-platforms/samples -T tt-zephyr-platforms/tests
+
       - name: Upload Grendel Build Test Artifacts
         uses: actions/upload-artifact@v4
         with:
