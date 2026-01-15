@@ -79,20 +79,11 @@ jobs:
       - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
         with:
           app-path: tt-zephyr-platforms
-      - shell: bash
-        run: |
-          SIGNATURE_KEY_FILE="$(mktemp)"
-          echo "${{ secrets.SIGNATURE_KEY }}" | base64 -d > "$SIGNATURE_KEY_FILE"
-          SZ=$(wc -c "$SIGNATURE_KEY_FILE" | awk '{print $1}')
-          if [ $SZ -gt 42 ]; then
-            echo "SIGNATURE_KEY_FILE=$SIGNATURE_KEY_FILE" >> "$GITHUB_ENV"
-          fi
       - name: Build Recovery Bundle
         shell: bash
         run: |
           python3 tt-zephyr-platforms/scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py \
             --board ${{ matrix.board }} \
-            --signing-key "$SIGNATURE_KEY_FILE" \
             fw-pack-${{ github.ref_name }}-${{ matrix.board }}-recovery.tar.gz
 
       - name: Upload Recovery Assets
