@@ -1,3 +1,15 @@
+# v18.12.2
+
+We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.2 🥳🎉.
+
+This is a point release to enable recovery firmware (which is based on 18.12) to
+operate on newer P300 cards
+
+## Major Highlights
+
+* Patch to STM32 SPI flash loader algorithms to support latest P300 board revision
+* Multiple CI improvements to enable executing CI on new runner configurations
+
 # v18.12.1
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.1 🥳🎉.
