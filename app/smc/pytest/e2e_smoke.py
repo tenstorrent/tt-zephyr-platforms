@@ -890,7 +890,9 @@ def test_mcuboot(unlaunched_dut, asic_id):
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
-    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    # Cannot make this check anymore, UMD checks for valid telemetry after reset
+    # assert smi_reset_result == 0, "'tt-smi -r' failed"
+    logger.info(f"SMI reset result code: {smi_reset_result}")
     arc_chip = wait_arc_boot(asic_id, timeout=15)
     # Validate that the SMC has booted into the recovery image
     with pytest.raises(Exception):
@@ -907,8 +909,10 @@ def test_mcuboot(unlaunched_dut, asic_id):
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
-    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    # Cannot make this check anymore, UMD checks for valid telemetry after reset
+    # assert smi_reset_result == 0, "'tt-smi -r' failed"
     arc_chip = wait_arc_boot(asic_id, timeout=15)
+    logger.info(f"SMI reset result code: {smi_reset_result}")
     with pytest.raises(Exception):
         arc_chip.get_telemetry()
     logger.info(
