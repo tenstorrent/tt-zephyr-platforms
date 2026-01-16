@@ -696,6 +696,18 @@ def test_smi_reset(arc_chip_dut, asic_id):
     total_tries = 10
     fail_count = 0
     for i in range(total_tries):
+        # Make sure tt-smi snapshot works
+        result = subprocess.run(["tt-smi", "-s"], capture_output=True, check=False)
+        if result.returncode != 0:
+            logger.warning(f"tt-smi snapshot failed on iteration {i}")
+            fail_count += 1
+            continue
+        assert "UMD" in result.stdout.decode(), "tt-smi snapshot was not run with UMD"
+        # Just sanity check the output
+        assert "board_info" in result.stdout.decode(), (
+            "tt-smi snapshot lacks board_info"
+        )
+
         logger.info(f"Iteration {i}:")
         result = smi_reset_test(asic_id)
 
@@ -878,7 +890,9 @@ def test_mcuboot(unlaunched_dut, asic_id):
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
-    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    # Cannot make this check anymore, UMD checks for valid telemetry after reset
+    # assert smi_reset_result == 0, "'tt-smi -r' failed"
+    logger.info(f"SMI reset result code: {smi_reset_result}")
     arc_chip = wait_arc_boot(asic_id, timeout=15)
     # Validate that the SMC has booted into the recovery image
     with pytest.raises(Exception):
@@ -895,8 +909,10 @@ def test_mcuboot(unlaunched_dut, asic_id):
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
-    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    # Cannot make this check anymore, UMD checks for valid telemetry after reset
+    # assert smi_reset_result == 0, "'tt-smi -r' failed"
     arc_chip = wait_arc_boot(asic_id, timeout=15)
+    logger.info(f"SMI reset result code: {smi_reset_result}")
     with pytest.raises(Exception):
         arc_chip.get_telemetry()
     logger.info(

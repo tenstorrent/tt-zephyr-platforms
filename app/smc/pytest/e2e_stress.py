@@ -139,6 +139,18 @@ def test_smi_reset(arc_chip_dut, asic_id):
     dmfw_ping_avg = 0
     dmfw_ping_max = 0
     for i in range(total_tries):
+        # Make sure tt-smi snapshot works
+        result = subprocess.run(["tt-smi", "-s"], capture_output=True, check=False)
+        if result.returncode != 0:
+            logger.warning(f"tt-smi snapshot failed on iteration {i}")
+            fail_count += 1
+            continue
+        assert "UMD" in result.stdout.decode(), "tt-smi snapshot was not run with UMD"
+        # Just sanity check the output
+        assert "board_info" in result.stdout.decode(), (
+            "tt-smi snapshot lacks board_info"
+        )
+
         if i % 10 == 0:
             logger.info(f"{test_name} iteration {i}/{total_tries}")
 
