@@ -209,7 +209,16 @@ static int tt_bh_fwtable_init(const struct device *dev)
 	int rc;
 
 	rc = tt_bh_fwtable_load(dev, BH_FWTABLE_BOARDCFG);
-	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || (rc < 0)) {
+	if (rc < 0) {
+		if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+			LOG_WRN("Failed to load %s table, continuing in SMC recovery mode",
+				"Board Config");
+			/*
+			 * Returning 0 here keeps the hardware init status okay,
+			 * so pyluwen will interface with the chip
+			 */
+			return 0;
+		}
 		return rc;
 	}
 
