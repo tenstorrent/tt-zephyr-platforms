@@ -156,4 +156,4 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD_ARG(telem, NULL, "<Telemetry Index> [|x|f|d]", telem_handler, 2, 1),
 	SHELL_SUBCMD_SET_END);
 
-SHELL_CMD_REGISTER(tt, &sub_tt_commands, "Tensorrent commands", NULL);
+SHELL_CMD_REGISTER(tt, &sub_tt_commands, "Tenstorrent commands", NULL);
