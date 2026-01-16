@@ -55,7 +55,7 @@ export CONSOLE_DEV
 export BOARD
 
 if [ -z "$TEST_SET" ]; then
-    TEST_SET=":e2e-flash"
+    TEST_SET=":recovery-flash"
 fi
 
 if [ -z "$KEYFILE" ]; then
@@ -104,4 +104,20 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 		--cmd-erase 'flash erase_sector 0 0 last'
 	west flash -d $ZEPHYR_BASE/build-dmc --domain dmc
 	rm -rf $ZEPHYR_BASE/build-dmc
+fi
+
+if [[ "$TEST_SET" == *"recovery-flash"* ]]; then
+    # Run a recovery flash test
+    $ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
+        --tag recovery -T $TT_Z_P_ROOT/app \
+        --west-flash="--force,--allow-major-downgrades" \
+        --west-runner tt_flash \
+        --device-testing -c \
+        --device-flash-timeout 240 \
+        --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV -p" \
+        --failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
+        --flash-before \
+        --outdir $ZEPHYR_BASE/twister-recovery-flash \
+        --extra-args=SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
+        $@
 fi
