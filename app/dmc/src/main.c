@@ -64,6 +64,8 @@ static dmStaticInfo static_info = {.version = 1, .bl_version = 0, .app_version =
 
 static uint16_t max_power;
 
+bool skip_evt_loop;
+
 /* FIXME: notify_smcs should be automatic, we should notify if the SMCs are ready, otherwise
  * record a notification to be sent once they are. Also it's properly per-SMC state.
  */
@@ -677,6 +679,9 @@ int main(void)
 	while (true) {
 		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
 
+		if (skip_evt_loop) {
+			continue;
+		}
 		/* These are urgent events, and gated by their own flags. */
 		handle_therm_trip();
 

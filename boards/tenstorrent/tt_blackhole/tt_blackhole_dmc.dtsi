@@ -43,6 +43,18 @@
 			label = "Line to spi mux, drive low to enable dmfw -> eeprom";
 			gpios = <&gpiob 5 GPIO_ACTIVE_LOW>;
 		};
+		
+		dft_tap_sel {
+			compatible = "zephyr,gpio-line";
+			label = "Line to dft tap sel";
+			gpios = <&gpiob 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		dft_test_mode {
+			compatible = "zephyr,gpio-line";
+			label = "Line to dft test mode";
+			gpios = <&gpiod 3 GPIO_ACTIVE_HIGH>;
+		};
 
 		arc = <&chip0_arc>;
 	};
