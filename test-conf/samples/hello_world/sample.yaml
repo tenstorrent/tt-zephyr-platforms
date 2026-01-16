@@ -18,3 +18,6 @@ tests:
     filter: CONFIG_USE_SEGGER_RTT
     tags:
       - rtt
+  sample.basic.helloworld.grendel:
+    platform_allow:
+      - tt_grendel_smc
