@@ -884,6 +884,27 @@ def test_mcuboot(unlaunched_dut, asic_id):
     with pytest.raises(Exception):
         arc_chip.get_telemetry()
     logger.info("SMC telemetry data not available, as expected in recovery mode")
+    # Readback the ROM header. We will need it present to use tt-flash
+    header = bytes(0x1000)
+    arc_chip.as_bh().spi_read(0x0, header)
+    # Erase the ROM header to make sure we can boot recovery from the failover
+    # descriptor
+    arc_chip.as_bh().spi_write(0x0, buf)
+    logger.info("Erased ROM header to force failover boot from recovery image")
+    # Reset the SMC to trigger the fallback
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    ).returncode
+    assert smi_reset_result == 0, "'tt-smi -r' failed"
+    arc_chip = wait_arc_boot(asic_id, timeout=15)
+    with pytest.raises(Exception):
+        arc_chip.get_telemetry()
+    logger.info(
+        "SMC telemetry data not available, as expected in "
+        "recovery mode booted from failover"
+    )
+    # Now, restore the ROM header so we can flash a good image
+    arc_chip.as_bh().spi_write(0x0, header)
     # Now, make sure we can flash a good image from recovery mode
     unlaunched_dut.launch()
     del arc_chip  # Force re-detection of the chip
