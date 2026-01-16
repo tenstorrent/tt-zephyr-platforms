@@ -8,15 +8,10 @@ Major enhancements with this release include:
 
 ## Blackhole Changes
 
-### P150 Harvesting Configuration
+### p150 Tensix Core Count
 
-New P150x cards will be shipped with Bin 3 parts, which lack 2 functional
-tensix columns. To present a unified interface to metal and other system
-software, firmware v19.5 and later now disable 2 tensix columns on P150x cards.
-
-Users who wish to retain all columns in their functional state may run
-`scripts/update_tensix_disable_count.py` against a firmware bundle before
-flashing it, but should be aware this is not a supported configuration
+Beginning January 2026, all Blackhole p150 accelerator cards (p150a, p150b) will ship with **120 Tensix cores** instead of 140. To present a unified interface to metal and other system software, firmware v19.5.0 and later will change the core count on all existing cards to 120.  Typical workloads show a non-material (~1–2%) performance difference.
+You may observe a change in grid size in metal, which may require updates to applications that depend on grid layout.
 
 ## Wormhole Changes
 
