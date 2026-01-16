@@ -1,11 +1,40 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-compatible: "tenstorrent,bh-memc"
-
 description: |
-  Tenstorrent Blackhole GDDR Memory Controller
+  Tenstorrent Blackhole DDR memory controller.
+
+compatible: "tenstorrent,bh-memc"
 
 include: base.yaml
 
-properties: {}
+properties:
+  reg:
+    required: true
+
+  clocks:
+    required: true
+
+  clock-channels:
+    type: array
+    required: true
+    description: |
+      Clock channels w.r.t. phandles contained in 'clocks' used by the memory controller.
+
+  clock-divs:
+    type: array
+    required: true
+    description: |
+      Clock dividers for each clock channel.
+
+  flash:
+    type: phandle
+    required: true
+    description: |
+      Phandle to the flash device used for firmware loading.
+
+  fwtable:
+    type: phandle
+    required: true
+    description: |
+      Phandle to the firmware table device used for reading configuration data.
