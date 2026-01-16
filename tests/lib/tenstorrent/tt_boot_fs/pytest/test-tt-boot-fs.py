@@ -139,6 +139,22 @@ def gen_test_image(tmp_path: Path):
             padding = pad_byte * pad_size
             fs += padding
 
+            pad_size = tt_boot_fs.TT_BOOT_FS_HEADER_ADDR - len(fs)
+            padding = pad_byte * pad_size
+            fs += padding
+            # append bootfs header
+            fs += tt_boot_fs.tt_boot_fs_header(
+                magic=tt_boot_fs.BOOTFS_HEADER_MAGIC,
+                version=tt_boot_fs.BOOTFS_VERSION,
+                num_tables=2,
+            )
+            fs += tt_boot_fs.FD_HEAD_ADDR.to_bytes(
+                4, byteorder="little"
+            )  # bootfs rom header addr
+            fs += tt_boot_fs.FAILOVER_HEAD_ADDR.to_bytes(
+                4, byteorder="little"
+            )  # failover fd head addr
+
             f.write(fs)
             _cached_test_image = (fs, pth)
 
@@ -269,129 +285,133 @@ def test_tt_boot_fs_ls(tmp_path: Path):
     """
 
     # Note: values are specific to fw_pack-80.15.0.0.fwbundle due to get_released_image_path()
-    expected_fds = [
-        {
-            "spi_addr": 81920,
-            "image_tag": "cmfwcfg",
-            "size": 56,
-            "copy_dest": 0,
-            "data_crc": 2024482826,
-            "digest": "N/A",
-            "flags": 56,
-            "fd_crc": 4034542600,
-        },
-        {
-            "spi_addr": 86016,
-            "image_tag": "cmfw",
-            "size": 86600,
-            "copy_dest": 268435456,
-            "data_crc": 1374720981,
-            "digest": "N/A",
-            "flags": 33641032,
-            "fd_crc": 3680084864,
-        },
-        {
-            "spi_addr": 176128,
-            "image_tag": "ethfwcfg",
-            "size": 512,
-            "copy_dest": 0,
-            "data_crc": 2352493,
-            "digest": "N/A",
-            "flags": 512,
-            "fd_crc": 3455414089,
-        },
-        {
-            "spi_addr": 180224,
-            "image_tag": "ethfw",
-            "size": 34304,
-            "copy_dest": 0,
-            "data_crc": 433295191,
-            "digest": "N/A",
-            "flags": 34304,
-            "fd_crc": 2151631411,
-        },
-        {
-            "spi_addr": 217088,
-            "image_tag": "memfwcfg",
-            "size": 256,
-            "copy_dest": 0,
-            "data_crc": 15943,
-            "digest": "N/A",
-            "flags": 256,
-            "fd_crc": 3453442091,
-        },
-        {
-            "spi_addr": 221184,
-            "image_tag": "memfw",
-            "size": 10032,
-            "copy_dest": 0,
-            "data_crc": 3642299916,
-            "digest": "N/A",
-            "flags": 10032,
-            "fd_crc": 1066009376,
-        },
-        {
-            "spi_addr": 233472,
-            "image_tag": "ethsdreg",
-            "size": 1152,
-            "copy_dest": 0,
-            "data_crc": 897437643,
-            "digest": "N/A",
-            "flags": 1152,
-            "fd_crc": 273632020,
-        },
-        {
-            "spi_addr": 237568,
-            "image_tag": "ethsdfw",
-            "size": 19508,
-            "copy_dest": 0,
-            "data_crc": 3168980852,
-            "digest": "N/A",
-            "flags": 19508,
-            "fd_crc": 818321009,
-        },
-        {
-            "spi_addr": 258048,
-            # Device Mgmt FW (called bmfw here for historical reasons)
-            "image_tag": "bmfw",
-            "size": 35704,
-            "copy_dest": 0,
-            "data_crc": 3947396359,
-            "digest": "0ae8f44524478cd3a7fd278b9f87bdd3e49b153fee4adbb4f855774e3517f0e1",
-            "flags": 35704,
-            "fd_crc": 1655924193,
-        },
-        {
-            "spi_addr": 294912,
-            "image_tag": "flshinfo",
-            "size": 4,
-            "copy_dest": 0,
-            "data_crc": 50462976,
-            "digest": "N/A",
-            "flags": 4,
-            "fd_crc": 3672136659,
-        },
-        {
-            "spi_addr": 299008,
-            "image_tag": "failover",
-            "size": 65828,
-            "copy_dest": 268435456,
-            "data_crc": 2239637331,
-            "digest": "N/A",
-            "flags": 33620260,
-            "fd_crc": 1985122380,
-        },
-        {
-            "spi_addr": 16773120,
-            "image_tag": "boardcfg",
-            "size": 0,
-            "copy_dest": 0,
-            "data_crc": 0,
-            "digest": "N/A",
-            "flags": 0,
-            "fd_crc": 3670524614,
-        },
-    ]
+    expected_fds = {
+        0: [
+            {
+                "spi_addr": 81920,
+                "image_tag": "cmfwcfg",
+                "size": 56,
+                "copy_dest": 0,
+                "data_crc": 2024482826,
+                "digest": "N/A",
+                "flags": 56,
+                "fd_crc": 4034542600,
+            },
+            {
+                "spi_addr": 86016,
+                "image_tag": "cmfw",
+                "size": 86600,
+                "copy_dest": 268435456,
+                "data_crc": 1374720981,
+                "digest": "N/A",
+                "flags": 33641032,
+                "fd_crc": 3680084864,
+            },
+            {
+                "spi_addr": 176128,
+                "image_tag": "ethfwcfg",
+                "size": 512,
+                "copy_dest": 0,
+                "data_crc": 2352493,
+                "digest": "N/A",
+                "flags": 512,
+                "fd_crc": 3455414089,
+            },
+            {
+                "spi_addr": 180224,
+                "image_tag": "ethfw",
+                "size": 34304,
+                "copy_dest": 0,
+                "data_crc": 433295191,
+                "digest": "N/A",
+                "flags": 34304,
+                "fd_crc": 2151631411,
+            },
+            {
+                "spi_addr": 217088,
+                "image_tag": "memfwcfg",
+                "size": 256,
+                "copy_dest": 0,
+                "data_crc": 15943,
+                "digest": "N/A",
+                "flags": 256,
+                "fd_crc": 3453442091,
+            },
+            {
+                "spi_addr": 221184,
+                "image_tag": "memfw",
+                "size": 10032,
+                "copy_dest": 0,
+                "data_crc": 3642299916,
+                "digest": "N/A",
+                "flags": 10032,
+                "fd_crc": 1066009376,
+            },
+            {
+                "spi_addr": 233472,
+                "image_tag": "ethsdreg",
+                "size": 1152,
+                "copy_dest": 0,
+                "data_crc": 897437643,
+                "digest": "N/A",
+                "flags": 1152,
+                "fd_crc": 273632020,
+            },
+            {
+                "spi_addr": 237568,
+                "image_tag": "ethsdfw",
+                "size": 19508,
+                "copy_dest": 0,
+                "data_crc": 3168980852,
+                "digest": "N/A",
+                "flags": 19508,
+                "fd_crc": 818321009,
+            },
+            {
+                "spi_addr": 258048,
+                # Device Mgmt FW (called bmfw here for historical reasons)
+                "image_tag": "bmfw",
+                "size": 35704,
+                "copy_dest": 0,
+                "data_crc": 3947396359,
+                "digest": "0ae8f44524478cd3a7fd278b9f87bdd3e49b153fee4adbb4f855774e3517f0e1",
+                "flags": 35704,
+                "fd_crc": 1655924193,
+            },
+            {
+                "spi_addr": 294912,
+                "image_tag": "flshinfo",
+                "size": 4,
+                "copy_dest": 0,
+                "data_crc": 50462976,
+                "digest": "N/A",
+                "flags": 4,
+                "fd_crc": 3672136659,
+            },
+            {
+                "spi_addr": 16773120,
+                "image_tag": "boardcfg",
+                "size": 0,
+                "copy_dest": 0,
+                "data_crc": 0,
+                "digest": "N/A",
+                "flags": 0,
+                "fd_crc": 3670524614,
+            },
+        ],
+        tt_boot_fs.FAILOVER_HEAD_ADDR: [
+            {
+                "spi_addr": 299008,
+                "image_tag": "failover",
+                "size": 65828,
+                "copy_dest": 268435456,
+                "data_crc": 2239637331,
+                "digest": "N/A",
+                "flags": 33620260,
+                "fd_crc": 1985122380,
+            },
+        ],
+    }
     actual_fds = tt_boot_fs.ls(
         get_released_image_path(tmp_path),
         verbose=-2,
@@ -411,11 +431,8 @@ def test_tt_boot_fs_gen_yaml(tmp_path: Path):
     Expects build/tt_boot_fs.yaml to already exist from sysbuild.
     """
 
-    # Fetch expected YAML from v18.7.0 tag on GitHub
-    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/tags/v18.7.0/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
-    response = requests.get(expected_yaml_raw)
-    response.raise_for_status()
-    expected_yaml = yaml.safe_load(response.text)
+    yaml_text = open(TEST_ROOT / "p150a-bootfs.yml", "r").read()
+    expected_yaml = yaml.safe_load(yaml_text)
 
     # Generate YAML from bootfs
     tmp_path.mkdir(parents=True, exist_ok=True)
