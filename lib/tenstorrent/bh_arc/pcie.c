@@ -468,14 +468,14 @@ static int pcie_init(void)
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		pci0_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 2,
+			.num_serdes = 1,
 			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
 			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
 			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
 		};
 		pci1_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 2,
+			.num_serdes = 1,
 			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
 			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
 			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
