@@ -154,8 +154,11 @@ static void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enabl
 	}
 }
 
-static uint32_t GetDramMask(const struct device *const fwtable_dev)
+static uint32_t GetDramMask(const struct device *const dev)
 {
+	const struct memc_tt_bh_config *config = dev->config;
+	const struct device *const fwtable_dev = config->fwtable_dev;
+
 	uint32_t dram_mask = tile_enable.gddr_enabled; /* bit mask */
 
 	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->has_dram_table &&
@@ -243,6 +246,7 @@ static void wipe_l1(const struct device *dev)
 
 static int memc_tt_bh_init(const struct device *dev)
 {
+	printk("memc_tt_bh_init\n");
 	const struct memc_tt_bh_config *config = dev->config;
 	uint8_t gddr_inst = config->inst;
 	static bool loaded_common;
@@ -251,10 +255,11 @@ static int memc_tt_bh_init(const struct device *dev)
 		wipe_l1(dev);
 
 		/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
-		for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
-			SetAxiEnable(gddr_inst, noc2axi_port, true);
+		for (uint8_t inst = 0; inst < NUM_GDDR; inst++) {
+			for (uint8_t noc2axi_port = 0; noc2axi_port < 3; noc2axi_port++) {
+				SetAxiEnable(inst, noc2axi_port, true);
+			}
 		}
-
 		/* Only perform this operation once */
 		loaded_common = true;
 	}
