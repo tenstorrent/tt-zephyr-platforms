@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 IMAGE_URL="ghcr.io/tenstorrent/tt-zephyr-platforms/recovery-image"
-IMAGE_TAG=${IMAGE_TAG:-"v18.12.0-rc1"}
+IMAGE_TAG=${IMAGE_TAG:-"v18.12.2"}
 if [[ -n $BOARD_SERIAL ]]; then
     SERIAL_ARG="--board-id ${BOARD_SERIAL}"
 fi
