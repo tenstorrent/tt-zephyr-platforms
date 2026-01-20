@@ -6,13 +6,6 @@ We are pleased to announce the release of TT Zephyr Platforms firmware version 1
 
 Major enhancements with this release include:
 
-## Blackhole Changes
-
-### p150 Tensix Core Count
-
-Beginning January 2026, all Blackhole p150 accelerator cards (p150a, p150b) will ship with **120 Tensix cores** instead of 140. To present a unified interface to metal and other system software, firmware v19.5.0 and later will change the core count on all existing cards to 120.  Typical workloads show a non-material (~1–2%) performance difference.
-You may observe a change in grid size in metal, which may require updates to applications that depend on grid layout.
-
 ## Wormhole Changes
 
 ### Stability Improvements
@@ -32,25 +25,62 @@ You may observe a change in grid size in metal, which may require updates to app
     - Updated retraining logic to set train_status to LINK_TRAIN_TRAINING when entering into retraining
     - Remove link_training_fw_phony debug feature from eth_init to free up more space
 
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
+## Blackhole Changes
 
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
-<!-- Security vulnerabilities fixed? -->
-<!-- API Changes, if applicable -->
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
-<!-- New Boards, if applicable -->
+### p150 Tensix Core Count
+
+Beginning January 2026, all Blackhole p150 accelerator cards (p150a, p150b) will ship with **120 Tensix cores** instead of 140. To present a unified interface to metal and other system software, firmware v19.5.0 and later will change the core count on all existing cards to 120.  Typical workloads show a non-material (~1–2%) performance difference.
+You may observe a change in grid size in metal, which may require updates to applications that depend on grid layout.
+
+### Stability Improvements
+
+- Fixed boardcfg loading error handling in recovery image
+
+### Power Management
+
+- Galaxy TDP limit reduced from 170 W to 130 W to stay within system power limits
+- Disabled PHY powerdown for MRISC on Galaxy systems to address DRAM funtest regression
+
+### Telemetry & Monitoring
+
+- Added telemetry entries for enabled AICLK min/max arbiters (`TAG_ENABLED_MIN_ARB` and `TAG_ENABLED_MAX_ARB`)
+- Added telemetry for effective AICLK min/max arbiter values (`TAG_AICLK_ARB_MIN` and `TAG_AICLK_ARB_MAX`)
+- Added Doxygen documentation for `aiclk_arb_max` and `aiclk_arb_min` enumerations
+- PVT sensor message fixes
+  - Revert backward-incompatible message interface changes to `READ_{TS,PD,VM}` introduced in v19.1.0
+  - Fixed conversion truncation issue in voltage monitoring messages
+  - Improved error checking in PVT functions
+- Added tracing for AICLK updates (disabled by default)
+
+### Drivers
+
+- Added interrupt support to ARC DMA driver and enabled it by default
+- Added "is alive" check to PVT sensor drivers
+
+### Tooling
+
+- Add support for newer P300 boards to blackhole recovery script
+- Properly support flash read across multiple blocks with pyocd
+- tt-tracing improvements
+  - Added `-b` command-line argument to select BAR (bar0 or bar4)
+  - Improved tracing performance when running in parallel with `tt-burnin`
+  - Fixed to send enable tracing command only once (not on every loop iteration)
+  - Updated documentation with coding examples for custom tracing events
+  - Fixed babeltrace2 version to 2.0.4 for compatibility
+
+### Build System & Dependencies
+
+- Migrated from patch-based workflow to Zephyr fork
+- Removed all usages of `west patch` treewide
+- Fixed git describe to use correct module directory (enables correct version tags for applications built in different repositories)
+
+## Grendel Changes
+
+- Initial support added for the Grendel SMC platform
+  - 4-core Berkeley Rocketcore with peripheral complement for external device interfacing
+- Initial devicetree definition
+- Virtual console driver for simulation debugging via printf
+- Basic build workflow for CI validation
 
 ## Migration guide
 
