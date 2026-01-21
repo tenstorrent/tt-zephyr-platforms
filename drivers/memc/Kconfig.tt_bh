@@ -12,6 +12,10 @@ config MEMC_TT_BH
 
 if MEMC_TT_BH
 
+module = MEMC
+module-str = memc
+source "subsys/logging/Kconfig.template.log_config"
+
 config MEMC_TT_BH_INIT_PRIORITY
 	int "Initialization priority for Tenstorrent Blackhole DDR memory controller"
 	default 105

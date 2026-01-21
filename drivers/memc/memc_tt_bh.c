@@ -118,6 +118,15 @@ static void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 	NOC2AXIWrite32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr, val);
 }
 
+static uint32_t MriscRegRead32(uint8_t gddr_inst, uint32_t addr)
+{
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, MRISC_REG_ADDR + addr);
+	return NOC2AXIRead32(0, MRISC_SETUP_TLB, MRISC_REG_ADDR + addr);
+}
+
 static void ReleaseMriscReset(uint8_t gddr_inst)
 {
 	const uint32_t kSoftReset0Addr = 0xFFB121B0;
@@ -127,7 +136,15 @@ static void ReleaseMriscReset(uint8_t gddr_inst)
 	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, kSoftReset0Addr);
 
 	volatile uint32_t *soft_reset_0 = GetTlbWindowAddr(0, MRISC_SETUP_TLB, kSoftReset0Addr);
-	*soft_reset_0 &= ~(1 << 11); /* Clear bit corresponding to MRISC reset */
+
+	/* First ASSERT reset to force clean state */
+	*soft_reset_0 |= (1 << 11);
+
+	/* Small delay for reset to take effect */
+	k_busy_wait(10);
+
+	/* Then release reset */
+	*soft_reset_0 &= ~(1 << 11);
 }
 
 static void SetAxiEnable(uint8_t gddr_inst, uint8_t noc2axi_port, bool axi_enable)
@@ -246,10 +263,17 @@ static void wipe_l1(const struct device *dev)
 
 static int memc_tt_bh_init(const struct device *dev)
 {
-	printk("memc_tt_bh_init\n");
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
 	const struct memc_tt_bh_config *config = dev->config;
 	uint8_t gddr_inst = config->inst;
 	static bool loaded_common;
+
+	uint32_t dram_mask = GetDramMask(dev);
+
+	LOG_INF("memc_tt_bh_init: gddr_inst=%d, dram_mask=0x%02x", gddr_inst, dram_mask);
 
 	if (!loaded_common) {
 		wipe_l1(dev);
@@ -264,8 +288,6 @@ static int memc_tt_bh_init(const struct device *dev)
 		loaded_common = true;
 	}
 
-	uint32_t dram_mask = GetDramMask(dev);
-
 	int rc;
 	tt_boot_fs_fd tag_fd;
 	size_t image_size;
@@ -274,9 +296,26 @@ static int memc_tt_bh_init(const struct device *dev)
 	uint8_t buf[CONFIG_MEMC_TT_BH_BUF_SIZE] __aligned(4);
 
 	if (!IS_BIT_SET(dram_mask, gddr_inst)) {
-		LOG_DBG("memc%d is not enabled. Skipping init.", config->inst);
+		LOG_INF("memc%d is not enabled (dram_mask=0x%02x). Skipping init.",
+			gddr_inst, dram_mask);
 		return 0;
 	}
+
+	/* Read status BEFORE any init to see if already in bad state */
+	uint32_t pre_init_status = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+	uint32_t pre_post_code = MriscRegRead32(gddr_inst, MRISC_POST_CODE);
+
+	// LOG_INF("GDDR %d: BEFORE init: INIT_STATUS=0x%08x, POST_CODE=0x%x",
+	// 	gddr_inst, pre_init_status, pre_post_code);
+	
+	const uint32_t kSoftReset0Addr = 0xFFB121B0;
+	uint8_t x, y;
+
+	GetGddrNocCoords(gddr_inst, MRISC_FW_NOC2AXI_PORT, 0, &x, &y);
+	NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, kSoftReset0Addr);
+	volatile uint32_t *soft_reset_0 = GetTlbWindowAddr(0, MRISC_SETUP_TLB, kSoftReset0Addr);
+
+	LOG_INF("GDDR %d: Soft reset 0=0x%08x", gddr_inst, *soft_reset_0);
 
 	/* FIXME: used fixed partitions */
 	rc = tt_boot_fs_find_fd_by_tag(config->flash_dev, MRISC_FW_TAG, &tag_fd);
@@ -332,10 +371,28 @@ static int memc_tt_bh_init(const struct device *dev)
 		LOG_ERR("%s(%d) failed: %d", "LoadMriscFwCfg", gddr_inst, -EIO);
 		return -EIO;
 	}
+
+	// LOG_INF("GDDR %d: Setting INIT_STATUS=0x%08x, releasing MRISC reset", gddr_inst,
+	// 	MRISC_INIT_BEFORE);
 	MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
 	ReleaseMriscReset(gddr_inst);
 
-	LOG_DBG("memc%d initialized successfully", gddr_inst);
+	/*
+	 * Read status immediately after reset release
+	 * uint32_t init_status = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+	 * uint32_t post_code = MriscRegRead32(gddr_inst, MRISC_POST_CODE);
+	 *
+	 * LOG_INF("GDDR %d: After reset: INIT_STATUS=0x%08x, POST_CODE=0x%x",
+	 *         gddr_inst, init_status, post_code);
+	 *
+	 * Small delay then check again to see if MRISC is progressing
+	 * k_msleep(1);
+	 * init_status = MriscRegRead32(gddr_inst, MRISC_INIT_STATUS);
+	 * post_code = MriscRegRead32(gddr_inst, MRISC_POST_CODE);
+	 *
+	 * LOG_INF("GDDR %d: After 1ms: INIT_STATUS=0x%08x, POST_CODE=0x%x",
+	 *         gddr_inst, init_status, post_code);
+	 */
 
 	return 0;
 }

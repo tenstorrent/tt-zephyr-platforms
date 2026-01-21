@@ -163,6 +163,7 @@
 
 &vuart0 {
 	status = "okay";
+	tx-cap = <16384>;
 };
 
 &vuart2 {
