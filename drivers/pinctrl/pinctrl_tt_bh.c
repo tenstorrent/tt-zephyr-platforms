@@ -45,6 +45,17 @@
 #define PINCTRL_TT_BH_GPIO3_PAD_STEN_CNTL_REG_OFFSET     0x000005F8
 #define PINCTRL_TT_BH_GPIO4_PAD_STEN_CNTL_REG_OFFSET     0x000005FC
 
+#define RESET_UNIT_I2C_PAD_CNTL_REG_ADDR   0x800301C0
+#define RESET_UNIT_I2C1_PAD_CNTL_REG_ADDR  0x800305CC
+#define RESET_UNIT_I2C2_PAD_CNTL_REG_ADDR  0x800305D8
+#define RESET_UNIT_I2C_PAD_DATA_REG_ADDR   0x800301C4
+#define RESET_UNIT_I2C1_PAD_DATA_REG_ADDR  0x800305D0
+#define RESET_UNIT_I2C2_PAD_DATA_REG_ADDR  0x800305DC
+#define RESET_UNIT_I2C_CNTL_REG_ADDR       0x800300F0
+#define RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK  0xC0
+#define RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK 0x3
+#define RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT  10
+
 #define PINCTRL_TT_BH_UART_CNTL_REG_OFFSET 0x00000608
 
 LOG_MODULE_REGISTER(bh_arc_pinctrl, CONFIG_PINCTRL_LOG_LEVEL);
@@ -60,6 +71,49 @@ static inline uintptr_t pinctrl_tt_bh_sten_reg(uint32_t pin);
 
 static inline uintptr_t pinctrl_tt_bh_drvs_reg(uint32_t pin);
 static inline uint32_t pinctrl_tt_bh_drvs_shift(uint32_t pin);
+
+static inline uint32_t pinctrl_tt_bh_get_i2c_pad_cntl_addr(uint32_t id)
+{
+	switch (id) {
+	case 0:
+		return RESET_UNIT_I2C_PAD_CNTL_REG_ADDR;
+	case 1:
+		return RESET_UNIT_I2C1_PAD_CNTL_REG_ADDR;
+	case 2:
+		return RESET_UNIT_I2C2_PAD_CNTL_REG_ADDR;
+	default:
+		return 0;
+	}
+}
+
+static inline uint32_t pinctrl_tt_bh_get_i2c_pad_data_addr(uint32_t id)
+{
+	switch (id) {
+	case 0:
+		return RESET_UNIT_I2C_PAD_DATA_REG_ADDR;
+	case 1:
+		return RESET_UNIT_I2C1_PAD_DATA_REG_ADDR;
+	case 2:
+		return RESET_UNIT_I2C2_PAD_DATA_REG_ADDR;
+	default:
+		return 0;
+	}
+}
+
+static void pinctrl_tt_bh_init_i2c(uint32_t id)
+{
+	/* initialize I2C pads for i2c controller */
+	uint32_t drive_strength = 0x7F; /* 50% of max 0xFF */
+
+	sys_write32((drive_strength << RESET_UNIT_I2C_PAD_CNTL_DRV_SHIFT) |
+			    RESET_UNIT_I2C_PAD_CNTL_RXEN_MASK | RESET_UNIT_I2C_PAD_CNTL_TRIEN_MASK,
+		    pinctrl_tt_bh_get_i2c_pad_cntl_addr(id));
+	sys_write32(0, pinctrl_tt_bh_get_i2c_pad_data_addr(id));
+
+	uint32_t i2c_cntl = sys_read32(RESET_UNIT_I2C_CNTL_REG_ADDR);
+
+	sys_write32(i2c_cntl | 1 << id, RESET_UNIT_I2C_CNTL_REG_ADDR);
+}
 
 static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 {
@@ -83,6 +137,12 @@ static int pinctrl_tt_bh_set(uint32_t pin, uint32_t func, uint32_t mode)
 	case 48: /* uart0_tx_default */
 	case 49: /* uart0_rx_default */
 		break;
+	case 15: /* i2c1_sda_default */
+	case 16: /* i2c1_scl_default */
+		pinctrl_tt_bh_init_i2c(0); /* I2CMst */
+		return 0;
+	case 0: /* default (empty) pin control, nothing for now */
+		return 0;
 	default:
 		LOG_DBG("No alternate function for pin %u", pin);
 		return -EIO;
