@@ -20,38 +20,22 @@ LOG_MODULE_REGISTER(test_pvt, LOG_LEVEL_DBG);
  * the average temperature of the chip could vary by one degree by the
  * time the average is computed.
  */
-#define AVG_TEMP_TOLERANCE 1
+#define AVG_TEMP_TOLERANCE 1.0f
 
 const struct device *const pvt = DEVICE_DT_GET(DT_NODELABEL(pvt));
 
-SENSOR_DT_READ_IODEV(test_pd_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 1}, {SENSOR_CHAN_PVT_TT_BH_PD, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_PD, 3}, {SENSOR_CHAN_PVT_TT_BH_PD, 4});
+SENSOR_DT_READ_IODEV(test_pd_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD});
+SENSOR_DT_READ_IODEV(test_vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM});
+SENSOR_DT_READ_IODEV(test_ts_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS});
 
-SENSOR_DT_READ_IODEV(test_vm_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_VM, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 1}, {SENSOR_CHAN_PVT_TT_BH_VM, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 3}, {SENSOR_CHAN_PVT_TT_BH_VM, 4});
-
-SENSOR_DT_READ_IODEV(test_ts_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 1}, {SENSOR_CHAN_PVT_TT_BH_TS, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 3}, {SENSOR_CHAN_PVT_TT_BH_TS, 4});
-
-SENSOR_DT_READ_IODEV(test_all_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_PD, 15},
-		     {SENSOR_CHAN_PVT_TT_BH_VM, 7}, {SENSOR_CHAN_PVT_TT_BH_TS, 7});
-
-SENSOR_DT_READ_IODEV(ts_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS, 0},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 1}, {SENSOR_CHAN_PVT_TT_BH_TS, 2},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 3}, {SENSOR_CHAN_PVT_TT_BH_TS, 4},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 5}, {SENSOR_CHAN_PVT_TT_BH_TS, 6},
-		     {SENSOR_CHAN_PVT_TT_BH_TS, 7}, {SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0});
-
-RTIO_DEFINE(test_pvt_ctx, NUM_READS, NUM_READS);
+/* PVT driver only supports one shot submissions, so use rtio size 1,1 */
+RTIO_DEFINE(test_pvt_ctx, 1, 1);
 
 /*
  * Used for storing read data in the read_decode test.
  * Each read is a `struct sensor_value`, and the test does NUM_READ reads.
  */
-static uint8_t test_buf[sizeof(struct sensor_value) * 9];
+static struct pvt_tt_bh_rtio_data test_buf[16];
 
 ZTEST(pvt_tt_bh_tests, test_attr_get)
 {
@@ -59,7 +43,7 @@ ZTEST(pvt_tt_bh_tests, test_attr_get)
 	int ret;
 
 	ret = sensor_attr_get(pvt, SENSOR_CHAN_PVT_TT_BH_TS, SENSOR_ATTR_PVT_TT_BH_NUM_TS, &val);
-	zassert_ok(ret);
+	zassert_ok(ret, "sensor_attr_get failed with %d", ret);
 	zassert_equal(val.val1, 8, "Should have 8 temperature sensors");
 	zassert_equal(val.val2, 0);
 }
@@ -67,278 +51,113 @@ ZTEST(pvt_tt_bh_tests, test_attr_get)
 /*
  * Test read and decode process detector.
  *
- * After the read call, manually read and convert the data from the test_buffer to
- * celcius and compare against the celcius value returned by the decocder.
+ * After the read call, compare the frequency returned by the decoder against
+ * manually decoding the output buffer. Manually decoding the output buffer is
+ * the source of truth.
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_pd)
 {
-	struct sensor_value freq_from_manual;
-	struct sensor_value freq_from_decoder;
-
 	const struct sensor_decoder_api *decoder;
+	struct sensor_value pd_count;
+	uint16_t freq_from_decoder[16];
 	int ret;
 
 	ret = sensor_get_decoder(pvt, &decoder);
-	zassert_ok(ret, "Get decoder failed with %d", ret);
+	zassert_ok(ret, "sensor_get_decoder failed with %d", ret);
 
-	ret = sensor_read(&test_pd_iodev, &test_pvt_ctx, test_buf, sizeof(test_buf));
-	zassert_ok(ret, "Sensor read failed with %d", ret);
+	ret = sensor_attr_get(pvt, SENSOR_CHAN_PVT_TT_BH_PD, SENSOR_ATTR_PVT_TT_BH_NUM_PD,
+			      &pd_count);
+	zassert_ok(ret, "sensor_attr_get failed with %d", ret);
 
-	for (int i = 0; i < NUM_READS; i++) {
-		const struct pvt_tt_bh_rtio_data *raw_freq =
-			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
+	ret = sensor_read(&test_pd_iodev, &test_pvt_ctx, (uint8_t *)test_buf, sizeof(test_buf));
+	zassert_ok(ret, "sensor_read failed with %d", ret);
 
-		pvt_tt_bh_float_to_sensor_value(converted_freq, &freq_from_manual);
+	decoder->decode((const uint8_t *)test_buf,
+			(struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD}, NULL,
+			pd_count.val1, freq_from_decoder);
 
-		/* Get celcius value from decoder */
-		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, i},
-				NULL, NUM_READS, &freq_from_decoder);
+	for (int i = 0; i < pd_count.val1; ++i) {
+		float freq_from_manual = pvt_tt_bh_raw_to_freq(test_buf[i].raw);
 
-		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(
-			freq_from_manual.val1, freq_from_decoder.val1,
-			"Integral part of frequency from decoder %d is not equal to frequency "
-			"from manual %d",
-			freq_from_manual.val1, freq_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(freq_from_manual.val2, freq_from_decoder.val2, 1000,
-			       "Floating part of frequency from decoder %d is not within 0.001 of "
-			       "frequency from manual %d",
-			       freq_from_decoder.val2, freq_from_manual.val2);
+		zassert_equal(freq_from_manual, pvt_tt_bh_raw_to_freq(freq_from_decoder[i]),
+			      "Decoder frequency %d differs from manual decoding %d",
+			      (int)freq_from_manual, (int)pvt_tt_bh_raw_to_freq(freq_from_decoder[i]));
 	}
 }
 
 /*
  * Test read and decode voltage monitor.
  *
- * After the read call, manually read and convert the data from the test_buffer to
- * celcius and compare against the celcius value returned by the decocder.
+ * After the read call, compare the voltage returned by the decoder against
+ * manually decoding the output buffer. Manually decoding the output buffer is
+ * the source of truth.
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_vm)
 {
-	struct sensor_value volt_from_manual;
-	struct sensor_value volt_from_decoder;
-
 	const struct sensor_decoder_api *decoder;
+	struct sensor_value vm_count;
+	uint16_t volt_from_decoder[8];
 	int ret;
 
 	ret = sensor_get_decoder(pvt, &decoder);
-	zassert_ok(ret, "Get decoder failed with %d", ret);
+	zassert_ok(ret, "sensor_get_decoder failed with %d", ret);
+
+	ret = sensor_attr_get(pvt, SENSOR_CHAN_PVT_TT_BH_VM, SENSOR_ATTR_PVT_TT_BH_NUM_VM,
+			      &vm_count);
+	zassert_ok(ret, "sensor_attr_get failed with %d", ret);
 
 	pvt_tt_bh_delay_chain_set(1);
+	ret = sensor_read(&test_vm_iodev, &test_pvt_ctx, (uint8_t *)test_buf, sizeof(test_buf));
+	zassert_ok(ret, "sensor_read failed with %d", ret);
 
-	ret = sensor_read(&test_vm_iodev, &test_pvt_ctx, test_buf, sizeof(test_buf));
-	zassert_ok(ret, "Sensor read failed with %d", ret);
+	decoder->decode((const uint8_t *)test_buf,
+			(struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM}, NULL,
+			vm_count.val1, volt_from_decoder);
 
-	for (int i = 0; i < NUM_READS; i++) {
-		const struct pvt_tt_bh_rtio_data *raw_volt =
-			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
+	for (int i = 0; i < vm_count.val1; ++i) {
+		float volt_from_manual = pvt_tt_bh_raw_to_volt(test_buf[i].raw);
 
-		pvt_tt_bh_float_to_sensor_value(converted_volt, &volt_from_manual);
-
-		/* Get celcius value from decoder */
-		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, i},
-				NULL, NUM_READS, &volt_from_decoder);
-
-		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(volt_from_manual.val1, volt_from_decoder.val1,
-			      "Integral part of voltage from decoder %d is not equal to voltage "
-			      "from manual %d",
-			      volt_from_manual.val1, volt_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(volt_from_manual.val2, volt_from_decoder.val2, 1000,
-			       "Floating part of voltage from decoder %d is not within 0.001 of "
-			       "voltage from manual %d",
-			       volt_from_decoder.val2, volt_from_manual.val2);
+		zassert_equal(volt_from_manual, pvt_tt_bh_raw_to_volt(volt_from_decoder[i]),
+			      "Decoder voltage %d differs from manual decoding %d",
+			      (int)volt_from_manual, (int)pvt_tt_bh_raw_to_volt(volt_from_decoder[i]));
 	}
 }
 
 /*
  * Test read and decode temperature sensor.
  *
- * After the read call, manually read and convert the data from the test_buffer to
- * celcius and compare against the celcius value returned by the decocder.
+ * After the read call, compare the temperature returned by the decoder against
+ * manually decoding the output buffer. Manually decoding the output buffer is
+ * the source of truth.
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_ts)
 {
-	struct sensor_value celcius_from_manual;
-	struct sensor_value celcius_from_decoder;
-
 	const struct sensor_decoder_api *decoder;
+	struct sensor_value ts_count;
+	uint16_t temp_from_decoder[8];
 	int ret;
 
 	ret = sensor_get_decoder(pvt, &decoder);
-	zassert_ok(ret, "Get decoder failed with %d", ret);
+	zassert_ok(ret, "sensor_get_decoder failed with %d", ret);
 
-	ret = sensor_read(&test_ts_iodev, &test_pvt_ctx, test_buf, sizeof(test_buf));
-	zassert_ok(ret, "Sensor read failed with %d", ret);
+	ret = sensor_attr_get(pvt, SENSOR_CHAN_PVT_TT_BH_TS, SENSOR_ATTR_PVT_TT_BH_NUM_TS,
+			      &ts_count);
+	zassert_ok(ret, "sensor_attr_get failed with %d", ret);
 
-	for (int i = 0; i < NUM_READS; i++) {
-		/* Get celcius value by manually converting test_buffer */
+	ret = sensor_read(&test_ts_iodev, &test_pvt_ctx, (uint8_t *)test_buf, sizeof(test_buf));
+	zassert_ok(ret, "sensor_read failed with %d", ret);
 
-		const struct pvt_tt_bh_rtio_data *raw_temp =
-			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
+	decoder->decode((const uint8_t *)test_buf,
+			(struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS}, NULL,
+			ts_count.val1, temp_from_decoder);
 
-		pvt_tt_bh_float_to_sensor_value(converted_temp, &celcius_from_manual);
+	for (int i = 0; i < ts_count.val1; ++i) {
+		float temp_from_manual = pvt_tt_bh_raw_to_temp(test_buf[i].raw);
 
-		/* Get celcius value from decoder */
-		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, i},
-				NULL, NUM_READS, &celcius_from_decoder);
-
-		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(celcius_from_manual.val1, celcius_from_decoder.val1,
-			      "Integral part of celcius from decoder %d is not equal to celcius "
-			      "from manual %d",
-			      celcius_from_manual.val1, celcius_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(celcius_from_manual.val2, celcius_from_decoder.val2, 1000,
-			       "Floating part of celcius from decoder %d is not within 0.001 of "
-			       "celcius from manual %d",
-			       celcius_from_decoder.val2, celcius_from_manual.val2);
+		zassert_equal(temp_from_manual, pvt_tt_bh_raw_to_temp(temp_from_decoder[i]),
+			      "Decoder temperature %d differs from manual decoding %d",
+			      (int)temp_from_manual, (int)pvt_tt_bh_raw_to_temp(temp_from_decoder[i]));
 	}
-}
-
-/*
- * Test read and decode temperature sensor average.
- */
-ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
-{
-	struct sensor_value celcius;
-	struct sensor_value celcius_from_manual_avg;
-	struct sensor_value celcius_from_avg_channel;
-
-	const struct sensor_decoder_api *decoder;
-	int ret;
-
-	ret = sensor_get_decoder(pvt, &decoder);
-	zassert_ok(ret, "Get decoder failed with %d", ret);
-
-	ret = sensor_read(&ts_ts_avg_iodev, &test_pvt_ctx, test_buf, sizeof(test_buf));
-	zassert_ok(ret, "Sensor read failed with %d", ret);
-
-	/* Calculate manual average from individual temperature sensors */
-	float avg_tmp = 0;
-
-	for (uint8_t i = 0; i < 8; i++) {
-		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, i},
-				NULL, 9, &celcius);
-		avg_tmp += sensor_value_to_float(&celcius);
-	}
-
-	avg_tmp /= 8;
-	pvt_tt_bh_float_to_sensor_value(avg_tmp, &celcius_from_manual_avg);
-
-	/* Get celcius value from average channel decoder */
-	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0}, NULL,
-			9, &celcius_from_avg_channel);
-
-	/* Assert celcius temperature from manual average and average channel are equal */
-	zassert_within(celcius_from_manual_avg.val1, celcius_from_avg_channel.val1,
-		       AVG_TEMP_TOLERANCE,
-		       "Integral part of celcius from average channel %d is not equal to celcius "
-		       "from manual average %d",
-		       celcius_from_avg_channel.val1, celcius_from_manual_avg.val1);
-}
-
-/*
- * Test read and decode all three sensors.
- *
- * After the read call, manually read and convert the data from the test_buffer to
- * respective units and compare against the values returned by the decoder.
- */
-ZTEST(pvt_tt_bh_tests, test_read_decode_all)
-{
-	struct sensor_value from_manual;
-	struct sensor_value from_decoder;
-
-	const struct sensor_decoder_api *decoder;
-	int ret;
-
-	ret = sensor_get_decoder(pvt, &decoder);
-	zassert_ok(ret, "Get decoder failed with %d", ret);
-
-	pvt_tt_bh_delay_chain_set(1);
-
-	ret = sensor_read(&test_all_iodev, &test_pvt_ctx, test_buf, sizeof(test_buf));
-	zassert_ok(ret, "Sensor read failed with %d", ret);
-
-	/* Test PD (Process Detector) - index 0 */
-	const struct pvt_tt_bh_rtio_data *raw_freq =
-		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[0]);
-	float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
-
-	pvt_tt_bh_float_to_sensor_value(converted_freq, &from_manual);
-	LOG_DBG("PD freq from manual: %d.%d", from_manual.val1, from_manual.val2);
-
-	/* Get frequency value from decoder */
-	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, 15}, NULL, 3,
-			&from_decoder);
-	LOG_DBG("PD frequency from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
-
-	/* Assert frequency from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "PD: Integral part of frequency from decoder %d is not equal to frequency "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "PD: Floating part of frequency from decoder %d is not within 0.001 of "
-		       "frequency from manual %d",
-		       from_decoder.val2, from_manual.val2);
-
-	/* Test VM (Voltage Monitor) - index 1 */
-	const struct pvt_tt_bh_rtio_data *raw_volt =
-		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[1]);
-	float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
-
-	pvt_tt_bh_float_to_sensor_value(converted_volt, &from_manual);
-	LOG_DBG("VM volt from manual: %d.%d", from_manual.val1, from_manual.val2);
-
-	/* Get voltage value from decoder */
-	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, 7}, NULL, 3,
-			&from_decoder);
-	LOG_DBG("VM voltage from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
-
-	/* Assert voltage from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "VM: Integral part of voltage from decoder %d is not equal to voltage "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "VM: Floating part of voltage from decoder %d is not within 0.001 of "
-		       "voltage from manual %d",
-		       from_decoder.val2, from_manual.val2);
-
-	/* Test TS (Temperature Sensor) - index 2 */
-	const struct pvt_tt_bh_rtio_data *raw_temp =
-		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[2]);
-	float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
-
-	pvt_tt_bh_float_to_sensor_value(converted_temp, &from_manual);
-	LOG_DBG("TS celsius from manual: %d.%d", from_manual.val1, from_manual.val2);
-
-	/* Get temperature value from decoder */
-	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, 7}, NULL, 3,
-			&from_decoder);
-	LOG_DBG("TS celsius from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
-
-	/* Assert temperature from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "TS: Integral part of celsius from decoder %d is not equal to celsius "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "TS: Floating part of celsius from decoder %d is not within 0.001 of "
-		       "celsius from manual %d",
-		       from_decoder.val2, from_manual.val2);
 }
 
 ZTEST_SUITE(pvt_tt_bh_tests, NULL, NULL, NULL, NULL, NULL);
