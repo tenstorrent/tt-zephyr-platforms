@@ -20,6 +20,7 @@ from e2e_smoke import (
     voltage_monitors_test,
     process_detectors_test,
     temperature_sensors_test,
+    power_state_toggle_test,
 )
 
 # Needed to keep ruff from complaining about this "unused import"
@@ -314,6 +315,21 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
 
     for _ in range(total_tries):
         fc = pvt_comprehensive_test(arc_chip_dut, asic_id)
+        if fc > 0:
+            logger.error(f"Failed in iteration {_}")
+        fail_count += fc
+
+    report_results(test_name, fail_count, total_tries)
+    assert fail_count == 0, f"{test_name} failed {fail_count} times."
+
+
+def test_power_state_toggle(arc_chip_dut, asic_id):
+    test_name = "Power state toggle test"
+    total_tries = min(MAX_TEST_ITERATIONS, 100)
+    fail_count = 0
+
+    for _ in range(total_tries):
+        fc = power_state_toggle_test(arc_chip_dut, asic_id)
         if fc > 0:
             logger.error(f"Failed in iteration {_}")
         fail_count += fc
