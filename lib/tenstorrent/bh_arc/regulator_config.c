@@ -166,10 +166,10 @@ static const RegulatorData p300_vcorem_data[] = {
 
 /* VCORE */
 static const uint8_t ubb_vcore_b0_data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x00,
-					    0x11, 0x00, 0x00, 0x00, 0x00, 0x41, 0x00, 0x00,
+					    0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 					    0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static const uint8_t ubb_vcore_b0_mask[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x1f, 0x0f, 0x00,
-					    0x1f, 0x00, 0x00, 0x00, 0x00, 0x7f, 0x00, 0x00,
+					    0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 					    0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 BUILD_ASSERT(sizeof(ubb_vcore_b0_data) == sizeof(ubb_vcore_b0_mask));
@@ -218,16 +218,6 @@ static const uint8_t ubb_vcorem_b0_mask[] = {0x00, 0x00, 0x3f, 0x00, 0x00, 0x1f,
 
 BUILD_ASSERT(sizeof(ubb_vcorem_b0_data) == sizeof(ubb_vcorem_b0_mask));
 
-static const uint8_t ubb_vcorem_38_data[] = {0x02, 0x00};
-static const uint8_t ubb_vcorem_38_mask[] = {0xff, 0x07};
-
-BUILD_ASSERT(sizeof(ubb_vcorem_38_data) == sizeof(ubb_vcorem_38_mask));
-
-static const uint8_t ubb_vcorem_39_data[] = {0x02, 0x00};
-static const uint8_t ubb_vcorem_39_mask[] = {0xff, 0x07};
-
-BUILD_ASSERT(sizeof(ubb_vcorem_39_data) == sizeof(ubb_vcorem_39_mask));
-
 static const uint8_t ubb_vcorem_e7_data[] = {0x04};
 static const uint8_t ubb_vcorem_e7_mask[] = {0x07};
 
@@ -235,8 +225,6 @@ BUILD_ASSERT(sizeof(ubb_vcorem_e7_data) == sizeof(ubb_vcorem_e7_mask));
 
 static const RegulatorData ubb_vcorem_data[] = {
 	REGULATOR_DATA(ubb_vcorem, b0),
-	REGULATOR_DATA(ubb_vcorem, 38),
-	REGULATOR_DATA(ubb_vcorem, 39),
 	REGULATOR_DATA(ubb_vcorem, e7),
 };
 
