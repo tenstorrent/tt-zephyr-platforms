@@ -93,7 +93,10 @@ the application as usual (see :ref:`build_an_application` for more details).
 Then, you can clone and setup SMC simulation environment repository:
 .. code-block:: console
 
-    git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    mkdir -p /proj_soc/user_dev/$USER/
+    cd /proj_soc/user_dev/$USER/
+
+    git clone -b grendel_mimir_a0 git@yyz-gitlab.local.tenstorrent.com:tensix/soc/mimir_soc.git
     cd tt_smc
     source /tools_soc/tt/bin/bashrc
     source bin/setup_env.sh
