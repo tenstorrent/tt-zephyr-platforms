@@ -54,12 +54,14 @@ to the emulation system, using SCP or a similar tool.
 
 Then, run the following command to start the emulation,
 from the <emu/tests> directory on a Zebu host:
+
 .. code-block:: console
 
     ./run-smc-test.sh <path_to_zephyr_bin>
     SMC_BINARY=<path_to_zephyr_bin> zrun --location U0.M0 -- -svk test_smc_binary
 
 For example, you could run the hello world application as follows:
+
 .. code-block:: console
 
     west build -p always -b tt_grendel_smc ../zephyr/samples/hello_world
@@ -94,6 +96,7 @@ To run a built application within the SMC simulation environment, first build
 the application as usual (see :ref:`build_an_application` for more details).
 
 Then, you can clone and setup SMC simulation environment repository:
+
 .. code-block:: console
 
     mkdir -p /proj_soc/user_dev/$USER/
