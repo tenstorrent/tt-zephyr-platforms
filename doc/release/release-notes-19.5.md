@@ -10,7 +10,7 @@ Major enhancements with this release include:
 
 ### Stability Improvements
 
-- Update ERISC FW to 7.5.0, change list from 7.2.0:
+- Update Wormhole ERISC FW to 7.5.0, change list from 7.2.0:
   - 7.5.0
     - Adjust the resend chip info packet time to resolve the link training failures with ANLT ports
     - Minimize static training retries to compensate for longer delays in the training sequence
@@ -35,6 +35,27 @@ You may observe a change in grid size in metal, which may require updates to app
 ### Stability Improvements
 
 - Fixed boardcfg loading error handling in recovery image
+- Updated Blackhole ERISC FW to v1.8.1, change list from v1.7.1:
+  - v1.8.1 (2025-01-23)
+    - Change P150 products to use Manual EQ training mode
+    - Updated MACPCS init sequence to wait longer before SerDes reinit
+    - Added wait for LCPLL lock check in SerDes init before training start
+    - Fixed bug where calling eth_mac_pcs_reinit with option = 1 would immediately return without running the function
+    - Increased AN timeout and disabled SerDes lt_timeout_enable to allow for better control of the ANLT sequence via FW
+  - v1.8.0 (2026-01-20)
+    - Updated TX/RX remapping for P300 and P150
+    - Updated settings to improve PRBS test mode
+      - Keep TX BIST enabled even on Serdes training fail
+      - Disable FW features at beginning of initialization for PRBS tests
+    - Restore some of the timeout changes to pre v1.7.1 settings as new timeouts proved to be problematic on galaxy systems
+    - Cleaned up RX retraining sequence for Manual EQ
+    - Added tx_barrier to sync TX/RX across multiple eth controllers on init
+    - Added eth_link_recovery to eth_api_table to allow access to runtime FW
+    - Added disable_l1_cache function to disable data cache completely, function called in main() of base FW and all test FWs
+    - Ensure eth_api_table is not wiped between inits
+    - Changed some ETH messages:
+      - ETH msg PORT_REINIT -> PORT_REINIT_MACPCS: Initiates fill initialization sequence based on selected option
+      - ETH msg PORT_RETRAIN -> PORT_REINIT_SERDES: Only initiates serdes initalization sequence based on selected option
 
 ### Power Management
 
