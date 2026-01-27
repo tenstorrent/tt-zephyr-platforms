@@ -708,7 +708,7 @@ def smi_reset_test(asic_id):
     """
     Helper to run tt-smi reset test. Returns True if test passed, False otherwise
     """
-    smi_reset_cmd = "tt-smi -r"
+    smi_reset_cmd = "tt-smi -r --eth_train_skip"
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     )
