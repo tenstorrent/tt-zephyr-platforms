@@ -35,18 +35,18 @@ package-managers:
 
 blobs:
   - path: tt_blackhole_erisc.bin
-    sha256: 8876a4e1f93dfa6308b6228d427b047bc268275cd789013802322bd22dc1de31
+    sha256: 9a5e694e1988d75c5970ebe48f8b2691d61301c97e38c3c52f55555ecbcba1fd
     type: img
-    version: '1.7.1'
+    version: '1.8.1'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc.bin"
     description: "Ethernet FW"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_erisc_params.bin
-    sha256: 7843c7a664d66980636e009bcec0545af6417afb2830aa4a26b5c44d20ede945
+    sha256: 6dd22a60a0d10a438c7332922d75c1f7609ee21227a54ab3eabee1c6e1285d25
     type: img
-    version: '1.7.1'
+    version: '1.8.1'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
