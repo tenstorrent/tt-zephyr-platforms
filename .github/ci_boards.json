@@ -1,19 +1,7 @@
 [
   {
-    "board": "p100a",
-    "runs-on": "p100a-jtag",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.66.0-dev20251218-4-g255c9332f1",
-    "metal-target": "blackhole"
-  },
-  {
-    "board": "p150a",
-    "runs-on": "p150a-jtag",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.66.0-dev20251218-4-g255c9332f1",
-    "metal-target": "blackhole"
-  },
-  {
     "board": "p300a",
-    "runs-on": "p300a-jtag",
+    "runs-on": "yyz-zephyr-01-lab-p300a",
     "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.66.0-dev20251218-4-g255c9332f1",
     "metal-target": "blackhole_p300"
   }
