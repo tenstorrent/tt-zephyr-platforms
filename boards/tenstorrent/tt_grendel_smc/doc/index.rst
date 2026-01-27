@@ -39,12 +39,15 @@ Executing Applications
 Applications can be built as usual (see :ref:`build_an_application`
 for more details). See below for instructions
 
+.. note::
+    If planning to use VSCode for development, ensure it is `installed on the login servers <https://tenstorrent.atlassian.net/wiki/spaces/SoC/pages/1714880532/First+Week+at+TT+SoC+-+AI#Move-Visual-Studio-Code>`__.
+
 Running Within Mimir Emulation Environment
 ==========================================
 
 To execute within the Mimir emulation environment, first follow the
 instructions to setup the environment as described here:
-https://yyz-tensix-gitlab.local.tenstorrent.com/soc/mimir_soc/-/tree/main/emu?ref_type=heads
+https://yyz-gitlab.local.tenstorrent.com/tensix/soc/mimir_soc/-/tree/main/emu?ref_type=heads
 
 Next, upload the build emulation binary stored in ``<build-dir>/zephyr/zephyr.bin``
 to the emulation system, using SCP or a similar tool.
@@ -93,6 +96,9 @@ the application as usual (see :ref:`build_an_application` for more details).
 Then, you can clone and setup SMC simulation environment repository:
 .. code-block:: console
 
+    mkdir -p /proj_soc/user_dev/$USER/
+    cd /proj_soc/user_dev/$USER/
+
     git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
     cd tt_smc
     source /tools_soc/tt/bin/bashrc
@@ -110,7 +116,7 @@ Finally, run the simulation using the following command:
 .. code-block:: shell
 
     cd tt_smc
-    ttem yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test \
+    ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test \
 	    --stack flist,cgen,compile_smc_chiplet,sim --wave --no-lsf --seed 1 --c compile_smc_chiplet
 
 
