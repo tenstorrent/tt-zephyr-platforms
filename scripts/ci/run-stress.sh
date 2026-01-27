@@ -85,5 +85,6 @@ if [[ "$TEST_SET" == *"e2e-stress"* ]]; then
         --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -p -d $CONSOLE_DEV" \
         --flash-before \
         --outdir "$ZEPHYR_BASE/twister-e2e-stress" \
+		-ll DEBUG \
         "$@"
 fi
