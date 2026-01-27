@@ -94,6 +94,7 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 		--flash-before \
 		--outdir $ZEPHYR_BASE/twister-e2e-flash \
 		--extra-args=SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
+		-ll DEBUG \
 		$@
 	# Restore a stable DMFW, since the copy flashed by BL2 tests will
 	# leave the DMC flash in a different state than other tests expect
