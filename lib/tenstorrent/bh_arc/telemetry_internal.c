@@ -21,7 +21,7 @@ SENSOR_DT_READ_IODEV(ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH_TS_
 
 RTIO_DEFINE(ts_avg_ctx, 1, 1);
 
-static uint8_t ts_avg_buf[sizeof(struct sensor_value)];
+static uint8_t ts_avg_buf[sizeof(struct pvt_tt_bh_rtio_data)];
 
 /**
  * @brief Read telemetry values that are shared by multiple components
@@ -37,7 +37,7 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
 	int64_t reftime = last_update_time;
 
 	if (k_uptime_delta(&reftime) >= max_staleness) {
-		struct sensor_value avg_tmp;
+		float avg_tmp;
 		const struct sensor_decoder_api *decoder;
 
 		sensor_get_decoder(pvt, &decoder);
@@ -52,7 +52,7 @@ void ReadTelemetryInternal(int64_t max_staleness, TelemetryInternalData *data)
 		AVSReadCurrent(AVS_VCORE_RAIL, &internal_data.vcore_current);
 		internal_data.vcore_power =
 			internal_data.vcore_current * internal_data.vcore_voltage * 0.001f;
-		internal_data.asic_temperature = sensor_value_to_float(&avg_tmp);
+		internal_data.asic_temperature = avg_tmp;
 
 		/* reftime was updated to the current uptime by the k_uptime_delta() call */
 		last_update_time = reftime;
