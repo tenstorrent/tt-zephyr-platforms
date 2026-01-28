@@ -63,7 +63,7 @@ def tt_smi_reset():
     """
     Resets the SMC using tt-smi
     """
-    smi_reset_cmd = "tt-smi -r"
+    smi_reset_cmd = "tt-smi -r --skip_eth_wait"
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
@@ -133,10 +133,7 @@ def test_smi_reset(arc_chip_dut, asic_id):
     """
     # todo: find better way to get test name
     test_name = "tt-smi reset test"
-    # todo: increase test count back to 1000. This was dropped to support
-    # new tt-smi, which has a longer reset duration due to using UMD
-    # health checks
-    total_tries = min(MAX_TEST_ITERATIONS, 200)
+    total_tries = min(MAX_TEST_ITERATIONS, 1000)
     fail_count = 0
     failure_fail_count = total_tries // 100
     dmfw_ping_avg = 0
