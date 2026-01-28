@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#define TT_BOOT_FS_FD_HEAD_ADDR            (0x0)
+#define TT_BOOT_FS_HEADER_ADDR             (0x120000)
 /* These defines must change when BOOT_START or DESC_REGION_SIZE change in python toolchain */
 #define TT_BOOT_FS_SECURITY_BINARY_FD_ADDR (0x3FE0)
 #define TT_BOOT_FS_FAILOVER_HEAD_ADDR      (0x4000)
@@ -26,7 +26,10 @@ extern "C" {
 
 struct device;
 
-typedef struct {
+/**
+ * @brief Boot filesystem file flags
+ */
+typedef struct tt_boot_fs_flags {
 	uint32_t image_size: 24;
 	uint32_t invalid: 1;
 	uint32_t executable: 1;
@@ -48,7 +51,11 @@ typedef union {
 	security_fd_flags f;
 } security_fd_flags_u;
 
-/* File descriptor */
+/**
+ * @brief Boot filesystem file descriptor
+ *
+ * Describes a binary stored in the boot filesystem.
+ */
 typedef struct {
 	uint32_t spi_addr;
 	uint32_t copy_dest;
@@ -79,21 +86,20 @@ typedef enum {
 	TT_BOOT_FS_CHK_FAIL,
 } tt_checksum_res_t;
 
+typedef struct {
+	uint32_t magic;
+	uint32_t version;
+	uint32_t table_count;
+} tt_boot_fs_header;
+
+#define TT_BOOT_FS_MAGIC           0x54544246 /* 'TTBF' in ASCII */
+#define TT_BOOT_FS_CURRENT_VERSION 1
+
 extern tt_boot_fs boot_fs_data;
 
 uint32_t tt_boot_fs_next(uint32_t prev);
 
-int tt_boot_fs_mount(tt_boot_fs *tt_boot_fs, tt_boot_fs_read hal_read, tt_boot_fs_write hal_write,
-		     tt_boot_fs_erase hal_erase);
-
-int tt_boot_fs_add_file(const tt_boot_fs *tt_boot_fs, tt_boot_fs_fd fd_data,
-			const uint8_t *image_data_src, bool isFailoverEntry,
-			bool isSecurityBinaryEntry);
-
 uint32_t tt_boot_fs_cksum(uint32_t cksum, const uint8_t *data, size_t size);
-
-int tt_boot_fs_get_file(const tt_boot_fs *tt_boot_fs, const uint8_t *tag, uint8_t *buf,
-			size_t buf_size, size_t *file_size);
 
 /**
  * @brief List file descriptors in boot filesystem
