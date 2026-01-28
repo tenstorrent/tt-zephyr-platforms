@@ -72,8 +72,8 @@ ZTEST(pvt_tt_bh_tests, test_attr_get)
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_pd)
 {
-	struct sensor_value freq_from_manual;
-	struct sensor_value freq_from_decoder;
+	float freq_from_manual;
+	float freq_from_decoder;
 
 	const struct sensor_decoder_api *decoder;
 	int ret;
@@ -87,26 +87,15 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_pd)
 	for (int i = 0; i < NUM_READS; i++) {
 		const struct pvt_tt_bh_rtio_data *raw_freq =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
-		pvt_tt_bh_float_to_sensor_value(converted_freq, &freq_from_manual);
+		freq_from_manual = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, i},
 				NULL, NUM_READS, &freq_from_decoder);
 
 		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(
-			freq_from_manual.val1, freq_from_decoder.val1,
-			"Integral part of frequency from decoder %d is not equal to frequency "
-			"from manual %d",
-			freq_from_manual.val1, freq_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(freq_from_manual.val2, freq_from_decoder.val2, 1000,
-			       "Floating part of frequency from decoder %d is not within 0.001 of "
-			       "frequency from manual %d",
-			       freq_from_decoder.val2, freq_from_manual.val2);
+		zassert_equal(freq_from_decoder, freq_from_manual);
 	}
 }
 
@@ -118,8 +107,8 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_pd)
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_vm)
 {
-	struct sensor_value volt_from_manual;
-	struct sensor_value volt_from_decoder;
+	float volt_from_manual;
+	float volt_from_decoder;
 
 	const struct sensor_decoder_api *decoder;
 	int ret;
@@ -135,25 +124,15 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_vm)
 	for (int i = 0; i < NUM_READS; i++) {
 		const struct pvt_tt_bh_rtio_data *raw_volt =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
-		pvt_tt_bh_float_to_sensor_value(converted_volt, &volt_from_manual);
+		volt_from_manual = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, i},
 				NULL, NUM_READS, &volt_from_decoder);
 
 		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(volt_from_manual.val1, volt_from_decoder.val1,
-			      "Integral part of voltage from decoder %d is not equal to voltage "
-			      "from manual %d",
-			      volt_from_manual.val1, volt_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(volt_from_manual.val2, volt_from_decoder.val2, 1000,
-			       "Floating part of voltage from decoder %d is not within 0.001 of "
-			       "voltage from manual %d",
-			       volt_from_decoder.val2, volt_from_manual.val2);
+		zassert_equal(volt_from_manual, volt_from_decoder);
 	}
 }
 
@@ -165,8 +144,8 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_vm)
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_ts)
 {
-	struct sensor_value celcius_from_manual;
-	struct sensor_value celcius_from_decoder;
+	float celcius_from_manual;
+	float celcius_from_decoder;
 
 	const struct sensor_decoder_api *decoder;
 	int ret;
@@ -182,25 +161,15 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts)
 
 		const struct pvt_tt_bh_rtio_data *raw_temp =
 			&(((const struct pvt_tt_bh_rtio_data *)test_buf)[i]);
-		float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
-		pvt_tt_bh_float_to_sensor_value(converted_temp, &celcius_from_manual);
+		celcius_from_manual = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
 		/* Get celcius value from decoder */
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, i},
 				NULL, NUM_READS, &celcius_from_decoder);
 
 		/* Assert celcius tempertaure from manual read and decoder are equal. */
-		zassert_equal(celcius_from_manual.val1, celcius_from_decoder.val1,
-			      "Integral part of celcius from decoder %d is not equal to celcius "
-			      "from manual %d",
-			      celcius_from_manual.val1, celcius_from_decoder.val1);
-
-		/* Check val2 with tolerance of 0.001 degrees. */
-		zassert_within(celcius_from_manual.val2, celcius_from_decoder.val2, 1000,
-			       "Floating part of celcius from decoder %d is not within 0.001 of "
-			       "celcius from manual %d",
-			       celcius_from_decoder.val2, celcius_from_manual.val2);
+		zassert_equal(celcius_from_decoder, celcius_from_manual);
 	}
 }
 
@@ -209,9 +178,9 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts)
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
 {
-	struct sensor_value celcius;
-	struct sensor_value celcius_from_manual_avg;
-	struct sensor_value celcius_from_avg_channel;
+	float celcius;
+	float celcius_from_manual_avg;
+	float celcius_from_avg_channel;
 
 	const struct sensor_decoder_api *decoder;
 	int ret;
@@ -228,22 +197,19 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
 	for (uint8_t i = 0; i < 8; i++) {
 		decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, i},
 				NULL, 9, &celcius);
-		avg_tmp += sensor_value_to_float(&celcius);
+		avg_tmp += celcius;
 	}
 
 	avg_tmp /= 8;
-	pvt_tt_bh_float_to_sensor_value(avg_tmp, &celcius_from_manual_avg);
+	celcius_from_manual_avg = avg_tmp;
 
 	/* Get celcius value from average channel decoder */
 	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0}, NULL,
 			9, &celcius_from_avg_channel);
 
 	/* Assert celcius temperature from manual average and average channel are equal */
-	zassert_within(celcius_from_manual_avg.val1, celcius_from_avg_channel.val1,
-		       AVG_TEMP_TOLERANCE,
-		       "Integral part of celcius from average channel %d is not equal to celcius "
-		       "from manual average %d",
-		       celcius_from_avg_channel.val1, celcius_from_manual_avg.val1);
+	zassert_within(celcius_from_manual_avg, celcius_from_avg_channel,
+		       AVG_TEMP_TOLERANCE);
 }
 
 /*
@@ -254,8 +220,8 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
  */
 ZTEST(pvt_tt_bh_tests, test_read_decode_all)
 {
-	struct sensor_value from_manual;
-	struct sensor_value from_decoder;
+	float from_manual;
+	float from_decoder;
 
 	const struct sensor_decoder_api *decoder;
 	int ret;
@@ -271,74 +237,41 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_all)
 	/* Test PD (Process Detector) - index 0 */
 	const struct pvt_tt_bh_rtio_data *raw_freq =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[0]);
-	float converted_freq = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
-	pvt_tt_bh_float_to_sensor_value(converted_freq, &from_manual);
-	LOG_DBG("PD freq from manual: %d.%d", from_manual.val1, from_manual.val2);
+	from_manual = pvt_tt_bh_raw_to_freq(raw_freq->raw);
 
 	/* Get frequency value from decoder */
 	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, 15}, NULL, 3,
 			&from_decoder);
-	LOG_DBG("PD frequency from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
 
 	/* Assert frequency from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "PD: Integral part of frequency from decoder %d is not equal to frequency "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "PD: Floating part of frequency from decoder %d is not within 0.001 of "
-		       "frequency from manual %d",
-		       from_decoder.val2, from_manual.val2);
+	zassert_equal(from_manual, from_decoder);
 
 	/* Test VM (Voltage Monitor) - index 1 */
 	const struct pvt_tt_bh_rtio_data *raw_volt =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[1]);
-	float converted_volt = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
-	pvt_tt_bh_float_to_sensor_value(converted_volt, &from_manual);
-	LOG_DBG("VM volt from manual: %d.%d", from_manual.val1, from_manual.val2);
+	from_manual = pvt_tt_bh_raw_to_volt(raw_volt->raw);
 
 	/* Get voltage value from decoder */
 	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, 7}, NULL, 3,
 			&from_decoder);
-	LOG_DBG("VM voltage from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
 
 	/* Assert voltage from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "VM: Integral part of voltage from decoder %d is not equal to voltage "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "VM: Floating part of voltage from decoder %d is not within 0.001 of "
-		       "voltage from manual %d",
-		       from_decoder.val2, from_manual.val2);
+	zassert_equal(from_manual, from_decoder);
 
 	/* Test TS (Temperature Sensor) - index 2 */
 	const struct pvt_tt_bh_rtio_data *raw_temp =
 		&(((const struct pvt_tt_bh_rtio_data *)test_buf)[2]);
-	float converted_temp = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
-	pvt_tt_bh_float_to_sensor_value(converted_temp, &from_manual);
-	LOG_DBG("TS celsius from manual: %d.%d", from_manual.val1, from_manual.val2);
+	from_manual = pvt_tt_bh_raw_to_temp(raw_temp->raw);
 
 	/* Get temperature value from decoder */
 	decoder->decode(test_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, 7}, NULL, 3,
 			&from_decoder);
-	LOG_DBG("TS celsius from decoder: %d.%d", from_decoder.val1, from_decoder.val2);
 
 	/* Assert temperature from manual read and decoder are equal */
-	zassert_equal(from_manual.val1, from_decoder.val1,
-		      "TS: Integral part of celsius from decoder %d is not equal to celsius "
-		      "from manual %d",
-		      from_decoder.val1, from_manual.val1);
-
-	zassert_within(from_manual.val2, from_decoder.val2, 1000,
-		       "TS: Floating part of celsius from decoder %d is not within 0.001 of "
-		       "celsius from manual %d",
-		       from_decoder.val2, from_manual.val2);
+	zassert_equal(from_manual, from_decoder);
 }
 
 ZTEST_SUITE(pvt_tt_bh_tests, NULL, NULL, NULL, NULL, NULL);
