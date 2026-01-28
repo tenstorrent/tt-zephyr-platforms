@@ -613,28 +613,35 @@ class BootFs:
             num_tables=2,
         )
         default_table_addrs = [FD_HEAD_ADDR, FAILOVER_HEAD_ADDR]
+        bootfs_header = default_bootfs_header
+        table_addrs = default_table_addrs
 
         # Pull file descriptor header
-        if len(data) < TT_BOOT_FS_HEADER_ADDR + ctypes.sizeof(tt_boot_fs_header):
-            # Use default table set
-            bootfs_header = default_bootfs_header
-            table_addrs = default_table_addrs
-        else:
-            bootfs_header = tt_boot_fs_header.from_buffer_copy(
-                data, TT_BOOT_FS_HEADER_ADDR
-            )
-            if bootfs_header.magic != BOOTFS_HEADER_MAGIC:
-                # This is an older bootfs that lacks a header. Use the default table set,
-                # which included a ROM table and Fallback table
-                table_addrs = default_table_addrs
-                bootfs_header = default_bootfs_header
-            else:
-                table_addrs = []
-                data_offs = TT_BOOT_FS_HEADER_ADDR + ctypes.sizeof(tt_boot_fs_header)
-                for _ in range(bootfs_header.num_tables):
-                    table_addr = struct.unpack_from("<I", data, data_offs)[0]
-                    table_addrs.append(table_addr)
+        try:
+            header = tt_boot_fs_header.from_buffer_copy(data, TT_BOOT_FS_HEADER_ADDR)
+            if header.magic == BOOTFS_HEADER_MAGIC:
+                # Verify table address array fits in data
+                table_array_start = TT_BOOT_FS_HEADER_ADDR + ctypes.sizeof(
+                    tt_boot_fs_header
+                )
+                table_array_size = header.num_tables * ctypes.sizeof(ctypes.c_uint32)
+                if len(data) < table_array_start + table_array_size:
+                    raise ValueError(
+                        f"data length {len(data)} does not include table address array at 0x{table_array_start:x}"
+                    )
+
+                # Valid header -- parse table addresses
+                addrs = []
+                data_offs = table_array_start
+                for _ in range(header.num_tables):
+                    addrs.append(
+                        ctypes.c_uint32.from_buffer_copy(data, data_offs).value
+                    )
                     data_offs += 4
+                bootfs_header = header
+                table_addrs = addrs
+        except ValueError:
+            pass
 
         if len(data) < FAILOVER_HEAD_ADDR + FD_SIZE:
             raise ValueError(
@@ -659,11 +666,11 @@ class BootFs:
             fds: dict[str, tt_boot_fs_fd] = {}
             entries: dict[str, FsEntry] = {}
             # Scan FDs in this table
-            for value in iter_fd(
+            for _, fd in iter_fd(
                 lambda addr, size: data[addr + offset : addr + offset + size]
             ):
-                tag = value[1].image_tag_str()
-                fds[tag] = value[1]
+                tag = fd.image_tag_str()
+                fds[tag] = fd
                 order.append(tag)
 
             for tag in order:
@@ -726,16 +733,14 @@ class FileImage:
         alignment = FileAlignment.loads(data["alignment"])
         tables = []
         for t in data["tables"]:
-            table_ent = {"header_addr": t["header_addr"], "images": {}}
+            images = {}
 
             for ent in t["images"]:
                 ent_name = ent["name"]
-                if ent_name in table_ent["images"]:
+                if ent_name in images:
                     raise ValueError(f"Found duplicate image name '{ent_name}'")
-                table_ent["images"][ent_name] = BootImage.loads(
-                    ent_name, ent, alignment, env
-                )
-            tables.append(table_ent)
+                images[ent_name] = BootImage.loads(ent_name, ent, alignment, env)
+            tables.append({"header_addr": t["header_addr"], "images": images})
 
         return FileImage(
             name=data["name"],
@@ -792,7 +797,7 @@ class FileImage:
                     if image.spi_addr % self.alignment.block_size != 0:
                         raise ValueError(
                             f"The spi_addr of {image.tag} at {image.spi_addr:x} "
-                            "is not aligned to the spi block size of {self.alignment.block_size}"
+                            f"is not aligned to the spi block size of {self.alignment.block_size}"
                         )
                     tracker.add(
                         image.spi_addr, image.spi_addr + len(image.binary), image
