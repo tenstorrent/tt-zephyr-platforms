@@ -55,7 +55,7 @@ SENSOR_DT_READ_IODEV(cat_ts_avg_iodev, DT_NODELABEL(pvt), {SENSOR_CHAN_PVT_TT_BH
 
 RTIO_DEFINE(cat_ts_avg_ctx, 1, 1);
 
-static uint8_t cat_ts_avg_buf[sizeof(struct sensor_value)];
+static uint8_t cat_ts_avg_buf[sizeof(struct pvt_tt_bh_rtio_data)];
 
 #endif /* CONFIG_TT_SMC_RECOVERY */
 
@@ -165,9 +165,8 @@ static float CalibrateCAT(void)
 	}
 
 	float catmon_temp = TrimCodeToTemp(code);
-	float ts_temp = 0;
 
-	struct sensor_value avg_tmp;
+	float avg_tmp;
 	const struct sensor_decoder_api *decoder;
 
 	sensor_get_decoder(pvt, &decoder);
@@ -176,9 +175,7 @@ static float CalibrateCAT(void)
 	decoder->decode(cat_ts_avg_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS_AVG, 0},
 			NULL, 1, &avg_tmp);
 
-	ts_temp = sensor_value_to_float(&avg_tmp);
-
-	float catmon_error = catmon_temp - ts_temp;
+	float catmon_error = catmon_temp - avg_tmp;
 
 	if (catmon_error < -25 || catmon_error > 25) {
 		LOG_WRN("CATMON calibration error %.1fC exceeds +/-25C, clamping",
