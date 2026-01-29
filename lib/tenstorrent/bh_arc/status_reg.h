@@ -17,7 +17,9 @@
 #define RESET_UNIT_SCRATCH_REG_ADDR(n) (RESET_UNIT_SCRATCH_BASE_ADDR + sizeof(uint32_t) * (n))
 
 /* SCRATCH_[0-7] */
-#define STATUS_POST_CODE_REG_ADDR RESET_UNIT_SCRATCH_REG_ADDR(0)
+#define STATUS_POST_CODE_REG_ADDR      RESET_UNIT_SCRATCH_REG_ADDR(0)
+/* Cable power limit written by DMC via JTAG before ARC boot (0 = cable fault) */
+#define DMC_CABLE_POWER_LIMIT_REG_ADDR RESET_UNIT_SCRATCH_REG_ADDR(1)
 
 /* SCRATCH_RAM[0-63] */
 #define STATUS_FW_VERSION_REG_ADDR           RESET_UNIT_SCRATCH_RAM_REG_ADDR(0)
@@ -57,9 +59,9 @@
 #define I2C0_TARGET_DEBUG_STATE_2_REG_ADDR   RESET_UNIT_SCRATCH_RAM_REG_ADDR(20)
 #define ARC_HANG_PC                          RESET_UNIT_SCRATCH_RAM_REG_ADDR(21)
 
-#define STATUS_FW_VUART_REG_ADDR(n)          RESET_UNIT_SCRATCH_RAM_REG_ADDR(40 + (n))
+#define STATUS_FW_VUART_REG_ADDR(n) RESET_UNIT_SCRATCH_RAM_REG_ADDR(40 + (n))
 /* SCRATCH_RAM_40 - SCRATCH_RAM_41 reserved for virtual uarts */
-#define STATUS_FW_SCRATCH_REG_ADDR           RESET_UNIT_SCRATCH_RAM_REG_ADDR(63)
+#define STATUS_FW_SCRATCH_REG_ADDR  RESET_UNIT_SCRATCH_RAM_REG_ADDR(63)
 
 typedef struct {
 	uint32_t msg_queue_ready: 1;
@@ -75,6 +77,7 @@ typedef union {
 
 typedef struct {
 	uint32_t regulator_init_error: 1;
+	uint32_t cable_fault: 1; /* No cable or improperly installed 12V-2x6 cable */
 } STATUS_ERROR_STATUS0_reg_t;
 
 typedef union {
