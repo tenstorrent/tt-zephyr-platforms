@@ -18,17 +18,17 @@
  * @warning The order of these enum values must be preserved for compatibility.
  */
 enum aiclk_arb_max {
-	aiclk_arb_max_fmax,              /**< Maximum frequency limit */
-	aiclk_arb_max_tdp,               /**< Thermal Design Power limit */
-	aiclk_arb_max_fast_tdc,          /**< Fast Thermal Design Current limit */
-	aiclk_arb_max_tdc,               /**< Thermal Design Current limit */
-	aiclk_arb_max_thm,               /**< Thermal limit */
-	aiclk_arb_max_board_power,       /**< Board power limit */
-	aiclk_arb_max_voltage,           /**< Voltage limit */
-	aiclk_arb_max_gddr_thm,          /**< GDDR thermal limit */
-	aiclk_arb_max_doppler_slow,      /**< Doppler slow throttling limit */
-	aiclk_arb_max_doppler_critical,  /**< Doppler critical throttling limit */
-	aiclk_arb_max_count,             /**< Number of max arbiters */
+	aiclk_arb_max_fmax,             /**< Maximum frequency limit */
+	aiclk_arb_max_tdp,              /**< Thermal Design Power limit */
+	aiclk_arb_max_fast_tdc,         /**< Fast Thermal Design Current limit */
+	aiclk_arb_max_tdc,              /**< Thermal Design Current limit */
+	aiclk_arb_max_thm,              /**< Thermal limit */
+	aiclk_arb_max_board_power,      /**< Board power limit */
+	aiclk_arb_max_voltage,          /**< Voltage limit */
+	aiclk_arb_max_gddr_thm,         /**< GDDR thermal limit */
+	aiclk_arb_max_doppler_slow,     /**< Doppler slow throttling limit */
+	aiclk_arb_max_doppler_critical, /**< Doppler critical throttling limit */
+	aiclk_arb_max_count,            /**< Number of max arbiters */
 };
 
 /**
@@ -40,9 +40,25 @@ enum aiclk_arb_max {
  * @warning The order of these enum values must be preserved for compatibility.
  */
 enum aiclk_arb_min {
-	aiclk_arb_min_fmin,   /**< Minimum frequency limit */
-	aiclk_arb_min_busy,   /**< Busy state frequency requirement */
-	aiclk_arb_min_count,  /**< Number of min arbiters */
+	aiclk_arb_min_fmin,  /**< Minimum frequency limit */
+	aiclk_arb_min_busy,  /**< Busy state frequency requirement */
+	aiclk_arb_min_count, /**< Number of min arbiters */
+};
+
+enum targ_freq_reason {
+	limit_reason_min_arb, /* We are being limited by a min arbiter*/
+	limit_reason_max_arb, /* We are being limited by a max arbiter*/
+	limit_reason_fmin,   /* The aiclk was arbitrated below fmin, and therefore was set to fmin*/
+	limit_reason_sweep,  /* The aiclk is random due to sweep being enabled*/
+	limit_reason_forced, /* The aiclk is forced*/
+};
+
+union aiclk_targ_freq_info {
+	uint32_t u32_all;
+	struct {
+		uint32_t arbiter: 16; /*The min or max arbiter enumeration value*/
+		enum targ_freq_reason reason: 16;
+	};
 };
 
 void aiclk_update_busy(void);
@@ -60,9 +76,9 @@ uint32_t GetAiclkTarg(void);
 uint32_t GetMaxAiclkForVoltage(uint32_t voltage);
 uint32_t GetAiclkFmin(void);
 uint32_t GetAiclkFmax(void);
-uint32_t get_aiclk_effective_arb_min(void);
-uint32_t get_aiclk_effective_arb_max(void);
+uint32_t get_aiclk_effective_arb_min(enum aiclk_arb_min *effective_min_arb);
+uint32_t get_aiclk_effective_arb_max(enum aiclk_arb_max *effective_max_arb);
 uint32_t get_enabled_arb_min_bitmask(void);
 uint32_t get_enabled_arb_max_bitmask(void);
-
+union aiclk_targ_freq_info get_targ_aiclk_info(void);
 #endif

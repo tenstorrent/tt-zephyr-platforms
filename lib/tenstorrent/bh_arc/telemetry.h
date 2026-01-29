@@ -266,12 +266,17 @@
  */
 #define TAG_ENABLED_MAX_ARB 68
 
+/**
+ * @brief Information on the currently set aiclk value
+ */
+#define TAG_AICLK_PPM_INFO 69
+
 /** @} */ /* end of telemetry_tag group */
 
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
  */
-#define TAG_COUNT 69
+#define TAG_COUNT 70
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)
