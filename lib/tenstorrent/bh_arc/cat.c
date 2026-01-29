@@ -18,6 +18,9 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/tenstorrent/pvt_tt_bh.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(cat);
 
 #define RESET_UNIT_CATMON_THERM_TRIP_STATUS_REG_ADDR  0x80030164
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR    0x80030168
@@ -56,11 +59,23 @@ static uint8_t cat_ts_avg_buf[sizeof(struct sensor_value)];
 
 #endif /* CONFIG_TT_SMC_RECOVERY */
 
-/* catmon trim codes run from 0: 196C+ to 63: -56C+, evenly spaced 4C */
-
+/**
+ * @brief Convert a temperature to a CATMON trim code
+ *
+ * CATMON trim codes map temperatures [196C, -56C] to threshold values [0, 63],
+ * with threshold values being evenly spaced 4C apart.
+ *
+ * We instead clamp the temperature to [196C, 20C], because if the temperature sensor
+ * is reading outside that range we can infer that the sensor is not working properly
+ * and therefore should not cause a therm trip.
+ */
 static uint8_t TempToTrimCode(float temp)
 {
-	temp = CLAMP(temp, -56, 196);
+	if (temp < 20.0f) {
+		LOG_WRN("Unreasonable low temperature: %dC, clamping to 20C", (int)temp);
+	}
+
+	temp = CLAMP(temp, 20, 196);
 	return 49 - temp / 4;
 }
 
