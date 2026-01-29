@@ -480,8 +480,7 @@ static int pvt_tt_bh_init(const struct device *dev)
 
 	/* Initialize the single thermal calibration fuse value from TS0's 25 degree data */
 
-	const struct sensor_value celcius25 = {.val1 = 25, .val2 = 0};
-	uint16_t celcius25_raw = pvt_tt_bh_temp_to_raw(&celcius25);
+	uint16_t celcius25_raw = 1142;
 
 	for (uint8_t id = 0; id < pvt_cfg->num_ts; ++id) {
 		uint32_t deg25_start = 2240 + (id * 64);
