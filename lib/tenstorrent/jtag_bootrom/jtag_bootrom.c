@@ -318,10 +318,15 @@ void jtag_bootrom_set_cable_power_limit(struct bh_chip *chip, uint16_t power_lim
 #ifdef CONFIG_JTAG_LOAD_BOOTROM
 	const struct device *dev = chip->config.jtag;
 
-	/* Write cable power limit to SCRATCH_1 for SMC to read at boot.
-	 * A value of 0 indicates cable fault (no cable or improper installation).
+	/* Write cable power limit with magic marker for SMC to detect feature support.
+	 * Format: [31:16] = CABLE_POWER_LIMIT_MAGIC, [15:0] = power_limit
+	 * Legacy SMC will read this as a large positive value (not 0), so safe.
+	 * New SMC checks for magic marker to enable cable fault detection.
+	 * A power_limit of 0 indicates cable fault (no cable or improper installation).
 	 */
-	jtag_axi_write32(dev, DMC_CABLE_POWER_LIMIT_REG_ADDR, (uint32_t)power_limit);
+	uint32_t value = CABLE_POWER_LIMIT_MAGIC | (uint32_t)power_limit;
+
+	jtag_axi_write32(dev, DMC_CABLE_POWER_LIMIT_REG_ADDR, value);
 #endif
 }
 

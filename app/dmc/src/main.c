@@ -461,6 +461,7 @@ static void handle_perst(void)
 
 			bharc_disable_i2cbus(&chip->config.arc);
 			jtag_bootrom_reset_asic(chip);
+			jtag_bootrom_set_cable_power_limit(chip, chip->data.cable_power_limit);
 			jtag_bootrom_soft_reset_arc(chip);
 			jtag_bootrom_teardown(chip);
 			bharc_enable_i2cbus(&chip->config.arc);
