@@ -5,6 +5,7 @@
  */
 
 #include "bh_reg_def.h"
+#include "status_reg.h"
 
 #include <stdint.h>
 
@@ -309,6 +310,18 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 	 * cycles but may lead to errors in the future.
 	 */
 	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, 0);
+#endif
+}
+
+void jtag_bootrom_set_cable_power_limit(struct bh_chip *chip, uint16_t power_limit)
+{
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
+	const struct device *dev = chip->config.jtag;
+
+	/* Write cable power limit to SCRATCH_1 for SMC to read at boot.
+	 * A value of 0 indicates cable fault (no cable or improper installation).
+	 */
+	jtag_axi_write32(dev, DMC_CABLE_POWER_LIMIT_REG_ADDR, (uint32_t)power_limit);
 #endif
 }
 
