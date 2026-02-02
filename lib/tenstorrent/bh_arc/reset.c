@@ -215,16 +215,27 @@ static int DeassertTileResets(void)
 		return 0;
 	}
 
-	/* Read cable power limit from scratch register written by DMC via JTAG.
-	 * A value of 0 indicates cable fault (no cable or improper installation).
+	/* Read cable power limit with magic marker check for backward compatibility.
+	 * - If magic marker present: new DMC, check power limit (0 = cable fault)
+	 * - If magic marker absent: legacy DMC, skip cable fault detection
 	 */
-	uint32_t cable_power_limit = ReadReg(DMC_CABLE_POWER_LIMIT_REG_ADDR);
+	uint32_t raw_value = ReadReg(DMC_CABLE_POWER_LIMIT_REG_ADDR);
 
-	if (cable_power_limit == 0) {
-		cable_fault_mode = true;
-		error_status0.f.cable_fault = 1;
-		LOG_WRN("Cable fault detected (0W power limit). "
-			"Entering low-power mode - keeping tensixes, ETH, GDDR, L2CPU in reset.");
+	if ((raw_value & CABLE_POWER_LIMIT_MAGIC_MASK) == CABLE_POWER_LIMIT_MAGIC) {
+		/* New DMC with cable power limit feature */
+		uint16_t cable_power_limit = raw_value & CABLE_POWER_LIMIT_VALUE_MASK;
+
+		LOG_INF("Cable Power Limit: %u", cable_power_limit);
+
+		if (cable_power_limit == 0) {
+			cable_fault_mode = true;
+			error_status0.f.cable_fault = 1;
+			LOG_WRN("Cable fault detected (0W power limit). "
+				"Entering low-power mode - keeping tensixes, ETH, GDDR, L2CPU in reset.");
+		}
+	} else {
+		/* Legacy DMC without cable power limit feature - skip cable fault check */
+		LOG_INF("Legacy DMC detected (no cable power feature), skipping cable fault check");
 	}
 
 	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
