@@ -38,8 +38,8 @@ jobs:
       - id: gen-config
         shell: bash
         run: |
-          # Output the entire compact JSON matrix config on one line
-          MATRIX_CONFIG="$(jq -c "." .github/ci_boards.json)"
+          # Filter to only Blackhole boards (product == "bh"), then remove the product field
+          MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   metal-test:
