@@ -12,4 +12,4 @@ build-job:
     - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
 
   tags:
-    - chiplet-ip
+    - 8-core
