@@ -10,6 +10,30 @@ build-job:
     - west update
     - cd /tt-zephyr
     - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
+  artifacts:
+    paths:
+      - /tt-zephyr/twister-out/
 
   tags:
     - 8-core
+
+# Use the build-job output artifacts in downstream jobs
+test-job:
+  dependencies:
+    - build-job
+
+  script:
+    # Pull tt-smc repo to run Zephyr tests
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    - cd tt_smc
+    - source bin/setup_env.sh
+    - module list || true
+    - bender checkout --force || bender checkout --force
+    - cp twister-out/tt_grendel_smc_tt_grendel_smc/zephyr/tests/integration/kernel/integration.kernel/zephyr/zephyr.bin \
+      ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
+    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test \
+      --stack flist,cgen,compile_smc_chiplet,sim --wave --no-lsf --seed 1 --c compile_smc_chiplet
+
+  tags:
+    - chiplet-ip
+  timeout: 60m
