@@ -11,6 +11,7 @@ build-job:
     - west update
     - cd /tt-zephyr
     - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
+    - ls -la /tt-zephyr/twister-out/
   artifacts:
     paths:
       - /tt-zephyr/twister-out/
@@ -31,6 +32,7 @@ test-job:
     - source bin/setup_env.sh
     - module list || true
     - bender checkout --force || bender checkout --force
+    - ls -la /tt-zephyr/twister-out/
     - cp /tt-zephyr/twister-out/twister-out/tt_grendel_smc_tt_grendel_smc/zephyr/tests/integration/kernel/integration.kernel/zephyr/zephyr.bin \
       ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
     - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test \
