@@ -46,17 +46,27 @@ enum aiclk_arb_min {
 };
 
 enum targ_freq_reason {
-	limit_reason_min_arb, /* We are being limited by a min arbiter*/
-	limit_reason_max_arb, /* We are being limited by a max arbiter*/
-	limit_reason_fmin,   /* The aiclk was arbitrated below fmin, and therefore was set to fmin*/
-	limit_reason_sweep,  /* The aiclk is random due to sweep being enabled*/
-	limit_reason_forced, /* The aiclk is forced*/
+	limit_reason_min_arb, /**< We are being limited by a min arbiter*/
+	limit_reason_max_arb, /**< We are being limited by a max arbiter*/
+	limit_reason_fmin, /**< The aiclk was arbitrated below fmin, and therefore was set to fmin*/
+	limit_reason_sweep,  /**< The aiclk is random due to sweep being enabled*/
+	limit_reason_forced, /**< The aiclk is forced*/
 };
 
+/**
+ * @brief Information about the target AICLK frequency decision
+ *
+ * This union provides details about why a particular target frequency was chosen,
+ * including which arbiter determined the frequency and the reason for the decision.
+ */
 union aiclk_targ_freq_info {
 	uint32_t u32_all;
 	struct {
-		uint32_t arbiter: 16; /*The min or max arbiter enumeration value*/
+		/** The min or max arbiter enumeration value for @ref limit_reason_min_arb
+		 * or @ref limit_reason_max_arb
+		 */
+		uint32_t arbiter: 16;
+		/** The reason for this target frequency */
 		enum targ_freq_reason reason: 16;
 	};
 };
