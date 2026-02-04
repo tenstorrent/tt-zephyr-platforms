@@ -9,4 +9,4 @@
 OUTDIR=${OUTDIR:-twister-out}
 
 # Build all grendel platforms
-./zephyr/scripts/twister -p tt_grendel_smc -T ./zephyr/samples/hello_world --outdir $OUTDIR
+./zephyr/scripts/twister -p tt_grendel_smc -T ./zephyr/tests/integration/kernel --outdir $OUTDIR
