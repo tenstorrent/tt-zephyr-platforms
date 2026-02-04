@@ -225,9 +225,13 @@
 #define TAG_TDP_LIMIT_MAX 64
 
 /**
- * @brief Effective minimum AICLK arbiter value in megahertz.
+ * @brief Effective minimum AICLK arbiter value in megahertz, and the effective arbiter
  *
- * This represents the highest frequency requested by all enabled minimum arbiters.
+ * The telemetry value contains both the frequency and the arbiter:
+ * - Lower 16 bits: frequency in MHz
+ * - Upper 16 bits: arbiter number from @ref aiclk_arb_min
+ *
+ * The frequency represents the highest frequency requested by all enabled minimum arbiters.
  * Multiple arbiters may request minimum frequencies, and the highest value is effective.
  *
  * @see @ref aiclk_arb_min
@@ -235,9 +239,13 @@
 #define TAG_AICLK_ARB_MIN 65
 
 /**
- * @brief Effective maximum AICLK arbiter value in megahertz.
+ * @brief Effective maximum AICLK arbiter value in megahertz, and the effective arbiter.
  *
- * This represents the lowest frequency limit imposed by all enabled maximum arbiters.
+ * The telemetry value contains both the frequency and the arbiter:
+ * - Lower 16 bits: frequency in MHz
+ * - Upper 16 bits: arbiter number from @ref aiclk_arb_max
+ *
+ * The frequency represents the lowest frequency limit imposed by all enabled maximum arbiters.
  * Multiple arbiters may impose maximum frequency limits (e.g., TDP, TDC, thermal throttling),
  * and the lowest (most restrictive) value is effective. This value takes precedence over
  * TAG_AICLK_ARB_MIN when determining the final target frequency.
@@ -268,6 +276,11 @@
 
 /**
  * @brief Information on the currently set aiclk value
+ *
+ * Contains details about why a particular target frequency was chosen,
+ * including which arbiter determined the frequency and the reason for the decision.
+ *
+ * @see @ref aiclk_targ_freq_info
  */
 #define TAG_AICLK_PPM_INFO 69
 
