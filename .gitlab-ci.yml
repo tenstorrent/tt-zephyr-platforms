@@ -1,4 +1,5 @@
 build-job:
+  stage: build
   image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v19.4.2
   script:
     - cd /tt-zephyr/tt-zephyr-platforms
@@ -19,12 +20,13 @@ build-job:
 
 # Use the build-job output artifacts in downstream jobs
 test-job:
+  stage: test
   dependencies:
     - build-job
 
   script:
     # Pull tt-smc repo to run Zephyr tests
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@yyz-gitlab.local.tenstorrent.com/tensix/tensix-hw/tt_smc.git
+    - git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
     - cd tt_smc
     - source bin/setup_env.sh
     - module list || true
