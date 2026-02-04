@@ -24,7 +24,7 @@ test-job:
 
   script:
     # Pull tt-smc repo to run Zephyr tests
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@yyz-gitlab.local.tenstorrent.com/tensix/tensix-hw/tt_smc.git
     - cd tt_smc
     - source bin/setup_env.sh
     - module list || true
