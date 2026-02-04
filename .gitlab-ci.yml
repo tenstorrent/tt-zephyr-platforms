@@ -1,3 +1,7 @@
+variables:
+  OUTDIR: $CI_PROJECT_DIR/twister-out
+
+
 build-job:
   stage: build
   image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v19.4.2
@@ -11,11 +15,10 @@ build-job:
     - west update
     - cd /tt-zephyr
     - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
-    - ls -la /tt-zephyr/twister-out/
+    - ls -la $OUTDIR
   artifacts:
     paths:
-      - /tt-zephyr/twister-out/
-
+      - $OUTDIR
   tags:
     - 8-core
 
@@ -32,12 +35,11 @@ test-job:
     - source bin/setup_env.sh
     - module list || true
     - bender checkout --force || bender checkout --force
-    - ls -la /tt-zephyr/twister-out/
-    - cp /tt-zephyr/twister-out/twister-out/tt_grendel_smc_tt_grendel_smc/zephyr/tests/integration/kernel/integration.kernel/zephyr/zephyr.bin \
+    - ls -la $OUTDIR
+    - cp $OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/integration/kernel/integration.kernel/zephyr/zephyr.bin \
       ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
     - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test \
       --stack flist,cgen,compile_smc_chiplet,sim --wave --no-lsf --seed 1 --c compile_smc_chiplet
-
   tags:
     - chiplet-ip
   timeout: 60m
