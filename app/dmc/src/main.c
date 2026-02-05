@@ -631,6 +631,11 @@ int main(void)
 		}
 	}
 
+	/* Detect cable power limit early, before JTAG bootrom sequence.
+	 * This value will be written to a scratch register for SMC to read at boot.
+	 */
+	max_power = detect_max_power();
+
 	if (IS_ENABLED(CONFIG_JTAG_LOAD_BOOTROM)) {
 		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 			ret = jtag_bootrom_init(chip);
@@ -639,10 +644,11 @@ int main(void)
 				return ret;
 			}
 
-
 			bharc_disable_i2cbus(&chip->config.arc);
 
-			ret = jtag_bootrom_reset_sequence(chip, false);
+			/* Store power limit for use in runtime resets */
+			chip->data.cable_power_limit = max_power;
+			ret = jtag_bootrom_reset_sequence(chip, false, max_power);
 			/* Always enable I2C bus */
 			bharc_enable_i2cbus(&chip->config.arc);
 			if (ret != 0) {
@@ -665,8 +671,6 @@ int main(void)
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
-
-	max_power = detect_max_power();
 
 	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
 	k_timer_start(&board_power_update_timer, K_MSEC(1), K_MSEC(1));

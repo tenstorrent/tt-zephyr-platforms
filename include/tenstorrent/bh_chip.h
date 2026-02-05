@@ -87,6 +87,9 @@ struct bh_chip_data {
 	/* Last seen CM2DM message sequence number, to know if the current message is a repeat. */
 	uint8_t last_cm2dm_seq_num;
 	bool last_cm2dm_seq_num_valid;
+
+	/* Cable power limit detected at boot, written to scratch register during resets. */
+	uint16_t cable_power_limit;
 };
 
 struct bh_chip {
@@ -139,13 +142,14 @@ extern struct bh_chip BH_CHIPS[BH_CHIP_COUNT];
 			    INIT_STRAP)),                                                          \
 	  ())},                                            \
 			},                                                                         \
-				.auto_reset_timer = Z_TIMER_INITIALIZER(                           \
-					BH_CHIPS[idx].auto_reset_timer, bh_chip_auto_reset, NULL), \
+						  .auto_reset_timer = Z_TIMER_INITIALIZER(         \
+							  BH_CHIPS[idx].auto_reset_timer,          \
+							  bh_chip_auto_reset, NULL),               \
 			},
 
 #define BH_CHIP_PRIMARY_INDEX DT_PROP(DT_PATH(chips), primary)
 
-int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset);
+int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset, uint16_t cable_power_limit);
 
 void bh_chip_cancel_bus_transfer_set(struct bh_chip *chip);
 void bh_chip_cancel_bus_transfer_clear(struct bh_chip *chip);
