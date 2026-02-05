@@ -42,6 +42,8 @@ static float max_gddr_temp;
 static float max_asic_temp;
 static float alpha = CONFIG_TT_BH_ARC_FAN_CTRL_ALPHA / 100.0f;
 
+static float effective_gddr_temp = -1.0f;
+
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
 STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
@@ -64,13 +66,27 @@ STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
 		fan_speed1 = 100;
 	}
 
-	if (max_gddr_temp < 45) {
+	/* GDDR Hysteresis: track peak temp since last decrease */
+	if (effective_gddr_temp < 0) {
+		effective_gddr_temp = max_gddr_temp;
+	} else {
+		if (max_gddr_temp > effective_gddr_temp) {
+			/* Rising temp, follow it immediately for safety. */
+			effective_gddr_temp = max_gddr_temp;
+		} else if (max_gddr_temp <= effective_gddr_temp - 5.0f) {
+			/* If temperature has dropped by 5 degrees or more (cumulatively), */
+			/* drop effective temp */
+			effective_gddr_temp = max_gddr_temp;
+		}
+	}
+
+	if (effective_gddr_temp < 45) {
 		fan_speed2 = 20;
-	} else if (max_gddr_temp < 82) {
-		if (max_gddr_temp < 60) {
-			fan_speed2 = (uint32_t)(max_gddr_temp - 25.0f);
+	} else if (effective_gddr_temp < 82) {
+		if (effective_gddr_temp < 60) {
+			fan_speed2 = (uint32_t)(effective_gddr_temp - 25.0f);
 		} else {
-			fan_speed2 = (uint32_t)(2.955f * max_gddr_temp - 142.3f);
+			fan_speed2 = (uint32_t)(2.955f * effective_gddr_temp - 142.3f);
 		}
 	} else {
 		fan_speed2 = 100;
