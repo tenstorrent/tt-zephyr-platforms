@@ -68,11 +68,9 @@ STATIC uint32_t fan_curve(float max_asic_temp, float max_gddr_temp)
 		fan_speed2 = 20;
 	} else if (max_gddr_temp < 82) {
 		if (max_gddr_temp < 60) {
-			fan_speed2 = (uint32_t)(0.667f * max_gddr_temp - 10.015f);
-		} else if (max_gddr_temp < 65) {
-			fan_speed2 = (uint32_t)(2.0f * max_gddr_temp - 90.0f);
+			fan_speed2 = (uint32_t)(max_gddr_temp - 25.0f);
 		} else {
-			fan_speed2 = (uint32_t)(3.529f * max_gddr_temp - 189.385f);
+			fan_speed2 = (uint32_t)(2.955f * max_gddr_temp - 142.3f);
 		}
 	} else {
 		fan_speed2 = 100;
