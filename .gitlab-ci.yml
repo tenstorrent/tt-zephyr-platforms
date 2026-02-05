@@ -41,7 +41,7 @@ test-job:
   artifacts:
     when: always
     paths:
-      - tb_uvm/out/
+      - tt_smc/tb_uvm/out/
   tags:
     - chiplet-ip
   timeout: 60m
