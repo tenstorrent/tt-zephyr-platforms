@@ -1,0 +1,47 @@
+variables:
+  OUTDIR: $CI_PROJECT_DIR/twister-out
+
+
+build-job:
+  stage: build
+  image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v19.4.2
+  script:
+    - cd /tt-zephyr/tt-zephyr-platforms
+    # Pull repo revision to run CI on
+    - git remote add ci $CI_REPOSITORY_URL
+    - git fetch ci $CI_COMMIT_SHA
+    - git checkout FETCH_HEAD
+    - west packages pip --install
+    - west update
+    - cd /tt-zephyr
+    - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
+    - ls -la $OUTDIR
+  artifacts:
+    paths:
+      - $OUTDIR
+  tags:
+    - 8-core
+
+# Use the build-job output artifacts in downstream jobs
+test-job:
+  stage: test
+  dependencies:
+    - build-job
+
+  script:
+    # Pull tt-smc repo to run Zephyr tests
+    - git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    - cd tt_smc
+    - source bin/setup_env.sh
+    - module list || true
+    - bender checkout --force || bender checkout --force
+    - ls -la $OUTDIR
+    - cp $OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/arch/riscv/atomic/arch.riscv.atomic/zephyr/zephyr.bin ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
+    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test --stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet
+  artifacts:
+    when: always
+    paths:
+      - tt_smc/tb_uvm/out/
+  tags:
+    - chiplet-ip
+  timeout: 60m
