@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import tarfile
+import shutil
 
 from pathlib import Path
 
@@ -133,27 +134,42 @@ def do_update(
 
         OUTPUT_DIR = Path(proto_tempdir)
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        SPIROM_PROTOBUFS = (
-            TT_Z_P_ROOT / "drivers" / "misc" / "bh_fwtable" / "spirom_protobufs"
-        )
+        SPIROM_PROTOBUFS = Path(__file__).parent
+        if not (SPIROM_PROTOBUFS / "fw_table.proto").exists():
+            # Fallback to fixed path
+            SPIROM_PROTOBUFS = (
+                TT_Z_P_ROOT / "drivers" / "misc" / "bh_fwtable" / "spirom_protobufs"
+            )
 
-        subprocess.run(
-            [
-                TT_Z_P_ROOT
-                / ".."
-                / "modules"
-                / "lib"
-                / "nanopb"
-                / "generator"
-                / "protoc",
-                f"--python_out={OUTPUT_DIR}",
-                f"{SPIROM_PROTOBUFS}/fw_table.proto",
-                "-I",
-                f"{SPIROM_PROTOBUFS}",
-            ],
-            capture_output=True,
-            check=True,
+        protoc_path = (
+            TT_Z_P_ROOT / ".." / "modules" / "lib" / "nanopb" / "generator" / "protoc"
         )
+        if not protoc_path.exists():
+            protoc_path = Path(shutil.which("protoc"))
+
+        if not protoc_path.exists():
+            _logger.error(
+                "protoc compiler not found. Please ensure it is installed and on your PATH."
+            )
+            return os.EX_UNAVAILABLE
+
+        try:
+            subprocess.run(
+                [
+                    protoc_path,
+                    f"--python_out={OUTPUT_DIR}",
+                    f"{SPIROM_PROTOBUFS}/fw_table.proto",
+                    "-I",
+                    f"{SPIROM_PROTOBUFS}",
+                ],
+                capture_output=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            _logger.error(
+                f"Error generating protobuf python bindings: {e.stderr.decode()}"
+            )
+            return os.EX_UNAVAILABLE
         sys.path.append(str(OUTPUT_DIR))
         import fw_table_pb2  # noqa: E402
 
