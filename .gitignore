@@ -18,6 +18,8 @@ build*/
 !scripts/pylib/build_helpers
 cscope.*
 .dir
+*.egg-info
+dist/
 
 /*.patch
 
