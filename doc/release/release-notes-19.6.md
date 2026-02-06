@@ -6,7 +6,54 @@ We are pleased to announce the release of TT Zephyr Platforms firmware version 1
 
 Major enhancements with this release include:
 
-## What's Changed
+## Wormhole Changes
+
+### New and Experimental Features
+- Added support for Samsung GDDR6 memory
+
+<!-- Subsections can break down improvements by (area or board) -->
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
+
+<!-- Performance Improvements, if applicable -->
+<!-- New and Experimental Features, if applicable -->
+<!-- External Project Collaboration Efforts, if applicable -->
+<!-- Stability Improvements, if applicable -->
+<!-- Security vulnerabilities fixed? -->
+<!-- API Changes, if applicable -->
+<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
+<!-- New Samples, if applicable -->
+<!-- Other Notable Changes, if applicable -->
+<!-- New Boards, if applicable -->
+
+## Blackhole Changes
+
+<!-- Subsections can break down improvements by (area or board) -->
+<!-- UL PCIe -->
+<!-- UL DDR -->
+<!-- UL Ethernet -->
+<!-- UL Telemetry -->
+<!-- UL Debug / Developer Features -->
+<!-- UL Drivers -->
+<!-- UL Libraries -->
+
+<!-- Performance Improvements, if applicable -->
+<!-- New and Experimental Features, if applicable -->
+<!-- External Project Collaboration Efforts, if applicable -->
+<!-- Stability Improvements, if applicable -->
+<!-- Security vulnerabilities fixed? -->
+<!-- API Changes, if applicable -->
+<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
+<!-- New Samples, if applicable -->
+<!-- Other Notable Changes, if applicable -->
+<!-- New Boards, if applicable -->
+
+## Grendel Changes
 
 <!-- Subsections can break down improvements by (area or board) -->
 <!-- UL PCIe -->
