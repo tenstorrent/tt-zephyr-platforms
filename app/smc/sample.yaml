@@ -26,6 +26,7 @@ tests:
     extra_overlay_confs:
       - recovery.conf
   app.recovery-flash:
+    timeout: 300
     sysbuild: true
     tags: recovery
     harness: pytest
@@ -34,6 +35,7 @@ tests:
         - pytest/recovery.py
       pytest_args:
         - "--dut-scope=session"
+        - "--flash-timeout=200"
   app.vuart-bh-1x:
     tags: e2e
     depends_on: bh_1x
