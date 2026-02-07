@@ -54,6 +54,7 @@ typedef struct {
 	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
 	uint32_t sweep_low;   /* in MHz */
 	uint32_t sweep_high;  /* in MHz */
+	union aiclk_targ_freq_info lim_arb_info; /*information on the limiting arbiter */
 	AiclkArb arbiter_max[aiclk_arb_max_count];
 	AiclkArb arbiter_min[aiclk_arb_min_count];
 } AiclkPPM;
@@ -93,47 +94,70 @@ void CalculateTargAiclk(void)
 	/* Start by calculating the highest arbiter_min */
 	/* Then limit to the lowest arbiter_max */
 	/* Finally make sure that the target frequency is at least Fmin */
-	uint32_t targ_freq = get_aiclk_effective_arb_min();
 
-	targ_freq = MIN(targ_freq, get_aiclk_effective_arb_max());
+	enum aiclk_arb_min min_arb = aiclk_arb_min_count;
+	enum aiclk_arb_max max_arb = aiclk_arb_max_count;
+
+	aiclk_ppm.targ_freq = get_aiclk_effective_arb_min(&min_arb);
+
+	union aiclk_targ_freq_info info = {.reason = limit_reason_min_arb, .arbiter = min_arb};
+
+	uint32_t max_arb_freq = get_aiclk_effective_arb_max(&max_arb);
+
+	if (aiclk_ppm.targ_freq > max_arb_freq) {
+		aiclk_ppm.targ_freq = max_arb_freq;
+		info.reason = limit_reason_max_arb;
+		info.arbiter = max_arb;
+	}
 
 	/* Make sure target is not below Fmin */
 	/* (it will not be above Fmax, since we calculated the max limits last) */
-	aiclk_ppm.targ_freq = MAX(targ_freq, aiclk_ppm.fmin);
+	if (aiclk_ppm.targ_freq < aiclk_ppm.fmin) {
+		aiclk_ppm.targ_freq = aiclk_ppm.fmin;
+		info.reason = limit_reason_fmin;
+		info.arbiter = 0U;
+	}
 
 	/* Apply random frequency if sweep is enabled */
 	if (aiclk_ppm.sweep_en == 1) {
 		aiclk_ppm.targ_freq = rand() % (aiclk_ppm.sweep_high - aiclk_ppm.sweep_low + 1) +
 				      aiclk_ppm.sweep_low;
+
+		info.reason = limit_reason_sweep;
+		info.arbiter = 0U;
 	}
 
 	/* Apply forced frequency at the end, regardless of any limits */
 	if (aiclk_ppm.forced_freq != 0) {
 		aiclk_ppm.targ_freq = aiclk_ppm.forced_freq;
+		info.reason = limit_reason_forced;
+		info.arbiter = 0U;
 	}
+
+	aiclk_ppm.lim_arb_info = info;
+	sys_trace_named_event("targ_freq_update", aiclk_ppm.targ_freq,
+			      aiclk_ppm.lim_arb_info.u32_all);
 }
 
 void DecreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq < aiclk_ppm.curr_freq) {
-		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq,
-				      aiclk_ppm.targ_freq);
 		clock_control_set_rate(pll_dev_0,
 				       (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 				       (clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
+		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq, aiclk_ppm.targ_freq);
 	}
 }
 
 void IncreaseAiclk(void)
 {
 	if (aiclk_ppm.targ_freq > aiclk_ppm.curr_freq) {
-		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq,
-				      aiclk_ppm.targ_freq);
 		clock_control_set_rate(pll_dev_0,
 				       (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 				       (clock_control_subsys_rate_t)aiclk_ppm.targ_freq);
 		aiclk_ppm.curr_freq = aiclk_ppm.targ_freq;
+		sys_trace_named_event("aiclk_update", aiclk_ppm.curr_freq, aiclk_ppm.targ_freq);
 	}
 }
 
@@ -261,7 +285,7 @@ void aiclk_update_busy(void)
 	}
 }
 
-uint32_t get_aiclk_effective_arb_min(void)
+uint32_t get_aiclk_effective_arb_min(enum aiclk_arb_min *effective_min_arb)
 {
 	/* Calculate the highest enabled arbiter_min */
 	uint32_t effective_min = aiclk_ppm.fmin;
@@ -269,13 +293,17 @@ uint32_t get_aiclk_effective_arb_min(void)
 	for (enum aiclk_arb_min i = 0; i < aiclk_arb_min_count; i++) {
 		if (aiclk_ppm.arbiter_min[i].enabled) {
 			effective_min = MAX(effective_min, aiclk_ppm.arbiter_min[i].value);
+
+			if (effective_min == aiclk_ppm.arbiter_min[i].value) {
+				*effective_min_arb = i;
+			}
 		}
 	}
 
 	return effective_min;
 }
 
-uint32_t get_aiclk_effective_arb_max(void)
+uint32_t get_aiclk_effective_arb_max(enum aiclk_arb_max *effective_max_arb)
 {
 	/* Calculate the lowest enabled arbiter_max */
 	uint32_t effective_max = aiclk_ppm.fmax;
@@ -283,6 +311,10 @@ uint32_t get_aiclk_effective_arb_max(void)
 	for (enum aiclk_arb_max i = 0; i < aiclk_arb_max_count; i++) {
 		if (aiclk_ppm.arbiter_max[i].enabled) {
 			effective_max = MIN(effective_max, aiclk_ppm.arbiter_max[i].value);
+
+			if (effective_max == aiclk_ppm.arbiter_max[i].value) {
+				*effective_max_arb = i;
+			}
 		}
 	}
 
@@ -367,6 +399,11 @@ static uint8_t SweepAiclkHandler(const union request *request, struct response *
 		aiclk_ppm.sweep_en = 0;
 	}
 	return 0;
+}
+
+union aiclk_targ_freq_info get_targ_aiclk_info(void)
+{
+	return aiclk_ppm.lim_arb_info;
 }
 
 REGISTER_MESSAGE(TT_SMC_MSG_AICLK_GO_BUSY, aiclk_busy_handler);

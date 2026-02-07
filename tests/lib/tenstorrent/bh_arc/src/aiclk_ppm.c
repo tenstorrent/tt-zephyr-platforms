@@ -175,6 +175,7 @@ ZTEST(aiclk_ppm, test_arb_lowest_max)
 {
 	uint32_t targ_freq;
 	uint32_t expected_max;
+	enum aiclk_arb_max effective_max_arb;
 
 	/* Set a high min arbiter */
 
@@ -196,7 +197,9 @@ ZTEST(aiclk_ppm, test_arb_lowest_max)
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
 
-	zexpect_equal(expected_max, get_aiclk_effective_arb_max());
+	zexpect_equal(expected_max, get_aiclk_effective_arb_max(&effective_max_arb));
+	zexpect_equal(aiclk_arb_max_tdp, effective_max_arb,
+		      "Expected TDP arbiter (200 MHz reduction) to be effective max");
 	zassert_equal(targ_freq, expected_max,
 		      "Target frequency (%d) should be equal to lowest max arbiter (%d)", targ_freq,
 		      expected_max);
@@ -206,6 +209,7 @@ ZTEST(aiclk_ppm, test_arb_highest_min)
 {
 	uint32_t targ_freq;
 	uint32_t expected_min;
+	enum aiclk_arb_min effective_min_arb;
 
 	/* Set multiple min arbiters to different values */
 	SetAiclkArbMin(aiclk_arb_min_fmin, fmin + 100);
@@ -219,7 +223,9 @@ ZTEST(aiclk_ppm, test_arb_highest_min)
 	CalculateTargAiclk();
 	targ_freq = GetAiclkTarg();
 
-	zexpect_equal(expected_min, get_aiclk_effective_arb_min());
+	zexpect_equal(expected_min, get_aiclk_effective_arb_min(&effective_min_arb));
+	zexpect_equal(aiclk_arb_min_busy, effective_min_arb,
+		      "Expected busy arbiter (200 MHz increase) to be effective min");
 	zassert_equal(targ_freq, expected_min,
 		      "Target frequency (%d) should be equal to highest min arbiter (%d)",
 		      targ_freq, expected_min);

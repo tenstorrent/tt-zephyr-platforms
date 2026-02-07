@@ -394,11 +394,17 @@ static void update_telemetry(void)
 	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
 			       &telemetry[TAG_AICLK]);
 	/* first 16 bits - MAX ASIC FREQ (Not Available yet), lower 16 bits - current AICLK */
+	enum aiclk_arb_min effective_min_arb;
+	enum aiclk_arb_max effective_max_arb;
 
-	telemetry[TAG_AICLK_ARB_MIN] = get_aiclk_effective_arb_min();
-	telemetry[TAG_AICLK_ARB_MAX] = get_aiclk_effective_arb_max();
+	uint32_t arb_min_freq = get_aiclk_effective_arb_min(&effective_min_arb);
+	uint32_t arb_max_freq = get_aiclk_effective_arb_max(&effective_max_arb);
+
+	telemetry[TAG_AICLK_ARB_MIN] = arb_min_freq | (effective_min_arb << 16U);
+	telemetry[TAG_AICLK_ARB_MAX] = arb_max_freq | (effective_max_arb << 16U);
 	telemetry[TAG_ENABLED_MIN_ARB] = get_enabled_arb_min_bitmask();
 	telemetry[TAG_ENABLED_MAX_ARB] = get_enabled_arb_max_bitmask();
+	telemetry[TAG_AICLK_PPM_INFO] = get_targ_aiclk_info().u32_all;
 
 	clock_control_get_rate(
 		pll_dev_1, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AXICLK,

@@ -12,7 +12,13 @@ Major enhancements with this release include:
 <!-- UL PCIe -->
 <!-- UL DDR -->
 <!-- UL Ethernet -->
-<!-- UL Telemetry -->
+
+### Telemetry
+
+- New `TAG_AICLK_PPM_INFO` telemetry entry captures which arbiter is limiting AICLK and why
+- Enhanced `TAG_AICLK_ARB_MIN` and `TAG_AICLK_ARB_MAX` to include arbiter IDs
+- Added `targ_freq_update` trace event for debugging AICLK decisions
+
 <!-- UL Debug / Developer Features -->
 <!-- UL Drivers -->
 <!-- UL Libraries -->
