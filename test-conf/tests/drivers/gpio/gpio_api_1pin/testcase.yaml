@@ -11,6 +11,7 @@ tests:
       - tt_blackhole@p150a/tt_blackhole/smc
       - tt_blackhole@p150b/tt_blackhole/smc
       - tt_blackhole@p300a/tt_blackhole/smc
+      - tt_grendel_smc
     extra_args:
       - "platform:tt_blackhole@p100a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
@@ -24,5 +25,8 @@ tests:
       - "platform:tt_blackhole@p300a/tt_blackhole/smc:DTC_OVERLAY_FILE=\
          ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin\
          boards/tt_blackhole_tt_blackhole_smc.overlay"
+      - "platform:tt_grendel_smc/tt_grendel_smc:DTC_OVERLAY_FILE=\
+         ../../../../../tt-zephyr-platforms/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_grendel_smc.overlay"
     harness_config:
       fixture: gpio_external_pull_down

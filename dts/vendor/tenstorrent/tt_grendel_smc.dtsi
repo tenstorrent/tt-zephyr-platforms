@@ -167,6 +167,31 @@
 			reg = <0x0 0xc8000000 0x0 0x10000>;
 			reg-names = "control";
 		};
+		/* Split GPIO across 3 banks- we have 72 gpio in total */
+		/* GPIO bank 0: GPIO 0-31 */
+		gpio0: gpio@c0004000 {
+			compatible = "tenstorrent,grendel-gpio";
+			reg = <0x0 0xc0004000 0x0 0x200>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <32>;
+		};
+		/* GPIO bank 1: GPIO 32-63 */
+		gpio1: gpio@c0004200 {
+			compatible = "tenstorrent,grendel-gpio";
+			reg = <0x0 0xc0004200 0x0 0x200>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <32>;
+		};
+		/* GPIO bank 2: GPIO 64-71 */
+		gpio2: gpio@c0004400 {
+			compatible = "tenstorrent,grendel-gpio";
+			reg = <0x0 0xc0004400 0x0 0x200>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <8>;
+		};
 		mtimer: timer@c800bff8 {
 			compatible = "riscv,machine-timer";
 			interrupts-extended = <&cpu0_intc 7 &cpu0_intc 7>;

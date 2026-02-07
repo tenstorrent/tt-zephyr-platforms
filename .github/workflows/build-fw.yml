@@ -406,7 +406,12 @@ jobs:
       - name: Grendel Build Test
         shell: bash
         run: |
-          ./zephyr/scripts/twister -p tt_grendel_smc -T zephyr/samples/hello_world
+          ./zephyr/scripts/twister -p tt_grendel_smc --tag smoke \
+            --alt-config-root tt-zephyr-platforms/test-conf/samples \
+            --alt-config-root tt-zephyr-platforms/test-conf/tests \
+            -T zephyr/tests -T zephyr/samples \
+            -T tt-zephyr-platforms/samples -T tt-zephyr-platforms/tests
+
       - name: Upload Grendel Build Test Artifacts
         uses: actions/upload-artifact@v4
         with:
