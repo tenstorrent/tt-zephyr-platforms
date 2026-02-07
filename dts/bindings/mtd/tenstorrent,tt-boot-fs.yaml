@@ -14,6 +14,11 @@ properties:
   flash-block-size:
     type: int
     required: true
+  header-addr:
+    type: int
+    required: true
+    description: |
+      Address in flash where the bootfs header is located.
 
 child-binding:
   properties:

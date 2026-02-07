@@ -13,6 +13,8 @@
 
 #define FLASH_NODE DT_NODELABEL(flashcontroller0)
 
+#define TT_BOOT_FS_FD_HEAD_ADDR 0x0
+
 const struct device *FLASH_DEVICE = DEVICE_DT_GET(FLASH_NODE);
 
 #define MAX_FDS CONFIG_TT_BOOT_FS_IMAGE_COUNT_MAX
@@ -47,6 +49,8 @@ static void *setup_bootfs(void)
 	uint8_t image_C[] = {0x73, 0x73, 0x42, 0x42};
 
 	uint32_t spi_addr = IMAGE_ADDR;
+	uint32_t table_addr = TT_BOOT_FS_FD_HEAD_ADDR;
+
 #define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
 
 	setup_fd(&fds[0], spi_addr, 0x1000000, (sizeof(image_A) & 0xFFFFFF) | (1 << 25), "imageA",
@@ -95,6 +99,21 @@ static void *setup_bootfs(void)
 	zassert_equal(rc, 0, "Failed to write image_B to flash");
 	rc = flash_write(FLASH_DEVICE, fds[2].spi_addr, image_C, sizeof(image_C));
 	zassert_equal(rc, 0, "Failed to write image_C to flash");
+
+	rc = flash_erase(FLASH_DEVICE, TT_BOOT_FS_HEADER_ADDR, 4096);
+	zassert_equal(rc, 0, "Failed to erase bootfs header area in flash");
+	/* Write tt_boot_fs header */
+	tt_boot_fs_header header = {
+		.magic = TT_BOOT_FS_MAGIC,
+		.version = TT_BOOT_FS_CURRENT_VERSION,
+		.table_count = 1,
+	};
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_HEADER_ADDR, &header, sizeof(header));
+	zassert_equal(rc, 0, "Failed to write bootfs header to flash");
+	/* Write bootfs table address */
+	rc = flash_write(FLASH_DEVICE, TT_BOOT_FS_HEADER_ADDR + sizeof(header), &table_addr,
+			 sizeof(table_addr));
+	zassert_equal(rc, 0, "Failed to write bootfs table address to flash");
 
 	return NULL;
 }
