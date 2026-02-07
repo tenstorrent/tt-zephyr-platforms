@@ -678,7 +678,7 @@ def smi_reset_test(asic_id):
     """
     Helper to run tt-smi reset test. Returns True if test passed, False otherwise
     """
-    smi_reset_cmd = "tt-smi -r"
+    smi_reset_cmd = "tt-smi -r --skip_eth_wait"
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     )
@@ -874,7 +874,7 @@ def test_mcuboot(unlaunched_dut, asic_id):
     arc_chip.as_bh().spi_write(MCUBOOT_HEADER_ADDR, buf)
     # Reset the SMC to trigger the fallback
     del arc_chip  # Force re-detection of the chip
-    smi_reset_cmd = "tt-smi -r"
+    smi_reset_cmd = "tt-smi -r --skip_eth_wait"
     # tt-smi will fail here since it checks for valid telemetry after reset,
     # we still need to run it to trigger the SMC reboot
     subprocess.run(smi_reset_cmd.split(), capture_output=False, check=False)
