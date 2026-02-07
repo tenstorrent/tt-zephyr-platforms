@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+if LOG
+
+config LOG_BACKEND_TT_VIRT
+	bool "Enable Tenstorrent virtual logging backend"
+	help
+	  Enable logging backend that outputs logs via Tenstorrent virtual
+	  interface, used in pre-silicon and simulation environments.
+
+backend = TT_VIRT
+backend-str = tt_virt
+source "subsys/logging/Kconfig.template.log_format_config"
+
+endif # LOG
