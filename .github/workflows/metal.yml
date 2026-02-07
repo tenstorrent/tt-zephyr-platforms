@@ -93,9 +93,69 @@ jobs:
           # To verify patch was applied
           git diff
 
-      - name: Run Container Test
+      - name: Install power monitoring dependencies
         run: |
+          sudo apt-get update && sudo apt-get install -y lm-sensors
+          python -m venv .env
+          source .env/bin/activate
+          pip install pandas plotly
+
+      - name: Download power monitoring script
+        run: |
+          mkdir -p $HOME/scripts/ci
+          curl -o $HOME/scripts/ci/monitor_power.py https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/ci/monitor_power.py
+          chmod +x $HOME/scripts/ci/monitor_power.py
+
+      - name: Re-probe driver for sensors
+        run: |
+          # Re-probe the driver to ensure sensors command works correctly
+          # This is needed due to driver implementation requirements
+          sudo modprobe -r tenstorrent 2>/dev/null || true
+          sudo modprobe tenstorrent 2>/dev/null || true
+
+      - name: Run Container Test with Power Monitoring
+        run: |
+          # Start power monitoring in the background with full path
+          source .env/bin/activate
+          python $HOME/scripts/ci/monitor_power.py -o $HOME/power_recording.csv &
+          MONITOR_PID=$!
+          echo "Started power monitoring with PID: $MONITOR_PID"
+          echo "Power recording will be saved to: $HOME/power_recording.csv"
+
+          # Run the actual test
           sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
+          TEST_EXIT_CODE=$?
+
+          # Stop power monitoring gracefully
+          if kill -0 $MONITOR_PID 2>/dev/null; then
+            echo "Stopping power monitoring (PID: $MONITOR_PID)..."
+            kill -SIGINT $MONITOR_PID 2>/dev/null || kill $MONITOR_PID 2>/dev/null || true
+            wait $MONITOR_PID 2>/dev/null || true
+            echo "Power monitoring stopped"
+          else
+            echo "Power monitoring already stopped"
+          fi
+
+          # Check if the power recording file was created
+          if [ -f "$HOME/power_recording.csv" ]; then
+            echo "Power recording file created successfully"
+            ls -la $HOME/power_recording.csv
+          else
+            echo "Warning: Power recording file not found at $HOME/power_recording.csv"
+          fi
+
+          # Exit with the test exit code
+          exit $TEST_EXIT_CODE
+
+      - name: Upload Power Recording
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Power recording (${{ matrix.config.board }})
+          path: ${{ env.HOME }}/power_recording.csv
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: cleanup
         if: ${{ always() }}
         run: |
