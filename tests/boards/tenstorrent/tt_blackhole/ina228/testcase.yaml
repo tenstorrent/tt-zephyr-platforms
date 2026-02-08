@@ -1,0 +1,14 @@
+tests:
+  drivers.sensor.ina228.basic:
+    tags:
+      - drivers
+      - sensor
+      - ina228
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/dmc
+      - tt_blackhole@p150a/tt_blackhole/dmc
+      - tt_blackhole@p300a/tt_blackhole/dmc
+    extra_args:
+      - "platform:tt_blackhole@p100a/tt_blackhole/dmc:CONFIG_TDP_LIMIT=100"
+      - "platform:tt_blackhole@p150a/tt_blackhole/dmc:CONFIG_TDP_LIMIT=150"
+      - "platform:tt_blackhole@p300a/tt_blackhole/dmc:CONFIG_TDP_LIMIT=86"
