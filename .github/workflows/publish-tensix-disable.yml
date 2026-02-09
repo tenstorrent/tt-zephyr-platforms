@@ -1,0 +1,98 @@
+name: Publish Update Tensix Disable Count Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to Test PyPI instead of production PyPI'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build_package:
+    name: Build update-tensix-disable-count package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install build dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install build toml
+
+      - name: Build package using build-package.sh
+        run: |
+          cd scripts/tooling/update_tensix_disable_count
+          ./build-package.sh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: scripts/tooling/update_tensix_disable_count/dist/
+
+  publish_package:
+    name: Publish update-tensix-disable-count package
+    runs-on: ubuntu-latest
+    needs: build_package
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Set Environment Variables
+        run: |
+          if ${{ inputs.test_pypi }}; then
+            echo "Publishing to Test PyPI"
+            echo "url=https://test.pypi.org/p/update-tensix-disable-count/" >> $GITHUB_ENV
+            echo "repo_url=https://test.pypi.org/legacy/" >> $GITHUB_ENV
+          else
+            echo "Publishing to Production PyPI"
+            echo "url=https://pypi.org/p/update-tensix-disable-count/" >> $GITHUB_ENV
+            echo "repo_url=https://upload.pypi.org/legacy/" >> $GITHUB_ENV
+          fi
+
+      - name: Download all the dists
+        uses: actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ env.repo_url }}
+          verbose: true
+
+  test_package:
+    name: Test update-tensix-disable-count package
+    runs-on: ubuntu-latest
+    needs: publish_package
+
+    steps:
+      - name: Wait for package to be available on PyPI
+        run: |
+          echo "Waiting for package to be available on PyPI..."
+          # Just an arbitrary wait time to allow PyPI to process the new package before we try to install it
+          sleep 60
+      - name: Install the package from PyPI
+        run: |
+          if ${{ inputs.test_pypi }}; then
+            pip install --index-url https://test.pypi.org/simple/ update-tensix-disable-count
+          else
+            pip install update-tensix-disable-count
+          fi
+
+      - name: Attempt to run the package's command line tool
+        run: |
+          wget https://github.com/tenstorrent/tt-firmware/raw/refs/heads/main/fw_pack-19.5.0.fwbundle
+          update-tensix-disable-count --input fw_pack-19.5.0.fwbundle --output fw_pack-19.5.0.patched.fwbundle --verbose
