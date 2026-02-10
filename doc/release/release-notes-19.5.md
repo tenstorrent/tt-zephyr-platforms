@@ -1,6 +1,12 @@
-# v19.5.0
+# v19.5.1
 
-> This is a working draft for the up-coming 19.5.0 release.
+## Wormhole Changes
+
+### New and Experimental Features
+
+- Added support for Samsung GDDR6 memory
+
+# v19.5.0
 
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.5.0 🥳🎉.
 
