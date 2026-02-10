@@ -37,7 +37,7 @@ jobs:
           BOARDS="$(jq -r -c ".[]" .github/boards.json)"
           BOARDS="${BOARDS//$'\n'/ }" # Remove embedded newlines
           echo "boards=$BOARDS" | tee -a $GITHUB_OUTPUT
-          echo "recovery_boards=$(jq -c 'map(select(. != "galaxy"))' .github/boards.json)" | tee -a $GITHUB_OUTPUT
+          echo "recovery_boards=$(jq -c 'map(select(test("^galaxy") | not))' .github/boards.json)" | tee -a $GITHUB_OUTPUT
       - id: check_relnotes_file
         run: |
           relnotes_file="${{ env.RELEASE_NOTES_DIR }}/${{ steps.set_vars.outputs.RELEASE_NOTES }}"
@@ -199,7 +199,7 @@ jobs:
           # Combine recovery bundles
           mkdir firmware-recovery-${{ github.ref_name }}
           for REV in ${BOARD_REVS[@]}; do
-            if [[ "$REV" == "galaxy" ]]; then
+            if [[ "$REV" =~ ^galaxy ]]; then
               continue
             fi
             tar xf firmware-recovery-$REV/fw-pack-${{ github.ref_name }}-$REV-recovery.tar.gz -C firmware-recovery-${{ github.ref_name }}

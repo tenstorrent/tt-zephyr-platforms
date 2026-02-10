@@ -18,17 +18,27 @@ if("${BUNDLE_VERSION_STRING}" STREQUAL "...")
 endif()
 
 # ======== Board validation ========
-# galaxy does not require a DMC image in bootfs
-if("${SB_CONFIG_DMC_BOARD}" STREQUAL "" AND NOT "${BOARD_REVISION}" STREQUAL "galaxy")
-	message(FATAL_ERROR
-	"Target ${BOARD}${BOARD_QUALIFIERS} not supported for this sample. "
-	"There is no DMC board selected in Kconfig.sysbuild")
+# galaxy and galaxy_revc do not require a DMC image in bootfs
+set(IS_GALAXY_BOARD FALSE)
+if("${BOARD_REVISION}" MATCHES "^galaxy")
+  set(IS_GALAXY_BOARD TRUE)
+endif()
+if("${SB_CONFIG_DMC_BOARD}" STREQUAL "" AND NOT IS_GALAXY_BOARD)
+  message(FATAL_ERROR
+  "Target ${BOARD}${BOARD_QUALIFIERS} not supported for this sample. "
+  "There is no DMC board selected in Kconfig.sysbuild")
 endif()
 
 if(BOARD STREQUAL "tt_blackhole")
-  # Map board revision names to folder names for spirom config data
-  string(TOUPPER ${BOARD_REVISION} BASE_NAME)
-  set(PROD_NAME "${BASE_NAME}-1")
+  # Map board revision names to folder names for spirom config data (fwbundle folder)
+  if("${BOARD_REVISION}" STREQUAL "galaxy")
+    set(PROD_NAME "GALAXY-1")
+  elseif("${BOARD_REVISION}" STREQUAL "galaxy_revc")
+    set(PROD_NAME "GALAXY-3")
+  else()
+    string(TOUPPER ${BOARD_REVISION} BASE_NAME)
+    set(PROD_NAME "${BASE_NAME}-1")
+  endif()
 elseif(BOARD STREQUAL "native_sim")
   # Use P100A data files to stand in
   set(PROD_NAME "P100A-1")
@@ -38,7 +48,7 @@ else()
 endif()
 
 # ======== Add Recovery and DMC app ========
-if (TARGET recovery)
+if(TARGET recovery)
   # This cmake file is being processed again, because we add the recovery app
   # which triggers recursive processing. Skip the rest of the file.
   return()
@@ -47,13 +57,13 @@ endif()
 # This command will trigger recursive processing of the file. See above
 # for how we skip this
 ExternalZephyrProject_Add(
-	APPLICATION recovery
-	SOURCE_DIR  ${APP_DIR}
-	BUILD_ONLY 1
+  APPLICATION recovery
+  SOURCE_DIR  ${APP_DIR}
+  BUILD_ONLY 1
 )
 
 # Pass boot signature key file to recovery if specified
-if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
+if(NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
   set_config_bool(recovery CONFIG_MCUBOOT_GENERATE_UNSIGNED_IMAGE n)
   set_config_string(recovery CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
 
@@ -61,8 +71,8 @@ if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
   set_config_string(smc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
 endif()
 
-# galaxy does not have dmc image in SPI
-if(NOT "${BOARD_REVISION}" STREQUAL "galaxy")
+# galaxy and galaxy_revc do not have dmc image in SPI
+if(NOT IS_GALAXY_BOARD)
   ExternalZephyrProject_Add(
     APPLICATION dmc
     SOURCE_DIR  ${APP_DIR}/../dmc
@@ -109,7 +119,7 @@ add_custom_command(
       ${APP_DIR}/../../scripts/gen-mcuboot-trailer.py ${TRAILER_OUTPUT_CONFIRMED} --confirmed
 )
 
-if("${BOARD_REVISION}" STREQUAL "galaxy")
+if(IS_GALAXY_BOARD)
   set(BOOTFS_DEPS ${SMC_OUTPUT_BIN} ${RECOVERY_OUTPUT_BIN} ${MCUBOOT_OUTPUT_BIN} ${TRAILER_OUTPUT}
     ${TRAILER_OUTPUT_CONFIRMED})
 else()
@@ -132,7 +142,7 @@ else()
   )
 
   # Pass boot signature key file to dmc and mcuboot-bl2 if specified
-  if (NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
+  if(NOT SB_CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")
     set_config_string(mcuboot-bl2 CONFIG_BOOT_SIGNATURE_KEY_FILE
       "${SB_CONFIG_BOOT_SIGNATURE_KEY_FILE}")
     set_config_string(dmc CONFIG_MCUBOOT_SIGNATURE_KEY_FILE
@@ -173,7 +183,7 @@ add_custom_target(
     DEPENDS ${OUTPUT_FILE}
 )
 
-if (PROD_NAME MATCHES "^P300")
+if(PROD_NAME MATCHES "^P300")
   foreach(side left right)
     string(TOUPPER ${side} side_upper)
     set(OUTPUT_BOOTFS_${side_upper} ${CMAKE_BINARY_DIR}/tt_boot_fs-${side}.hex)

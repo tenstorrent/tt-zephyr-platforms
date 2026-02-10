@@ -976,8 +976,8 @@ def _generate_bootfs_yaml(
     _logger.debug(partitions_yml)
 
     for partition in partitions_node.children.values():
-        # Galaxy does not have BM firmware
-        if args.board == "galaxy" and partition.label == "bmfw":
+        # Galaxy and galaxy_revc do not have BM firmware
+        if args.board.startswith("galaxy") and partition.label == "bmfw":
             continue
         # P300 right chip does not have BM firmware
         if name[-5:] == "right" and partition.label == "bmfw":
