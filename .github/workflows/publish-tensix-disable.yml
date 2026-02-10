@@ -11,7 +11,7 @@ on:
 
 jobs:
   build_package:
-    name: Build update-tensix-disable-count package
+    name: Build tt-update-tensix-disable_count package
     runs-on: ubuntu-latest
 
     steps:
@@ -32,17 +32,17 @@ jobs:
 
       - name: Build package using build-package.sh
         run: |
-          cd scripts/tooling/update_tensix_disable_count
+          cd scripts/tooling/tt_update_tensix_disable_count
           ./build-package.sh
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
-          path: scripts/tooling/update_tensix_disable_count/dist/
+          path: scripts/tooling/tt_update_tensix_disable_count/dist/
 
   publish_package:
-    name: Publish update-tensix-disable-count package
+    name: Publish tt-update-tensix-disable-count package
     runs-on: ubuntu-latest
     needs: build_package
     permissions:
@@ -53,11 +53,11 @@ jobs:
         run: |
           if ${{ inputs.test_pypi }}; then
             echo "Publishing to Test PyPI"
-            echo "url=https://test.pypi.org/p/update-tensix-disable-count/" >> $GITHUB_ENV
+            echo "url=https://test.pypi.org/p/tt-update-tensix-disable-count/" >> $GITHUB_ENV
             echo "repo_url=https://test.pypi.org/legacy/" >> $GITHUB_ENV
           else
             echo "Publishing to Production PyPI"
-            echo "url=https://pypi.org/p/update-tensix-disable-count/" >> $GITHUB_ENV
+            echo "url=https://pypi.org/p/tt-update-tensix-disable-count/" >> $GITHUB_ENV
             echo "repo_url=https://upload.pypi.org/legacy/" >> $GITHUB_ENV
           fi
 
@@ -74,7 +74,7 @@ jobs:
           verbose: true
 
   test_package:
-    name: Test update-tensix-disable-count package
+    name: Test tt-update-tensix-disable-count package
     runs-on: ubuntu-latest
     needs: publish_package
 
@@ -87,12 +87,12 @@ jobs:
       - name: Install the package from PyPI
         run: |
           if ${{ inputs.test_pypi }}; then
-            pip install --index-url https://test.pypi.org/simple/ update-tensix-disable-count
+            pip install --index-url https://test.pypi.org/simple/ tt-update-tensix-disable-count
           else
-            pip install update-tensix-disable-count
+            pip install tt-update-tensix-disable-count
           fi
 
       - name: Attempt to run the package's command line tool
         run: |
           wget https://github.com/tenstorrent/tt-firmware/raw/refs/heads/main/fw_pack-19.5.0.fwbundle
-          update-tensix-disable-count --input fw_pack-19.5.0.fwbundle --output fw_pack-19.5.0.patched.fwbundle --verbose
+          tt-update-tensix-disable-count --input fw_pack-19.5.0.fwbundle --output fw_pack-19.5.0.patched.fwbundle --verbose
