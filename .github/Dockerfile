@@ -36,6 +36,9 @@ FROM base
 LABEL org.opencontainers.image.source=https://github.com/tenstorrent/tt-zephyr-platforms
 COPY --from=openocd_build /opt/openocd/ /opt/toolchains/zephyr-sdk-$ZSDK_VERSION/sysroots/x86_64-pokysdk-linux/usr/
 
+# Install kmod and tt-kmd build deps
+RUN apt install -y kmod gcc-12
+
 ENV ZEPHYR_BASE=/tt-zephyr/zephyr
 
 ARG REPO_REV=main
