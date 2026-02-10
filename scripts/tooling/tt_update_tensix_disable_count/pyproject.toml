@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "update-tensix-disable-count"
-version = "0.0.0"
+name = "tt-update-tensix-disable-count"
+version = "0.0.2"
 description = "Update Tensix column disable count in firmware bundle"
 authors = [
     {name = "Daniel DeGrasse", email = "ddegrasse@tenstorrent.com"}
 ]
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.9"
 readme = "README.md"
 
@@ -24,18 +24,18 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/tenstorrent/tt-zephyr-platforms"
 "Bug Reports" = "https://github.com/tenstorrent/tt-zephyr-platforms/issues"
-"Source" = "https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/scripts/tooling/update_tensix_disable_count"
+"Source" = "https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/scripts/tooling/tt_update_tensix_disable_count"
 
 [project.scripts]
-update-tensix-disable-count = "update_tensix_disable_count.update_tensix_disable_count:main"
+tt-update-tensix-disable-count = "tt_update_tensix_disable_count.update_tensix_disable_count:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["update_tensix_disable_count"]
+packages = ["tt_update_tensix_disable_count"]
 
 
 [tool.setuptools.package-data]
-"update_tensix_disable_count" = ["*.proto"]
+"tt_update_tensix_disable_count" = ["*.proto"]
 
 [tool.mypy]
 python_version = "3.9"

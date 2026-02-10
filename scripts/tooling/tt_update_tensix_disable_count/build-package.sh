@@ -5,7 +5,7 @@
 
 # cd to the script's directory
 cd "$(dirname "${BASH_SOURCE[0]}")"
-cd update_tensix_disable_count
+cd tt_update_tensix_disable_count
 
 echo "Linking source files into package directory..."
 # Symlink the relevant source files into the package directory
