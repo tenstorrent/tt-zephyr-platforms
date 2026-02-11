@@ -58,17 +58,12 @@ runs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Install tt-kmd
+    - name: Select tt-kmd
       shell: bash
       run: |
-        rm -rf tt-kmd # In case of stale copy from previous runs
-        apt update && apt install -y kmod gcc-12
-        git clone https://github.com/tenstorrent/tt-kmd.git
-        cd tt-kmd
-        git checkout ttkmd-2.5.0
-        make
+        apt update && apt install -y kmod
         rmmod tenstorrent
-        insmod tenstorrent.ko
+        insmod /opt/tenstorrent/kmd-builds/${{ matrix.config.kmd_build }}/tenstorrent.ko
 
     - name: Environment Setup
       shell: bash

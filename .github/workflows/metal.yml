@@ -55,6 +55,7 @@ jobs:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /dev/hugepages:/dev/hugepages
         - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     env:
       ARCH_NAME: blackhole
@@ -65,6 +66,15 @@ jobs:
         shell: bash
         working-directory: ${{ env.HOME }}
     steps:
+      - name: Select tt-kmd
+        shell: bash
+        run: |
+          sudo apt update || true
+          sudo apt install -y kmod
+          sudo rmmod tenstorrent
+          sudo insmod /opt/tenstorrent/kmd-builds/${{ matrix.config.kmd_build }}/tenstorrent.ko
+          echo "tt-kmd version: $(cat /sys/module/tenstorrent/version)"
+
       - id: mkdir-home-user-tt-metal
         run: |
           mkdir -p $HOME
