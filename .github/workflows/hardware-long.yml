@@ -137,7 +137,7 @@ jobs:
         uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
           app-path: tt-system-firmware
-          kmd-version: ${{ matrix.config.kmd_build }}
+          kmd-version: 2.7.0
 
       - name: Install the package from PyPI
         run: |
