@@ -51,6 +51,9 @@ Major enhancements with this release include:
 <!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
 <!-- New Samples, if applicable -->
 <!-- Other Notable Changes, if applicable -->
+
+### New Boards
+- Add support for Galaxy revC board
 <!-- New Boards, if applicable -->
 
 ## Grendel Changes
