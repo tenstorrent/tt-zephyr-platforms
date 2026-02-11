@@ -14,7 +14,9 @@ alignment:
 # - $DMC_BUILD: build/tt_blackhole@p100a/tt_blackhole/dmc/build
 # - $SMC_BUILD: build/tt_blackhole@p100a/tt_blackhole/smc/build
 
-images:
+tables:
+- header_addr: 0x0
+  images:
   ## FIXME: this is generated at build time
   # - name: cmfwcfg
   # binary: $BUILD/zephyr/misc/generated/fwtable.bin
@@ -58,14 +60,13 @@ images:
 #   binary: $BUILD/zephyr/misc/generated/read_only.bin
 #   source: $END - 0x1000
 #   provisioning_only: true
-
-## FIXME: this is generated at build time
-fail_over_image:
-  name: failover
-  ## FIXME: this is the output of building the recovery app
-  ## Just using tt_blackhole_serdes_eth_fw.bin because recovery is required.
-  # binary: $BUILD/zephyr/zephyr.bin
-  binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
-  offset: 0x10000000
-  # not needed, but exercise padto for coverage (adds 36 bytes of 0xff)
-  padto: 19540
+- header_addr: 0x4000
+  images:
+  - name: failover
+    ## FIXME: this is the output of building the recovery app
+    ## Just using tt_blackhole_serdes_eth_fw.bin because recovery is required.
+    # binary: $BUILD/zephyr/zephyr.bin
+    binary: $ROOT/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin
+    offset: 0x10000000
+    # not needed, but exercise padto for coverage (adds 36 bytes of 0xff)
+    padto: 19540

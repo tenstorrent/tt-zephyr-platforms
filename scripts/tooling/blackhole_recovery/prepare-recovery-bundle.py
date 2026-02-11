@@ -123,17 +123,20 @@ def generate_recovery_assets(boardname, board_data, outdir, signing_key):
             ih = IntelHex()
             # At 0x0, place the tt-boot-fs. This will be written to eeprom.
             ih.loadfile(bootfs_hex, format="hex")
-            if "dmfwimg" in bootfs.entries:
-                dmfw = bootfs.entries["dmfwimg"].data
-                # Place mcuboot at 0x800_0000, which is the start of DMC flash
-                ih.loadfile(
-                    dmc_build_dir / "mcuboot" / "zephyr" / "zephyr.hex", format="hex"
-                )
-                # Place DMFW at 0x801_0000, which is the start of slot0
-                ih.frombytes(dmfw, 0x8010000)
-                # Write file out to 'recovery.hex'
-            with open(outdir / f"{asic['bootfs-name']}_recovery.hex", "w") as f:
-                ih.write_hex_file(f)
+            for table in bootfs.tables:
+                if "dmfwimg" in table.entries:
+                    dmfw = table.entries["dmfwimg"].data
+                    # Place mcuboot at 0x800_0000, which is the start of DMC flash
+                    ih.loadfile(
+                        dmc_build_dir / "mcuboot" / "zephyr" / "zephyr.hex",
+                        format="hex",
+                    )
+                    # Place DMFW at 0x801_0000, which is the start of slot0
+                    ih.frombytes(dmfw, 0x8010000)
+                    # Write file out to 'recovery.hex'
+                    with open(outdir / f"{asic['bootfs-name']}_recovery.hex", "w") as f:
+                        ih.write_hex_file(f)
+                    break
         # Now, we need to copy the protobuf files in. These assets are needed
         # To patch the read only board ID section with a new serial number
         proto_path = smc_build_dir / "smc" / "zephyr" / "python_proto_files"
