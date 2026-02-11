@@ -54,7 +54,12 @@ Major enhancements with this release include:
 
 ### New Boards
 - Add support for Galaxy revC board
-<!-- New Boards, if applicable -->
+
+### Power Management
+- Update limits for P300C boards:
+  - Board power limit 550 W
+  - TDP limit 125 W
+  - GDDR temperature limit 88 C
 
 ## Grendel Changes
 
