@@ -38,6 +38,7 @@ jobs:
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
+    name: hardware-smoke-test (${{ matrix.config.board }})
     needs: [gen-config]
     env:
       ASIC_ID: 0
@@ -128,6 +129,7 @@ jobs:
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-test:
+    name: smoke-e2e-test (${{ matrix.config.board }})
     needs: [gen-config]
     strategy:
       fail-fast: false
