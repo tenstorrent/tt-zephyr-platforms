@@ -10,6 +10,7 @@ Major enhancements with this release include:
 
 ### New and Experimental Features
 - Added support for Samsung GDDR6 memory
+- Wipe Tensix L1, ERISC L1, and GDDR memory during init
 
 <!-- Subsections can break down improvements by (area or board) -->
 <!-- UL PCIe -->
