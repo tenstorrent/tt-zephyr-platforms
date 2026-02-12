@@ -43,6 +43,7 @@ jobs:
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   e2e-stress-test:
+    name: e2e-stress-test (${{ matrix.config.board }})
     needs: [gen-config]
     strategy:
       fail-fast: false
