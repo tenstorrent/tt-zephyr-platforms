@@ -100,6 +100,12 @@ jobs:
           # than metal CI systems.
           sed -i 's/pytest\(.*\)test_demo_for_conditional_generation/CI=false pytest\1test_demo_for_conditional_generation/g' \
             dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
+          # Running the resnet conv test once without determinism checks before
+          # We enable the checks serves as a workaround for SYS-2705, where
+          # P300 cards have different outputs on the first run after cold boot.
+          SEARCH="echo \"\[upstream-tests\] Running BH upstream didt tests\""
+          INSERT="    pytest tests/didt/test_resnet_conv.py::test_resnet_conv -k \"all\" --didt-workload-iterations 100 --determinism-check-interval 0"
+          sed -i "/$SEARCH/a$INSERT" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
           # To verify patch was applied
           git diff
 
