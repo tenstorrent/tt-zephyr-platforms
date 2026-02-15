@@ -293,7 +293,6 @@ static void pvt_tt_bh_submit_sample(struct rtio_iodev_sqe *iodev_sqe)
 		return;
 	}
 
-	/* struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf; */
 	struct pvt_tt_bh_rtio_data *data = (struct pvt_tt_bh_rtio_data *)buf;
 	ReadStatus status;
 
