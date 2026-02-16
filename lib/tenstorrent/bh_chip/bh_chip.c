@@ -13,6 +13,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/clock.h>
+#include <zephyr/drivers/i2c.h>
 #include <string.h>
 
 LOG_MODULE_REGISTER(bh_chip, CONFIG_TT_BH_CHIP_LOG_LEVEL);
@@ -54,12 +55,20 @@ cm2dmMessageRet bh_chip_get_cm2dm_message(struct bh_chip *chip)
 
 	if (output.ret != 0 || (output.msg.msg_id != kCm2DmMsgIdNull && output.ack_ret != 0)) {
 		static k_timepoint_t message_ratelimit;
+		static k_timepoint_t recover_ratelimit;
 
 		if (sys_timepoint_expired(message_ratelimit)) {
 			message_ratelimit = sys_timepoint_calc(K_SECONDS(1));
 
 			LOG_WRN("CM2DM SMBus communication failed. req: %d ack: %d", output.ret,
 				output.ack_ret);
+		}
+
+		if (output.ret == -EIO && sys_timepoint_expired(recover_ratelimit)) {
+			recover_ratelimit = sys_timepoint_calc(K_MSEC(250));
+
+			i2c_recover_bus(chip->config.arc.smbus.bus);
+			smbus_uncancel(chip->config.arc.smbus.bus);
 		}
 	}
 
