@@ -103,6 +103,7 @@ static bool process_reset_req(struct bh_chip *chip, uint8_t msg_id, uint32_t msg
 	switch (msg_data) {
 	case kCm2DmResetLevelAsic:
 		LOG_INF("Received ARC reset request");
+		bh_chip_cancel_bus_transfer_clear(chip);
 		bh_chip_reset_chip(chip, true);
 		break;
 
@@ -420,6 +421,7 @@ static void handle_watchdog_reset(void)
 	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
 		if (chip->data.arc_wdog_triggered) {
 			chip->data.arc_wdog_triggered = false;
+			bh_chip_cancel_bus_transfer_clear(chip);
 			/* Read PC from ARC and record it */
 			jtag_setup(chip->config.jtag);
 			jtag_reset(chip->config.jtag);
@@ -658,6 +660,7 @@ int main(void)
 		const struct device *smbus = chip->config.arc.smbus.bus;
 
 		smbus_configure(smbus, SMBUS_MODE_CONTROLLER | SMBUS_MODE_PEC);
+		bh_chip_cancel_bus_transfer_clear(chip);
 	}
 
 	printk("DMFW VERSION " APP_VERSION_STRING "\n");
