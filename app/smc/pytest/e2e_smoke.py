@@ -98,19 +98,17 @@ TT_SMC_MSG_READ_VM = 0x1D
 # Telemetry tags
 TAG_CM_FW_VERSION = 29
 TAG_DM_APP_FW_VERSION = 26
+TAG_TDP = 7
+TAG_INPUT_POWER = 54
 
 NUM_PD = 16
 NUM_VM = 8
 NUM_TS = 8
 
 
-def read_telem(asic_id, telem_idx):
-    chip = pyluwen.detect_chips()[asic_id]
-
-    table_addr = chip.axi_read32(TELEMETRY_DATA_REG_ADDR)
-    telem = chip.axi_read32(table_addr + telem_idx * 4)
-
-    del chip
+def read_telem(arc_chip, telem_idx):
+    table_addr = arc_chip.axi_read32(TELEMETRY_DATA_REG_ADDR)
+    telem = arc_chip.axi_read32(table_addr + telem_idx * 4)
 
     return telem
 
@@ -278,19 +276,21 @@ def upgrade_from_version_test(
         wait_arc_boot(0, timeout=20)
 
     time.sleep(0.5)
-    assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
-    assert cmfw_version_base == read_telem(0, TAG_CM_FW_VERSION)
-
+    chip = pyluwen.detect_chips()[0]
+    assert dmfw_version_base == read_telem(chip, TAG_DM_APP_FW_VERSION)
+    assert cmfw_version_base == read_telem(chip, TAG_CM_FW_VERSION)
+    del chip
     # flash firmware to update to
     unlaunched_dut.launch()
 
     time.sleep(0.5)
+    chip = pyluwen.detect_chips()[0]
     assert get_ttzp_version.get_ttzp_version_u32(
         TTZP / "app/dmc/VERSION"
-    ) == read_telem(0, TAG_DM_APP_FW_VERSION)
+    ) == read_telem(chip, TAG_DM_APP_FW_VERSION)
     assert get_ttzp_version.get_ttzp_version_u32(
         TTZP / "app/smc/VERSION"
-    ) == read_telem(0, TAG_CM_FW_VERSION)
+    ) == read_telem(chip, TAG_CM_FW_VERSION)
 
 
 def pvt_comprehensive_test(arc_chip_dut, asic_id):
@@ -955,3 +955,56 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     The expectation is that the SMC response to these messages is 0.
     """
     assert 0 == pvt_comprehensive_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
+
+
+def power_state_toggle_test(arc_chip_dut, asic_id):
+    """
+    Test toggling between high and low power states and verify TDP delta.
+
+    Toggles between high and low power states and verifies that the TDP
+    difference between the two states is greater than 60W.
+    """
+    expected_power_delta = 60
+    settling_time = 0.5
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    try:
+        logger.info("Setting power state to high")
+        arc_chip.set_power_state("high")
+    except Exception as e:
+        logger.info(f"No driver support for power state IOCTL: {e}")
+        pytest.skip("Driver does not support power state control")
+
+    time.sleep(settling_time)  # Allow power state to stabilize
+
+    # Measure TDP in high power state
+    high_power_tdp = read_telem(arc_chip, TAG_INPUT_POWER)
+    logger.info(f"High power state TDP: {high_power_tdp}W")
+
+    logger.info("Setting power state to low")
+    arc_chip.set_power_state("low")
+    time.sleep(settling_time)  # Allow power state to stabilize
+
+    # Measure TDP in low power state
+    low_power_tdp = read_telem(arc_chip, TAG_INPUT_POWER)
+    logger.info(f"Low power state TDP: {low_power_tdp}W")
+
+    # Calculate delta
+    tdp_delta = high_power_tdp - low_power_tdp
+    logger.info(f"TDP delta: {tdp_delta}W")
+
+    # Verify delta is greater than 60W
+    assert tdp_delta > expected_power_delta, (
+        f"TDP delta ({tdp_delta}W) is not greater than {expected_power_delta}W"
+    )
+
+    return 0
+
+
+def test_power_state_toggle(arc_chip_dut, asic_id):
+    """
+    Validates that toggling between high and low power states results in a TDP delta > 60W
+    """
+    assert 0 == power_state_toggle_test(arc_chip_dut, asic_id), (
+        "power_state_toggle_test failed"
+    )
