@@ -179,10 +179,53 @@ static int spi_global_lock(void)
 	return spi_transfer(&buf, 1); /* Send global lock command */
 }
 
+static int read_status_register(uint8_t* status)
+{
+	struct spi_buf buf[2];
+	uint8_t cmd = 0x05; /* Read Status Register 1 */
+
+	buf[0].tx_buf = &cmd;
+	buf[0].rx_buf = NULL;
+	buf[0].len = 1;
+	buf[1].tx_buf = NULL;
+	buf[1].rx_buf = status;
+	buf[1].len = 1;
+
+	return spi_transfer(buf, 2);
+}
+
+static int write_status_register(uint8_t status)
+{
+	struct spi_buf buf;
+	uint8_t cmd_buf[2];
+	int ret;
+
+	ret = spi_write_enable();
+	if (ret != 0) {
+		return ret;
+	}
+
+	cmd_buf[0] = 0x01; /* Write Status Register 1 */
+	cmd_buf[1] = status;
+
+	buf.tx_buf = cmd_buf;
+	buf.rx_buf = NULL;
+	buf.len = 2;
+
+	ret = spi_transfer(&buf, 1);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return wait_spi_ready();
+}
+
 int eeprom_init(void)
 {
 	struct spi_nor_config cfg;
 	uint32_t jedec_id;
+	uint8_t status;
+	int ret;
 
 	if (eeprom_probe(&cfg, &jedec_id) != 0) {
 		return -1; /* EEPROM probe failed */
@@ -190,7 +233,25 @@ int eeprom_init(void)
 
 	/* Global unlock only for W25Q64JW */
 	if (jedec_id == 0x1760EF) {
-		return spi_global_unlock();
+		ret = spi_global_unlock();
+		if (ret != 0) {
+			return ret;
+		}
+
+		/* Check and clear Block Protect (BP) bits in Status Register 1 */
+		ret = read_status_register(&status);
+		if (ret != 0) {
+			return ret;
+		}
+
+		if (status & 0x3C) {
+			/* BP bits are set, clear them */
+			status &= ~0x3C;
+			ret = write_status_register(status);
+			if (ret != 0) {
+				return ret;
+			}
+		}
 	}
 	return 0;
 }
