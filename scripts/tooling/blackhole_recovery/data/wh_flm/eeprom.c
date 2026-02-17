@@ -13,10 +13,11 @@
 
 /* Configuration for EEPROM */
 struct spi_nor_config {
-	uint8_t read_cmd; /* Read command */
-	uint8_t pp_cmd;   /* Page program command */
-	uint8_t se_cmd;   /* Sector erase command */
-	uint8_t ce_cmd;   /* Chip erase command */
+	uint8_t read_cmd;  /* Read command */
+	uint8_t pp_cmd;    /* Page program command */
+	uint8_t se_cmd;    /* Sector erase command */
+	uint8_t ce_cmd;    /* Chip erase command */
+	uint8_t addr_len;  /* Address length in bytes: 3 or 4 */
 };
 
 struct spi_nor_chip {
@@ -67,6 +68,7 @@ static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
 					.pp_cmd = 0x12,
 					.se_cmd = 0x21,
 					.ce_cmd = 0xC7,
+					.addr_len = 4,
 				},
 		},
 		{
@@ -80,6 +82,7 @@ static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
 					 * This is undocumented behavior!
 					 */
 					.ce_cmd = 0x60,
+					.addr_len = 4,
 				},
 		},
 		{
@@ -89,6 +92,7 @@ static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
 					.pp_cmd = 0x02,
 					.se_cmd = 0x20,
 					.ce_cmd = 0xC7,
+					.addr_len = 3, /* 3 byte address */
 				},
 		},
 		/* clang-format on */
@@ -114,12 +118,13 @@ static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
 	return -1; /* No matching chip found */
 }
 
-static void fill_addr(uint8_t *addr_buf, uint32_t addr)
+/* Write n address bytes big-endian (n is 3 or 4) */
+static void fill_addr(uint8_t* addr_buf, uint32_t addr, uint8_t n)
 {
-	addr_buf[0] = (addr >> 24) & 0xFF; /* MSB */
-	addr_buf[1] = (addr >> 16) & 0xFF;
-	addr_buf[2] = (addr >> 8) & 0xFF;
-	addr_buf[3] = addr & 0xFF; /* LSB */
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		addr_buf[i] = (addr >> (8 * (n - 1 - (uint8_t)i))) & 0xFF;
+	}
 }
 
 static int wait_spi_ready(void)
@@ -315,12 +320,12 @@ int eeprom_erase_sector(uint32_t sector)
 	}
 
 	/* Populate command buffer */
-	cmd_buf[0] = cfg.se_cmd;        /* Erase command */
-	fill_addr(&cmd_buf[1], sector); /* Address in big-endian format */
+	cmd_buf[0] = cfg.se_cmd;
+	fill_addr(&cmd_buf[1], sector, cfg.addr_len);
 
 	buf.tx_buf = cmd_buf;
 	buf.rx_buf = NULL;
-	buf.len = 5; /* 1 byte command + 4 bytes address */
+	buf.len = 1 + cfg.addr_len;
 	ret = spi_transfer(&buf, 1);
 	if (ret != 0) {
 		return ret; /* SPI transfer failed */
@@ -360,11 +365,11 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 			return ret; /* Write enable failed */
 		}
 
-		fill_addr(&cmd_buf[1], addr + off); /* Address in big-endian format */
+		fill_addr(&cmd_buf[1], addr + off, cfg.addr_len);
 
 		buf[0].tx_buf = cmd_buf;
 		buf[0].rx_buf = NULL;
-		buf[0].len = 5; /* 1 byte command + 4 bytes address */
+		buf[0].len = 1 + cfg.addr_len;
 		buf[1].tx_buf = &data[off];
 		buf[1].rx_buf = NULL;
 		buf[1].len = SPI_NOR_FLASH_PAGE_SIZE; /* Program one page */
@@ -395,12 +400,12 @@ int eeprom_read(uint32_t addr, uint8_t *data, uint32_t len)
 	}
 
 	/* Populate command buffer */
-	cmd_buf[0] = cfg.read_cmd;    /* Read command */
-	fill_addr(&cmd_buf[1], addr); /* Address in big-endian format */
+	cmd_buf[0] = cfg.read_cmd;
+	fill_addr(&cmd_buf[1], addr, cfg.addr_len);
 
 	buf[0].tx_buf = cmd_buf;
 	buf[0].rx_buf = NULL;
-	buf[0].len = 5; /* 1 byte command + 4 bytes address */
+	buf[0].len = 1 + cfg.addr_len;
 	buf[1].tx_buf = NULL;
 	buf[1].rx_buf = data;
 	buf[1].len = len;
