@@ -238,6 +238,9 @@ int eeprom_init(void)
 
 	/* Global unlock only for W25Q64JW */
 	if (jedec_id == 0x1760EF) {
+		if (spi_write_enable() != 0) {
+			return -1;
+		}
 		ret = spi_global_unlock();
 		if (ret != 0) {
 			return ret;
@@ -265,6 +268,7 @@ int eeprom_deinit(void)
 {
 	struct spi_nor_config cfg;
 	uint32_t jedec_id;
+	int ret;
 
 	if (eeprom_probe(&cfg, &jedec_id) != 0) {
 		return -1; /* EEPROM probe failed */
@@ -272,7 +276,13 @@ int eeprom_deinit(void)
 
 	/* Global lock only for W25Q64JW */
 	if (jedec_id == 0x1760EF) {
-		return spi_global_lock();
+		if (spi_write_enable() != 0) {
+			return -1;
+		}
+		ret = spi_global_lock();
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	return 0; /* Otherwise no deinit required */
