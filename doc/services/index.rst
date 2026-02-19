@@ -6,5 +6,6 @@ Firmware Services
 .. toctree::
    :maxdepth: 1
 
+   binary_descriptors/index.rst
    tracing/index.rst
    telemetry/index.rst
