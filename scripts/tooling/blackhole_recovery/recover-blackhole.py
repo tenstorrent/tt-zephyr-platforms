@@ -17,26 +17,18 @@ import sys
 import time
 import os
 from intelhex import IntelHex
-import usb.core
 
 try:
     import pyluwen
-    import yaml
-    from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
     from pyocd.flash.eraser import FlashEraser
-    from pyocd.core import exceptions as pyocd_exceptions
 except ImportError:
     print("Required modules not found. Please run pip install -r requirements.txt")
     sys.exit(os.EX_UNAVAILABLE)
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
-
 sys.path.append(str(Path(__file__).parents[2]))
 # Local imports
+import pyocd_utils
 import pcie_utils
 import tt_boot_fs
 
@@ -45,7 +37,6 @@ if os.environ.get("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION") != "python":
     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 from encode_spirom_bins import convert_proto_txt_to_bin_file
 
-PYOCD_TARGET = "STM32G0B1CEUx"
 ARC_PING_MSG = 0x90
 DMC_PING_MSG = 0xC0
 
@@ -159,55 +150,6 @@ def check_card_status(board_config):
         return True
 
 
-def recover_stlink():
-    """
-    Attempt to recover the ST-Link device by resetting the USB bus
-    """
-
-    def is_stlink_device(dev):
-        return dev.idVendor == 0x0483  # STMicroelectronics
-
-    stlink_devs = usb.core.find(find_all=True, custom_match=is_stlink_device)
-    for dev in stlink_devs:
-        try:
-            dev.reset()
-            print(f"Reset ST-Link device: VID={dev.idVendor:x}, PID={dev.idProduct:x}")
-        except usb.core.USBError as e:
-            print(
-                f"Error resetting ST-Link device: VID={dev.idVendor:x}, PID={dev.idProduct:x}, {e}"
-            )
-
-
-def _get_session(asic, adapter_id, temp_dir, no_prompt):
-    if adapter_id is None:
-        print(
-            "No adapter ID provided, please select the debugger "
-            "attached to STM32 if prompted"
-        )
-        session = ConnectHelper.session_with_chosen_probe(
-            target_override=PYOCD_TARGET,
-            user_script=Path(temp_dir) / asic["pyocd-config"],
-            return_first=no_prompt,
-        )
-    else:
-        session = ConnectHelper.session_with_chosen_probe(
-            target_override=PYOCD_TARGET,
-            user_script=Path(temp_dir) / asic["pyocd-config"],
-            unique_id=adapter_id,
-        )
-    return session
-
-
-def get_session(asic, adapter_id, temp_dir, no_prompt):
-    try:
-        session = _get_session(asic, adapter_id, temp_dir, no_prompt)
-    except pyocd_exceptions.ProbeError as e:
-        print(f"Error connecting to probe, will attempt USB reset: {e}")
-        recover_stlink()
-        session = _get_session(asic, adapter_id, temp_dir, no_prompt)
-    return session
-
-
 def main():
     args = parse_args()
     with (
@@ -216,9 +158,9 @@ def main():
     ):
         tar.extractall(path=temp_dir, filter="data")
         try:
-            f = open(Path(temp_dir) / "board_metadata.yaml")
-            BOARD_ID_MAP = yaml.load(f.read(), Loader=SafeLoader)
-            f.close()
+            BOARD_ID_MAP = pyocd_utils.load_board_metadata(
+                Path(temp_dir) / "board_metadata.yaml"
+            )
         except FileNotFoundError:
             print("Error: board_metadata.yaml not found in recovery bundle")
             return
@@ -235,7 +177,10 @@ def main():
 
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
-            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
+            pyocd_config = Path(temp_dir) / asic["pyocd-config"]
+            session = pyocd_utils.get_session(
+                pyocd_config, args.adapter_id, args.no_prompt
+            )
             session.open()
             # First, reset the DMC and see if we can reach the card
             session.board.target.reset_and_halt()
@@ -252,7 +197,10 @@ def main():
         # First, erase the flash on all ASICs
         for idx in range(len(BOARD_ID_MAP[args.board])):
             asic = BOARD_ID_MAP[args.board][idx]
-            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
+            pyocd_config = Path(temp_dir) / asic["pyocd-config"]
+            session = pyocd_utils.get_session(
+                pyocd_config, args.adapter_id, args.no_prompt
+            )
             session.open()
             # Erase the flash
             print(f"Erasing flash on ASIC {idx}...")
@@ -276,7 +224,10 @@ def main():
             recovery_hex = set_board_serial(
                 str(recovery_hex), asic["protobuf-name"], board_id
             )
-            session = get_session(asic, args.adapter_id, temp_dir, args.no_prompt)
+            pyocd_config = Path(temp_dir) / asic["pyocd-config"]
+            session = pyocd_utils.get_session(
+                pyocd_config, args.adapter_id, args.no_prompt
+            )
             session.open()
             # Program the recovery hex
             print(f"Flashing {recovery_hex} to ASIC {idx}...")
