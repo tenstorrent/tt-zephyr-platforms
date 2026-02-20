@@ -14,7 +14,7 @@ Welcome to TT-System-Firmware!
 
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
 
-![Zephyr Shell on Blackhole](./doc/img/shell.gif)
+![Zephyr Shell on Blackhole](./doc/images/shell.gif)
 
 ## Getting Started
 
