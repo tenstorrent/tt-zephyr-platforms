@@ -163,3 +163,155 @@ jobs:
             exit 1
           fi
           echo "Successfully verified that tensix-enabled column count is correct: $TENSIX_COUNT"
+
+  manufacturing-test:
+    needs: [build-fw-artifact, gen-config]
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    env:
+      ASIC_ID: 0
+    steps:
+      - name: Cleanup State
+        if: ${{ always() }}
+        run: |
+          ls -la
+          rm -rf *
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          path: tt-system-firmware
+
+      - name: Prepare Container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
+        with:
+          app-path: tt-system-firmware
+
+      - name: Derive assembly board name
+        id: board-map
+        shell: bash
+        run: |
+          # Map CI board revision (e.g. p150a) to assembly board family (e.g. p150)
+          ASSEMBLY_BOARD=$(echo "${{ matrix.config.board }}" | sed 's/[a-z]$//')
+          echo "assembly_board=$ASSEMBLY_BOARD" | tee -a $GITHUB_OUTPUT
+
+      - name: Download preflash firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: preflash-fw
+          path: artifacts/preflash
+
+      - name: Download assembly test firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-fw-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-fw
+
+      - name: Download assembly MCUBoot
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-mcuboot-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-mcuboot
+
+      - name: Download combined firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: artifacts/fwbundle
+
+      # ---- Step 1: Erase SPI + flash preflash ihex ----
+      - name: Erase SPI and flash preflash ihex
+        shell: bash
+        run: |
+          PREFLASH_IHEX=$(ls artifacts/preflash/preflash-*.ihex | head -1)
+          echo "Using preflash image: $PREFLASH_IHEX"
+          python3 tt-system-firmware/scripts/spi_flash.py \
+            --board-name ${{ matrix.config.board }} --no-prompt -v full_erase
+          python3 tt-system-firmware/scripts/spi_flash.py \
+            --board-name ${{ matrix.config.board }} --no-prompt -v \
+            write_from_ihex "$PREFLASH_IHEX"
+
+      # ---- Step 2: Flash assembly test FW to DMC via STM32_Programmer_CLI ----
+      - name: Flash assembly test firmware to DMC
+        shell: bash
+        run: |
+          BOARD=${{ steps.board-map.outputs.assembly_board }}
+          MCUBOOT_ELF="artifacts/assembly-mcuboot/build-assembly-test-${BOARD}/mcuboot/zephyr/zephyr.elf"
+          APP_HEX="artifacts/assembly-fw/build-assembly-test-${BOARD}/dmc/zephyr/zephyr.signed.hex"
+
+          echo "Flashing MCUBoot bootloader: $MCUBOOT_ELF"
+          echo "Flashing assembly test app: $APP_HEX"
+
+          if [ ! -f "$MCUBOOT_ELF" ]; then
+            echo "ERROR: MCUBoot ELF not found at $MCUBOOT_ELF"
+            exit 1
+          fi
+          if [ ! -f "$APP_HEX" ]; then
+            echo "ERROR: Assembly test app hex not found at $APP_HEX"
+            exit 1
+          fi
+          # Program the signed application hex and reset
+          ~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$APP_HEX" -rst
+          # Erase STM32 internal flash and program MCUBoot bootloader
+          ~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$MCUBOOT_ELF" -rst
+
+
+      # ---- Step 3: DMC reset (simulate power-on) ----
+      - name: DMC reset after assembly flash
+        shell: bash
+        run: |
+          echo "Resetting DMC..."
+          python3 tt-system-firmware/scripts/dmc_reset.py --wait
+
+      # ---- Step 4: Verify PCIe enumeration (assembly test FW + preflash) ----
+      - name: Verify PCIe enumeration (assembly test FW)
+        shell: bash
+        run: |
+          echo "Verifying PCIe enumeration with assembly test FW + preflash..."
+          python3 tt-system-firmware/scripts/ci/check_pcie_enum.py \
+            --asic-id $ASIC_ID --timeout 60 -v
+
+      # ---- Step 5: Flash production FW via tt-flash ----
+      - name: Flash production firmware
+        shell: bash
+        run: |
+          echo "Flashing production firmware bundle..."
+          FWBUNDLE=$(ls artifacts/fwbundle/fw_pack*.fwbundle | head -1)
+          echo "Using firmware bundle: $FWBUNDLE"
+          tt-flash "$FWBUNDLE" --force
+
+      # ---- Step 6: DMC reset (simulate cold boot after bootstrap) ----
+      - name: DMC reset after production flash
+        shell: bash
+        run: |
+          echo "Resetting DMC after production FW flash..."
+          python3 tt-system-firmware/scripts/dmc_reset.py --wait
+
+      # ---- Step 7: Verify PCIe enumeration (production FW) ----
+      - name: Verify PCIe enumeration (production FW)
+        shell: bash
+        run: |
+          echo "Verifying PCIe enumeration with production FW..."
+          python3 tt-system-firmware/scripts/ci/check_pcie_enum.py \
+            --asic-id $ASIC_ID --timeout 60 -v
+
+      # ---- Debug info on failure ----
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-system-firmware
+        run: |
+          echo "DMC RTT logs:"
+          python3 ./scripts/dmc_rtt.py -n
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_console.py --rtt -n
+          echo "SMC state dump:"
+          python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
