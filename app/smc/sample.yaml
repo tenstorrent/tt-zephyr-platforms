@@ -66,6 +66,11 @@ tests:
     # nightly, as CI machines might not be available for PR efforts
     timeout: 10800
     tags: e2e-stress
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
+      - tt_blackhole@galaxy/tt_blackhole/smc
     harness: pytest
     sysbuild: true
     extra_args:
