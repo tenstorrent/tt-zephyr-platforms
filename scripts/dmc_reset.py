@@ -20,8 +20,7 @@ except ModuleNotFoundError:
 
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parents[3] / "scripts"))
-from pcie_utils import rescan_pcie
+import pcie_utils
 
 logger = logging.getLogger(Path(__file__).stem)
 
@@ -190,7 +189,7 @@ def wait_for_smc_boot(timeout):
     # First stage- rescan pcie
     while True:
         try:
-            rescan_pcie()
+            pcie_utils.rescan_pcie()
         except PermissionError:
             return os.EX_OSERR
         if Path("/dev/tenstorrent/0").exists():
@@ -216,10 +215,10 @@ def wait_for_smc_boot(timeout):
             break
         except Exception:
             # Rescan PCIe again, in case the card disappeared
-            rescan_pcie()
+            pcie_utils.rescan_pcie()
         except BaseException:
             # Rescan PCIe again, in case the card disappeared
-            rescan_pcie()
+            pcie_utils.rescan_pcie()
         remaining -= delay
         time.sleep(delay)
         if remaining == 0:
@@ -232,7 +231,7 @@ def wait_for_smc_boot(timeout):
     # Try to verify that the SMC can ping the DMC
     while True:
         try:
-            rsp = chip.arc_msg(0xC0, True, True, 1, 0)
+            rsp = chip.arc_msg(pcie_utils.DMC_PING_MSG, True, True, 1, 0)
             if rsp[0] == 1:
                 break
         except Exception:
