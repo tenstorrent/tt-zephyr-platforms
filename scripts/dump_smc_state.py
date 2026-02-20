@@ -11,9 +11,8 @@ require that the application firmware be in a good state.
 
 import argparse
 import errno
-import pyluwen
 
-from pcie_utils import rescan_pcie
+import pcie_utils
 
 # Register definitions
 ICCM_BASE = 0x0
@@ -102,13 +101,8 @@ def dump_states(asic_id, states=ALL_STATES):
     Callable as a module or from the main function
     """
     # Don't detect chips with detect_chips(), since that has status checks
-    chip = pyluwen.PciChip(asic_id)
     try:
-        postcode = chip.axi_read32(SMC_POSTCODE_REG)
-        if postcode == 0xFFFFFFFF:
-            print("SMC appears to need a pcie reset to be accessible")
-            rescan_pcie()
-            chip = pyluwen.PciChip(asic_id)
+        chip = pcie_utils.get_chip(asic_id)
     except Exception as e:
         print(f"Error accessing SMC ASIC {asic_id}: {e}")
         print("Make sure the SMC is powered on and accessible over PCIe")

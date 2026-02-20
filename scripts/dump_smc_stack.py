@@ -14,13 +14,9 @@ import argparse
 import errno
 import struct
 
-try:
-    import pyluwen
-    from pcie_utils import rescan_pcie
+import pcie_utils
 
-    HAS_PYLUWEN = True
-except ImportError:
-    HAS_PYLUWEN = False
+HAS_PYLUWEN = pcie_utils.HAS_PYLUWEN
 
 try:
     from elftools.elf.elffile import ELFFile
@@ -747,13 +743,7 @@ def dump_stacks(
     # Connect to chip
     print(f"Connecting to ASIC {asic_id}...")
     try:
-        chip = pyluwen.PciChip(asic_id)
-        # Test connectivity
-        test_read = chip.axi_read32(0x80030060)  # SMC postcode register
-        if test_read == 0xFFFFFFFF:
-            print("SMC appears to need a pcie reset to be accessible")
-            rescan_pcie()
-            chip = pyluwen.PciChip(asic_id)
+        chip = pcie_utils.get_chip(asic_id)
     except Exception as e:
         print(f"Error accessing SMC ASIC {asic_id}: {e}")
         print("Make sure the SMC is powered on and accessible over PCIe")

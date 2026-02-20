@@ -37,9 +37,6 @@ if os.environ.get("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION") != "python":
     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 from encode_spirom_bins import convert_proto_txt_to_bin_file
 
-ARC_PING_MSG = 0x90
-DMC_PING_MSG = 0xC0
-
 TT_Z_P_ROOT = Path(__file__).parents[3]
 
 
@@ -129,16 +126,9 @@ def check_card_status(board_config):
         # Check if the card can be accessed by pyluwen
         try:
             card = pyluwen.detect_chips()[pci_idx]
-            response = card.arc_msg(ARC_PING_MSG, True, True, 0, 0)
-            if response[0] != 1 or response[1] != 0:
-                # ping arc message failed
-                print(f"ARC ping failed for ASIC {pci_idx}")
+            if not pcie_utils.ping_arc(card, pci_idx):
                 return False
-            # Test DMC ping
-            response = card.arc_msg(DMC_PING_MSG, True, True, 0, 0)
-            if response[0] != 1 or response[1] != 0:
-                # ping dmc message failed
-                print(f"DMC ping failed for ASIC {pci_idx}")
+            if not pcie_utils.ping_dmc(card, pci_idx):
                 return False
             # Check telemetry data to see if the UPI looks right
             if card.get_telemetry().board_id >> 36 != config["upi"]:
