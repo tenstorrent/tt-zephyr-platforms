@@ -9,6 +9,7 @@ import time
 import subprocess
 from pathlib import Path
 import pyluwen
+import pytest
 
 from e2e_smoke import (
     dirty_reset_test,
@@ -42,6 +43,7 @@ PING_DMFW_DURATION_REG_ADDR = 0x80030448
 # ARC messages
 TT_SMC_MSG_PING_DM = 0xC0
 TT_SMC_MSG_READ_TS = 0x1B
+TT_SMC_MSG_TEST = 0x90
 
 # Lower this number if testing local changes, so that tests run faster.
 MAX_TEST_ITERATIONS = 1000
@@ -70,6 +72,7 @@ def tt_smi_reset():
     return smi_reset_result
 
 
+@pytest.mark.skipif(os.getenv("BOARD") == "galaxy", reason="Galaxy lacks a DMC")
 def test_arc_watchdog(arc_chip_dut, asic_id):
     """
     Validates that the DMC firmware watchdog for the ARC will correctly
@@ -96,6 +99,7 @@ def test_arc_watchdog(arc_chip_dut, asic_id):
     )
 
 
+@pytest.mark.skipif(os.getenv("BOARD") == "galaxy", reason="Galaxy lacks a DMC")
 def test_pcie_fw_load_time(arc_chip_dut, asic_id):
     """
     Checks PCIe firmware load time is within 40ms.
@@ -153,18 +157,28 @@ def test_smi_reset(arc_chip_dut, asic_id):
             continue
 
         arc_chip = pyluwen.detect_chips()[asic_id]
-        response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
-        if response[0] != 1 or response[1] != 0:
-            logger.warning(f"Ping failed on iteration {i}")
-            fail_count += 1
-        duration = arc_chip.axi_read32(PING_DMFW_DURATION_REG_ADDR)
-        dmfw_ping_avg += duration / total_tries
-        dmfw_ping_max = max(dmfw_ping_max, duration)
+        if os.getenv("BOARD") != "galaxy":
+            response = arc_chip.arc_msg(TT_SMC_MSG_PING_DM, True, False, 0, 0, 1000)
+            if response[0] != 1 or response[1] != 0:
+                logger.warning(f"Ping failed on iteration {i}")
+                fail_count += 1
+            duration = arc_chip.axi_read32(PING_DMFW_DURATION_REG_ADDR)
+            dmfw_ping_avg += duration / total_tries
+            dmfw_ping_max = max(dmfw_ping_max, duration)
+        else:
+            # Just check ARC ping, Galaxy lacks a DMC
+            response = arc_chip.arc_msg(TT_SMC_MSG_TEST, True, False, 0, 0, 1000)
+            if response[0] != 1 or response[1] != 0:
+                logger.warning(f"Ping failed on iteration {i}")
+                fail_count += 1
+        # Delete arc_chip so we don't hold an open FD
+        del arc_chip
 
-    logger.info(
-        f"Average DMFW ping time (after reset): {dmfw_ping_avg:.2f} ms, "
-        f"Max DMFW ping time (after reset): {dmfw_ping_max:.2f} ms."
-    )
+    if os.getenv("BOARD") != "galaxy":
+        logger.info(
+            f"Average DMFW ping time (after reset): {dmfw_ping_avg:.2f} ms, "
+            f"Max DMFW ping time (after reset): {dmfw_ping_max:.2f} ms."
+        )
 
     report_results(test_name, fail_count, total_tries)
     assert fail_count <= failure_fail_count, (
@@ -172,6 +186,7 @@ def test_smi_reset(arc_chip_dut, asic_id):
     )
 
 
+@pytest.mark.skipif(os.getenv("BOARD") == "galaxy", reason="Galaxy lacks a DMC")
 def test_dirty_reset():
     """
     Checks that the SMC comes up correctly after a "dirty" reset, where the
@@ -203,6 +218,7 @@ def test_dirty_reset():
     )
 
 
+@pytest.mark.skipif(os.getenv("BOARD") == "galaxy", reason="Galaxy lacks a DMC")
 def test_dmc_ping(arc_chip_dut, asic_id):
     """
     Repeatedly pings the DMC from the SMC to see what the average response time
@@ -325,6 +341,9 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     assert fail_count == 0, f"{test_name} failed {fail_count} times."
 
 
+@pytest.mark.skipif(
+    os.getenv("BOARD") == "galaxy", reason="Burnin not stable on Galaxy"
+)
 def test_power_virus(arc_chip_dut, asic_id):
     """
     - Run the power virus TTX workload (tt-burnin) for 180 seconds
