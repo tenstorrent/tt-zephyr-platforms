@@ -1,7 +1,7 @@
 .. _ttzp_home:
 
-Welcome to TT Zephyr Platforms!
-===============================
+Welcome to TT-Firmware documentation!
+======================================
 
 .. toctree::
    :maxdepth: 1

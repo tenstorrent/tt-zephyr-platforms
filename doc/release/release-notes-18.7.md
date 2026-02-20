@@ -58,7 +58,7 @@ Major enhancements with this release include:
   another instance may be used for e.g. RPC, tracing, coredump, profiling, or other
   functionality
 
-![Zephyr Shell on Blackhole](../img/shell.gif)
+![Zephyr Shell on Blackhole](../images/shell.gif)
 
 * Zephyr's tracing subsystem may now be used over the virtual uart. For now it is limited to a
   an app
