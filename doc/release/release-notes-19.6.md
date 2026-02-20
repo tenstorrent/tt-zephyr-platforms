@@ -1,94 +1,33 @@
 # v19.6.0
 
-> This is a working draft for the up-coming 19.6.0 release.
-
 We are pleased to announce the release of TT Zephyr Platforms firmware version 19.6.0 🥳🎉.
 
 Major enhancements with this release include:
 
 ## Wormhole Changes
 
-### New and Experimental Features
+### New Features
 - Added support for Samsung GDDR6 memory
-- Wipe Tensix L1, ERISC L1, and GDDR memory during init
-
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
-
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
-<!-- Security vulnerabilities fixed? -->
-<!-- API Changes, if applicable -->
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
-<!-- New Boards, if applicable -->
+- Wiped Tensix L1, ERISC L1, and GDDR memory during init for security
 
 ## Blackhole Changes
 
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
-<!-- UL Telemetry -->
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
-
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
-<!-- Security vulnerabilities fixed? -->
-<!-- API Changes, if applicable -->
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
+### Stability Improvements
+- On p300 boards, fixed issue where one ASIC would drop after numerous consecutive reboots.
 
 ### New Boards
 - Add support for Galaxy revC board
 
 ### Power Management
-- Update limits for P300C boards:
-  - Board power limit 550 W
-  - TDP limit 125 W
-  - GDDR temperature limit 88 C
-
-## Grendel Changes
-
-<!-- Subsections can break down improvements by (area or board) -->
-<!-- UL PCIe -->
-<!-- UL DDR -->
-<!-- UL Ethernet -->
+- Update limits for p300c boards:
+  - Board power limit to `550 W`
+  - TDP limit to `125 W`
+  - GDDR temperature limit to `88 C`
 
 ### Telemetry
-
 - New `TAG_AICLK_PPM_INFO` telemetry entry captures which arbiter is limiting AICLK and why
 - Enhanced `TAG_AICLK_ARB_MIN` and `TAG_AICLK_ARB_MAX` to include arbiter IDs
 - Added `targ_freq_update` trace event for debugging AICLK decisions
-
-<!-- UL Debug / Developer Features -->
-<!-- UL Drivers -->
-<!-- UL Libraries -->
-
-<!-- Performance Improvements, if applicable -->
-<!-- New and Experimental Features, if applicable -->
-<!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
-<!-- Security vulnerabilities fixed? -->
-<!-- API Changes, if applicable -->
-<!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
-<!-- New Samples, if applicable -->
-<!-- Other Notable Changes, if applicable -->
-<!-- New Boards, if applicable -->
 
 ## Migration guide
 
