@@ -5,15 +5,8 @@
 
 
 import argparse
-import sys
 
-try:
-    from pyocd.core.helpers import ConnectHelper
-except ImportError:
-    print("Required module 'pyocd' not found. Please run 'pip install pyocd'.")
-    sys.exit(1)
-
-PYOCD_TARGET = "STM32G0B1CEUx"
+import pyocd_utils
 
 # Port D gpio registers on STM32G0
 JTAG_GPIO_REG_MODER = 0x50000C00
@@ -55,15 +48,9 @@ def main():
     args = parse_args()
 
     print("Connecting to STM32 debug probe, select it if prompted...")
-    session = ConnectHelper.session_with_chosen_probe(
-        target_override=PYOCD_TARGET,
-        unique_id=args.adapter_id,
-        prompt=(not args.no_prompt),
+    session = pyocd_utils.create_session(
+        adapter_id=args.adapter_id, no_prompt=args.no_prompt
     )
-
-    if session is None:
-        print("No probe found. Please connect a debug probe and try again.")
-        sys.exit(1)
 
     with session:
         target = session.target

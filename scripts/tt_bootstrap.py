@@ -20,19 +20,16 @@ import tempfile
 import os
 import base64
 import logging
-import yaml
 from collections import namedtuple
 from runners.core import RunnerCaps, ZephyrBinaryRunner
-
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
+from pyocd.flash.file_programmer import FileProgrammer
+from pyocd.flash.eraser import FlashEraser
 
 # Import scripts from the current directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tt_boot_fs
 import pcie_utils
+import pyocd_utils
 
 # Set environment variable for protobuf implementation
 if os.environ.get("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION") != "python":
@@ -41,17 +38,7 @@ from encode_spirom_bins import convert_proto_txt_to_bin_file
 
 TT_Z_P_ROOT = Path(__file__).parents[1]
 
-try:
-    from pyocd.core.helpers import ConnectHelper
-    from pyocd.flash.file_programmer import FileProgrammer
-    from pyocd.flash.eraser import FlashEraser
-except ImportError:
-    print("Required module 'pyocd' not found. Please run 'pip install pyocd'.")
-    sys.exit(1)
-
-PYOCD_TARGET = "STM32G0B1CEUx"
-with open(Path(__file__).parent / "board_metadata.yaml") as f:
-    BOARD_ID_MAP = yaml.load(f.read(), Loader=SafeLoader)
+BOARD_ID_MAP = pyocd_utils.load_board_metadata()
 
 FlashOperation = namedtuple("FlashOperation", ["data", "pyocd_config"])
 
@@ -86,9 +73,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         self.adapter_id = adapter_id
         self.no_prompt = no_prompt
         self.erase = erase
-        self.pyocd_path = (
-            Path(__file__).parent / "tooling/blackhole_recovery/data/bh_flm"
-        )
+        self.pyocd_path = pyocd_utils.PYOCD_FLM_PATH
         self.should_rescan = False
         if self.board_name not in BOARD_ID_MAP:
             raise ValueError(
@@ -361,34 +346,9 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
         if command != "flash":
             raise ValueError(f"Unsupported command: {command}")
         for flash_op in self.flash_data:
-            if self.adapter_id is None:
-                # Check if we have a TTY for user interaction
-                if not sys.stdin.isatty() or self.no_prompt:
-                    self.logger.info(
-                        "No adapter ID provided and no TTY available, selecting first available debug probe"
-                    )
-                    session = ConnectHelper.session_with_chosen_probe(
-                        target_override=PYOCD_TARGET,
-                        user_script=flash_op.pyocd_config,
-                        return_first=True,
-                    )
-                else:
-                    self.logger.info(
-                        "No adapter ID provided, please select the debugger "
-                        "attached to STM32 if prompted"
-                    )
-                    session = ConnectHelper.session_with_chosen_probe(
-                        target_override=PYOCD_TARGET,
-                        user_script=flash_op.pyocd_config,
-                    )
-            else:
-                session = ConnectHelper.session_with_chosen_probe(
-                    target_override=PYOCD_TARGET,
-                    user_script=flash_op.pyocd_config,
-                    unique_id=self.adapter_id,
-                )
-            if session is None:
-                raise RuntimeError("Failed to connect to the debug probe")
+            session = pyocd_utils.get_session(
+                flash_op.pyocd_config, self.adapter_id, self.no_prompt
+            )
             session.open()
             target = session.board.target
             # Program the flash with the provided data
