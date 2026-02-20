@@ -1,7 +1,7 @@
 .. _ttzp_home:
 
-Welcome to TT System Firmware!
-===============================
+Welcome to TT-System-Firmware documentation!
+============================================
 
 .. toctree::
    :maxdepth: 1
@@ -14,6 +14,12 @@ Welcome to TT System Firmware!
    release/index.rst
    contribute/index.rst
    zephyr.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+
+   api.rst
 
 Indices and tables
 ==================
