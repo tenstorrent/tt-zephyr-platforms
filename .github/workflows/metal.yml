@@ -43,6 +43,7 @@ jobs:
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   metal-test:
+    name: metal-test (${{ matrix.config.board }})
     needs: [build-fw-artifact, gen-config]
     strategy:
       fail-fast: false
