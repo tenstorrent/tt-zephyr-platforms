@@ -74,6 +74,11 @@ bool bh_get_aiclk_busy(void)
 	return power_state[power_bit_flag_aiclk];
 }
 
+bool bh_get_mrisc_power_state(void)
+{
+	return power_state[power_bit_flag_mrisc];
+}
+
 static int32_t apply_power_settings(const struct power_setting_rqst *power_setting)
 {
 	int32_t ret = 0;
