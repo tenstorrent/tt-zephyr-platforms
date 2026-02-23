@@ -10,7 +10,7 @@ west
 # zephyr-keep-sorted-start
 pyluwen>=0.8.1
 tt-burnin>=0.3.0
-tt-flash>=3.4.7
+tt-flash@git+https://github.com/tenstorrent/tt-flash.git@73969bd2e2c5d843f4427c460e3a1eeff7fd1aa1
 tt-smi>=3.0.23, <4.0.0
 tt-tools-common>=1.4.31
 # zephyr-keep-sorted-stop
