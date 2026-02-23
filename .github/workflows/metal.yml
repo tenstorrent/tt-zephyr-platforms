@@ -60,7 +60,6 @@ jobs:
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
-      HF_MODEL: /opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/
     defaults:
       run:
         shell: bash
@@ -80,6 +79,16 @@ jobs:
         run: |
           sudo apt update || true
           sudo apt install -y ipmitool
+
+      - name: Set model env
+        shell: bash
+        run: |
+          if [[ "${{ matrix.config.board }}" == "p300a" ]]; then
+            echo "HF_MODEL=/opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/" >> $GITHUB_ENV
+          elif [[ "${{ matrix.config.board }}" == "galaxy" ]]; then
+            echo "HF_MODEL=/opt/tenstorrent/hf-models/meta-llama/Llama-3.3-70B-Instruct/" >> $GITHUB_ENV
+            echo "LLAMA_DIR=/opt/tenstorrent/hf-models/meta-llama/Llama-3.3-70B-Instruct/" >> $GITHUB_ENV
+          fi
 
       - id: mkdir-home-user-tt-metal
         run: |
