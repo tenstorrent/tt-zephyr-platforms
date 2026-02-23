@@ -12,6 +12,8 @@
 
 Welcome to TT-Zephyr-Platforms!
 
+## Overview
+
 This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com) AI ULC.
 
 ![Zephyr Shell on Blackhole](./doc/img/shell.gif)
@@ -19,6 +21,10 @@ This is the Zephyr firmware repository for [Tenstorrent](https://tenstorrent.com
 ## Getting Started
 
 To get started with the development environment, building and flashing to a board, please refer to our [Getting Started docs](https://docs.tenstorrent.com/tt-zephyr-platforms/develop/getting_started/index.html).
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](https://docs.tenstorrent.com/tt-zephyr-platforms/contribute/index.html) for details on how to get involved.
 
 ## Further Reading
 
