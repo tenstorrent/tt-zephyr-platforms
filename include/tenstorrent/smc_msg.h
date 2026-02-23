@@ -114,6 +114,8 @@ enum tt_smc_msg {
 	TT_SMC_MSG_ARC_DMA = 0xB4,
 	/** @brief Test SPI request (not supported) */
 	TT_SMC_MSG_TEST_SPI = 0xB5,
+	/** @brief @ref gddr_reset_rqst "Toggle GDDR reset request" */
+	TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6,
 	/** @brief Current date request (not supported) */
 	TT_SMC_MSG_CURR_DATE = 0xB7,
 	/** @brief Update M3 auto reset timeout request (not supported) */
