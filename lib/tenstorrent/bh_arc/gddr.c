@@ -12,7 +12,10 @@
 #include "noc2axi.h"
 #include "reg.h"
 
+#include <tenstorrent/bh_power.h>
+#include <tenstorrent/msgqueue.h>
 #include <tenstorrent/post_code.h>
+#include <tenstorrent/smc_msg.h>
 #include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
 #include <tenstorrent/tt_boot_fs.h>
@@ -108,10 +111,14 @@ int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_te
 {
 #ifdef CONFIG_DMA_ARC_HS
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
-	if (dma_arc_hs_transfer(arc_dma_dev, 0,
-				(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
-				gddr_telemetry, sizeof(*gddr_telemetry), K_MSEC(500)) < 0) {
-		/* If DMA failed, can read 32b at a time via NOC2AXI */
+	bool dma_ok = false;
+
+#ifdef CONFIG_DMA_ARC_HS
+	dma_ok = dma_arc_hs_transfer(arc_dma_dev, 0,
+				     (const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
+				     gddr_telemetry, sizeof(*gddr_telemetry), K_MSEC(500)) >= 0;
+#endif
+	if (!dma_ok) {
 		for (int i = 0; i < sizeof(*gddr_telemetry) / 4; i++) {
 			((uint32_t *)gddr_telemetry)[i] =
 				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
@@ -563,3 +570,95 @@ int32_t set_mrisc_power_setting(bool on)
 }
 
 SYS_INIT_APP(gddr_training);
+
+static void assert_mrisc_soft_reset(uint8_t gddr_inst)
+{
+	const uint32_t kSoftReset0Addr = 0xFFB121B0;
+	const uint32_t kAllRiscSoftReset = 0x47800;
+
+	for (uint8_t noc_node = 0; noc_node < NUM_MRISC_NOC2AXI_PORT; noc_node++) {
+		uint8_t x, y;
+
+		GetGddrNocCoords(gddr_inst, noc_node, 0, &x, &y);
+		NOC2AXITlbSetup(0, MRISC_SETUP_TLB, x, y, kSoftReset0Addr);
+		NOC2AXIWrite32(0, MRISC_SETUP_TLB, kSoftReset0Addr, kAllRiscSoftReset);
+	}
+}
+
+/**
+ * @brief Toggle GDDR MRISC reset, re-train, and re-run BIST
+ *
+ * Sequence:
+ *   1) Assert MRISC soft reset
+ *   2) Release MRISC reset
+ *   3) Wait for GDDR training completion
+ *   4) Re-run BIST
+ *   5) If PHY was powered down, issue PHY wakeup
+ */
+static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
+{
+	uint32_t gddr_inst = req->gddr_reset.gddr_inst;
+	bool was_phy_off = !bh_get_mrisc_power_state();
+	int rc;
+
+	if (gddr_inst >= NUM_GDDR) {
+		rsp->data[1] = GDDR_RESET_ERR_INVALID_INST;
+		return 1;
+	}
+
+	if (!IS_BIT_SET(tile_enable.gddr_enabled, gddr_inst)) {
+		rsp->data[1] = GDDR_RESET_ERR_HARVESTED;
+		return 1;
+	}
+
+	if (!IS_BIT_SET(GetDramMask(), gddr_inst)) {
+		rsp->data[1] = GDDR_RESET_ERR_MASKED;
+		return 1;
+	}
+
+	if (MriscRegRead32(gddr_inst, MRISC_INIT_STATUS) != MRISC_INIT_FINISHED) {
+		rsp->data[1] = GDDR_RESET_ERR_NOT_TRAINED;
+		return 1;
+	}
+
+	assert_mrisc_soft_reset(gddr_inst);
+
+	MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
+	ReleaseMriscReset(gddr_inst);
+
+	k_timepoint_t timeout = sys_timepoint_calc(K_MSEC(MRISC_INIT_TIMEOUT));
+
+	rc = CheckGddrTraining(gddr_inst, timeout);
+	if (rc < 0) {
+		rsp->data[1] = GDDR_RESET_ERR_TRAINING;
+		return 1;
+	}
+
+	rc = StartHwMemtest(gddr_inst, 26, 0, 0);
+	if (rc < 0) {
+		rsp->data[1] = GDDR_RESET_ERR_BIST;
+		return 1;
+	}
+
+	timeout = sys_timepoint_calc(K_MSEC(MRISC_MEMTEST_TIMEOUT));
+	rc = CheckHwMemtestResult(gddr_inst, timeout);
+	if (rc < 0) {
+		rsp->data[1] = GDDR_RESET_ERR_BIST;
+		return 1;
+	}
+
+	if (was_phy_off) {
+		rc = set_mrisc_power_setting(false);
+		if (rc < 0) {
+			rsp->data[1] = GDDR_RESET_ERR_POWERDOWN;
+			return 1;
+		}
+	}
+
+	rsp->data[1] = 0;
+	return 0;
+}
+
+#ifndef CONFIG_TT_SMC_RECOVERY
+REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_GDDR_RESET, toggle_gddr_reset);
+#endif
