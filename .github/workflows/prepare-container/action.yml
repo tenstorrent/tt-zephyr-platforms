@@ -68,6 +68,11 @@ runs:
         rmmod tenstorrent
         insmod /opt/tenstorrent/kmd-builds/2.5.0/tenstorrent.ko
 
+    - name: Install ipmitool
+      shell: bash
+      run: |
+        apt update && apt install -y ipmitool
+
     - name: Environment Setup
       shell: bash
       run: |
