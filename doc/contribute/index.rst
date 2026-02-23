@@ -21,6 +21,11 @@ With the tt-zephyr-platforms repo, we are aiming to follow a similar development
 
 Furthermore, having a defined set of contribution guidelines for internal developers will allow us to accept external contributions to firmware, if this is something we choose to allow in the future.
 
+Issues
+======
+
+If you encounter a bug, have a feature request, or want to discuss an idea, please create an issue using the GitHub Issues feature on our repository. This helps us track and prioritize work efficiently.
+
 PR Guidelines
 =============
 
