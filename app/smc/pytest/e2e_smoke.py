@@ -94,6 +94,7 @@ TT_SMC_MSG_SET_WDT = 0xC1
 TT_SMC_MSG_READ_TS = 0x1B
 TT_SMC_MSG_READ_PD = 0x1C
 TT_SMC_MSG_READ_VM = 0x1D
+TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 
 # Telemetry tags
 TAG_CM_FW_VERSION = 29
@@ -955,3 +956,34 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
     The expectation is that the SMC response to these messages is 0.
     """
     assert 0 == pvt_comprehensive_test(arc_chip_dut, asic_id), "test_pvt_msgs failed"
+
+
+def test_gddr_reset(arc_chip_dut, asic_id):
+    """
+    Validates the GDDR reset message by toggling MRISC reset on each
+    GDDR controller, verifying that BIST passes.
+    """
+
+    NUM_GDDR = 8
+    GDDR_RESET_ERR_HARVESTED = 2
+
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    fail_count = 0
+    for gddr_inst in range(NUM_GDDR):
+        logger.info(f"Testing GDDR {gddr_inst} reset")
+
+        response = arc_chip.as_bh().arc_msg_buf(
+            [TT_SMC_MSG_TOGGLE_GDDR_RESET, gddr_inst, 0, 0, 0, 0, 0, 0]
+        )
+
+        status = response[0]
+        detail = response[1]
+
+        if status != 0 and detail != GDDR_RESET_ERR_HARVESTED:
+            logger.error(f"GDDR {gddr_inst} reset failed with {detail}")
+            fail_count += 1
+        else:
+            logger.info(f"GDDR {gddr_inst} reset passed")
+
+    assert fail_count == 0, f"{fail_count} non-harvested GDDR instances failed reset"
