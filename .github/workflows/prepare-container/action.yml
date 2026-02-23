@@ -65,6 +65,11 @@ runs:
         rmmod tenstorrent
         insmod /opt/tenstorrent/kmd-builds/${{ matrix.config.kmd_build }}/tenstorrent.ko
 
+    - name: Install ipmitool
+      shell: bash
+      run: |
+        apt update && apt install -y ipmitool
+
     - name: Environment Setup
       shell: bash
       run: |
