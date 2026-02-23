@@ -331,6 +331,33 @@ struct test_rqst {
 	uint32_t test_value;
 };
 
+/** @brief Host request to toggle GDDR reset
+ * @details Messages of this type are processed by @ref toggle_gddr_reset.
+ *
+ * On failure response data[1] contains one of the @ref GDDR_RESET_ERR values.
+ */
+struct gddr_reset_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_TOGGLE_GDDR_RESET */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief GDDR controller instance (0-7) */
+	uint32_t gddr_inst;
+};
+
+/** @brief Error codes returned in response data[1] for TT_SMC_MSG_TOGGLE_GDDR_RESET */
+enum gddr_reset_err {
+	GDDR_RESET_ERR_INVALID_INST = 1,
+	GDDR_RESET_ERR_HARVESTED = 2,
+	GDDR_RESET_ERR_MASKED = 3,
+	GDDR_RESET_ERR_NOT_TRAINED = 4,
+	GDDR_RESET_ERR_TRAINING = 5,
+	GDDR_RESET_ERR_BIST = 6,
+	GDDR_RESET_ERR_POWERDOWN = 7,
+};
+
 /** @brief Host request to change ASIC state
  * @details Messages of this type are processed by @ref asic_state_handler.
  */
@@ -400,6 +427,9 @@ union request {
 
 	/** @brief An ASIC state transition request */
 	struct asic_state_rqst asic_state;
+
+	/** @brief A GDDR reset request */
+	struct gddr_reset_rqst gddr_reset;
 };
 
 /** @} */
