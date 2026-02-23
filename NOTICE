@@ -16,3 +16,43 @@ limitations under the License.
 ================================================================================
 
 Third-Party Dependencies:
+
+- librpmi
+  Ventana Micro Systems Inc.
+  Licensed under BSD-2-Clause
+  https://github.com/tenstorrent-forks/librpmi
+
+- Zephyr RTOS
+  Intel Corporation and others
+  Licensed under Apache-2.0
+  https://github.com/tenstorrent/zephyr-fork
+
+- CMSIS 6
+  ARM Limited
+  Licensed under Apache-2.0
+  https://github.com/ARM-software/CMSIS_6
+
+- STM32 HAL
+  STMicroelectronics
+  Licensed under BSD-3-Clause, Apache-2.0, MIT, ST SLA0044
+  https://github.com/STMicroelectronics/STM32CubeF4
+
+- Mbed TLS
+  ARM Limited
+  Licensed under Apache-2.0 OR GPL-2.0-or-later
+  https://github.com/Mbed-TLS/mbedtls
+
+- MCUboot
+  Linaro Limited and others
+  Licensed under Apache-2.0
+  https://github.com/mcu-tools/mcuboot
+
+- nanopb
+  Petteri Aimonen
+  Licensed under zlib License
+  https://github.com/nanopb/nanopb
+
+- SEGGER RTT and SystemView
+  SEGGER Microcontroller GmbH / Zephyr Project
+  Licensed under SEGGER license (allows redistribution)
+  https://github.com/zephyrproject-rtos/segger
