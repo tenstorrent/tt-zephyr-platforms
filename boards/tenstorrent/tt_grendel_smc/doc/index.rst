@@ -46,8 +46,8 @@ Running Within Mimir Emulation Environment
 ==========================================
 
 To execute within the Mimir emulation environment, first follow the
-instructions to setup the environment as described here:
-https://yyz-gitlab.local.tenstorrent.com/tensix/soc/mimir_soc/-/tree/main/emu?ref_type=heads
+instructions to setup the environment. These instructions are currently accessible to
+internal developers only.
 
 Next, upload the build emulation binary stored in ``<build-dir>/zephyr/zephyr.bin``
 to the emulation system, using SCP or a similar tool.
@@ -102,7 +102,7 @@ Then, you can clone and setup SMC simulation environment repository:
     mkdir -p /proj_soc/user_dev/$USER/
     cd /proj_soc/user_dev/$USER/
 
-    git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+    git clone <tt_smc.git>
     cd tt_smc
     source /tools_soc/tt/bin/bashrc
     source bin/setup_env.sh
