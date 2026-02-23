@@ -34,7 +34,8 @@ jobs:
         shell: bash
         run: |
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
-          MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
+          # Exclude galaxy board from smoke tests since we do not have a recovery solution for it
+          MATRIX_CONFIG="$(jq -c '[.[] | select((.product == "bh") and (.board != "galaxy")) | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
