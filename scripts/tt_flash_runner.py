@@ -64,6 +64,8 @@ class TTFlashRunner(ZephyrBinaryRunner):
             if len(chips) == 0:
                 # This will be caught in the same except block
                 raise RuntimeError("No chips detected")
+            # Delete chips object before flashing, to avoid holding open FD across reset
+            del chips
         except Exception as e:
             self.logger.warning(f"Failed to detect chips, rescanning PCIe bus: {e}")
             rescan_pcie()
