@@ -3,7 +3,7 @@
 
 # See https://docs.zephyrproject.org/latest/develop/modules.html
 
-name: tt-zephyr-platforms
+name: tt-system-firmware
 build:
   cmake: .
   kconfig: Kconfig
@@ -39,7 +39,7 @@ blobs:
     type: img
     version: '1.8.1'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc.bin"
     description: "Ethernet FW"
     doc-url: https://tenstorrent.com
@@ -48,7 +48,7 @@ blobs:
     type: img
     version: '1.8.1'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_erisc_params.bin"
     description: "Ethernet FW parameters"
     doc-url: https://tenstorrent.com
@@ -57,7 +57,7 @@ blobs:
     type: lib
     version: '0.2'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_libpciesd.a"
     description: "PCIe SerDes FW and parameters"
     doc-url: https://tenstorrent.com
@@ -66,7 +66,7 @@ blobs:
     type: img
     version: '0.9.16'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fwreg.bin"
     description: "Ethernet SerDes parameters"
     doc-url: https://tenstorrent.com
@@ -75,7 +75,7 @@ blobs:
     type: img
     version: '0.9.16'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_serdes_eth_fw.bin"
     description: "Ethernet SerDes firmware"
     doc-url: https://tenstorrent.com
@@ -84,7 +84,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
     description: "Memory Controller FW"
     doc-url: https://tenstorrent.com
@@ -93,7 +93,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_ORION.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -102,7 +102,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -111,7 +111,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -120,7 +120,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -129,7 +129,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -138,7 +138,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -147,7 +147,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150C.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -156,7 +156,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -165,7 +165,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -174,7 +174,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300C.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -183,7 +183,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_GALAXY.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -192,7 +192,7 @@ blobs:
     type: img
     version: '2.13'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_GALAXY_REVC.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
@@ -201,7 +201,7 @@ blobs:
     type: img
     version: '0.1'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_nano_bootcode.bin"
     description: "Modified bootrom to boot Blackhole"
     doc-url: https://tenstorrent.com
@@ -210,7 +210,7 @@ blobs:
     type: img
     version: '19.6.0-rc1'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/fw_pack-wormhole.tar.gz"
     description: "Wormhole FW"
     doc-url: https://tenstorrent.com
@@ -219,7 +219,7 @@ blobs:
     type: img
     version: '80.18.0.0'
     license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
           raw/refs/heads/main/zephyr/blobs/fw_pack-grayskull.tar.gz"
     description: "Grayskull FW"
     doc-url: https://tenstorrent.com

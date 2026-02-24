@@ -48,14 +48,14 @@ jobs:
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v5
         with:
-          args: spdx -o tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
+          args: spdx -o tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
 
       - name: Upload SPDX
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
-          name: tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
-          path: tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
+          name: tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
+          path: tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
 
       - name: Upload Release Notes
         if: ${{ steps.set_vars.outputs.RELEASE_NOTES }}
@@ -75,10 +75,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
       - shell: bash
         run: |
           SIGNATURE_KEY_FILE="$(mktemp)"
@@ -90,7 +90,7 @@ jobs:
       - name: Build Recovery Bundle
         shell: bash
         run: |
-          python3 tt-zephyr-platforms/scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py \
+          python3 tt-system-firmware/scripts/tooling/blackhole_recovery/prepare-recovery-bundle.py \
             --board ${{ matrix.board }} \
             --signing-key "$SIGNATURE_KEY_FILE" \
             fw-pack-${{ github.ref_name }}-${{ matrix.board }}-recovery.tar.gz
@@ -179,7 +179,7 @@ jobs:
       - name: Download SPDX
         uses: actions/download-artifact@v4
         with:
-          name: tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
+          name: tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
 
       - name: Download Debian Package
         uses: actions/download-artifact@v4
@@ -206,7 +206,7 @@ jobs:
           done
           tar zcf fw-pack-${{ github.ref_name }}-recovery.tar.gz -C firmware-recovery-${{ github.ref_name }} .
 
-          zip -r -9 tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]}
+          zip -r -9 tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -221,5 +221,5 @@ jobs:
             fw-pack-${{ github.ref_name }}-recovery.tar.gz
             *.fwbundle
             *.deb
-            tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.zip
-            tt-zephyr-platforms-${{ steps.set_vars.outputs.VERSION }}.spdx
+            tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.zip
+            tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx

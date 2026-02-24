@@ -1,6 +1,6 @@
 .. _ttzp_home:
 
-Welcome to TT Zephyr Platforms!
+Welcome to TT System Firmware!
 ===============================
 
 .. toctree::
@@ -22,6 +22,6 @@ Indices and tables
 * :ref:`search`
 
 .. _Apache 2.0 license:
-   https://github.com/tenstorrent/tt-zephyr-platforms/blob/main/LICENSE
+   https://github.com/tenstorrent/tt-system-firmware/blob/main/LICENSE
 
-.. _GitHub repo: https://github.com/tenstorrent/tt-zephyr-platforms
+.. _GitHub repo: https://github.com/tenstorrent/tt-system-firmware

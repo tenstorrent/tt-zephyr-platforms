@@ -85,7 +85,7 @@ jobs:
           path: ${{ env.HOME }}
       - name: Run the rescan-pcie.sh script
         run: |
-          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/${{ github.sha }}/scripts/rescan-pcie.sh
+          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-system-firmware/${{ github.sha }}/scripts/rescan-pcie.sh
           source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |

@@ -48,7 +48,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Download Past CI runs
         uses: actions/github-script@v8
@@ -155,7 +155,7 @@ jobs:
 
       - name: Generate HTML Report
         run: |
-          python3 tt-zephyr-platforms/scripts/ci/render_ci_table.py . ci_stats.html ${{ matrix.board }}
+          python3 tt-system-firmware/scripts/ci/render_ci_table.py . ci_stats.html ${{ matrix.board }}
 
       - name: Upload CSV Results
         uses: actions/upload-artifact@v4
@@ -172,10 +172,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Install dependencies
-        working-directory: tt-zephyr-platforms
+        working-directory: tt-system-firmware
         run: |
           wget --no-verbose "https://github.com/doxygen/doxygen/releases/download/Release_${DOXYGEN_VERSION//./_}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
           tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
@@ -185,11 +185,11 @@ jobs:
       - name: Clone Zephyr
         run: |
           pip install west
-          west init -l tt-zephyr-platforms
+          west init -l tt-system-firmware
           west update
 
       - name: Build
-        working-directory: tt-zephyr-platforms
+        working-directory: tt-system-firmware
         run: |
           # Install any additional packages needed for doc build
           sudo apt-get install -y graphviz
@@ -235,7 +235,7 @@ jobs:
 
           for board in ${CI_BOARD_REVS[@]}; do
             cp "ci-results/test-result-summaries ${board}/ci_stats.html" \
-              tt-zephyr-platforms/doc/deploy/${board}_ci_stats.html
+              tt-system-firmware/doc/deploy/${board}_ci_stats.html
           done
 
       - name: Setup pages
@@ -246,13 +246,13 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: tt-zephyr-platforms/doc/deploy
+          path: tt-system-firmware/doc/deploy
 
       - name: Upload artifacts
         if: github.event_name != 'push'
         uses: actions/upload-artifact@v4
         with:
-          path: tt-zephyr-platforms/doc/deploy
+          path: tt-system-firmware/doc/deploy
 
   deploy:
     runs-on: ubuntu-22.04

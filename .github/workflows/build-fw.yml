@@ -52,10 +52,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       # Fetch tags from repositories in manifest. Needed so that
       # git describe functions correctly when creating a build.
@@ -67,7 +67,7 @@ jobs:
           west forall -c 'git fetch --unshallow || true'
 
       - name: Generate BOARD
-        working-directory: tt-zephyr-platforms
+        working-directory: tt-system-firmware
         shell: bash
         run: |
           BOARD="$(./scripts/rev2board.sh "${{ matrix.board }}")"
@@ -101,7 +101,7 @@ jobs:
             --sysbuild \
             -p \
             -b $BOARD \
-            tt-zephyr-platforms/app/smc \
+            tt-system-firmware/app/smc \
             $EXTRA_ARGS
 
       - name: Verify firmware signature
@@ -141,10 +141,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       - shell: bash
         run: |
@@ -171,7 +171,7 @@ jobs:
             -d build-recovery \
             -p \
             -b tt_blackhole@p100a/tt_blackhole/smc \
-            tt-zephyr-platforms/app/smc \
+            tt-system-firmware/app/smc \
             $EXTRA_ARGS
 
       - name: Verify recovery signature
@@ -212,10 +212,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       - name: Generate BOARD
         # FIXME: use board revisions from boards.json and filter those that support assembly tests
@@ -260,7 +260,7 @@ jobs:
             -S rtt-console \
             -p \
             -b $BOARD \
-            tt-zephyr-platforms/app/dmc \
+            tt-system-firmware/app/dmc \
             $EXTRA_ARGS
 
       - name: Verify firmware signature
@@ -328,15 +328,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       - name: Build preflash firmware
         shell: bash
         run: |
-          ./tt-zephyr-platforms/scripts/build-preflash.sh
+          ./tt-system-firmware/scripts/build-preflash.sh
 
       - name: Upload preflash
         uses: actions/upload-artifact@v4
@@ -353,20 +353,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Download firmware artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: firmware-*
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Build Combined Firmware Bundle
         shell: bash
         run: |
           pip install pykwalify intelhex imgtool
-          BUNDLE_TEMP_PREFIX="$PWD/tt-zephyr-platforms/firmware-" \
-            ./tt-zephyr-platforms/scripts/build-combined-fwbundle.sh
+          BUNDLE_TEMP_PREFIX="$PWD/tt-system-firmware/firmware-" \
+            ./tt-system-firmware/scripts/build-combined-fwbundle.sh
 
       - name: Upload Combined Firmware Bundle Assets
         uses: actions/upload-artifact@v4
@@ -384,12 +384,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
       - name: Build Flash Loader Module
-        working-directory: ./tt-zephyr-platforms/scripts/tooling/blackhole_recovery/data/bh_flm
+        working-directory: ./tt-system-firmware/scripts/tooling/blackhole_recovery/data/bh_flm
         shell: bash
         run: |
           ./build-flm.sh
@@ -457,18 +457,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
-      - uses: ./tt-zephyr-platforms/.github/workflows/prepare-zephyr
+          path: tt-system-firmware
+      - uses: ./tt-system-firmware/.github/workflows/prepare-zephyr
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
       - name: Grendel Build Test
         shell: bash
         run: |
           ./zephyr/scripts/twister -p tt_grendel_smc --tag smoke \
-            --alt-config-root tt-zephyr-platforms/test-conf/samples \
-            --alt-config-root tt-zephyr-platforms/test-conf/tests \
+            --alt-config-root tt-system-firmware/test-conf/samples \
+            --alt-config-root tt-system-firmware/test-conf/tests \
             -T zephyr/tests -T zephyr/samples \
-            -T tt-zephyr-platforms/samples -T tt-zephyr-platforms/tests
+            -T tt-system-firmware/samples -T tt-system-firmware/tests
 
       - name: Upload Grendel Build Test Artifacts
         uses: actions/upload-artifact@v4

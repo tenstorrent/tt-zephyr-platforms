@@ -5,9 +5,9 @@
 # Usage:
 #   1) Look under "Settings/Actions/Runners/New self-hosted runner" on your
 #      fork to find your runner's token under the "Configure" step for Linux.
-#        ./config.sh --url https://github.com/<username>/tt-zephyr-platforms --token <token>
+#        ./config.sh --url https://github.com/<username>/tt-system-firmware --token <token>
 #   2) Run it with the ansible-playbook command,
-#        tt-zephyr-platforms$ ansible-playbook scripts/ci-local-setup.yml \
+#        tt-system-firmware$ ansible-playbook scripts/ci-local-setup.yml \
 #          --extra-vars "github_runner_token=<token> tt_zephyr_platforms=<fork url>"
 #   3) Now under "Settings/Actions/Runners/New self-hosted runner" you should
 #      see your runner in the idle state. When you make a PR or merge to main,
@@ -259,7 +259,7 @@
     #   ansible.builtin.shell:
     #     cd tenstorrent &&
     #     . .venv/bin/activate &&
-    #     west init -m https://github.com/tenstorrent/tt-zephyr-platforms .
+    #     west init -m https://github.com/tenstorrent/tt-system-firmware .
 
     # - name: Set git compression to 0 to prevent fetch failures
     #   ansible.builtin.shell: |
@@ -277,7 +277,7 @@
     #   ansible.builtin.shell: |
     #     cd tenstorrent &&
     #     . .venv/bin/activate &&
-    #     west blobs fetch tt-zephyr-platforms
+    #     west blobs fetch tt-system-firmware
 
     # - name: Apply west patches
     #   ansible.builtin.shell: |
