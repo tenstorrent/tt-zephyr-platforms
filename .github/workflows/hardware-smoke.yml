@@ -11,6 +11,7 @@ on:
       - opened
       - reopened
       - synchronize
+      - labeled
     branches:
       - main
       - v*-branch
@@ -27,24 +28,30 @@ jobs:
   gen-config:
     runs-on: ubuntu-24.04
     outputs:
-      matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
+      matrix-config-bh: ${{ steps.gen-config.outputs.matrix-config-bh }}
+      matrix-config-wh: ${{ steps.gen-config.outputs.matrix-config-wh }}
     steps:
       - uses: actions/checkout@v4
       - id: gen-config
         shell: bash
         run: |
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
-          MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
-          echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
+          MATRIX_CONFIG_BH="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
+          echo "matrix-config-bh=$MATRIX_CONFIG_BH" | tee -a $GITHUB_OUTPUT
+
+          # Filter to only Wormhole boards (product == "wh"), then remove the product field
+          MATRIX_CONFIG_WH="$(jq -c '[.[] | select(.product == "wh") | del(.product)]' .github/ci_boards.json)"
+          echo "matrix-config-wh=$MATRIX_CONFIG_WH" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
+    if: github.event_name != 'schedule'
     needs: [gen-config]
     env:
       ASIC_ID: 0
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config-bh) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -129,11 +136,12 @@ jobs:
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-test:
+    if: github.event_name != 'schedule'
     needs: [gen-config]
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config-bh) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
       image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
@@ -211,3 +219,52 @@ jobs:
           python3 ./scripts/smc_console.py --rtt -n
           echo "SMC state dump:"
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
+
+  smoke-e2e-wh-test:
+    needs: [gen-config]
+    if: github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'wh-tests')
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.gen-config.outputs.matrix-config-wh) }}
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Cleanup State
+        if: ${{ always() }}
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Prepare Container
+        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+        with:
+          app-path: tt-zephyr-platforms
+
+      - name: Run WH E2E Tests
+        working-directory: tt-zephyr-platforms
+        run: |
+          pytest -s -v --tb=short --junit-xml=wh_e2e_results.xml app/wh/pytest/e2e_smoke.py
+
+      - name: Upload WH E2E Test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: WH E2E test results (${{ matrix.config.board }})
+          include-hidden-files: true
+          path: |
+            tt-zephyr-platforms/wh_e2e_results.xml
+            tt-zephyr-platforms/**/*.log
+            tt-zephyr-platforms/**/pytest_cache/
