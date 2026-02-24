@@ -6,7 +6,7 @@ on:
 
 jobs:
   cleanup-branches:
-    if: github.repository == 'tenstorrent/tt-zephyr-platforms'
+    if: github.repository == 'tenstorrent/tt-system-firmware'
     runs-on: ubuntu-22.04
     permissions:
       contents: write

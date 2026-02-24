@@ -150,7 +150,7 @@ Troubleshooting
 If you see a log like the following when running ``tt-tracing``, it indicates
 that tracing data is being output faster than it can be collected. Try disabling
 specific portions of the tracing subsystem (``CONFIG_TRACING_*`` options) in
-``tt-zephyr-platforms/app/smc/tracing.conf`` to reduce the volume of trace data being generated.
+``tt-system-firmware/app/smc/tracing.conf`` to reduce the volume of trace data being generated.
 
 .. code-block:: console
 

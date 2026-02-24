@@ -11,7 +11,7 @@ if(CONFIG_BH_FWTABLE)
 include(${ZEPHYR_BASE}/modules/nanopb/nanopb.cmake)
 zephyr_include_directories(
     ${NANOPB_INCLUDE_DIRS}
-    ${CMAKE_BINARY_DIR}/modules/tt-zephyr-platforms/drivers/misc/bh_fwtable/spirom_protobufs
+    ${CMAKE_BINARY_DIR}/modules/tt-system-firmware/drivers/misc/bh_fwtable/spirom_protobufs
 )
 zephyr_library_link_libraries(nanopb)
 
