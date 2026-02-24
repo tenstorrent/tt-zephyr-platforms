@@ -11,13 +11,6 @@ config TT_BOOT_BANNER
 
 if TT_BOOT_BANNER
 
-config TT_BOOT_BANNER_GIT_VERSION
-	bool "Print the git revision when displaying the boot banner"
-	help
-	  Print the git revision when displaying the boot banner.
-
-	  See ZEPHYR_BASE/cmake/modules/git.cmake for more information.
-
 config TT_BOOT_BANNER_SDK_VERSION
 	bool "Print the sdk revision when displaying the boot banner"
 	help
