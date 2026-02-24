@@ -1,7 +1,7 @@
 .. _contribute:
 
 =====================================
-Contributing to TT Zephyr Platforms
+Contributing to TT System Firmware
 =====================================
 
 .. contents::
@@ -17,7 +17,7 @@ Contributing to TT Zephyr Platforms
 Rationale
 =========
 
-With the tt-zephyr-platforms repo, we are aiming to follow a similar development flow to the process upstream Zephyr uses for submitting changes. Zephyr's requirements on the content of PRs and commits makes code review easier, and simplifies tracing changes in the codebase.
+With the tt-system-firmware repo, we are aiming to follow a similar development flow to the process upstream Zephyr uses for submitting changes. Zephyr's requirements on the content of PRs and commits makes code review easier, and simplifies tracing changes in the codebase.
 
 Furthermore, having a defined set of contribution guidelines for internal developers will allow us to accept external contributions to firmware, if this is something we choose to allow in the future.
 

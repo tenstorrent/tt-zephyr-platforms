@@ -1,9 +1,9 @@
 Telemetry
 =========
 
-In Chip Management Firmware, telemetry gathering and reporting is done in the file `telemetry.c </tt-zephyr-platforms/doxygen/telemetry_8c.html>`_. This telemetry is located within the ``tensix_sm`` (ARC) memory space (i.e., within ``NOC0 8-0``):
+In Chip Management Firmware, telemetry gathering and reporting is done in the file `telemetry.c </tt-system-firmware/doxygen/telemetry_8c.html>`_. This telemetry is located within the ``tensix_sm`` (ARC) memory space (i.e., within ``NOC0 8-0``):
 
-See `telemetry table </tt-zephyr-platforms/doxygen/group__telemetry__table.html>`_ for information.
+See `telemetry table </tt-system-firmware/doxygen/group__telemetry__table.html>`_ for information.
 
 Scratch Registers
 -----------------
@@ -73,4 +73,4 @@ Tag IDs
 
 Tag IDs are permanent in the sense that they’ll never change meaning, but may not be present.
 
-See `telemetry group </tt-zephyr-platforms/doxygen//group__telemetry__tags.html>`_ for more details.
+See `telemetry group </tt-system-firmware/doxygen//group__telemetry__tags.html>`_ for more details.

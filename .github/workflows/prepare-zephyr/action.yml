@@ -82,5 +82,5 @@ runs:
     - name: Verify binary blobs
       shell: bash
       run: |
-        # verify blobs (for tt-zephyr-platforms only - we do not depend on other blobs)
-        west blobs fetch tt-zephyr-platforms
+        # verify blobs (for tt-system-firmware only - we do not depend on other blobs)
+        west blobs fetch tt-system-firmware

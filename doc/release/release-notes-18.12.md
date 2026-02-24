@@ -1,6 +1,6 @@
 # v18.12.0
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 18.12.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 18.12.0 🥳🎉.
 
 This release brings significant enhancements to power management, SMBus communication robustness, and developer tooling, along with improved stability across the platform.
 
@@ -115,4 +115,4 @@ For detailed migration instructions from v18.11.0, including required code chang
 ## Full Changelog
 
 Complete changelog from v18.11.0 is available at:
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.11.0...v18.12.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v18.11.0...v18.12.0

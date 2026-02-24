@@ -1,6 +1,6 @@
 # v19.2.0
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 19.2.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 19.2.0 🥳🎉.
 
 Major enhancements with this release include upgrading to Zephyr 4.3.0, delivering configurable PCIe BAR support via the new `CntlInitV2()` flow, and introducing a standalone `tt_fwbundle` tooling suite.
 
@@ -41,10 +41,10 @@ the fwbundle subcommand in `tt_boot_fs`. Remove this subcommand and update usage
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v19.1.0 release can be found in [v19.2 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.2.md).
+An overview of required and recommended changes to make when migrating from the previous v19.1.0 release can be found in [v19.2 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-19.2.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous v19.1.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v19.1.0...v19.2.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v19.1.0...v19.2.0

@@ -1,12 +1,12 @@
 # v18.6.0
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 18.6.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 18.6.0 🥳🎉.
 
 Major enhancements with this release include:
 
 ## Zephyr-4.2.0-rc1
 
-This release of `tt-zephyr-platforms` migrates our application to run on v4.2.0-rc1 of the Zephyr
+This release of `tt-system-firmware` migrates our application to run on v4.2.0-rc1 of the Zephyr
 Real-time Operating System. While the final v4.2.0 release of Zephyr is not yet available, we are
 committed to ensuring that our platform will run on it when it is available.
 
@@ -91,10 +91,10 @@ More information about the Zephyr Release Process is available
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v18.5.0 release can be found in [v18.6.0 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-18.6.md).
+An overview of required and recommended changes to make when migrating from the previous v18.5.0 release can be found in [v18.6.0 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-18.6.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous v18.5.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.5.0...v18.6.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v18.5.0...v18.6.0

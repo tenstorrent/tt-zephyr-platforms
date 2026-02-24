@@ -1,6 +1,6 @@
 # v18.11.0
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 18.11.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 18.11.0 🥳🎉.
 
 Major enhancements with this release include:
 
@@ -40,7 +40,7 @@ Major enhancements with this release include:
 
 ### Debug / Developer Features
 
-* `tt-zephyr-platforms`documentation is now available online at https://docs.tenstorrent.com/tt-zephyr-platforms 🙌🪁
+* `tt-system-firmware`documentation is now available online at https://docs.tenstorrent.com/tt-system-firmware 🙌🪁
   * doc: getting_started: move contents from README.md to getting started guide, and publish to HTML
   * doc: develop: add documentation for tracing
 * ci: build-native: publish tt-console and tt-tracing artifacts
@@ -89,10 +89,10 @@ Major enhancements with this release include:
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v18.10.0 release can be found in [v18.11 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-18.11.md).
+An overview of required and recommended changes to make when migrating from the previous v18.10.0 release can be found in [v18.11 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-18.11.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous v18.10.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v18.10.0...v18.11.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v18.10.0...v18.11.0

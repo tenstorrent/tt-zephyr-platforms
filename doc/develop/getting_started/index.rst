@@ -19,10 +19,10 @@ for your operating system.
 Setting Up Your Development Environment
 ---------------------------------------
 
-Follow these steps to set up your TT Zephyr Platforms development environment:
+Follow these steps to set up your TT System Firmware development environment:
 
 .. important::
-   TT Zephyr Platforms requires **Python 3.12**. Although upstream Zephyr documentation references Python 3.10, ensure you install and use Python 3.12 before creating your virtual environment.
+   TT System Firmware requires **Python 3.12**. Although upstream Zephyr documentation references Python 3.10, ensure you install and use Python 3.12 before creating your virtual environment.
 
 On Ubuntu, you can install Python 3.12 and its tooling with:
 
@@ -37,17 +37,17 @@ Verify that ``python3.12`` is available on your ``PATH`` before continuing.
 .. code-block:: shell
 
    # Step 1: Create and activate a Python 3.12 virtual environment
-   python3.12 -m venv ~/tt-zephyr-platforms-work/.venv
-   source ~/tt-zephyr-platforms-work/.venv/bin/activate
+   python3.12 -m venv ~/tt-system-firmware-work/.venv
+   source ~/tt-system-firmware-work/.venv/bin/activate
 
    # Step 2: Install West (Zephyr's meta-tool)
    pip install west
 
-   # Step 3: Initialize the workspace with TT Zephyr Platforms
-   west init -m https://github.com/tenstorrent/tt-zephyr-platforms ~/tt-zephyr-platforms-work
+   # Step 3: Initialize the workspace with TT System Firmware
+   west init -m https://github.com/tenstorrent/tt-system-firmware ~/tt-system-firmware-work
 
    # Step 4: Navigate to the workspace directory
-   cd ~/tt-zephyr-platforms-work
+   cd ~/tt-system-firmware-work
 
    # Step 5: Download all required Zephyr modules
    west update
@@ -59,7 +59,7 @@ Verify that ``python3.12`` is available on your ``PATH`` before continuing.
    west sdk install
 
    # Step 8: Download binary blobs (firmware components)
-   west blobs fetch tt-zephyr-platforms
+   west blobs fetch tt-system-firmware
 
 .. note::
    The setup process may take several minutes to complete, especially when downloading the Zephyr SDK and modules.
@@ -253,7 +253,7 @@ If you plan to contribute code to the project, we recommend setting up git hooks
 .. code-block:: shell
 
    # Run this script from your workspace directory
-   tt-zephyr-platforms/scripts/add-git-hooks.sh
+   tt-system-firmware/scripts/add-git-hooks.sh
 
 .. note::
    These hooks will automatically run before commits and pushes to ensure your code meets project standards.

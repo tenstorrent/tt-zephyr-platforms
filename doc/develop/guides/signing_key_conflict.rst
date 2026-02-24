@@ -43,7 +43,7 @@ Base recovery command:
        #. Flash any desired development firmware.
    * - **Option 2: Downgrade**
      - Use a non-secure firmware version to clear the lock. (Easy)
-     - #. Flash a pre-v19.0.0 recovery image (e.g., `v18.12.1 <https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.1/fw-pack-v18.12.1-recovery.tar.gz>`_).
+     - #. Flash a pre-v19.0.0 recovery image (e.g., `v18.12.1 <https://github.com/tenstorrent/tt-system-firmware/releases/download/v18.12.1/fw-pack-v18.12.1-recovery.tar.gz>`_).
        #. The lock is removed; flash any subsequent firmware.
    * - **Option 3: Use Local Image**
      - Avoid installing the production MCUBoot entirely. (Recommended)

@@ -2,7 +2,7 @@
 name: Compliance Checks
 
 env:
-  checkout_path: tt-zephyr-platforms
+  checkout_path: tt-system-firmware
   compliance_excludes: "-e BinaryFiles -e KconfigBasicNoModules -e SysbuildKconfigBasic -e LicenseAndCopyrightCheck"
   ZEPHYR_BASE: ${{ github.workspace }}/zephyr
   manifest_group_filter: "+ci,+optional"

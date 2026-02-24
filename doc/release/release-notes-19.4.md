@@ -1,6 +1,6 @@
 # v19.4.0
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 19.4.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 19.4.0 🥳🎉.
 
 Major enhancements with this release include:
 
@@ -69,10 +69,10 @@ Major enhancements with this release include:
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v19.3.0 release can be found in [v19.4 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.4.md).
+An overview of required and recommended changes to make when migrating from the previous v19.3.0 release can be found in [v19.4 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-19.4.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous v19.3.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v19.3.0...v19.4.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v19.3.0...v19.4.0

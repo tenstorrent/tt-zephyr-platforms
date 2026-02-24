@@ -1,7 +1,7 @@
 # v19.1.0
 
 
-We are pleased to announce the release of TT Zephyr Platforms firmware version 19.1.0 🥳🎉.
+We are pleased to announce the release of TT System Firmware firmware version 19.1.0 🥳🎉.
 
 Major enhancements with this release include new DMA drivers and enhanced SMBus communication stability.
 
@@ -39,10 +39,10 @@ Major enhancements with this release include new DMA drivers and enhanced SMBus 
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous v19.0.0 release can be found in [v19.1 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.1.md).
+An overview of required and recommended changes to make when migrating from the previous v19.0.0 release can be found in [v19.1 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-19.1.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous v19.0.0 release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/v19.0.0...v19.1.0
+https://github.com/tenstorrent/tt-system-firmware/compare/v19.0.0...v19.1.0

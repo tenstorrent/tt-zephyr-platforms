@@ -50,7 +50,7 @@ jobs:
         config: ${{ fromJson(needs.gen-config.outputs.matrix-config) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      image: ghcr.io/tenstorrent/tt-system-firmware/ci-image:v18.12.0-rc1
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
@@ -67,16 +67,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Prepare Container
-        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       - name: run-e2e-stress-test
         run: |
-          tt-zephyr-platforms/scripts/ci/run-stress.sh ${{ matrix.config.board }}
+          tt-system-firmware/scripts/ci/run-stress.sh ${{ matrix.config.board }}
 
       - name: Upload Stress Test results
         if: ${{ always() }}
@@ -100,7 +100,7 @@ jobs:
 
       - name: Print RTT logs
         if: ${{ failure() }}
-        working-directory: tt-zephyr-platforms
+        working-directory: tt-system-firmware
         run: |
           echo "DMC RTT logs:"
           python3 ./scripts/dmc_rtt.py -n

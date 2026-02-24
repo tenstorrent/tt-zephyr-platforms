@@ -29,7 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
           fetch-depth: 0
 
       - name: Set up Python
@@ -41,6 +41,6 @@ jobs:
         run: pip install pyyaml
 
       - name: Verify blob
-        working-directory: tt-zephyr-platforms
+        working-directory: tt-system-firmware
         run: |
           python scripts/verify_blob.py

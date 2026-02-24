@@ -34,7 +34,7 @@ The DMFW flash partitions are defined as follows:
 +-----------------------+------------------+------------------+------------------+
 
 For reference, see the `DMFW bootloader devicetree definition
-<https://github.com/tenstorrent/tt-zephyr-platforms/blob/main/boards/
+<https://github.com/tenstorrent/tt-system-firmware/blob/main/boards/
 tenstorrent/tt_blackhole/tt_blackhole_dmc.dtsi>`_.
 
 DMFW Boot Process
@@ -101,7 +101,7 @@ The CMFW flash partitions are defined as follows:
 +-------------------------+------------------+------------------+------------------+
 
 For reference, see the `CMFW bootloader devicetree definition
-<https://github.com/tenstorrent/tt-zephyr-platforms/blob/main/boards/
+<https://github.com/tenstorrent/tt-system-firmware/blob/main/boards/
 tenstorrent/tt_blackhole/tt_blackhole_fixed_partitions.dtsi>`_.
 
 CMFW Boot Process

@@ -49,7 +49,7 @@ Tagging
 
    .. code-block:: shell
 
-       git tag -s -m "tt-zephyr-platforms 1.2.3-rc1" v1.2.3-rc1
+       git tag -s -m "tt-system-firmware 1.2.3-rc1" v1.2.3-rc1
 
 4. Verify that the tag has been
    `signed correctly <https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key>`_,
@@ -64,7 +64,7 @@ Tagging
 
    .. code-block:: shell
 
-       git push git@github.com:tenstorrent/tt-zephyr-platforms.git v1.2.3-rc1
+       git push git@github.com:tenstorrent/tt-system-firmware.git v1.2.3-rc1
 
 Lastly, for final releases,
 
@@ -72,7 +72,7 @@ Lastly, for final releases,
    and merge after CI is successful.
 
 7. Find the generated
-   `draft release <https://github.com/tenstorrent/tt-zephyr-platforms/releases>`_, edit the release
+   `draft release <https://github.com/tenstorrent/tt-system-firmware/releases>`_, edit the release
    notes, and publish the release. It is recommended to copy the contents of
    ``doc/release/release-notes-1.2.3.md`` into the release-notes area.
 
@@ -108,11 +108,11 @@ As part of the pull request:
 
        git checkout -b release-v1.2.3
 
-3. Download the ``fw_pack-<version>.fwbundle`` file in the associated `release <https://github.com/tenstorrent/tt-zephyr-platforms/releases>`_.
+3. Download the ``fw_pack-<version>.fwbundle`` file in the associated `release <https://github.com/tenstorrent/tt-system-firmware/releases>`_.
 
    .. code-block:: shell
 
-       wget https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v1.2.3/fw_pack-1.2.3.fwbundle
+       wget https://github.com/tenstorrent/tt-system-firmware/releases/download/v1.2.3/fw_pack-1.2.3.fwbundle
 
 4. Change the ``latest.fwbundle`` symbolic link to point to the new firmware bundle and remove the
    older version, staging the files for commit.

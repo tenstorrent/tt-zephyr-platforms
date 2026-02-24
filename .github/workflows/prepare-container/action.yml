@@ -2,7 +2,7 @@ name: Zephyr Container Setup (Composite)
 description: |
   This workflow prepares the Zephyr container environment for building, testing, or other tasks. It is
   intended to be used as a reusable (composite) step in other workflows, and should
-  be run within the base tt-zephyr-platforms container.
+  be run within the base tt-system-firmware container.
 
 inputs:
   app-path:
@@ -99,8 +99,8 @@ runs:
     - name: Verify binary blobs
       shell: bash
       run: |
-        # verify blobs (for tt-zephyr-platforms only - we do not depend on other blobs)
-        west blobs fetch tt-zephyr-platforms
+        # verify blobs (for tt-system-firmware only - we do not depend on other blobs)
+        west blobs fetch tt-system-firmware
 
     - name: Log system state
       shell: bash

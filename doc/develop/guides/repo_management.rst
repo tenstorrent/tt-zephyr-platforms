@@ -3,12 +3,12 @@
 Repository Management and Structure
 ===================================
 
-This guide explains how to manage repositories within the tt-zephyr-platforms project.
+This guide explains how to manage repositories within the tt-system-firmware project.
 
 Repository Structure
 --------------------
 
-The tt-zephyr-platforms project utilizes a `"T2 star topology"
+The tt-system-firmware project utilizes a `"T2 star topology"
 <https://docs.zephyrproject.org/latest/develop/west/workspaces.html#t2-star-topology-application-is-the-manifest-repository>`_
 with west, Zephyr's repo management tool, to manage multiple repositories. The
 application repository serves as the manifest repo, while other repositories are
