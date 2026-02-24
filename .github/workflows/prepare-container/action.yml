@@ -8,6 +8,9 @@ inputs:
   app-path:
     description: 'Path to the Zephyr application to build'
     required: true
+  kmd-version:
+    description: 'Version of tt-kmd to use'
+    required: true
 
 runs:
   using: composite
@@ -63,7 +66,7 @@ runs:
       run: |
         apt update && apt install -y kmod
         rmmod tenstorrent
-        insmod /opt/tenstorrent/kmd-builds/${{ matrix.config.kmd_build }}/tenstorrent.ko
+        insmod /opt/tenstorrent/kmd-builds/${{ inputs.kmd-version }}/tenstorrent.ko
 
     - name: Environment Setup
       shell: bash
