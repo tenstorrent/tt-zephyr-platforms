@@ -197,7 +197,7 @@ When DMC firmware boots successfully, you should see output similar to this:
                    .:====-.
 
    *** Booting tt_blackhole with Zephyr OS v4.2.0-rc3 ***
-   *** TT_GIT_VERSION v18.6.0-78-gf104f347ff0f ***
+   *** APP_BUILD_VERSION v18.6.0-78-gf104f347ff0f ***
    *** SDK_VERSION zephyr sdk 0.17.2 ***
    DMFW VERSION 0.9.99
 
