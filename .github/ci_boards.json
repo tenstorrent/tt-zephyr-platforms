@@ -22,5 +22,17 @@
     "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.66.0-dev20251218-4-g255c9332f1",
     "metal-target": "blackhole_p300",
     "kmd_build": "2.5.0"
+  },
+  {
+    "board": "n150",
+    "runs-on": "n150-jtag",
+    "product": "wh",
+    "kmd_build": "2.5.0"
+  },
+    {
+    "board": "n300",
+    "runs-on": "n300-jtag",
+    "product": "wh",
+    "kmd_build": "2.5.0"
   }
 ]
