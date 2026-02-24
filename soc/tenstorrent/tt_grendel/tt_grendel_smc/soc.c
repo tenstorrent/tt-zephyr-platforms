@@ -9,14 +9,14 @@
 
 #include "smc_cpu_reg.h"
 
-#define UART_INIT_IF_OKAY(n)                                                                       \
+#define UART_INIT_IF_OKAY(n, ...)                                                                  \
 	do {                                                                                       \
 		if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(uart##n))) {                              \
 			uart_x_init(UART_WRAP##n##_UART_CTRL_REG_ADDR);                            \
 		}                                                                                  \
 	} while (false)
 
-#define I3C_INIT_IF_OKAY(n)                                                                        \
+#define I3C_INIT_IF_OKAY(n, ...)                                                                   \
 	do {                                                                                       \
 		if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(i3c_##n))) {                              \
 			i3c_x_init(I3C_WRAP_##n##_I3C_CTRL_REG_MAP_BASE_ADDR);                     \
@@ -57,20 +57,13 @@ static void i3c_x_init(uint32_t i3c_base_addr)
 
 void uart_init(void)
 {
-	UART_INIT_IF_OKAY(0);
-	UART_INIT_IF_OKAY(1);
-	UART_INIT_IF_OKAY(2);
-	UART_INIT_IF_OKAY(3);
+
+	LISTIFY(4, UART_INIT_IF_OKAY, (;));
 }
 
 void i3c_init(void)
 {
-	I3C_INIT_IF_OKAY(0);
-	I3C_INIT_IF_OKAY(1);
-	I3C_INIT_IF_OKAY(2);
-	I3C_INIT_IF_OKAY(3);
-	I3C_INIT_IF_OKAY(4);
-	I3C_INIT_IF_OKAY(5);
+	LISTIFY(6, I3C_INIT_IF_OKAY, (;));
 }
 
 /**
