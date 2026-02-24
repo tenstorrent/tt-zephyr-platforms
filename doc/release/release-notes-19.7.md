@@ -6,7 +6,10 @@ We are pleased to announce the release of TT Zephyr Platforms firmware version 1
 
 Major enhancements with this release include:
 
-## What's Changed
+## Blackhole
+
+### Developer Features
+- DMFW and SMFW now store Zephyr's `APP_VERSION_STRING` and `APP_BUILD_VERSION` binary descriptors, which provide the app version and the FW bundle's git revision respectively. These are printed to the boot banner, and can also be accessed using Zephyr's [`west bindesc` tool](https://docs.zephyrproject.org/latest/services/binary_descriptors/index.html).
 
 <!-- Subsections can break down improvements by (area or board) -->
 <!-- UL PCIe -->
