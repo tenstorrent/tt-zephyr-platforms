@@ -73,6 +73,7 @@ jobs:
         uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
+          kmd-version: ${{ matrix.config.kmd_build }}
 
       - name: run-e2e-stress-test
         run: |
@@ -108,3 +109,57 @@ jobs:
           python3 ./scripts/smc_console.py --rtt -n
           echo "SMC state dump:"
           python3 ./scripts/dump_smc_state.py
+
+  tensix-column-test:
+    needs: [gen-config, build-fw-artifact]
+    runs-on: p150a-jtag
+    container:
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Cleanup State
+        if: ${{ always() }}
+        run: |
+          # Print state of current directory
+          ls -la
+          # Clean up any files left over from previous steps
+          rm -rf *
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          path: tt-zephyr-platforms
+
+      - name: Prepare Container
+        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+        with:
+          app-path: tt-zephyr-platforms
+          kmd-version: 2.5.0
+
+      - name: Install the package from PyPI
+        run: |
+          pip install tt-update-tensix-disable-count
+
+      - name: Download the latest firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          path: tt-zephyr-platforms
+          name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
+
+      - name: Attempt to run the package's command line tool
+        run: |
+          tt-update-tensix-disable-count --input tt-zephyr-platforms/*.fwbundle --output patched.fwbundle --verbose
+
+      - name: Verify that columns are reenabled
+        run: |
+          tt-flash patched.fwbundle --force
+          # Check that the tensix column is correct
+          TENSIX_COUNT=$(python3 -c "import pyluwen; print(pyluwen.detect_chips()[0].get_telemetry().tensix_enabled_col.bit_count() * 10)")
+          if [ "$TENSIX_COUNT" -ne 140 ]; then
+            echo "Error: Expected 140 tensix-enabled columns, but found $TENSIX_COUNT"
+            exit 1
+          fi
+          echo "Successfully verified that tensix-enabled column count is correct: $TENSIX_COUNT"
