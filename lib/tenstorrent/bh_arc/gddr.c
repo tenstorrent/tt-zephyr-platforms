@@ -30,7 +30,9 @@
 
 static const struct device *const pll_dev_3 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll3));
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
+#ifdef CONFIG_DMA_ARC_HS
 static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
+#endif
 static const struct device *dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
 
 /* This is the noc2axi instance we want to run the MRISC FW on */
@@ -104,6 +106,7 @@ static void MriscRegWrite32(uint8_t gddr_inst, uint32_t addr, uint32_t val)
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry)
 {
+#ifdef CONFIG_DMA_ARC_HS
 	volatile uint8_t *mrisc_l1 = SetupMriscL1Tlb(gddr_inst);
 	if (dma_arc_hs_transfer(arc_dma_dev, 0,
 				(const void *)(mrisc_l1 + GDDR_TELEMETRY_TABLE_ADDR),
@@ -114,6 +117,7 @@ int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_te
 				MriscL1Read32(gddr_inst, GDDR_TELEMETRY_TABLE_ADDR + i * 4);
 		}
 	}
+#endif
 	/* Check that version matches expectation. */
 	if (gddr_telemetry->telemetry_table_version != GDDR_TELEMETRY_TABLE_T_VERSION) {
 		LOG_WRN_ONCE("GDDR telemetry table version mismatch: %d (expected %d)",
