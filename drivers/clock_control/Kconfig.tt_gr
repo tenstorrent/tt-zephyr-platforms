@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config CLOCK_CONTROL_TT_GRENDEL
+	bool "Tenstorrent Grendel Clock Control"
+	default y
+	depends on DT_HAS_TENSTORRENT_GRENDEL_CLOCK_CONTROL_ENABLED
+	help
+	  Enable the Tenstorrent Grendel Clock Control driver for
+	  the Movellus Aeonic Generate CGM.
+
+config CLOCK_CONTROL_TT_GRENDEL_LOCK_TIMEOUT
+	int "CGM lock timeout in milliseconds"
+	default 400
+	depends on CLOCK_CONTROL_TT_GRENDEL
+	help
+	  Maximum time to wait for the CGM to achieve frequency lock
+	  after programming via the APB interface.
