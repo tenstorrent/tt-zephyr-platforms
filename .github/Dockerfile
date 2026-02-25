@@ -1,4 +1,4 @@
-# Image to run tt-zephyr-platforms CI tests.
+# Image to run tt-system-firmware CI tests.
 # Includes python dependencies and base copy of repos
 
 ARG ZEP_CONTAINER=v0.28.2
@@ -33,17 +33,17 @@ RUN git clone ${OPENOCD_URL} -b ${OPENOCD_REV} openocd && \
 
 # Start a new stage, and copy openocd build artifacts
 FROM base
-LABEL org.opencontainers.image.source=https://github.com/tenstorrent/tt-zephyr-platforms
+LABEL org.opencontainers.image.source=https://github.com/tenstorrent/tt-system-firmware
 COPY --from=openocd_build /opt/openocd/ /opt/toolchains/zephyr-sdk-$ZSDK_VERSION/sysroots/x86_64-pokysdk-linux/usr/
 
 ENV ZEPHYR_BASE=/tt-zephyr/zephyr
 
 ARG REPO_REV=main
-ARG REPO_URL=https://github.com/tenstorrent/tt-zephyr-platforms
+ARG REPO_URL=https://github.com/tenstorrent/tt-system-firmware
 
-# Clone the tt-zephyr-platforms repo and install dependencies
+# Clone the tt-system-firmware repo and install dependencies
 RUN pip install west && \
     west init -m ${REPO_URL} --mr ${REPO_REV} /tt-zephyr && \
-    cd /tt-zephyr/tt-zephyr-platforms && \
+    cd /tt-zephyr/tt-system-firmware && \
     west update && \
     west packages pip --install
