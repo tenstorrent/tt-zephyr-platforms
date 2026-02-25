@@ -18,12 +18,20 @@ string(APPEND CMAKE_C_FLAGS "-fpic -msingle-pic-base -mpic-register=9 ")
 string(APPEND CMAKE_C_FLAGS "-fno-jump-tables -ffreestanding -nostartfiles ")
 string(APPEND CMAKE_C_FLAGS "-mcpu=cortex-m0 -mthumb ")
 string(APPEND CMAKE_C_FLAGS "-DSTM32G0xx -DSTM32G0B1xx -DFLASH_DRV_VERS=0 -DUSE_FULL_LL_DRIVER")
-string(APPEND CMAKE_EXE_LINKER_FLAGS "-T ${CMAKE_CURRENT_LIST_DIR}/FlashAlgo.ld")
+
+set(COMMON_FLM_DIR ${CMAKE_CURRENT_LIST_DIR}/../common_flm)
+string(APPEND CMAKE_EXE_LINKER_FLAGS "-T ${COMMON_FLM_DIR}/FlashAlgo.ld")
 
 project(flm LANGUAGES C)
 set(TARGETS spi1.flm spi_combo.flm)
 foreach(TARGET ${TARGETS})
-  add_executable(${TARGET} eeprom.c FlashDev.c FlashPrg.c stm32_spi_hal.c)
+  add_executable(${TARGET}
+    ${COMMON_FLM_DIR}/eeprom.c
+    ${COMMON_FLM_DIR}/FlashPrg.c
+    FlashDev.c
+    stm32_spi_hal.c
+  )
+  target_include_directories(${TARGET} PRIVATE ${COMMON_FLM_DIR})
 endforeach()
 
 # Set compile definitions for each SPI FLM target
