@@ -24,8 +24,8 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 # Use a known good firmware bundle URL for testing (19.1.0)
-FWBUNDLE_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v19.1.0/fw_pack-19.1.0.fwbundle"
-FWBUNDLE_DIFF_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v19.1.0-rc1/fw_pack-19.1.0-rc1.fwbundle"
+FWBUNDLE_URL = "https://github.com/tenstorrent/tt-system-firmware/releases/download/v19.1.0/fw_pack-19.1.0.fwbundle"
+FWBUNDLE_DIFF_URL = "https://github.com/tenstorrent/tt-system-firmware/releases/download/v19.1.0-rc1/fw_pack-19.1.0-rc1.fwbundle"
 # The below constants are based on the known contents of the above firmware bundle
 EXPECTED_P150A_MAINIMG_SHA256 = (
     "bcff42e138ac93bbf373619b57ef33f3c9c38f1e015c082668123d3d3cec5d6d"

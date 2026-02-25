@@ -41,7 +41,7 @@ external_content_contents = [
 ]
 
 html_logo = "img/tt_logo_stacked_color.svg"
-reference_prefix = "/tt-zephyr-platforms"
+reference_prefix = "/tt-system-firmware"
 html_context = {
     "project": project,
     "reference_links": {"API": f"{reference_prefix}/doxygen/index.html"},

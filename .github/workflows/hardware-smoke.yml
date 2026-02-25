@@ -158,7 +158,7 @@ jobs:
       - name: Prepare Container
         uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
 
       - name: Set ASIC ID
         shell: bash

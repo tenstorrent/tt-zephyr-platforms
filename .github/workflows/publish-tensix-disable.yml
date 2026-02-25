@@ -85,12 +85,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Prepare Container
-        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
           kmd-version: ${{ matrix.config.kmd_build }}
 
       - name: Download all the dists

@@ -26,7 +26,7 @@ SCRIPT="$(realpath "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT")"
 
 # Walk up from the script location until we find the directory that contains the script itself
-# (i.e. the directory named "tt-zephyr-platforms")
+# (i.e. the directory named "tt-system-firmware")
 CURRENT="$SCRIPT_DIR"
 while [[ "$CURRENT" != "/" ]]; do
     if [[ -f "$CURRENT/scripts/update_versions.sh" ]] || [[ -f "$CURRENT/VERSION" ]]; then

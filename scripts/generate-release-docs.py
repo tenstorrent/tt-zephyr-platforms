@@ -132,13 +132,13 @@ Major enhancements with this release include:
 
 ## Migration guide
 
-An overview of required and recommended changes to make when migrating from the previous {previous_version} release can be found in [{version_major_minor} Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-{version_major_minor}.md).
+An overview of required and recommended changes to make when migrating from the previous {previous_version} release can be found in [{version_major_minor} Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-{version_major_minor}.md).
 
 ## Full ChangeLog
 
 The full ChangeLog from the previous {previous_version} release can be found at the link below.
 
-https://github.com/tenstorrent/tt-zephyr-platforms/compare/{previous_version}...{next_version}
+https://github.com/tenstorrent/tt-system-firmware/compare/{previous_version}...{next_version}
 """
 
     output_file.write_text(content)
