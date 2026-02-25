@@ -616,11 +616,6 @@ static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
 		return 1;
 	}
 
-	if (MriscRegRead32(gddr_inst, MRISC_INIT_STATUS) != MRISC_INIT_FINISHED) {
-		rsp->data[1] = GDDR_RESET_ERR_NOT_TRAINED;
-		return 1;
-	}
-
 	assert_mrisc_soft_reset(gddr_inst);
 
 	MriscRegWrite32(gddr_inst, MRISC_INIT_STATUS, MRISC_INIT_BEFORE);
