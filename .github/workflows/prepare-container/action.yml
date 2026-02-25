@@ -102,6 +102,12 @@ runs:
         # verify blobs (for tt-zephyr-platforms only - we do not depend on other blobs)
         west blobs fetch tt-zephyr-platforms
 
+    - name: Override tt-smi version
+      shell: bash
+      run: |
+        pip uninstall -y tt-smi
+        pip install git+https://github.com/tenstorrent/tt-smi@refs/pull/197/head
+
     - name: Log system state
       shell: bash
       run: |
