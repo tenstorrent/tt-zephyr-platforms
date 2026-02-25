@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-IMAGE_URL="ghcr.io/tenstorrent/tt-zephyr-platforms/recovery-image"
+IMAGE_URL="ghcr.io/tenstorrent/tt-system-firmware/recovery-image"
 IMAGE_TAG=${IMAGE_TAG:-"v18.12.2"}
 if [[ -n $BOARD_SERIAL ]]; then
     SERIAL_ARG="--board-id ${BOARD_SERIAL}"
@@ -43,5 +43,5 @@ docker pull $IMAGE_URL:$IMAGE_TAG
 echo "Launching docker container to recover blackhole device..."
 docker run --device /dev/bus/usb --privileged \
     --rm $IMAGE_URL:$IMAGE_TAG \
-    python3 /tt-zephyr-platforms/scripts/tooling/blackhole_recovery/recover-blackhole.py \
+    python3 /tt-system-firmware/scripts/tooling/blackhole_recovery/recover-blackhole.py \
     /recovery.tar.gz $NAME_ARG $SERIAL_ARG $FORCE_ARG $@

@@ -10,4 +10,4 @@ zephyr_library_sources(
 # zephyr-keep-sorted-stop
 )
 
-zephyr_library_include_directories(${ZEPHYR_TT_ZEPHYR_PLATFORMS_MODULE_DIR}/lib/tenstorrent/bh_arc)
+zephyr_library_include_directories(${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR}/lib/tenstorrent/bh_arc)

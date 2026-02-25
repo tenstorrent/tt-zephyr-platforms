@@ -1,4 +1,4 @@
-.. _ttzp_architecture:
+.. _ttsfw_architecture:
 
 Firmware Architecture
 #####################

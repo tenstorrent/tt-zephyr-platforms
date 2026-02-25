@@ -22,9 +22,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/tenstorrent/tt-zephyr-platforms"
-"Bug Reports" = "https://github.com/tenstorrent/tt-zephyr-platforms/issues"
-"Source" = "https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/scripts/tooling/tt_update_tensix_disable_count"
+"Homepage" = "https://github.com/tenstorrent/tt-system-firmware"
+"Bug Reports" = "https://github.com/tenstorrent/tt-system-firmware/issues"
+"Source" = "https://github.com/tenstorrent/tt-system-firmware/tree/main/scripts/tooling/tt_update_tensix_disable_count"
 
 [project.scripts]
 tt-update-tensix-disable-count = "tt_update_tensix_disable_count.update_tensix_disable_count:main"

@@ -131,12 +131,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
 
       - name: Prepare Container
-        uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
-          app-path: tt-zephyr-platforms
+          app-path: tt-system-firmware
           kmd-version: 2.5.0
 
       - name: Install the package from PyPI
@@ -146,12 +146,12 @@ jobs:
       - name: Download the latest firmware bundle
         uses: actions/download-artifact@v4
         with:
-          path: tt-zephyr-platforms
+          path: tt-system-firmware
           name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
 
       - name: Attempt to run the package's command line tool
         run: |
-          tt-update-tensix-disable-count --input tt-zephyr-platforms/*.fwbundle --output patched.fwbundle --verbose
+          tt-update-tensix-disable-count --input tt-system-firmware/*.fwbundle --output patched.fwbundle --verbose
 
       - name: Verify that columns are reenabled
         run: |

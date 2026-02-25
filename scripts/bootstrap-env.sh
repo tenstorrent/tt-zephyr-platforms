@@ -3,7 +3,7 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# This script sets up a user copy of tt-zephyr-platforms for development.
+# This script sets up a user copy of tt-system-firmware for development.
 # It assumes that the Zephyr SDK and a common Python virtual environment
 # are already installed at the machine level.
 
@@ -31,12 +31,12 @@ activate_python_env() {
   fi
 }
 
-# Function to clone tt-zephyr-platforms repository
+# Function to clone tt-system-firmware repository
 clone_repository() {
   mkdir -p ~/tt-zephyr
   cd ~/tt-zephyr
-  git clone git@github.com:tenstorrent/tt-zephyr-platforms.git tt-zephyr-platforms
-  cd tt-zephyr-platforms
+  git clone git@github.com:tenstorrent/tt-system-firmware.git tt-system-firmware
+  cd tt-system-firmware
   west init -l
 }
 
@@ -67,7 +67,7 @@ main() {
   # Activate the common Python virtual environment
   activate_python_env
 
-  # Clone the tt-zephyr-platforms repository
+  # Clone the tt-system-firmware repository
   clone_repository
 
   # Pull manifest revisions needed to build DMFW and CMFW

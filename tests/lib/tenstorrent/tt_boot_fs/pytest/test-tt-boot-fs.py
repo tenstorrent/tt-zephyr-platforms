@@ -412,7 +412,7 @@ def test_tt_boot_fs_gen_yaml(tmp_path: Path):
     """
 
     # Fetch expected YAML from v18.7.0 tag on GitHub
-    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-zephyr-platforms/refs/tags/v18.7.0/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
+    expected_yaml_raw = "https://raw.githubusercontent.com/tenstorrent/tt-system-firmware/refs/tags/v18.7.0/boards/tenstorrent/tt_blackhole/bootfs/p150a-bootfs.yaml"
     response = requests.get(expected_yaml_raw)
     response.raise_for_status()
     expected_yaml = yaml.safe_load(response.text)
@@ -446,7 +446,7 @@ def test_update_bar4_size(tmp_path: Path):
 
     version = "19.2.0"
     release_dl_url_base = (
-        "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/"
+        "https://github.com/tenstorrent/tt-system-firmware/releases/download/"
     )
     url = release_dl_url_base + f"v{version}/fw_pack-{version}.fwbundle"
 
@@ -484,7 +484,7 @@ def test_tensix_disable(tmp_path: Path):
 
     version = "19.2.0"
     release_dl_url_base = (
-        "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/"
+        "https://github.com/tenstorrent/tt-system-firmware/releases/download/"
     )
     url = release_dl_url_base + f"v{version}/fw_pack-{version}.fwbundle"
 

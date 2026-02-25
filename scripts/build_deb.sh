@@ -27,7 +27,7 @@ DEFAULT_PACKAGE_NAME="tt-firmware"
 VERSION=""
 DEFAULT_DISTRO="ubuntu"
 DEFAULT_REV="1"
-DEFAULT_URL="https://github.com/tenstorrent/tt-zephyr-platforms"
+DEFAULT_URL="https://github.com/tenstorrent/tt-system-firmware"
 
 PACKAGE_NAME="$DEFAULT_PACKAGE_NAME"
 DISTRO="$DEFAULT_DISTRO"

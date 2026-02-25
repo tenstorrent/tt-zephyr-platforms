@@ -210,7 +210,7 @@ def upgrade_from_version_test(
     if board_name is None:
         pytest.skip("Upgrade test requires --board set, skipping upgrade test")
 
-    RECOVERY_URL = "https://github.com/tenstorrent/tt-zephyr-platforms/releases/download/v18.12.2/fw-pack-v18.12.2-recovery.tar.gz"
+    RECOVERY_URL = "https://github.com/tenstorrent/tt-system-firmware/releases/download/v18.12.2/fw-pack-v18.12.2-recovery.tar.gz"
 
     tar_recovery = tmp_path / "recovery.tar.gz"
     urlretrieve(RECOVERY_URL, tar_recovery)
