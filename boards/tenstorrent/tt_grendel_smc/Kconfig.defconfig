@@ -9,4 +9,18 @@ config SYS_CLOCK_TICKS_PER_SEC
 config SYS_CLOCK_HW_CYCLES_PER_SEC
 	default 1000000
 
+if LOG
+
+# Use Tenstorrent virtual logging backend by default on Grendel SMC
+config LOG_BACKEND_TT_VIRT
+	bool
+	default y
+
+# Use immediate logging mode, otherwise logs will often be lost in simulation
+choice LOG_MODE
+	default LOG_MODE_IMMEDIATE
+endchoice
+
+endif
+
 endif # BOARD_TT_GRENDEL_SMC
