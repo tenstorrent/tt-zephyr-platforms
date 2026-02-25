@@ -40,7 +40,7 @@ Following [Zephyr's contributor expectations](https://docs.zephyrproject.org/lat
 We follow [Zephyr's Commit Message Guidelines](https://docs.zephyrproject.org/latest/contribute/guidelines.html#commit-message-guidelines):
 
 - **Include a Signed-off-by line** - Add this with `git commit -s` or `git commit --amend -s`
-  
+
   Example:
   ```
   Signed-off-by: Your Name <your.email@example.com>

@@ -9,4 +9,4 @@ zephyr_library_sources_ifdef(CONFIG_DMA_TT_BH_NOC dma_tt_bh_noc.c)
 # zephyr-keep-sorted-stop
 
 zephyr_library_include_directories_ifdef(CONFIG_DMA_TT_BH_NOC
-  ${ZEPHYR_TT_ZEPHYR_PLATFORMS_MODULE_DIR}/lib/tenstorrent/bh_arc)
+  ${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR}/lib/tenstorrent/bh_arc)
