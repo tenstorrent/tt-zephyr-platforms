@@ -80,117 +80,117 @@ blobs:
     description: "Ethernet SerDes firmware"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_init.bin
-    sha256: 7189a02286c407de41f483db8ecf9c7a78049e056a09923f3be2ecb44df5a42b
+    sha256: 3dd5baad258d817795684494ae5dadec47834b7b6129e77531e785ee441b8c1d
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_init.bin"
     description: "Memory Controller FW"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_ORION.bin
-    sha256: 92c09aef58f34b73ef236215673770c1c2129a943dbdc95c50a9682e6a334b28
+    sha256: a6a60bd9ea8dd5178b6925cf4d922d4ebbb5adee4d1bc840b56aab1ee2c8e506
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_ORION.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P100A.bin
-    sha256: 67c4ce63069f9ef9bd7fc6d1be1c8991b273afd0088c43e25311b8f422dff2c4
+    sha256: 23b0df46d5a669a4596347e007461ebc73e065fcb2a8b17ff6c6b573e066a6b4
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P100B.bin
-    sha256: dc981fecbe3662187fb64fb7678ee9a0d83c0bd313944738fd92455285717fa0
+    sha256: 041260a83fbf30c9797e18c6300b577a2452c94fee4283068f38ef00db165541
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P100.bin
-    sha256: cc47640f78ac54cebbcca1c9811e1b3117c246c29ce82d1c4fd29fbc46e91ce1
+    sha256: a2b442560bc0b8ac842fac931c9ea3336166613e4579f3d7abb874028ca938ed
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P150A.bin
-    sha256: a6711eb789ab57ad6b06b0f11eae3049e927744c7fdcf222b17a7d3bdbe2daa1
+    sha256: 1a4aab3c58b39bba470fa6e0ff0a2211cbc73c13ac0365a6c9e7bf2e9c28959e
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P150B.bin
-    sha256: 09363a32dbe3b5624ae10257d0457508fccca5f945c23d0841697277372e97b4
+    sha256: 93cb6c3ff981cd0f331d8113567e4da3c56912284269e68b0970d0042b8f6896
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P150C.bin
-    sha256: a1b7f39bc12cbe766d97dfc987d1755859dc66aec878c0d60240f803ad35fb3e
+    sha256: 0e4ed9986e18e7a972d7600e26098725f98871c30512530b0cb65dd6e642d9d2
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P150C.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P300A.bin
-    sha256: 737485058056a75a186d98acb62ec0934e566ecf779fa96294f27c6a6cfca6e1
+    sha256: a627ee5baced8b1b2a9ff4e7ce6916e29a9092cab29a6ca7463f3f730a16eb93
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P300B.bin
-    sha256: 43dbe0a28d020e8aea76d7916c8d98f292af16a8309cd5283c22910530bf9b58
+    sha256: 82de78316889dbaff7cb9e5b6315f9b4191824e9f3c85e4cdbe03d38dc453985
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300B.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P300C.bin
-    sha256: 9b3f11289d14358d7c9aa2b7c5e1af6df8853e13c14f183efd25449f22b694bb
+    sha256: b44f26c6626504210af16da4a8a210136cf6bd070b1b498113b0a9d36043da88
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P300C.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_GALAXY.bin
-    sha256: 7b8a0ba1f647d29caa5cc31798b2cb3c8da2c1a7f882e3f30401a61ae820eb46
+    sha256: 1438d62af2ee274078e8bbe227b23d5a83559e85113dbd04843bb1b688a0d24f
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_GALAXY.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_GALAXY_REVC.bin
-    sha256: 27b498819701c4e692cb3a8e43f654eeb0e860ca1aba314e411ec557710cd0a2
+    sha256: 06169418f022f30d256e7203a68656312503a2e3caf65637a391558d15e790c9
     type: img
-    version: '2.12'
+    version: '2.13'
     license-path: zephyr/blobs/license.txt
     url: "https://github.com/tenstorrent/tt-zephyr-platforms/\
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_GALAXY_REVC.bin"

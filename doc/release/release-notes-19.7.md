@@ -31,6 +31,9 @@ Major enhancements with this release include:
 <!-- Other Notable Changes, if applicable -->
 <!-- New Boards, if applicable -->
 
+### System Improvements
+- Improved DRAM interface margins on Galaxy Rev C boards
+
 ## Migration guide
 
 An overview of required and recommended changes to make when migrating from the previous v19.6.0 release can be found in [19.7 Migration Guide](https://github.com/tenstorrent/tt-zephyr-platforms/tree/main/doc/release/migration-guide-19.7.md).
