@@ -2,7 +2,7 @@
 
 Welcome to the tt-system-firmware API description!
 
-This docuemntation provides an description of various SMC and DMC firmware facilities and their functional interfaces.
+This documentation provides a description of various SMC and DMC firmware facilities and their functional interfaces.
 
 # Supported Boards
 
