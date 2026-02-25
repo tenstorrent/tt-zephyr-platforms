@@ -9,17 +9,17 @@ if(CONFIG_MSPI AND CONFIG_FLASH)
   zephyr_library_sources(src/flash.c)
 endif()
 zephyr_library_sources_ifdef(CONFIG_UART_TT_VIRT src/vuart.c)
-zephyr_library_include_directories(${ZEPHYR_TT_ZEPHYR_PLATFORMS_MODULE_DIR}/lib/tenstorrent/bh_arc)
+zephyr_library_include_directories(${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR}/lib/tenstorrent/bh_arc)
 
 #
 # Encode firmware table files via protobufs
 #
 # include(${ZEPHYR_BASE}/modules/nanopb/nanopb.cmake)
 set(PROTOC ${ZEPHYR_NANOPB_MODULE_DIR}/generator/protoc)
-zephyr_library_include_directories(${CMAKE_BINARY_DIR}/modules/tt-zephyr-platforms/drivers/misc/bh_fwtable)
+zephyr_library_include_directories(${CMAKE_BINARY_DIR}/modules/tt-system-firmware/drivers/misc/bh_fwtable)
 #zephyr_library_add_dependencies(nanopb_generated_headers)
 
-set(MOD_DIR ${ZEPHYR_TT_ZEPHYR_PLATFORMS_MODULE_DIR})
+set(MOD_DIR ${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR})
 set(SPIROM_PROTOBUFS ${MOD_DIR}/drivers/misc/bh_fwtable/spirom_protobufs)
 
 message(STATUS "Generating Python files from protobufs")
