@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent / "common_flm"))
 import pyocd_shared
 
 
@@ -15,7 +16,7 @@ def will_connect():
     """
     flm = Path(__file__).parent / "build" / "spi2.flm"
     # Target variable is defined by pyocd module
-    pyocd_shared.will_connect(flm, target)  # pylint: disable=undefined-variable # noqa: F821
+    pyocd_shared.will_connect(flm, target, blocksize=0x100)  # pylint: disable=undefined-variable # noqa: F821
 
 
 def did_connect():
