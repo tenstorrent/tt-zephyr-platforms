@@ -5,6 +5,7 @@
  */
 
 #include "bh_reg_def.h"
+#include "status_reg.h"
 
 #include <stdint.h>
 
@@ -309,6 +310,23 @@ void jtag_bootrom_soft_reset_arc(struct bh_chip *chip)
 	 * cycles but may lead to errors in the future.
 	 */
 	jtag_axi_write32(dev, RESET_UNIT_ARC_MISC_CNTL_REG_ADDR, 0);
+#endif
+}
+
+void jtag_bootrom_set_cable_power_limit(struct bh_chip *chip, uint16_t power_limit)
+{
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
+	const struct device *dev = chip->config.jtag;
+
+	/* Write cable power limit with magic marker for SMC to detect feature support.
+	 * Format: [31:16] = CABLE_POWER_LIMIT_MAGIC, [15:0] = power_limit
+	 * Legacy SMC will read this as a large positive value (not 0), so safe.
+	 * New SMC checks for magic marker to enable cable fault detection.
+	 * A power_limit of 0 indicates cable fault (no cable or improper installation).
+	 */
+	uint32_t value = CABLE_POWER_LIMIT_MAGIC | (uint32_t)power_limit;
+
+	jtag_axi_write32(dev, DMC_CABLE_POWER_LIMIT_REG_ADDR, value);
 #endif
 }
 
