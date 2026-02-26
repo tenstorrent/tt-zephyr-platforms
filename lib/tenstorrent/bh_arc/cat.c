@@ -18,6 +18,9 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/sensor/tenstorrent/pvt_tt_bh.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(cat);
 
 #define RESET_UNIT_CATMON_THERM_TRIP_STATUS_REG_ADDR  0x80030164
 #define RESET_UNIT_CATMON_THERM_TRIP_CNTL_REG_ADDR    0x80030168
@@ -176,6 +179,12 @@ static float CalibrateCAT(void)
 	ts_temp = sensor_value_to_float(&avg_tmp);
 
 	float catmon_error = catmon_temp - ts_temp;
+
+	if (catmon_error < -25 || catmon_error > 25) {
+		LOG_WRN("CATMON calibration error %.1fC exceeds +/-25C, clamping",
+			(double)catmon_error);
+		catmon_error = CLAMP(catmon_error, -25, 25);
+	}
 
 	return catmon_error;
 }
