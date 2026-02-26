@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "bh_reset.h"
 #include "functional_efuse.h"
 #include "eth.h"
 #include "harvesting.h"
@@ -459,6 +460,13 @@ static int eth_init(void)
 	/* TODO: Load ERISC (Ethernet RISC) FW to all ethernets (8 of them) */
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPA);
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, ETH tiles are clock-gated - skip init
+	 * since tiles are not active.
+	 */
+	if (is_cable_fault_mode()) {
 		return 0;
 	}
 

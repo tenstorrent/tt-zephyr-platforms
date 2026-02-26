@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "bh_reset.h"
 #include "noc2axi.h"
 #include "noc_init.h"
 
@@ -156,6 +157,13 @@ static int tensix_init(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, tensix tiles are clock-gated - skip init
+	 * since tiles are not active.
+	 */
+	if (is_cable_fault_mode()) {
 		return 0;
 	}
 
