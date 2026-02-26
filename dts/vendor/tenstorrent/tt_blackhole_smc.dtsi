@@ -386,11 +386,6 @@
 		interrupt-parent = <&intc>;
 	};
 
-	pinctrl: pinctrl {
-		compatible = "tenstorrent,bh-pinctrl";
-		status = "disabled";
-	};
-
 	timer0: timer0 {
 		compatible = "snps,arc-timer";
 		interrupts = <16 2>;

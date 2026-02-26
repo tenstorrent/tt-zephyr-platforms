@@ -1,9 +1,0 @@
-# Copyright (c) 2024 Tenstorrent AI ULC
-# SPDX-License-Identifier: Apache-2.0
-
-config PINCTRL_TT_BH
-	bool "Blackhole pinctrl driver"
-	default y
-	depends on DT_HAS_TENSTORRENT_BH_PINCTRL_ENABLED
-	help
-	  Say Y here if you want to enable the Blackhole pinctrl driver.
