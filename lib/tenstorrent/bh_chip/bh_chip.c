@@ -180,7 +180,7 @@ int bh_chip_reset_chip(struct bh_chip *chip, bool force_reset)
 		return ret;
 	}
 
-	ret2 = jtag_bootrom_reset_sequence(chip, force_reset);
+	ret2 = jtag_bootrom_reset_sequence(chip, force_reset, chip->data.cable_power_limit);
 
 	ret = bharc_enable_i2cbus(&chip->config.arc);
 	if (ret != 0) {
