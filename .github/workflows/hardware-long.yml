@@ -176,6 +176,7 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+        - /home/ubuntu/STMicroelectronics:/home/ubuntu/STMicroelectronics
       options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
     env:
       ASIC_ID: 0
@@ -195,6 +196,7 @@ jobs:
         uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
           app-path: tt-system-firmware
+          kmd-version: ${{ matrix.config.kmd_build }}
 
       - name: Derive assembly board name
         id: board-map
@@ -228,6 +230,12 @@ jobs:
           name: combined-fwbundle
           path: artifacts/fwbundle
 
+      - name: Download Flash Loader Module
+        uses: actions/download-artifact@v4
+        with:
+          name: bh-flm
+          path: tt-system-firmware/scripts/tooling/blackhole_recovery/data/bh_flm/build
+
       # ---- Step 1: Erase SPI + flash preflash ihex ----
       - name: Erase SPI and flash preflash ihex
         shell: bash
@@ -245,8 +253,8 @@ jobs:
         shell: bash
         run: |
           BOARD=${{ steps.board-map.outputs.assembly_board }}
-          MCUBOOT_ELF="artifacts/assembly-mcuboot/build-assembly-test-${BOARD}/mcuboot/zephyr/zephyr.elf"
-          APP_HEX="artifacts/assembly-fw/build-assembly-test-${BOARD}/dmc/zephyr/zephyr.signed.hex"
+          MCUBOOT_ELF="artifacts/assembly-mcuboot/zephyr.elf"
+          APP_HEX="artifacts/assembly-fw/zephyr.signed.hex"
 
           echo "Flashing MCUBoot bootloader: $MCUBOOT_ELF"
           echo "Flashing assembly test app: $APP_HEX"
@@ -260,9 +268,9 @@ jobs:
             exit 1
           fi
           # Program the signed application hex and reset
-          ~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$APP_HEX" -rst
+          /home/ubuntu/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$APP_HEX" -rst
           # Erase STM32 internal flash and program MCUBoot bootloader
-          ~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$MCUBOOT_ELF" -rst
+          /home/ubuntu/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=swd mode=UR --halt -d "$MCUBOOT_ELF" -rst
 
 
       # ---- Step 3: DMC reset (simulate power-on) ----
@@ -270,7 +278,7 @@ jobs:
         shell: bash
         run: |
           echo "Resetting DMC..."
-          python3 tt-system-firmware/scripts/dmc_reset.py --wait
+          python3 tt-system-firmware/scripts/dmc_reset.py
 
       # ---- Step 4: Verify PCIe enumeration (assembly test FW + preflash) ----
       - name: Verify PCIe enumeration (assembly test FW)
@@ -294,7 +302,7 @@ jobs:
         shell: bash
         run: |
           echo "Resetting DMC after production FW flash..."
-          python3 tt-system-firmware/scripts/dmc_reset.py --wait
+          python3 tt-system-firmware/scripts/dmc_reset.py
 
       # ---- Step 7: Verify PCIe enumeration (production FW) ----
       - name: Verify PCIe enumeration (production FW)

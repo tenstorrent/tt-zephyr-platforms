@@ -395,6 +395,11 @@ jobs:
         shell: bash
         run: |
           ./build-flm.sh
+      - name: Upload Flash Loader Module
+        uses: actions/upload-artifact@v4
+        with:
+          name: bh-flm
+          path: tt-system-firmware/scripts/tooling/blackhole_recovery/data/bh_flm/build/*.flm
 
   smc-build-only-tests:
     runs-on: ubuntu-24.04
