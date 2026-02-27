@@ -78,7 +78,7 @@ class SPIPackFlashAlgo(PackFlashAlgo):
         return algo
 
 
-def will_connect(flm, target):
+def will_connect(flm, target, blocksize=0x1000):
     """
     Wrapper function for when pyocd connects to the target.
     Will add a new flash region with the FLM for the SPI NOR flash.
@@ -91,7 +91,7 @@ def will_connect(flm, target):
         name="External SPI EEPROM",
         start=spiflash_base,
         length=spiflash_size,
-        blocksize=0x1000,
+        blocksize=blocksize,
         page_size=0x100,
         flm=flash_algo,
     )

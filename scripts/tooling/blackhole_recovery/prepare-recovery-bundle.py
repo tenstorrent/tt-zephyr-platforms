@@ -214,7 +214,7 @@ def main():
                 / "tooling"
                 / "blackhole_recovery"
                 / "data"
-                / "bh_flm"
+                / "common_flm"
                 / "pyocd_shared.py",
                 Path(temp_dir) / "pyocd_shared.py",
             ),

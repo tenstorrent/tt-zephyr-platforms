@@ -14,9 +14,9 @@ def will_connect():
     """
     Called by pyocd at target connection time.
     """
-    flm = Path(__file__).parent / "build" / "spi_combo.flm"
+    flm = Path(__file__).parent / "build" / "spi1.flm"
     # Target variable is defined by pyocd module
-    pyocd_shared.will_connect(flm, target)  # pylint: disable=undefined-variable # noqa: F821
+    pyocd_shared.will_connect(flm, target, blocksize=0x100)  # pylint: disable=undefined-variable # noqa: F821
 
 
 def did_connect():

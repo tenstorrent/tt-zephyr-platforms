@@ -13,10 +13,11 @@
 
 /* Configuration for EEPROM */
 struct spi_nor_config {
-	uint8_t read_cmd; /* Read command */
-	uint8_t pp_cmd;   /* Page program command */
-	uint8_t se_cmd;   /* Sector erase command */
-	uint8_t ce_cmd;   /* Chip erase command */
+	uint8_t read_cmd;  /* Read command */
+	uint8_t pp_cmd;    /* Page program command */
+	uint8_t se_cmd;    /* Sector erase command */
+	uint8_t ce_cmd;    /* Chip erase command */
+	uint8_t addr_len;  /* Address length in bytes: 3 or 4 */
 };
 
 struct spi_nor_chip {
@@ -27,24 +28,37 @@ struct spi_nor_chip {
 #define SPI_NOR_WIP_BIT 0x01 /* Write In Progress bit in status register */
 #define SPI_NOR_FLASH_PAGE_SIZE 0x100      /* Flash page size in bytes (256 bytes) */
 
+
+static int read_jedec_id(uint32_t *jedec_id)
+{
+	struct spi_buf buf[2];
+	uint8_t cmd = 0x9F; /* Read JEDEC ID command */
+	int ret;
+
+	*jedec_id = 0;
+	buf[0].tx_buf = &cmd;
+	buf[0].rx_buf = NULL;
+	buf[0].len = 1;
+	buf[1].tx_buf = NULL;
+	buf[1].rx_buf = (uint8_t *)jedec_id;
+	buf[1].len = 3;
+
+	ret = spi_transfer(buf, 2);
+	if (ret != 0) {
+		return -1;
+	}
+	return 0;
+}
+
 /*
  * The data section doesn't work with PIC code for Cortex-M0+,
  * so we probe the EEPROM at runtime to find the correct configuration,
  * and allocate everything on the stack.
  */
-static int eeprom_probe(struct spi_nor_config *cfg)
+static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
 {
-	struct spi_buf buf[2];
 	uint32_t jedec_id = 0;
 	int ret;
-	uint8_t cmd = 0x9F; /* Read JEDEC ID command */
-
-	buf[0].tx_buf = &cmd;
-	buf[0].rx_buf = NULL;
-	buf[0].len = 1;
-	buf[1].tx_buf = NULL;
-	buf[1].rx_buf = (uint8_t *)&jedec_id;
-	buf[1].len = 3;
 	struct spi_nor_chip eeproms[] = {
 		/* clang-format off */
 		{
@@ -54,6 +68,7 @@ static int eeprom_probe(struct spi_nor_config *cfg)
 					.pp_cmd = 0x12,
 					.se_cmd = 0x21,
 					.ce_cmd = 0xC7,
+					.addr_len = 4,
 				},
 		},
 		{
@@ -67,6 +82,17 @@ static int eeprom_probe(struct spi_nor_config *cfg)
 					 * This is undocumented behavior!
 					 */
 					.ce_cmd = 0x60,
+					.addr_len = 4,
+				},
+		},
+		{
+			.jedec_id = 0x1760EF, /* JEDEC ID for W25Q64JW-IQ/JQ */
+			.config = {
+					.read_cmd = 0x03,
+					.pp_cmd = 0x02,
+					.se_cmd = 0x20,
+					.ce_cmd = 0xC7,
+					.addr_len = 3, /* 3 byte address */
 				},
 		},
 		/* clang-format on */
@@ -74,10 +100,13 @@ static int eeprom_probe(struct spi_nor_config *cfg)
 	};
 	struct spi_nor_chip *chip;
 
-	/* Read JEDEC ID, match to eeprom */
-	ret = spi_transfer(buf, 2);
+	ret = read_jedec_id(&jedec_id);
 	if (ret != 0) {
 		return ret;
+	}
+
+	if (jedec_id_out != NULL) {
+		*jedec_id_out = jedec_id;
 	}
 
 	for (chip = &eeproms[0]; chip->jedec_id != 0; chip++) {
@@ -89,12 +118,13 @@ static int eeprom_probe(struct spi_nor_config *cfg)
 	return -1; /* No matching chip found */
 }
 
-static void fill_addr(uint8_t *addr_buf, uint32_t addr)
+/* Write n address bytes big-endian (n is 3 or 4) */
+static void fill_addr(uint8_t* addr_buf, uint32_t addr, uint8_t n)
 {
-	addr_buf[0] = (addr >> 24) & 0xFF; /* MSB */
-	addr_buf[1] = (addr >> 16) & 0xFF;
-	addr_buf[2] = (addr >> 8) & 0xFF;
-	addr_buf[3] = addr & 0xFF; /* LSB */
+	unsigned int i;
+	for (i = 0; i < n; i++) {
+		addr_buf[i] = (addr >> (8 * (n - 1 - (uint8_t)i))) & 0xFF;
+	}
 }
 
 static int wait_spi_ready(void)
@@ -132,16 +162,130 @@ static int spi_write_enable(void)
 	return spi_transfer(&buf, 1); /* Send write enable command */
 }
 
+static int spi_global_unlock(void)
+{
+	uint8_t cmd = 0x98; /* Global Unlock command */
+	struct spi_buf buf;
+
+	buf.tx_buf = &cmd;
+	buf.rx_buf = NULL;
+	buf.len = 1;                  /* 1 byte command */
+	return spi_transfer(&buf, 1); /* Send global unlock command */
+}
+
+static int spi_global_lock(void)
+{
+	uint8_t cmd = 0x7E; /* Global Lock command */
+	struct spi_buf buf;
+
+	buf.tx_buf = &cmd;
+	buf.rx_buf = NULL;
+	buf.len = 1;                  /* 1 byte command */
+	return spi_transfer(&buf, 1); /* Send global lock command */
+}
+
+static int read_status_register(uint8_t* status)
+{
+	struct spi_buf buf[2];
+	uint8_t cmd = 0x05; /* Read Status Register 1 */
+
+	buf[0].tx_buf = &cmd;
+	buf[0].rx_buf = NULL;
+	buf[0].len = 1;
+	buf[1].tx_buf = NULL;
+	buf[1].rx_buf = status;
+	buf[1].len = 1;
+
+	return spi_transfer(buf, 2);
+}
+
+static int write_status_register(uint8_t status)
+{
+	struct spi_buf buf;
+	uint8_t cmd_buf[2];
+	int ret;
+
+	ret = spi_write_enable();
+	if (ret != 0) {
+		return ret;
+	}
+
+	cmd_buf[0] = 0x01; /* Write Status Register 1 */
+	cmd_buf[1] = status;
+
+	buf.tx_buf = cmd_buf;
+	buf.rx_buf = NULL;
+	buf.len = 2;
+
+	ret = spi_transfer(&buf, 1);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return wait_spi_ready();
+}
+
 int eeprom_init(void)
 {
 	struct spi_nor_config cfg;
+	uint32_t jedec_id;
+	uint8_t status;
+	int ret;
 
-	return eeprom_probe(&cfg);
+	if (eeprom_probe(&cfg, &jedec_id) != 0) {
+		return -1; /* EEPROM probe failed */
+	}
+
+	/* Global unlock only for W25Q64JW */
+	if (jedec_id == 0x1760EF) {
+		if (spi_write_enable() != 0) {
+			return -1;
+		}
+		ret = spi_global_unlock();
+		if (ret != 0) {
+			return ret;
+		}
+
+		/* Check and clear Block Protect (BP) bits in Status Register 1 */
+		ret = read_status_register(&status);
+		if (ret != 0) {
+			return ret;
+		}
+
+		if (status & 0x3C) {
+			/* BP bits are set, clear them */
+			status &= ~0x3C;
+			ret = write_status_register(status);
+			if (ret != 0) {
+				return ret;
+			}
+		}
+	}
+	return 0;
 }
 
 int eeprom_deinit(void)
 {
-	return 0; /* No deinit required */
+	struct spi_nor_config cfg;
+	uint32_t jedec_id;
+	int ret;
+
+	if (eeprom_probe(&cfg, &jedec_id) != 0) {
+		return -1; /* EEPROM probe failed */
+	}
+
+	/* Global lock only for W25Q64JW */
+	if (jedec_id == 0x1760EF) {
+		if (spi_write_enable() != 0) {
+			return -1;
+		}
+		ret = spi_global_lock();
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	return 0; /* Otherwise no deinit required */
 }
 
 int eeprom_erase_chip(void)
@@ -150,7 +294,7 @@ int eeprom_erase_chip(void)
 	struct spi_buf buf;
 	int ret;
 
-	if (eeprom_probe(&cfg) != 0) {
+	if (eeprom_probe(&cfg, NULL) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -176,7 +320,7 @@ int eeprom_erase_sector(uint32_t sector)
 	uint8_t cmd_buf[5];
 	int ret;
 
-	if (eeprom_probe(&cfg) != 0) {
+	if (eeprom_probe(&cfg, NULL) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -186,12 +330,12 @@ int eeprom_erase_sector(uint32_t sector)
 	}
 
 	/* Populate command buffer */
-	cmd_buf[0] = cfg.se_cmd;        /* Erase command */
-	fill_addr(&cmd_buf[1], sector); /* Address in big-endian format */
+	cmd_buf[0] = cfg.se_cmd;
+	fill_addr(&cmd_buf[1], sector, cfg.addr_len);
 
 	buf.tx_buf = cmd_buf;
 	buf.rx_buf = NULL;
-	buf.len = 5; /* 1 byte command + 4 bytes address */
+	buf.len = 1 + cfg.addr_len;
 	ret = spi_transfer(&buf, 1);
 	if (ret != 0) {
 		return ret; /* SPI transfer failed */
@@ -218,7 +362,7 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 		return -1; /* Invalid parameters */
 	}
 
-	if (eeprom_probe(&cfg) != 0) {
+	if (eeprom_probe(&cfg, NULL) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -231,11 +375,11 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 			return ret; /* Write enable failed */
 		}
 
-		fill_addr(&cmd_buf[1], addr + off); /* Address in big-endian format */
+		fill_addr(&cmd_buf[1], addr + off, cfg.addr_len);
 
 		buf[0].tx_buf = cmd_buf;
 		buf[0].rx_buf = NULL;
-		buf[0].len = 5; /* 1 byte command + 4 bytes address */
+		buf[0].len = 1 + cfg.addr_len;
 		buf[1].tx_buf = &data[off];
 		buf[1].rx_buf = NULL;
 		buf[1].len = SPI_NOR_FLASH_PAGE_SIZE; /* Program one page */
@@ -257,7 +401,7 @@ int eeprom_read(uint32_t addr, uint8_t *data, uint32_t len)
 	struct spi_buf buf[2];
 	uint8_t cmd_buf[5];
 
-	if (eeprom_probe(&cfg) != 0) {
+	if (eeprom_probe(&cfg, NULL) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -266,12 +410,12 @@ int eeprom_read(uint32_t addr, uint8_t *data, uint32_t len)
 	}
 
 	/* Populate command buffer */
-	cmd_buf[0] = cfg.read_cmd;    /* Read command */
-	fill_addr(&cmd_buf[1], addr); /* Address in big-endian format */
+	cmd_buf[0] = cfg.read_cmd;
+	fill_addr(&cmd_buf[1], addr, cfg.addr_len);
 
 	buf[0].tx_buf = cmd_buf;
 	buf[0].rx_buf = NULL;
-	buf[0].len = 5; /* 1 byte command + 4 bytes address */
+	buf[0].len = 1 + cfg.addr_len;
 	buf[1].tx_buf = NULL;
 	buf[1].rx_buf = data;
 	buf[1].len = len;
