@@ -34,6 +34,9 @@ Major enhancements with this release include:
 ### System Improvements
 - Improved DRAM interface margins on Galaxy Rev C boards
 
+### NOC
+- Fixed NOC "logical_id" programming for GDDR ports (this does not functionally impact NOC translation, just how it is reported)
+
 ## Migration guide
 
 An overview of required and recommended changes to make when migrating from the previous v19.6.0 release can be found in [19.7 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-19.7.md).
