@@ -546,8 +546,8 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 		memcpy(&noc0.translate_table_y[12 + gddr * 3], kGddrY[gddr_y_order[gddr]], 3);
 	}
 
-	ApplyLogicalCoords(&noc0, 0, 0, 0, 11, 17, 12, 17, 23);
-	ApplyLogicalCoords(&noc0, 9, 0, 9, 11, 17, 12, 17, 23);
+	ApplyLogicalCoords(&noc0, 0, 0, 0, 11, 17, 12, 18, 23);
+	ApplyLogicalCoords(&noc0, 9, 0, 9, 11, 17, 12, 18, 23);
 
 	/* PCIE
 	 * 19-24 => 2-0 or 11-0, whichever is in use as the endpoint.
