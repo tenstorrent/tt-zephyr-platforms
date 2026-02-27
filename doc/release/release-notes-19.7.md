@@ -8,6 +8,9 @@ Major enhancements with this release include:
 
 ## Blackhole
 
+### API Changes
+- New CMFW message `TT_SMC_MSG_TOGGLE_GDDR_RESET` to reset and retrain a specific GDDR controller (0-7). Sample usage can be found in the [pytest file](https://github.com/tenstorrent/tt-system-firmware/blob/d979bce5bfd2ce345f85d9b506d46505d5751e92/app/smc/pytest/e2e_smoke.py#L961).
+
 ### Developer Features
 - DMFW and SMFW now store Zephyr's `APP_VERSION_STRING` and `APP_BUILD_VERSION` binary descriptors, which provide the app version and the FW bundle's git revision respectively. These are printed to the boot banner, and can also be accessed using Zephyr's [`west bindesc` tool](https://docs.zephyrproject.org/latest/services/binary_descriptors/index.html).
 
