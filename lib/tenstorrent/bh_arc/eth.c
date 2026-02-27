@@ -28,8 +28,10 @@
 
 LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 
-#define ETH_SETUP_TLB  0
-#define ETH_PARAM_ADDR 0x7c000
+#define ETH_SETUP_TLB              0
+#define ETH_FW_BASE_ADDR           0x70000
+#define ETH_PARAM_ADDR             0x7c000
+#define ETH_FW_VERSION_ADDR_OFFSET 0x188
 
 #define ERISC_L1_SIZE (512 * 1024)
 
@@ -195,6 +197,25 @@ uint64_t GetMacAddressBase(void)
 	return mac_addr_base;
 }
 
+uint32_t GetEthFwVersion(uint32_t ring)
+{
+	/* Look through all the enabled ETH tiles, and grab the FW version from the first
+	 * available tile's L1 (at ETH_FW_BASE_ADDR + ETH_FW_VERSION_ADDR_OFFSET)
+	 */
+	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
+			SetupEthTlb(eth_inst, ring, ETH_FW_BASE_ADDR);
+
+			volatile uint32_t *eth_fw_version = GetTlbWindowAddr(
+				ring, ETH_SETUP_TLB, ETH_FW_BASE_ADDR + ETH_FW_VERSION_ADDR_OFFSET);
+			return *eth_fw_version;
+		}
+	}
+
+	/* If no ETHs are enabled, return 0 as the FW version, which will be read as 0.0.0 */
+	return 0;
+}
+
 void ReleaseEthReset(uint32_t eth_inst, uint32_t ring)
 {
 	SetupEthTlb(eth_inst, ring, ETH_RESET_PC_0);
@@ -209,7 +230,7 @@ int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *buf, size_t buf_size, s
 {
 	/* The shifting is to align the address to the lowest 16 bytes */
 	/* uint32_t fw_load_addr = ((ETH_PARAM_ADDR - fw_size) >> 2) << 2; */
-	uint32_t fw_load_addr = 0x00070000;
+	uint32_t fw_load_addr = ETH_FW_BASE_ADDR;
 
 	SetupEthTlb(eth_inst, ring, fw_load_addr);
 	volatile uint32_t *eth_tlb = GetTlbWindowAddr(ring, ETH_SETUP_TLB, fw_load_addr);
@@ -385,7 +406,7 @@ static void wipe_l1(void)
 	};
 
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
-		if (tile_enable.eth_enabled & BIT(eth_inst)) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
 			uint8_t x, y;
 
 			GetEthNocCoords(eth_inst, noc_id, &x, &y);
@@ -426,7 +447,7 @@ static void EthInit(void)
 
 	/* Load fw */
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
-		if (tile_enable.eth_enabled & BIT(eth_inst)) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
 			LoadEthFw(eth_inst, ring, buf, SCRATCHPAD_SIZE, spi_address, image_size);
 		}
 	}
@@ -446,7 +467,7 @@ static void EthInit(void)
 
 	/* Load param table */
 	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
-		if (tile_enable.eth_enabled & BIT(eth_inst)) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
 			LoadEthFwCfg(eth_inst, ring, buf, tile_enable.eth_enabled, spi_address,
 				     image_size);
 			ReleaseEthReset(eth_inst, ring);
