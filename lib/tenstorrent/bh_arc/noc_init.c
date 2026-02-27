@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "bh_reset.h"
 #include "harvesting.h"
 #include "noc_init.h"
 #include "noc.h"
@@ -239,6 +240,11 @@ int NocInit(void)
 		router_cfg_0_updates |= BIT(0); /* router clock gating enable */
 	}
 
+	/* In cable fault mode, all tiles are deasserted from hardware reset
+	 * but clock-gated via NIU_CFG_0 TILE_CLK_OFF (except ARC at px=15).
+	 * The full NOC grid is configured so all routers remain alive.
+	 */
+
 	for (uint32_t py = 0; py < NOC_Y_SIZE; py++) {
 		for (uint32_t px = 0; px < NOC_X_SIZE; px++) {
 			for (uint32_t noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
@@ -248,8 +254,20 @@ int NocInit(void)
 				uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
 
 				niu_cfg_0 |= niu_cfg_0_updates;
-				WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF,
-					  GetTileClkDisable(px, py));
+
+				/* In cable fault mode, clock-gate ALL tiles except
+				 * ARC (px=15) to minimize power. In normal mode,
+				 * only clock-gate harvested tiles.
+				 */
+				bool tile_clk_off;
+
+				if (is_cable_fault_mode()) {
+					tile_clk_off = (px != 15); /* everything except ARC */
+				} else {
+					tile_clk_off = GetTileClkDisable(px, py);
+				}
+
+				WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, tile_clk_off);
 				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
 
 				uint32_t router_cfg_0 = ReadNocCfgReg(noc_regs, ROUTER_CFG(0));
@@ -264,9 +282,12 @@ int NocInit(void)
 		}
 	}
 
-	uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
+	/* Skip broadcast exclusion in cable fault mode — tensix tiles are clock-gated. */
+	if (!is_cable_fault_mode()) {
+		uint16_t bad_tensix_cols = BIT_MASK(14) & ~tile_enable.tensix_col_enabled;
 
-	ProgramBroadcastExclusion(bad_tensix_cols);
+		ProgramBroadcastExclusion(bad_tensix_cols);
+	}
 
 	return 0;
 }
@@ -608,6 +629,13 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 int InitNocTranslationFromHarvesting(void)
 {
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, tiles are clock-gated - skip NOC translation
+	 * programming since tiles are not active.
+	 */
+	if (is_cable_fault_mode()) {
 		return 0;
 	}
 

@@ -30,6 +30,7 @@ int jtag_bootrom_patch_offset(struct bh_chip *chip, const uint32_t *patch, size_
 			      const uint32_t start_addr);
 int jtag_bootrom_verify(const struct device *dev, const uint32_t *patch, size_t patch_len);
 void jtag_bootrom_soft_reset_arc(struct bh_chip *chip);
+void jtag_bootrom_set_cable_power_limit(struct bh_chip *chip, uint16_t power_limit);
 void jtag_bootrom_teardown(const struct bh_chip *chip);
 
 ALWAYS_INLINE int jtag_bootrom_patch(struct bh_chip *chip, const uint32_t *patch, size_t patch_len)
