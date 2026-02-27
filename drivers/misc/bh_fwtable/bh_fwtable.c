@@ -83,8 +83,8 @@ PcbType tt_bh_fwtable_get_pcb_type(const struct device *dev)
 
 	/* Figure out PCB type from board type */
 	switch (board_type) {
-	case BOARDTYPE_ORION:
-		pcb_type = PcbTypeOrion;
+	case BOARDTYPE_ORION_SLT:
+		pcb_type = PcbTypeOrionSLT;
 		break;
 	/* Note: the P100A is a depopulated P150, so PcbType is actually P150 */
 	/* eth will be all disabled as per P100 specs anyways */
