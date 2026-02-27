@@ -184,7 +184,7 @@ uint32_t get_vcorem(void)
 /* Set GDDR VDDR voltage for corner parts before DRAM training */
 void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv)
 {
-	if (board_type == PcbTypeOrion) {
+	if (board_type == PcbTypeOrionSLT) {
 		set_max20730(CB_GDDR_VDDR_WEST_ADDR, voltage_in_mv, CB_GDDR_VDDR_FB1,
 			     CB_GDDR_VDDR_FB2);
 		set_max20730(CB_GDDR_VDDR_EAST_ADDR, voltage_in_mv, CB_GDDR_VDDR_FB1,
@@ -229,6 +229,8 @@ uint32_t RegulatorInit(PcbType board_type)
 		}
 	} else if (board_type == PcbTypeUBB) {
 		regulators_config = &ubb_regulators_config;
+	} else if (board_type == PcbTypeOrionSLT) {
+		/* Do nothing, Orion SLT regulators are manually programmed */
 	} else {
 		LOG_ERR("Unsupported board type %d", board_type);
 		return -ENOTSUP;
