@@ -16,6 +16,7 @@
 #include "telemetry.h"
 #include "telemetry_internal.h"
 #include "gddr.h"
+#include "eth.h"
 
 #include <float.h> /* for FLT_MAX */
 #include <math.h>  /* for floor */
@@ -330,8 +331,8 @@ static void write_static_telemetry(uint32_t app_version)
 								    * update in ms
 								    */
 
-	/* TODO: Gather FW versions from FW themselves */
-	telemetry[TAG_ETH_FW_VERSION] = 0x00000000;
+	/* Gather FW versions from FW themselves */
+	telemetry[TAG_ETH_FW_VERSION] = GetEthFwVersion(0);
 	if (tile_enable.gddr_enabled != 0) {
 		gddr_telemetry_table_t gddr_telemetry;
 		/* Use first available instance. */

@@ -27,7 +27,20 @@ Major enhancements with this release include:
 <!-- Performance Improvements, if applicable -->
 <!-- New and Experimental Features, if applicable -->
 <!-- External Project Collaboration Efforts, if applicable -->
-<!-- Stability Improvements, if applicable -->
+
+### Stability Improvements
+
+- Updated Blackhole ERISC FW to v1.9.0
+  - Embedded erisc fw version at known location (offset 0x188) for SYSIP-190
+  - Increased ERISC_CODE region by 4K, taken from ERISC_DATA region
+  - Updated chip_info_exchange to be more of a handshake
+  - Fixed send telemetry logic bug
+  - Fixed bug where is eth_sel unset the core would still attempt SerDes init
+  - Reworked SerDes synchronization between 2 ETH cores sharing a SerDes
+  - Added per-lane SerDes reset control
+    - Reworked port action up/down to properly bring link down
+    - Reinit from reset only toggles lane resets instead of full SerDes reset
+
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
 <!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
