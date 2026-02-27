@@ -54,7 +54,7 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
     steps:
       - name: Cleanup State
         if: ${{ always() }}

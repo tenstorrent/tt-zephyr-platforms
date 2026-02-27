@@ -1,0 +1,22 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+identifier: tt_blackhole@galaxy/tt_blackhole/smc
+name: Tenstorrent Blackhole Galaxy (SMC)
+type: mcu
+arch: arc
+toolchain:
+  - zephyr
+  - cross-compile
+  - xtools
+  - arcmwdt
+supported:
+  - dma
+  - smp
+  - bh_glx
+  - dma
+testing:
+  ignore_tags:
+    - net
+    - bluetooth
+vendor: tenstorrent

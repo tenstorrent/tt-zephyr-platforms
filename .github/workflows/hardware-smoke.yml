@@ -34,7 +34,8 @@ jobs:
         shell: bash
         run: |
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
-          MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
+          # Exclude galaxy board from smoke tests since we do not have a recovery solution for it
+          MATRIX_CONFIG="$(jq -c '[.[] | select((.product == "bh") and (.board != "galaxy")) | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
@@ -51,7 +52,7 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
     steps:
       - name: Cleanup State
         if: ${{ always() }}
@@ -140,7 +141,7 @@ jobs:
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
     steps:
       - name: Cleanup State
         if: ${{ always() }}

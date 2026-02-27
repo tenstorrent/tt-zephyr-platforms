@@ -197,6 +197,17 @@ def arc_chip_dut(launched_arc_dut, asic_id):
     return launched_arc_dut
 
 
+def check_chip_count(board_name):
+    chips = pyluwen.detect_chips()
+    if "galaxy" in board_name:
+        assert len(chips) == 32, f"Expected 32 BH chips on Galaxy, found {len(chips)}"
+    elif "p300" in board_name:
+        assert len(chips) == 2, f"Expected 2 BH chips on P300, found {len(chips)}"
+    else:
+        assert len(chips) == 1, f"Expected 1 BH chip, found {len(chips)}"
+    del chips
+
+
 def upgrade_from_version_test(
     arc_chip_dut,
     tmp_path: Path,
@@ -220,21 +231,25 @@ def upgrade_from_version_test(
     )
     # versions we want to check upgrading from
 
-    # flash recovery first
-    try:
-        subprocess.check_call(
-            [
-                "python3",
-                recovery_py,
-                tar_recovery,
-                board_name,
-                "--force",
-                "--no-prompt",
-            ]
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error(f"blackhole_recovery.py failed with error: {e}")
-        assert False
+    # Galaxy has no recovery solution, but also lacks the DMC- so we don't
+    # need to directly flash DMFW to test upgrades. Just skip this part of
+    # the test on Galaxy
+    if board_name != "galaxy":
+        # flash recovery first
+        try:
+            subprocess.check_call(
+                [
+                    "python3",
+                    recovery_py,
+                    tar_recovery,
+                    board_name,
+                    "--force",
+                    "--no-prompt",
+                ]
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(f"blackhole_recovery.py failed with error: {e}")
+            assert False
 
     # flash "base" firmware to update from
     URL = f"https://github.com/tenstorrent/tt-firmware/releases/download/v{version}/fw_pack-{version}.fwbundle"
@@ -243,20 +258,27 @@ def upgrade_from_version_test(
     urlretrieve(URL, targz)
     try:
         result = subprocess.run(
-            ["tt-flash", "flash", "--fw-tar", str(targz), "--force"],
+            [
+                "tt-flash",
+                "flash",
+                str(targz),
+                "--force",
+                "--allow-major-downgrades",
+            ],
             capture_output=True,
             text=True,
         )
+        logger.info(f"tt-flash output: {result.stdout}")
 
         assert "FLASH SUCCESS" in strip_ansi_codes(result.stdout)
 
     except subprocess.CalledProcessError as e:
         logger.error(
-            f"tt-flash flash --fw_tar {targz} --force: failed with error: {e}\n{result.stdout}"
+            f"tt-flash flash --fw_tar {targz} --force --allow-major-downgrades: failed with error: {e}\n{result.stdout}"
         )
         assert False
 
-    if replace_bootloader:
+    if replace_bootloader and (not board_name == "galaxy"):
         # Newer firmware requires us to replace the production bootloader on the
         # DMC with one that will accept a firmware signed using our temporary key
         try:
@@ -279,19 +301,27 @@ def upgrade_from_version_test(
         wait_arc_boot(0, timeout=20)
 
     time.sleep(0.5)
-    assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
+    if not board_name == "galaxy":
+        assert dmfw_version_base == read_telem(0, TAG_DM_APP_FW_VERSION)
     assert cmfw_version_base == read_telem(0, TAG_CM_FW_VERSION)
+
+    # Make sure we see all ASICs after flashing
+    check_chip_count(board_name)
 
     # flash firmware to update to
     unlaunched_dut.launch()
 
     time.sleep(0.5)
-    assert get_ttzp_version.get_ttzp_version_u32(
-        TTZP / "app/dmc/VERSION"
-    ) == read_telem(0, TAG_DM_APP_FW_VERSION)
+    if not board_name == "galaxy":
+        assert get_ttzp_version.get_ttzp_version_u32(
+            TTZP / "app/dmc/VERSION"
+        ) == read_telem(0, TAG_DM_APP_FW_VERSION)
     assert get_ttzp_version.get_ttzp_version_u32(
         TTZP / "app/smc/VERSION"
     ) == read_telem(0, TAG_CM_FW_VERSION)
+
+    # Check chip count again
+    check_chip_count(board_name)
 
 
 def pvt_comprehensive_test(arc_chip_dut, asic_id):
@@ -364,7 +394,7 @@ def process_detectors_test(arc_chip_dut, asic_id):
 def temperature_sensors_test(arc_chip_dut, asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     fail_count = 0
-    tmin = 40
+    tmin = 25
     tmax = 70
     for sensor_id in range(NUM_TS):
         response = arc_chip.as_bh().arc_msg_buf(

@@ -22,5 +22,13 @@
     "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.66.0-dev20251218-4-g255c9332f1",
     "metal-target": "blackhole_p300",
     "kmd_build": "2.5.0"
+  },
+  {
+    "board": "galaxy",
+    "runs-on": "tt-galaxy-bh",
+    "product": "bh",
+    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-glx:v0.66.0-dev20251218-4-g255c9332f1",
+    "metal-target": "blackhole_glx",
+    "kmd_build": "2.5.0"
   }
 ]

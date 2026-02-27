@@ -56,11 +56,10 @@ jobs:
         - /dev/hugepages:/dev/hugepages
         - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
-      HF_MODEL: /opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/
     defaults:
       run:
         shell: bash
@@ -74,6 +73,22 @@ jobs:
           sudo rmmod tenstorrent
           sudo insmod /opt/tenstorrent/kmd-builds/${{ matrix.config.kmd_build }}/tenstorrent.ko
           echo "tt-kmd version: $(cat /sys/module/tenstorrent/version)"
+
+      - name: Install ipmitool
+        shell: bash
+        run: |
+          sudo apt update || true
+          sudo apt install -y ipmitool
+
+      - name: Set model env
+        shell: bash
+        run: |
+          if [[ "${{ matrix.config.board }}" == "p300a" ]]; then
+            echo "HF_MODEL=/opt/tenstorrent/hf-models/meta-llama/Llama-3.1-8B/" >> $GITHUB_ENV
+          elif [[ "${{ matrix.config.board }}" == "galaxy" ]]; then
+            echo "HF_MODEL=/opt/tenstorrent/hf-models/meta-llama/Llama-3.3-70B-Instruct/" >> $GITHUB_ENV
+            echo "LLAMA_DIR=/opt/tenstorrent/hf-models/meta-llama/Llama-3.3-70B-Instruct/" >> $GITHUB_ENV
+          fi
 
       - id: mkdir-home-user-tt-metal
         run: |
@@ -91,7 +106,7 @@ jobs:
         run: |
           python -m venv .env
           source .env/bin/activate
-          pip install tt-flash==3.4.7
+          pip install tt-flash@git+https://github.com/tenstorrent/tt-flash.git@73969bd2e2c5d843f4427c460e3a1eeff7fd1aa1
           tt-flash $HOME/fw_pack-*.fwbundle --force
       - name: Patch Test Command
         run: |
