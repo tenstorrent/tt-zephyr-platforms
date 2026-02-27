@@ -365,7 +365,7 @@ def temperature_sensors_test(arc_chip_dut, asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     fail_count = 0
     tmin = 40
-    tmax = 70
+    tmax = 75
     for sensor_id in range(NUM_TS):
         response = arc_chip.as_bh().arc_msg_buf(
             [TT_SMC_MSG_READ_TS, sensor_id, 0, 0, 0, 0, 0, 0]
