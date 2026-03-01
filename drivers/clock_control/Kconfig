@@ -8,6 +8,7 @@ menu "Clock control drivers"
 # zephyr-keep-sorted-start
 rsource "Kconfig.emul"
 rsource "Kconfig.tt_bh"
+rsource "Kconfig.tt_gr"
 # zephyr-keep-sorted-stop
 
 endmenu

@@ -1,0 +1,11 @@
+common:
+  tags:
+    - drivers
+    - clock_control
+tests:
+  drivers.clock_control.basic:
+    tags: smoke
+    platform_allow:
+      - tt_grendel_smc
+    extra_args:
+      - "platform:tt_grendel_smc:DTC_OVERLAY_FILE=app.overlay"

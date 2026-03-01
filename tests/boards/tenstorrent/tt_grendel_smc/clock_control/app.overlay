@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2026 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&{/soc} {
+	cgm0: cgm@c0003100 {
+		compatible = "tenstorrent,grendel-clock-control";
+		reg = <0x0 0xc0003100 0x0 0x92>;
+		#clock-cells = <0>;
+		ref-clk = <50000000>;
+		status = "okay";
+	};
+
+	cgm1: cgm@c0003200 {
+		compatible = "tenstorrent,grendel-clock-control";
+		reg = <0x0 0xc0003200 0x0 0x92>;
+		#clock-cells = <0>;
+		ref-clk = <50000000>;
+		status = "okay";
+	};
+};

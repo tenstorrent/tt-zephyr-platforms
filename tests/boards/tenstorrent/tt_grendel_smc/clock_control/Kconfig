@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Clock control test options"
+
+config CLOCK_CTRL_TOLERANCE_PERCENT
+	int "Tolerance when asserting expected clock frequencies"
+	default 1
+
+config CLOCK_CTRL_CGM_MIN_RATE
+	int "Minimum rate (Hz) to sweep during set_rate test"
+	default 200000000
+
+config CLOCK_CTRL_CGM_MAX_RATE
+	int "Maximum rate (Hz) to sweep during set_rate test"
+	default 500000000
+
+config CLOCK_CTRL_CGM_FREQ_INCR
+	int "Rate increment (Hz) when sweeping frequencies"
+	default 50000000
+
+endmenu
+
+source "Kconfig.zephyr"
