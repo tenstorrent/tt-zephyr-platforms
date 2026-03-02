@@ -292,9 +292,8 @@ uint32_t get_aiclk_effective_arb_min(enum aiclk_arb_min *effective_min_arb)
 
 	for (enum aiclk_arb_min i = 0; i < aiclk_arb_min_count; i++) {
 		if (aiclk_ppm.arbiter_min[i].enabled) {
-			effective_min = MAX(effective_min, aiclk_ppm.arbiter_min[i].value);
-
-			if (effective_min == aiclk_ppm.arbiter_min[i].value) {
+			if (aiclk_ppm.arbiter_min[i].value >= effective_min) {
+				effective_min = aiclk_ppm.arbiter_min[i].value;
 				*effective_min_arb = i;
 			}
 		}
@@ -310,9 +309,8 @@ uint32_t get_aiclk_effective_arb_max(enum aiclk_arb_max *effective_max_arb)
 
 	for (enum aiclk_arb_max i = 0; i < aiclk_arb_max_count; i++) {
 		if (aiclk_ppm.arbiter_max[i].enabled) {
-			effective_max = MIN(effective_max, aiclk_ppm.arbiter_max[i].value);
-
-			if (effective_max == aiclk_ppm.arbiter_max[i].value) {
+			if (aiclk_ppm.arbiter_max[i].value <= effective_max) {
+				effective_max = aiclk_ppm.arbiter_max[i].value;
 				*effective_max_arb = i;
 			}
 		}
