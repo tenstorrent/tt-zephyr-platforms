@@ -29,9 +29,9 @@ static inline void SetupSerdesTlb(uint32_t serdes_inst, uint32_t ring, uint64_t 
 	NOC2AXITlbSetup(ring, SERDES_ETH_SETUP_TLB, x, y, addr);
 }
 
-static int NOC2AxiWrite32SerdesReg(uint8_t *src, uint8_t *dst, size_t len)
+static int NOC2AxiWrite32SerdesReg(const uint8_t *src, uint8_t *dst, size_t len)
 {
-	SerdesRegData *reg_table = (SerdesRegData *)src;
+	const SerdesRegData *reg_table = (const SerdesRegData *)src;
 	uint32_t reg_count = len / sizeof(SerdesRegData);
 
 	for (uint32_t i = 0; i < reg_count; i++) {
