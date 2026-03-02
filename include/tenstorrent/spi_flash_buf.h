@@ -14,7 +14,7 @@
 
 int spi_transfer_by_parts(const struct device *dev, size_t spi_address, size_t image_size,
 			  uint8_t *buf, size_t buf_size, uint8_t *tlb_dst,
-			  int (*cb)(uint8_t *src, uint8_t *dst, size_t len));
+			  int (*cb)(const uint8_t *src, uint8_t *dst, size_t len));
 int spi_arc_dma_transfer_to_tile(const struct device *dev, size_t spi_address, size_t image_size,
 				 uint8_t *buf, size_t buf_size, uint8_t *tlb_dst);
 

@@ -20,7 +20,7 @@ static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELAB
 
 int spi_transfer_by_parts(const struct device *dev, size_t spi_address, size_t image_size,
 			  uint8_t *buf, size_t buf_size, uint8_t *tlb_dst,
-			  int (*cb)(uint8_t *src, uint8_t *dst, size_t len))
+			  int (*cb)(const uint8_t *src, uint8_t *dst, size_t len))
 {
 	if ((buf == NULL) || (buf_size == 0)) {
 		return -EINVAL;
@@ -49,7 +49,7 @@ int spi_transfer_by_parts(const struct device *dev, size_t spi_address, size_t i
 	return rc;
 }
 
-static int arc_dma_transfer_wrapper(uint8_t *src, uint8_t *dst, size_t len)
+static int arc_dma_transfer_wrapper(const uint8_t *src, uint8_t *dst, size_t len)
 {
 	if (dma_arc_hs_transfer(arc_dma_dev, 0, src, dst, len, K_MSEC(500)) < 0) {
 		LOG_ERR("%s() failed: %d", "dma_arc_hs_transfer", -EIO);
