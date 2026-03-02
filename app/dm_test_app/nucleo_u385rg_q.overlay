@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2026 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * SPI test overlay for dm_test_app - nucleo_u385rg_q board only
+ */
+&spi1 {
+	max7221: max7221@0 {
+		compatible = "maxim,max7219";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		num-cascading = <1>;
+		intensity = <8>;
+		scan-limit = <7>;
+	};
+};
