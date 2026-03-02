@@ -41,6 +41,16 @@ Major enhancements with this release include:
 ### NOC
 - Fixed NOC "logical_id" programming for GDDR ports (this does not functionally impact NOC translation, just how it is reported)
 
+## Grendel
+
+Added a virtual console logging driver, which supports outputting
+logs from Zephyr's logging subsystem via the virtual console used in pre-SI
+simulation
+
+### Driver Additions
+
+- Enabled driver for CDNS MIPI I3C peripheral
+
 ## Migration guide
 
 An overview of required and recommended changes to make when migrating from the previous v19.6.0 release can be found in [19.7 Migration Guide](https://github.com/tenstorrent/tt-system-firmware/tree/main/doc/release/migration-guide-19.7.md).
