@@ -13,11 +13,13 @@
 
 /* Configuration for EEPROM */
 struct spi_nor_config {
-	uint8_t read_cmd; /* Read command */
-	uint8_t pp_cmd;   /* Page program command */
-	uint8_t se_cmd;   /* Sector erase command */
-	uint8_t ce_cmd;   /* Chip erase command */
-	uint8_t addr_len; /* Address length in bytes: 3 or 4 */
+	uint8_t read_cmd;           /* Read command */
+	uint8_t pp_cmd;             /* Page program command */
+	uint8_t se_cmd;             /* Sector erase command */
+	uint8_t ce_cmd;             /* Chip erase command */
+	uint8_t addr_len;           /* Address length in bytes: 3 or 4 */
+	int (*device_init)(void);   /* Device-specific init, or NULL if none required */
+	int (*device_deinit)(void); /* Device-specific deinit, or NULL if none required */
 };
 
 struct spi_nor_chip {
@@ -47,74 +49,6 @@ static int read_jedec_id(uint32_t *jedec_id)
 		return -1;
 	}
 	return 0;
-}
-
-/*
- * The data section doesn't work with PIC code for Cortex-M0+,
- * so we probe the EEPROM at runtime to find the correct configuration,
- * and allocate everything on the stack.
- */
-static int eeprom_probe(struct spi_nor_config *cfg, uint32_t *jedec_id_out)
-{
-	uint32_t jedec_id = 0;
-	int ret;
-	struct spi_nor_chip eeproms[] = {
-		/* clang-format off */
-		{
-			.jedec_id = 0x20BB20, /* JEDEC ID for MT25QU512ABB */
-			.config = {
-					.read_cmd = 0x13,
-					.pp_cmd = 0x12,
-					.se_cmd = 0x21,
-					.ce_cmd = 0xC7,
-					.addr_len = 4,
-				},
-		},
-		{
-			.jedec_id = 0x1A5B2C, /* JEDEC ID for MT35XU02GCBA */
-			.config = {
-					.read_cmd = 0x13,
-					.pp_cmd = 0x12,
-					.se_cmd = 0x21,
-					/* 0x60 is a common SPI NOR chip erase command.
-					 * 0xC4 given in datasheet doesn't work, so use this.
-					 * This is undocumented behavior!
-					 */
-					.ce_cmd = 0x60,
-					.addr_len = 4,
-				},
-		},
-		{
-			.jedec_id = 0x1760EF, /* JEDEC ID for W25Q64JW-IQ/JQ */
-			.config = {
-					.read_cmd = 0x03,
-					.pp_cmd = 0x02,
-					.se_cmd = 0x20,
-					.ce_cmd = 0xC7,
-					.addr_len = 3, /* 3 byte address */
-				},
-		},
-		/* clang-format on */
-		{.jedec_id = 0, .config = {0}} /* Terminator */
-	};
-	struct spi_nor_chip *chip;
-
-	ret = read_jedec_id(&jedec_id);
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (jedec_id_out != NULL) {
-		*jedec_id_out = jedec_id;
-	}
-
-	for (chip = &eeproms[0]; chip->jedec_id != 0; chip++) {
-		if (jedec_id == chip->jedec_id) {
-			memcpy(cfg, &chip->config, sizeof(struct spi_nor_config));
-			return 0;
-		}
-	}
-	return -1; /* No matching chip found */
 }
 
 /* Write n address bytes big-endian (n is 3 or 4) */
@@ -225,41 +159,122 @@ static int write_status_register(uint8_t status)
 	return wait_spi_ready();
 }
 
-int eeprom_init(void)
+/* W25Q64JW-IQ/JQ device-specific init: global unlock + clear BP bits */
+static int w25q64jw_init(void)
 {
-	struct spi_nor_config cfg;
-	uint32_t jedec_id;
 	uint8_t status;
 	int ret;
 
-	if (eeprom_probe(&cfg, &jedec_id) != 0) {
+	if (spi_write_enable() != 0) {
+		return -1;
+	}
+	ret = spi_global_unlock();
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Check and clear Block Protect (BP) bits in Status Register 1 */
+	ret = read_status_register(&status);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (status & 0x3C) {
+		/* BP bits are set, clear them */
+		status &= ~0x3C;
+		ret = write_status_register(status);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+	return 0;
+}
+
+/* W25Q64JW-IQ/JQ device-specific deinit: global lock */
+static int w25q64jw_deinit(void)
+{
+	if (spi_write_enable() != 0) {
+		return -1;
+	}
+	return spi_global_lock();
+}
+
+/*
+ * The data section doesn't work with PIC code for Cortex-M0+,
+ * so we probe the EEPROM at runtime to find the correct configuration,
+ * and allocate everything on the stack.
+ */
+static int eeprom_probe(struct spi_nor_config *cfg)
+{
+	uint32_t jedec_id = 0;
+	int ret;
+	struct spi_nor_chip eeproms[] = {
+		/* clang-format off */
+		{
+			.jedec_id = 0x20BB20, /* JEDEC ID for MT25QU512ABB */
+			.config = {
+					.read_cmd = 0x13,
+					.pp_cmd = 0x12,
+					.se_cmd = 0x21,
+					.ce_cmd = 0xC7,
+					.addr_len = 4,
+				},
+		},
+		{
+			.jedec_id = 0x1A5B2C, /* JEDEC ID for MT35XU02GCBA */
+			.config = {
+					.read_cmd = 0x13,
+					.pp_cmd = 0x12,
+					.se_cmd = 0x21,
+					/* 0x60 is a common SPI NOR chip erase command.
+					 * 0xC4 given in datasheet doesn't work, so use this.
+					 * This is undocumented behavior!
+					 */
+					.ce_cmd = 0x60,
+					.addr_len = 4,
+				},
+		},
+		{
+			.jedec_id = 0x1760EF, /* JEDEC ID for W25Q64JW-IQ/JQ */
+			.config = {
+					.read_cmd = 0x03,
+					.pp_cmd = 0x02,
+					.se_cmd = 0x20,
+					.ce_cmd = 0xC7,
+					.addr_len = 3, /* 3 byte address */
+					.device_init = w25q64jw_init,
+					.device_deinit = w25q64jw_deinit,
+				},
+		},
+		/* clang-format on */
+		{.jedec_id = 0, .config = {0}} /* Terminator */
+	};
+	struct spi_nor_chip *chip;
+
+	ret = read_jedec_id(&jedec_id);
+	if (ret != 0) {
+		return ret;
+	}
+
+	for (chip = &eeproms[0]; chip->jedec_id != 0; chip++) {
+		if (jedec_id == chip->jedec_id) {
+			memcpy(cfg, &chip->config, sizeof(struct spi_nor_config));
+			return 0;
+		}
+	}
+	return -1; /* No matching chip found */
+}
+
+int eeprom_init(void)
+{
+	struct spi_nor_config cfg;
+
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
-	/* Global unlock only for W25Q64JW */
-	if (jedec_id == 0x1760EF) {
-		if (spi_write_enable() != 0) {
-			return -1;
-		}
-		ret = spi_global_unlock();
-		if (ret != 0) {
-			return ret;
-		}
-
-		/* Check and clear Block Protect (BP) bits in Status Register 1 */
-		ret = read_status_register(&status);
-		if (ret != 0) {
-			return ret;
-		}
-
-		if (status & 0x3C) {
-			/* BP bits are set, clear them */
-			status &= ~0x3C;
-			ret = write_status_register(status);
-			if (ret != 0) {
-				return ret;
-			}
-		}
+	if (cfg.device_init != NULL) {
+		return cfg.device_init();
 	}
 	return 0;
 }
@@ -267,25 +282,15 @@ int eeprom_init(void)
 int eeprom_deinit(void)
 {
 	struct spi_nor_config cfg;
-	uint32_t jedec_id;
-	int ret;
 
-	if (eeprom_probe(&cfg, &jedec_id) != 0) {
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
-	/* Global lock only for W25Q64JW */
-	if (jedec_id == 0x1760EF) {
-		if (spi_write_enable() != 0) {
-			return -1;
-		}
-		ret = spi_global_lock();
-		if (ret != 0) {
-			return ret;
-		}
+	if (cfg.device_deinit != NULL) {
+		return cfg.device_deinit();
 	}
-
-	return 0; /* Otherwise no deinit required */
+	return 0;
 }
 
 int eeprom_erase_chip(void)
@@ -294,7 +299,7 @@ int eeprom_erase_chip(void)
 	struct spi_buf buf;
 	int ret;
 
-	if (eeprom_probe(&cfg, NULL) != 0) {
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -320,7 +325,7 @@ int eeprom_erase_sector(uint32_t sector)
 	uint8_t cmd_buf[5];
 	int ret;
 
-	if (eeprom_probe(&cfg, NULL) != 0) {
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -362,7 +367,7 @@ int eeprom_program(uint32_t addr, const uint8_t *data, uint32_t len)
 		return -1; /* Invalid parameters */
 	}
 
-	if (eeprom_probe(&cfg, NULL) != 0) {
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
@@ -401,7 +406,7 @@ int eeprom_read(uint32_t addr, uint8_t *data, uint32_t len)
 	struct spi_buf buf[2];
 	uint8_t cmd_buf[5];
 
-	if (eeprom_probe(&cfg, NULL) != 0) {
+	if (eeprom_probe(&cfg) != 0) {
 		return -1; /* EEPROM probe failed */
 	}
 
