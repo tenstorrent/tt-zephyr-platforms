@@ -1,0 +1,19 @@
+identifier: tt_grendel_mk_bu_dmc
+name: Tenstorrent Grendel MK BU Device Management Controller
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 256
+flash: 1024
+supported:
+  - counter
+  - dma
+  - gpio
+  - i2c
+  - spi
+  - uart
+  - usb_device
+  - watchdog
