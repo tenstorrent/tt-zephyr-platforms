@@ -26,6 +26,7 @@ on:
   merge_group:
     types:
       - checks_requested
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.sha }}
