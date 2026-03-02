@@ -1,0 +1,6 @@
+board:
+  name: tt_grendel_mk_bu_dmc
+  full_name: Tenstorrent Grendel MK BU Device Management Controller
+  vendor: tenstorrent
+  socs:
+    - name: stm32u385xx
