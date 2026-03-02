@@ -4,14 +4,8 @@
 
 from runners.core import RunnerCaps, ZephyrBinaryRunner
 from pathlib import Path
-import sys
+import sys  # noqa: F401
 from pcie_utils import rescan_pcie
-
-try:
-    import pyluwen
-except ImportError:
-    print("Error, required modules missing. Please run 'pip install pyluwen'")
-    sys.exit(1)
 
 
 class TTFlashRunner(ZephyrBinaryRunner):
@@ -59,6 +53,13 @@ class TTFlashRunner(ZephyrBinaryRunner):
     def do_run(self, command, **kwargs):
         # Prior to flashing, check to make sure that device is present and we can
         # interface with it
+        try:
+            import pyluwen
+        except ImportError:
+            raise RuntimeError(
+                "Error, required modules missing. Please run 'pip install pyluwen'"
+            )
+
         try:
             chips = pyluwen.detect_chips()
             if len(chips) == 0:
