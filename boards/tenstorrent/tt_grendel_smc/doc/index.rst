@@ -45,33 +45,44 @@ for more details). See below for instructions
 Running Within Mimir Emulation Environment
 ==========================================
 
-To execute within the Mimir emulation environment, first follow the
-instructions to setup the environment as described here:
-https://yyz-gitlab.local.tenstorrent.com/tensix/soc/mimir_soc/-/tree/main/emu?ref_type=heads
-
-Next, upload the build emulation binary stored in ``<build-dir>/zephyr/zephyr.bin``
-to the emulation system, using SCP or a similar tool.
-
-Then, run the following command to start the emulation,
-from the <emu/tests> directory on a Zebu host:
+First, ssh into an SOC lab host and setup the environment:
 
 .. code-block:: console
 
-    ./run-smc-test.sh <path_to_zephyr_bin>
-    SMC_BINARY=<path_to_zephyr_bin> zrun --location U0.M0 -- -svk test_smc_binary
+    # Create your own workspace
+    mkdir -p /proj_soc/user_dev/$USER/
+    cd /proj_soc/user_dev/$USER/
+
+    # Clone the Mimir SOC repository
+    git clone <mimir_soc_git_url>
+    cd mimir_soc
+
+    # Setup the environment, these have to be done at every login
+    source /tools_soc/tt/bin/bashrc
+    source emu/bin/setup_env.sh
+
+    # Run the default SMC test
+    cd emu/tests
+    ./run-smc-test.sh
+
+To run a Zephyr binary in the Mimir enumlation environment, upload the built binary stored in ``<build-dir>/zephyr/zephyr.bin``,
+to the emulation system using ``scp`` or a similar tool before running.
 
 For example, you could run the hello world application as follows:
 
 .. code-block:: console
 
+    # Build a binary and upload it to the emulation host
     west build -p always -b tt_grendel_smc ../zephyr/samples/hello_world
-    scp build/zephyr/zephyr.bin user@emu-host:zephyr.bin
-    ssh user@emu-host
-    cd <mimir_soc_directory>/emu/tests
-    # Setup env
+    scp build/zephyr/zephyr.bin <user@emu-host>:zephyr.bin
+
+    # Source the environment every login
+    ssh <user@emu-host>
     source /tools_soc/tt/bin/bashrc
-    source ../bin/setup_env.sh
-    # Run emulation
+    source emu/bin/setup_env.sh
+
+    # Run the emulation
+    cd emu/bin
     ./run-smc-test.sh ~/zephyr.bin
 
 The zrun process should include output like the following:
