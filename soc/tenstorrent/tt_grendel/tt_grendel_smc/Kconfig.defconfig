@@ -25,4 +25,7 @@ config 2ND_LVL_ISR_TBL_OFFSET
 config 2ND_LVL_INTR_00_OFFSET
 	default 11
 
+config RISCV_PMP
+	default y
+
 endif # SOC_TT_GRENDEL_SMC
