@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Tenstorrent SMC remote processor
+
+compatible: "tenstorrent,smc-remoteproc"
+
+include: [i3c-device.yaml]
+
+properties:
+  boot-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIOs used to boot the remote processor.
