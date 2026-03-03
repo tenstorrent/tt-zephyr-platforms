@@ -18,7 +18,7 @@
 
 #define I3C_INIT_IF_OKAY(n, ...)                                                                   \
 	do {                                                                                       \
-		if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(i3c_##n))) {                              \
+		if (DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(i3c##n))) {                               \
 			i3c_x_init(I3C_WRAP_##n##_I3C_CTRL_REG_MAP_BASE_ADDR);                     \
 		}                                                                                  \
 	} while (false)
