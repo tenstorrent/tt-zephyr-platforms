@@ -1,0 +1,8 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# Fake out the number of interrupts.
+# THIS IS UNSAFE- we are relying on the fact that we
+# don't use peripheral interrupts in this BL1 secondary
+config NUM_IRQS
+	default 12
+
+source "Kconfig.zephyr"
