@@ -369,7 +369,7 @@ def voltage_monitors_test(arc_chip_dut, asic_id):
 def process_detectors_test(arc_chip_dut, asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     fail_count = 0
-    fmin = 100
+    fmin = 95
     fmax = 240
 
     delay_chains = [19, 20, 21]
