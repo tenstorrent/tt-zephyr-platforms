@@ -3,6 +3,7 @@
 # zephyr-keep-sorted-start
 add_subdirectory_ifdef(CONFIG_LOG_BACKEND_RINGBUF log_ringbuf)
 add_subdirectory_ifdef(CONFIG_LOG_BACKEND_TT_VIRT log_tt_virt)
+add_subdirectory_ifdef(CONFIG_OCCP occp)
 add_subdirectory_ifdef(CONFIG_TT_BH_ARC bh_arc)
 add_subdirectory_ifdef(CONFIG_TT_BH_CHIP bh_chip)
 add_subdirectory_ifdef(CONFIG_TT_BIST bist)

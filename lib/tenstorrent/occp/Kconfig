@@ -1,0 +1,60 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config OCCP
+	bool "OCCP Subsystem"
+	select CRC # Required for header checksum calculations
+	help
+	  Enable support for the OCCP (Open Chiplet Configuration Protocol)
+	  subsystem
+
+if OCCP
+
+choice OCCP_BACKEND
+	prompt "OCCP Backend"
+	default OCCP_BACKEND_I3C
+
+config OCCP_BACKEND_I3C
+	bool "I3C Backend"
+	select I3C
+	help
+	  Use the I3C-based OCCP backend, which communicates with a remote
+	  OCCP target over the I3C bus.
+
+endchoice
+
+config OCCP_RETRY_COUNT
+	int "OCCP Retry Count"
+	default 10
+	help
+	  Set the number of times to retry an OCCP command if it fails. This can help
+	  improve reliability in the presence of transient errors, but may increase
+	  latency.
+
+config OCCP_RETRY_DELAY_MS
+	int "OCCP Retry Delay (ms)"
+	default 100
+	help
+	  Set the delay between OCCP command retries in milliseconds. This can help
+	  improve reliability by giving the system time to recover from transient errors,
+	  but may increase latency.
+
+if OCCP_BACKEND_I3C
+
+config OCCP_I3C_READ_TIMEOUT_MS
+	int "OCCP I3C Read Timeout (ms)"
+	default 5000
+	help
+	  Set the timeout for I3C read operations in the OCCP I3C backend. If a read
+	  operation takes longer than this value, it will be aborted and an error will
+	  be returned.
+	  Note this timeout is currently very long to support running in
+	  simulation environments
+
+endif # OCCP_BACKEND_I3C
+
+module = OCCP
+module-str = occp
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # OCCP
