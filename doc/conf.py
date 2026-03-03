@@ -50,10 +50,10 @@ html_favicon = "images/favicon.png"
 html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
 
-reference_prefix = "/tt-zephyr-platforms"
+reference_prefix = "/tt-system-firmware"
 html_context = {
     "project": project,
-    "project_code": "tt-zephyr-platforms",
+    "project_code": "tt-system-firmware",
     "reference_links": {"API": f"{reference_prefix}/doxygen/index.html"},
     "current_version": os.environ.get("current_version", release),
 }
