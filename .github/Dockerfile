@@ -36,14 +36,14 @@ FROM base
 LABEL org.opencontainers.image.source=https://github.com/tenstorrent/tt-system-firmware
 COPY --from=openocd_build /opt/openocd/ /opt/toolchains/zephyr-sdk-$ZSDK_VERSION/sysroots/x86_64-pokysdk-linux/usr/
 
-ENV ZEPHYR_BASE=/tt-zephyr/zephyr
+ENV ZEPHYR_BASE=/tt-system-firmware-work/zephyr
 
 ARG REPO_REV=main
 ARG REPO_URL=https://github.com/tenstorrent/tt-system-firmware
 
 # Clone the tt-system-firmware repo and install dependencies
 RUN pip install west && \
-    west init -m ${REPO_URL} --mr ${REPO_REV} /tt-zephyr && \
-    cd /tt-zephyr/tt-system-firmware && \
+    west init -m ${REPO_URL} --mr ${REPO_REV} /tt-system-firmware-work && \
+    cd /tt-system-firmware-work/tt-system-firmware && \
     west update && \
     west packages pip --install
