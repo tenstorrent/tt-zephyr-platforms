@@ -1,0 +1,9 @@
+common:
+  tags:
+    - drivers
+tests:
+  drivers.tt_smc_remoteproc.bl1_primary:
+    tags: smoke
+    platform_allow:
+      - tt_grendel_smc
+    sysbuild: true

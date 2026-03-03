@@ -1,0 +1,22 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# These Kconfigs are set by sysbuild when building for Grendel platforms,
+# indicating that we have a secondary binary for the SMC to load
+
+config BOOT_REMOTE_SMC
+	bool "Boot remote SMC chiplet"
+	help
+	  Enable support for booting a remote SMC chiplet using the
+	  remoteproc API over OCCP.
+
+if BOOT_REMOTE_SMC
+
+config REMOTE_SMC_BINARY_HEADER
+	string "Path to header file for remote SMC binary"
+	help
+	  Path to the header file for the remote SMC binary to be loaded.
+
+endif
+
+source "Kconfig.zephyr"
