@@ -23,4 +23,9 @@
 	__asm__ volatile("auipc %0, 0\n" : "=r"(pc) : :);                                          \
 	WRITE_SCRATCH(0, pc);
 
+static inline void test_pass(void)
+{
+	WRITE_SCRATCH(0, 0xacafaca1);
+}
+
 #endif /* SOC_TENSTORRENT_TT_GRENDEL_TT_GRENDEL_SMC_SOC_H_ */
