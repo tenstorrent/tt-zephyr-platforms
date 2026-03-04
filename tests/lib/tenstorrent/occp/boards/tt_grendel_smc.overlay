@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2026 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <freq.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	zephyr,user {
+		/* GPIO61, used by the SMC ROM as a boot signal */
+		boot-gpios = <&gpio1 29 GPIO_ACTIVE_HIGH>;
+		i3c-pid-high = <0x88fc>;
+		i3c-pid-low = <0x1fe8fa15>;
+		i3c-dev = <&i3c1>;
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/* Set clock frequency so DLAB is programmed to 1 */
+	clock-frequency = <2000000>;
+};
+
+&i3c1 {
+	status = "okay";
+	input-clock-frequency = <DT_FREQ_M(150)>;
+	i3c-scl-hz = <DT_FREQ_M(12)>; /* 12 MHz I3C SCL frequency */
+	i2c-scl-hz = <DT_FREQ_K(300)>; /* 400 kHz I2C SCL frequency */
+};
