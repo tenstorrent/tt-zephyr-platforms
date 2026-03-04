@@ -6,6 +6,18 @@ We are pleased to announce the release of TT System Firmware firmware version 19
 
 Major enhancements with this release include:
 
+## Wormhole
+
+### New Features
+- Add support for BH-style message queues
+- Add support for POWER_SETTING message via the message queue
+  - Only support Tensix power flag for now
+
+### Stability Improvements
+- Avoid attempting to wipe disabled/untrained DRAMs
+- Improve DRAM training stability
+- Reduce DRAM training time
+
 ## Blackhole
 
 ### API Changes
