@@ -1,5 +1,8 @@
 .. _tt_grendel_mk_bu_dmc:
 
+Tenstorrent MK Bring up Board (DMC)
+###################################
+
 Overview
 ********
 
@@ -56,7 +59,7 @@ Scan and communicate with I2C devices:
 
 .. code-block:: console
 
-   # Scan I2C bus for devices (e.g. for the i2c2 bus
+   # Scan I2C bus for devices (e.g. for the i2c2 bus)
    dm_test_app:~$ i2c scan i2c2
 
    # Read from I2C device (device address 0x50, register 0x00, 1 byte)
@@ -76,7 +79,7 @@ Test SPI communication:
    dm_test_app:~$ spi conf spi2 1000000
 
    # Configure SPI transceive (send 0x01 0x02, print response)
-   dm_test_app:~$ spi transceive spi2 1 "01 02"
+   dm_test_app:~$ spi transceive spi2 1 01 02
 
 Flash Commands
 ==============
