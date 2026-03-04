@@ -6,6 +6,7 @@
 
 #include "noc.h"
 #include "noc2axi.h"
+#include "noc_init.h"
 
 typedef struct {
 	uint32_t passthrough_bits: 24;
@@ -139,15 +140,38 @@ void NOC2AXIMulticastTlbSetup(const uint8_t ring, const uint8_t tlb_num, const u
 /* Broadcast to all unharvested Tensix. Requires NocInit to be called first to set up broadcast
  * disables.
  */
-/* Then we can just broadcast to the entire NOC, skipping ARC's own column to workaround this bug:
+/* Then we can just broadcast to the entire NOC, skipping ARC's own row to workaround this bug:
  */
 /* https://yyz-gitlab.local.tenstorrent.com/tenstorrent/syseng/-/issues/3401#note_191646 */
 void NOC2AXITensixBroadcastTlbSetup(const uint8_t ring, const uint8_t tlb_num, const uint64_t addr,
 				    Noc2AxiOrdering ordering)
 {
-	/* Skip ARC on column x = 8 */
-	const uint8_t kXStart = 9;
-	const uint8_t kXEnd = 7;
+	/* Broadcast, but skip the row the ARC is on. */
 
-	NOC2AXIMulticastTlbSetup(ring, tlb_num, kXStart, 0, kXEnd, NOC_Y_SIZE - 1, addr, ordering);
+	uint8_t x_start;
+	uint8_t y_start;
+	uint8_t x_end;
+	uint8_t y_end;
+
+	if (ring == 0) {
+		/* Skip row 0. */
+		x_start = 2;
+		y_start = 2;
+		x_end = 1;
+		y_end = 11;
+	} else if (IsNocTranslationEnabled()) {
+		/* Skip row 0. Translation is on so multicast rects run backwards. */
+		x_start = 1;
+		y_start = 11;
+		x_end = 2;
+		y_end = 2;
+	} else {
+		/* Skip row 11. Translation is off so multicast rects run forwards. */
+		x_start = 0;
+		y_start = 0;
+		x_end = 16;
+		y_end = 10;
+	}
+
+	NOC2AXIMulticastTlbSetup(ring, tlb_num, x_start, y_start, x_end, y_end, addr, ordering);
 }

@@ -753,3 +753,8 @@ void GetEnabledTensix(uint8_t *x, uint8_t *y)
 	}
 	*y = 2;
 }
+
+bool IsNocTranslationEnabled(void)
+{
+	return noc_translation_enabled;
+}
