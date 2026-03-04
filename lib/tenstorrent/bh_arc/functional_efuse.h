@@ -52,6 +52,8 @@
 #define FUSE_SLT_FUSE_MAP_VERSION_END_BIT             4191
 #define FUSE_SLT_SLT_BINNING_START_BIT                4192
 #define FUSE_SLT_SLT_BINNING_END_BIT                  4223
+#define FUSE_PROCESS_RO_START_BIT                     4464
+#define FUSE_PROCESS_RO_END_BIT                       4479
 #define FUSE_SLT_DDR_TEST_STATUS_16G_START_BIT        5472
 #define FUSE_SLT_DDR_TEST_STATUS_16G_END_BIT          5479
 #define FUSE_SLT_DDR_TEST_STATUS_14G_START_BIT        5480
