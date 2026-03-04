@@ -3,7 +3,7 @@
     "board": "p100a",
     "runs-on": "p100a-jtag",
     "product": "bh",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260303-14-g30e1121903",
+    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260221-4-g7574f2bf62",
     "metal-target": "blackhole",
     "kmd_build": "2.7.0"
   },
@@ -11,7 +11,7 @@
     "board": "p150a",
     "runs-on": "p150a-jtag",
     "product": "bh",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260303-14-g30e1121903",
+    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260221-4-g7574f2bf62",
     "metal-target": "blackhole",
     "kmd_build": "2.7.0"
   },
@@ -19,7 +19,7 @@
     "board": "p300a",
     "runs-on": "p300a-jtag",
     "product": "bh",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260303-14-g30e1121903",
+    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-p300:v0.68.0-dev20260221-4-g7574f2bf62",
     "metal-target": "blackhole_p300",
     "kmd_build": "2.7.0"
   },
@@ -27,7 +27,7 @@
     "board": "galaxy",
     "runs-on": "tt-galaxy-bh",
     "product": "bh",
-    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh:v0.68.0-dev20260303-14-g30e1121903",
+    "metal-image": "ghcr.io/tenstorrent/tt-metal/upstream-tests-bh-glx:v0.68.0-dev20260221-4-g7574f2bf62",
     "metal-target": "blackhole_glx",
     "kmd_build": "2.7.0"
   },
