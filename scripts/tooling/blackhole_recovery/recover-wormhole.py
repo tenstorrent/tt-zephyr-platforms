@@ -21,15 +21,14 @@ import time
 import os
 
 try:
-    from pyocd.core.helpers import ConnectHelper
     from pyocd.flash.file_programmer import FileProgrammer
-    from pyocd.core import exceptions as pyocd_exceptions
 except ImportError:
     print("Required modules not found. Please run pip install pyocd")
     sys.exit(os.EX_UNAVAILABLE)
 
 sys.path.append(str(Path(__file__).parents[2]))
 import pcie_utils
+import pyocd_utils
 
 PYOCD_TARGET = "stm32g031c6ux"
 WH_FLM_DIR = Path(__file__).parent / "data" / "wh_flm"
@@ -207,31 +206,11 @@ def check_card_status():
     return True
 
 
-def _open_session(spi, adapter_id, no_prompt):
-    """Create and return an opened pyocd session for the given WH SPI."""
-    # TODO: adapt and use pyocd_utils.py here
-    config = SPI_CONFIGS[spi]
-    kwargs = {"target_override": PYOCD_TARGET, "user_script": str(config)}
-    if adapter_id:
-        kwargs["unique_id"] = adapter_id
-    elif no_prompt or not sys.stdin.isatty():
-        print("No adapter ID provided, selecting first available debug probe")
-        kwargs["return_first"] = True
-
-    try:
-        session = ConnectHelper.session_with_chosen_probe(**kwargs)
-    except pyocd_exceptions.ProbeError as e:
-        # TODO: retry with recover_stlink()
-        raise RuntimeError(f"Failed to connect to probe for {spi}: {e}") from e
-    if session is None:
-        raise RuntimeError(f"No debug probe found for {spi}")
-    session.open()
-    return session
-
-
 def flash_spi(spi, fw_bin, adapter_id, no_prompt):
     """Erase, program, and reset the M3 for one SPI flash."""
-    session = _open_session(spi, adapter_id, no_prompt)
+    pyocd_config = SPI_CONFIGS[spi]
+    session = pyocd_utils.get_session(pyocd_config, adapter_id, no_prompt, PYOCD_TARGET)
+    session.open()
     try:
         FileProgrammer(session).program(str(fw_bin), file_format="hex")
         session.board.target.reset_and_halt()
