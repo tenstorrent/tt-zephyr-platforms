@@ -35,6 +35,7 @@ message FwTable {
     uint32 gddr_thm_limit = 13;
     uint32 board_power_limit = 14;
     uint32 additional_board_power = 15;
+    uint32 max_tdp_limit = 16;
   }
 
   message FeatureEnable {

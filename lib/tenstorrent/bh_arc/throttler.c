@@ -10,6 +10,8 @@
 #include <zephyr/zbus/zbus.h>
 #include "throttler.h"
 #include "aiclk_ppm.h"
+#include <tenstorrent/smc_msg.h>
+#include <tenstorrent/msgqueue.h>
 #include "cm2dm_msg.h"
 #include <zephyr/drivers/misc/bh_fwtable.h>
 #include "telemetry_internal.h"
@@ -140,10 +142,14 @@ static Throttler throttler[kThrottlerCount] = {
 };
 /* clang-format on */
 
+static float get_throttler_clamped_limit(ThrottlerId id, float limit)
+{
+	return CLAMP(limit, throttler_limit_ranges[id].min, throttler_limit_ranges[id].max);
+}
+
 static void SetThrottlerLimit(ThrottlerId id, float limit)
 {
-	float clamped_limit =
-		CLAMP(limit, throttler_limit_ranges[id].min, throttler_limit_ranges[id].max);
+	float clamped_limit = get_throttler_clamped_limit(id, limit);
 
 	LOG_INF("Throttler %d limit set to %d", id, (uint32_t)clamped_limit);
 	throttler[id].limit = clamped_limit;
@@ -378,3 +384,33 @@ int32_t Dm2CmSetBoardPowerLimit(const uint8_t *data, uint8_t size)
 
 	return 0;
 }
+
+static uint8_t set_tdp_limit_handler(const union request *request, struct response *response)
+{
+	float default_tdp_limit = get_throttler_clamped_limit(
+		kThrottlerTDP, tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.tdp_limit);
+	float max_tdp_limit =
+		CLAMP(tt_bh_fwtable_get_fw_table(fwtable_dev)->chip_limits.max_tdp_limit,
+		      default_tdp_limit, throttler_limit_ranges[kThrottlerTDP].max);
+	float new_tdp_limit;
+
+	if (request->set_tdp_limit.restore_default) {
+		new_tdp_limit = default_tdp_limit;
+	} else {
+		new_tdp_limit = request->set_tdp_limit.tdp_limit;
+	}
+
+	/* Return an error if the new TDP limit is outside of the valid range */
+	if (new_tdp_limit > max_tdp_limit) {
+		return 1;
+	} else if (get_throttler_clamped_limit(kThrottlerTDP, new_tdp_limit) != new_tdp_limit) {
+		return 1;
+	}
+
+	SetThrottlerLimit(kThrottlerTDP, new_tdp_limit);
+	UpdateTelemetryTdpLimit(throttler[kThrottlerTDP].limit);
+
+	return 0;
+}
+
+REGISTER_MESSAGE(TT_SMC_MSG_SET_TDP_LIMIT, set_tdp_limit_handler);
