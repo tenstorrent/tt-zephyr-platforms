@@ -49,12 +49,11 @@ LOG_MODULE_REGISTER(tensix_init, CONFIG_TT_APP_LOG_LEVEL);
 /* Scratchpad buffer size for SPI transfers */
 #define SCRATCHPAD_SIZE CONFIG_TT_BH_ARC_SCRATCHPAD_SIZE
 
-/* Counter location for wipe_dest */
-#define COUNTER_TENSIX_X     1
-#define COUNTER_TENSIX_Y     2
-#define COUNTER_L1_ADDR      0x110000 /* Must match firmware hardcoded value */
-#define NUM_TENSIX_ROWS      10
-#define WIPE_DEST_TIMEOUT_US 10000 /* 10ms timeout */
+/* Counter location for wipe_dest -- must match TRISC dest wipe firmware */
+#define COUNTER_COORD_L1_ADDR 0x100000 /* L1 mailbox: counter Tensix X at +0, Y at +4 */
+#define COUNTER_L1_ADDR       0x110000 /* L1 address of the atomic counter itself */
+#define NUM_TENSIX_ROWS       10
+#define WIPE_DEST_TIMEOUT_US  10000 /* 10ms timeout */
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 static const struct device *const dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
@@ -185,9 +184,10 @@ static void wipe_l1(void)
  * It reads the counter from the chosen tensix core and waits for it to reach the expected count.
  * It returns 0 if the counter reached the expected count, -ETIMEDOUT otherwise.
  */
-static int global_sync(uint8_t ring, uint8_t noc_tlb, uint32_t expected_count)
+static int global_sync(uint8_t ring, uint8_t noc_tlb, uint8_t counter_x, uint8_t counter_y,
+		       uint32_t expected_count)
 {
-	NOC2AXITlbSetup(ring, noc_tlb, COUNTER_TENSIX_X, COUNTER_TENSIX_Y, COUNTER_L1_ADDR);
+	NOC2AXITlbSetup(ring, noc_tlb, counter_x, counter_y, COUNTER_L1_ADDR);
 
 	if (!WAIT_FOR(NOC2AXIRead32(ring, noc_tlb, COUNTER_L1_ADDR) >= expected_count,
 		      WIPE_DEST_TIMEOUT_US, k_busy_wait(10))) {
@@ -243,11 +243,14 @@ static int wipe_dest(void)
 	uint8_t ring = 0;
 	uint8_t noc_tlb = 0;
 	uint8_t wipe_dest_buf[SCRATCHPAD_SIZE] __aligned(4);
+	uint8_t counter_x, counter_y;
 
 	int rc;
 	tt_boot_fs_fd tag_fd;
 	size_t image_size;
 	size_t spi_address;
+
+	GetEnabledTensix(&counter_x, &counter_y);
 
 	/* Find the TRISC wipe firmware in SPI flash */
 	rc = tt_boot_fs_find_fd_by_tag(flash, (const uint8_t *)TRISC_WIPE_FW_TAG, &tag_fd);
@@ -261,7 +264,7 @@ static int wipe_dest(void)
 		image_size);
 
 	/* Step 1: Zero the completion counter before releasing TRISCs */
-	NOC2AXITlbSetup(ring, noc_tlb, COUNTER_TENSIX_X, COUNTER_TENSIX_Y, COUNTER_L1_ADDR);
+	NOC2AXITlbSetup(ring, noc_tlb, counter_x, counter_y, COUNTER_L1_ADDR);
 	NOC2AXIWrite32(ring, noc_tlb, COUNTER_L1_ADDR, 0);
 
 	/* Step 2: Load wipe firmware to all non-harvested Tensix L1 using multicast */
@@ -279,19 +282,25 @@ static int wipe_dest(void)
 	}
 	LOG_INF("%s: firmware loaded", __func__);
 
-	/* Step 3: Set TRISC 0 reset PC to firmware load address on all Tensix */
+	/* Step 3: Write counter coordinates to all Tensix L1 so firmware knows where to increment
+	 */
+	setup_tensix_mcast_tlb(ring, noc_tlb, COUNTER_COORD_L1_ADDR);
+	NOC2AXIWrite32(ring, noc_tlb, COUNTER_COORD_L1_ADDR, counter_x);
+	NOC2AXIWrite32(ring, noc_tlb, COUNTER_COORD_L1_ADDR + 4, counter_y);
+
+	/* Step 4: Set TRISC 0 reset PC to firmware load address on all Tensix */
 	setup_tensix_mcast_tlb(ring, noc_tlb, TRISC0_RESET_PC);
 	NOC2AXIWrite32(ring, noc_tlb, TRISC0_RESET_PC, TRISC_WIPE_FW_LOAD_ADDR);
 	NOC2AXIWrite32(ring, noc_tlb, TRISC_RESET_PC_OVERRIDE, 1);
 
-	/* Step 4: Release TRISC 0 from soft reset on all Tensix */
+	/* Step 5: Release TRISC 0 from soft reset on all Tensix */
 	NOC2AXIWrite32(ring, noc_tlb, SOFT_RESET_0, ALL_RISC_SOFT_RESET & ~BIT(12));
 
-	/* Step 5: Wait for all cores to signal completion via atomic counter */
+	/* Step 6: Wait for all cores to signal completion via atomic counter */
 	uint32_t expected = POPCOUNT(tile_enable.tensix_col_enabled) * NUM_TENSIX_ROWS;
-	int rc_sync = global_sync(ring, noc_tlb, expected);
+	int rc_sync = global_sync(ring, noc_tlb, counter_x, counter_y, expected);
 
-	/* Step 6: Re-assert TRISC 0 soft reset on all Tensix */
+	/* Step 7: Re-assert TRISC 0 soft reset on all Tensix */
 	setup_tensix_mcast_tlb(ring, noc_tlb, SOFT_RESET_0);
 	NOC2AXIWrite32(ring, noc_tlb, SOFT_RESET_0, ALL_RISC_SOFT_RESET);
 	NOC2AXIWrite32(ring, noc_tlb, TRISC_RESET_PC_OVERRIDE, 0);
