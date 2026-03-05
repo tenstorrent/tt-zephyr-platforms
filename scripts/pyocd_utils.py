@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Shared pyocd / ST-Link helpers for Blackhole PCIe card tooling.
+Shared pyocd / ST-Link helpers for PCIe card tooling.
 
 Consolidates probe-session creation, ST-Link USB recovery, and board
 metadata loading that were previously duplicated across spi_flash.py,
-recover-blackhole.py, tt_bootstrap.py, and set-p300-jtag.py.
+recover-blackhole.py, recover-wormhole.py, tt_bootstrap.py, and set-p300-jtag.py.
 """
 
 import logging
@@ -32,7 +32,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-PYOCD_TARGET = "STM32G0B1CEUx"
+PYOCD_TARGET_BH = "STM32G0B1CEUx"
 PYOCD_FLM_PATH = Path(__file__).parent / "tooling/blackhole_recovery/data/bh_flm"
 BOARD_METADATA_PATH = Path(__file__).parent / "board_metadata.yaml"
 
@@ -73,7 +73,7 @@ def recover_stlink():
             )
 
 
-def create_session(pyocd_config=None, adapter_id=None, no_prompt=False):
+def create_session(pyocd_config=None, adapter_id=None, no_prompt=False, target=None):
     """Create a pyocd session for the STM32 target.
 
     Args:
@@ -82,6 +82,8 @@ def create_session(pyocd_config=None, adapter_id=None, no_prompt=False):
         adapter_id:   ST-Link serial / unique ID.  ``None`` = auto-select.
         no_prompt:    When *True* (or when stdin is not a tty), pick the
                       first available probe without prompting.
+        target:       pyocd target override string.  Defaults to
+                      ``PYOCD_TARGET_BH`` (STM32G0B1CEUx).
 
     Returns:
         A pyocd ``Session`` object (not yet opened).
@@ -89,7 +91,7 @@ def create_session(pyocd_config=None, adapter_id=None, no_prompt=False):
     Raises:
         RuntimeError: if no probe could be found.
     """
-    kwargs = {"target_override": PYOCD_TARGET}
+    kwargs = {"target_override": target or PYOCD_TARGET_BH}
     if pyocd_config is not None:
         kwargs["user_script"] = str(pyocd_config)
 
@@ -110,13 +112,13 @@ def create_session(pyocd_config=None, adapter_id=None, no_prompt=False):
     return session
 
 
-def get_session(pyocd_config=None, adapter_id=None, no_prompt=False):
+def get_session(pyocd_config=None, adapter_id=None, no_prompt=False, target=None):
     """Like :func:`create_session`, but retries once after an ST-Link
     USB reset if the initial connection fails.
     """
     try:
-        return create_session(pyocd_config, adapter_id, no_prompt)
+        return create_session(pyocd_config, adapter_id, no_prompt, target)
     except pyocd_exceptions.ProbeError as e:
         logger.warning("Error connecting to probe, will attempt USB reset: %s", e)
         recover_stlink()
-        return create_session(pyocd_config, adapter_id, no_prompt)
+        return create_session(pyocd_config, adapter_id, no_prompt, target)
