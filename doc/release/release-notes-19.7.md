@@ -20,6 +20,11 @@ Major enhancements with this release include:
 
 ## Blackhole
 
+### Power & Performance Improvements
+- New process based V/F curve reduces TDP, VCORE and Input Power while increasing AICLK frequency.
+  - Note that since the V/F curve is process based, results for every chip will differ.
+  - On chips we measured, we saw TDP and VCORE reduction by 4-8%, Input Power reduction by 1-3%, and AICLK increase by 2-3%.
+
 ### API Changes
 - New CMFW message `TT_SMC_MSG_TOGGLE_GDDR_RESET` to reset and retrain a specific GDDR controller (0-7).
   Sample usage can be found in the [pytest file](https://github.com/tenstorrent/tt-system-firmware/tree/main/app/smc/pytest/e2e_smoke.py#L961).
