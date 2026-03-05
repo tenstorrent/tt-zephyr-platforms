@@ -26,6 +26,7 @@ Major enhancements with this release include:
 
 ### Developer Features
 - DMFW and SMFW now store Zephyr's `APP_VERSION_STRING` and `APP_BUILD_VERSION` binary descriptors, which provide the app version and the FW bundle's git revision respectively. These are printed to the boot banner, and can also be accessed using Zephyr's [`west bindesc` tool](https://docs.zephyrproject.org/latest/services/binary_descriptors/index.html).
+- Added DEST register wipe during Tensix initialization, ensuring all non-harvested cores start with zeroed DEST registers at boot. A TRISC wipe firmware is loaded from SPI flash via multicast and executed on TRISC 0 across all cores.
 
 <!-- Subsections can break down improvements by (area or board) -->
 <!-- UL PCIe -->
