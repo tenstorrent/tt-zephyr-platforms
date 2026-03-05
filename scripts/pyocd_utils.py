@@ -110,6 +110,41 @@ def create_session(pyocd_config=None, adapter_id=None, no_prompt=False):
     return session
 
 
+def add_common_args(parser, *, adapter_id=True, no_prompt=True, verbose=True):
+    """Add standard pyocd-related CLI arguments to an argparse parser.
+
+    Each flag can be individually disabled by passing ``False``.
+
+    Args:
+        parser:     The :class:`argparse.ArgumentParser` to extend.
+        adapter_id: Add ``--adapter-id`` flag.
+        no_prompt:  Add ``--no-prompt`` flag.
+        verbose:    Add ``-v``/``--verbose`` flag.
+    """
+    if adapter_id:
+        parser.add_argument(
+            "--adapter-id",
+            type=str,
+            default=None,
+            help="ST-Link adapter serial / unique ID",
+        )
+    if no_prompt:
+        parser.add_argument(
+            "--no-prompt",
+            action="store_true",
+            default=False,
+            help="Do not prompt for adapter selection; use the first available probe",
+        )
+    if verbose:
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="count",
+            default=0,
+            help="Increase logging verbosity (repeat for more)",
+        )
+
+
 def get_session(pyocd_config=None, adapter_id=None, no_prompt=False):
     """Like :func:`create_session`, but retries once after an ST-Link
     USB reset if the initial connection fails.
