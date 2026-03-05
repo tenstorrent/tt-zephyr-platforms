@@ -369,6 +369,23 @@ struct asic_state_rqst {
 	uint8_t command_code;
 };
 
+/** @brief Host request to set the TDP limit
+ * @details Messages of this type are processed by @ref set_tdp_limit_handler
+ */
+struct set_tdp_limit_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SET_TDP_LIMIT */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The TDP limit to set in watts */
+	uint32_t tdp_limit;
+
+	/** @brief Restore the TDP limit to the default value */
+	uint8_t restore_default: 1;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -429,6 +446,9 @@ union request {
 
 	/** @brief A GDDR reset request */
 	struct gddr_reset_rqst gddr_reset;
+
+	/** @brief A set TDP limit request */
+	struct set_tdp_limit_rqst set_tdp_limit;
 };
 
 /** @} */

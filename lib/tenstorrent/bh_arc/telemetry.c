@@ -523,6 +523,11 @@ void UpdateTelemetryBoardPowerLimit(uint32_t power_limit)
 	telemetry[TAG_BOARD_POWER_LIMIT] = power_limit;
 }
 
+void UpdateTelemetryTdpLimit(uint32_t tdp_limit)
+{
+	telemetry[TAG_TDP_LIMIT_MAX] = tdp_limit;
+}
+
 void UpdateTelemetryThermTripCount(uint16_t therm_trip_count)
 {
 	telemetry[TAG_THERM_TRIP_COUNT] = therm_trip_count;
