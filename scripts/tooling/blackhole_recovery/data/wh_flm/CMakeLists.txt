@@ -13,17 +13,17 @@ endif()
 set(CMAKE_C_COMPILER ${ZEPHYR_SDK_INSTALL_DIR}/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc)
 set(CMAKE_CXX_COMPILER ${ZEPHYR_SDK_INSTALL_DIR}/arm-zephyr-eabi/bin/arm-zephyr-eabi-g++)
 # Add baremetal C compilation flags
-string(APPEND CMAKE_C_FLAGS "-Os -Wall -ffunction-sections -fdata-sections ")
+string(APPEND CMAKE_C_FLAGS "-Os -g -Wall -ffunction-sections -fdata-sections ")
 string(APPEND CMAKE_C_FLAGS "-fpic -msingle-pic-base -mpic-register=9 ")
 string(APPEND CMAKE_C_FLAGS "-fno-jump-tables -ffreestanding -nostartfiles ")
 string(APPEND CMAKE_C_FLAGS "-mcpu=cortex-m0 -mthumb ")
-string(APPEND CMAKE_C_FLAGS "-DSTM32G0xx -DSTM32G0B1xx -DFLASH_DRV_VERS=0 -DUSE_FULL_LL_DRIVER")
+string(APPEND CMAKE_C_FLAGS "-DSTM32G0xx -DSTM32G031xx -DFLASH_DRV_VERS=0 -DUSE_FULL_LL_DRIVER")
 
 set(COMMON_FLM_DIR ${CMAKE_CURRENT_LIST_DIR}/../common_flm)
 string(APPEND CMAKE_EXE_LINKER_FLAGS "-T ${COMMON_FLM_DIR}/FlashAlgo.ld")
 
 project(flm LANGUAGES C)
-set(TARGETS spi1.flm spi_combo.flm)
+set(TARGETS spi1.flm spi2.flm)
 foreach(TARGET ${TARGETS})
   add_executable(${TARGET}
     ${COMMON_FLM_DIR}/eeprom.c
@@ -36,7 +36,7 @@ endforeach()
 
 # Set compile definitions for each SPI FLM target
 target_compile_definitions(spi1.flm PRIVATE USE_SPI1)
-target_compile_definitions(spi_combo.flm PRIVATE USE_SPI_COMBO)
+target_compile_definitions(spi2.flm PRIVATE USE_SPI2)
 
 
 set(WORKSPACE_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../../../..)
