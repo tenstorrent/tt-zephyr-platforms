@@ -31,14 +31,7 @@ SMC_VERSION="$PROJECT_ROOT/app/smc/VERSION"
 DMC_VERSION="$PROJECT_ROOT/app/dmc/VERSION"
 
 get_version() {
-    awk -F '=' '
-    /VERSION_MAJOR/   {gsub(/[ "]/,"",$2); major=$2}
-    /VERSION_MINOR/   {gsub(/[ "]/,"",$2); minor=$2}
-    /PATCHLEVEL/      {gsub(/[ "]/,"",$2); patch=$2}
-    /EXTRAVERSION/    {gsub(/[ "]/,"",$2); extra=$2}
-    END {
-        printf "%s %s %s %s\n", major, minor, patch, (extra ? extra : "")
-    }' "$1"
+    git tag -l 'v[1-7]*' --sort=-creatordate | tr 'v.-' ' ' | grep -v 'rc[0-9]*' | head -1
 }
 
 update_file() {
@@ -75,6 +68,7 @@ update_file() {
             new_extra=""
             ;;
         post-release)
+            ((new_minor++))
             new_patch=99
             new_extra=""
             ;;
