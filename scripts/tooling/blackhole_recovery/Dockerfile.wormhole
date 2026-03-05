@@ -1,0 +1,73 @@
+# Image to run wormhole recovery tooling.
+# Includes python dependencies, the firmware bundle to use for recovery,
+# a built flash algorithm, and necessary recovery scripts
+
+ARG ZEP_CONTAINER=v0.28.2
+FROM ghcr.io/zephyrproject-rtos/zephyr-build:${ZEP_CONTAINER} AS build-image
+
+USER root
+
+# Patch APT urls to use https, since the container can't connect via HTTP
+RUN sed -i -e 's/http/https/g' /etc/apt/sources.list && \
+    apt-get update
+
+# Install Zephyr Cmake package for root
+RUN cp /home/user/.cmake/ ~ -r
+
+ARG REPO_REV=main
+ARG REPO_URL=https://github.com/tenstorrent/tt-system-firmware
+
+ENV ZEPHYR_BASE=/tt-zephyr/zephyr
+
+# Clone the tt-system-firmware repo and fetch HAL modules needed for FLM build
+RUN pip install west && \
+    west init -m ${REPO_URL} --mr ${REPO_REV} /tt-zephyr && \
+    cd /tt-zephyr/tt-system-firmware && \
+    west update
+
+# Build the wormhole flash algorithms (spi1.flm, spi2.flm)
+RUN cd /tt-zephyr/tt-system-firmware && \
+    cmake -B /build-wh-flm \
+        -S scripts/tooling/blackhole_recovery/data/wh_flm && \
+    make -C /build-wh-flm -j$(nproc)
+
+# Start a new stage with only the runtime dependencies
+FROM ubuntu:24.04
+LABEL org.opencontainers.image.source=https://github.com/tenstorrent/tt-system-firmware
+
+ARG PYTHON_VENV_PATH=/opt/python/venv
+ARG REPO_REV=main
+ARG REPO_URL=https://github.com/tenstorrent/tt-system-firmware
+# Pin FW version to 19.6.0 for now
+ARG FWBUNDLE_VERSION=19.6.0
+
+# Install python and create a venv
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip python3-venv && \
+	mkdir -p ${PYTHON_VENV_PATH} && \
+	python3 -m venv ${PYTHON_VENV_PATH}
+
+# Make python venv available in PATH
+ENV PATH=${PYTHON_VENV_PATH}/bin:$PATH
+
+# Install usb dependencies
+RUN apt-get install -y libusb-1.0-0
+
+# Install python dependencies in the venv
+RUN pip install pyocd pyusb intelhex && \
+    pyocd pack install stm32g031c6ux
+
+# Clone the tt-system-firmware repo to get recovery scripts
+RUN apt-get install -y git && \
+    git clone --branch ${REPO_REV} ${REPO_URL} /tt-system-firmware
+
+# Download the firmware bundle from GitHub releases
+RUN apt-get install -y curl && \
+    curl -fSL -o /firmware.fwbundle \
+    https://github.com/tenstorrent/tt-system-firmware/releases/download/v${FWBUNDLE_VERSION}/fw_pack-${FWBUNDLE_VERSION}.fwbundle
+
+# Copy built flash algorithms into the expected location
+COPY --from=build-image /build-wh-flm/spi1.flm \
+    /tt-system-firmware/scripts/tooling/blackhole_recovery/data/wh_flm/build/spi1.flm
+COPY --from=build-image /build-wh-flm/spi2.flm \
+    /tt-system-firmware/scripts/tooling/blackhole_recovery/data/wh_flm/build/spi2.flm
