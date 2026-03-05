@@ -6,6 +6,8 @@ We are pleased to announce the release of TT System Firmware firmware version 19
 
 Major enhancements with this release include:
 
+- Renamed the repo from tt-zephyr-projects to tt-system-firmware to better reflect the content.
+
 ## Wormhole
 
 ### New Features
