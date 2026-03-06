@@ -133,7 +133,7 @@ static int32_t apply_power_settings(const struct power_setting_rqst *power_setti
 }
 
 /** @brief Handles the request to set the power settings
- * @param[in] request The request, of type @ref power_setting_rqst_t, with command code
+ * @param[in] request The request, of type @ref power_setting_rqst, with command code
  *	@ref TT_SMC_MSG_POWER_SETTING
  * @param[out] response The response to the host
  * @return 0 for success. 1 for Failure.

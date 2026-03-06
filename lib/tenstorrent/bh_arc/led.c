@@ -16,6 +16,7 @@
  *
  * @param request Pointer to the host request message, use request->blink for
  *                structured access
+ * @param response Pointer to the response message
  *
  * @retval 0 On success
  */

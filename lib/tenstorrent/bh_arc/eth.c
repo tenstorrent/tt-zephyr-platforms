@@ -251,10 +251,11 @@ int LoadEthFw(uint32_t eth_inst, uint32_t ring, uint8_t *buf, size_t buf_size, s
  * @brief Load the ETH FW configuration data into ETH L1 memory
  * @param eth_inst ETH instance to load the FW config for
  * @param ring Load over NOC 0 or NOC 1
+ * @param buf Scratch buffer for reading flash data
  * @param eth_enabled Bitmask of enabled ETH instances
- * @param fw_cfg_image Pointer to the FW config data
- * @param fw_cfg_size Size of the FW config data
- * @return int 0 on success, -1 on failure
+ * @param spi_address SPI flash address of the FW config image
+ * @param image_size Size of the FW config image in bytes
+ * @return 0 on success, -1 on failure
  */
 int LoadEthFwCfg(uint32_t eth_inst, uint32_t ring, uint8_t *buf, uint32_t eth_enabled,
 		 size_t spi_address, size_t image_size)
