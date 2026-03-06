@@ -85,8 +85,8 @@ static Throttler throttler[kThrottlerCount] = {
 			.arb_max = aiclk_arb_max_tdp,
 			.params = {
 					.alpha_filter = 1.0,
-					.p_gain = 0.2,
-					.d_gain = 0,
+					.p_gain = 0.015,
+					.d_gain = 0.1,
 				},
 		},
 	[kThrottlerFastTDC] = {
