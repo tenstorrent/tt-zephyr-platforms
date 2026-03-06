@@ -1,0 +1,24 @@
+#include <freq.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/* Set clock frequency so DLAB is programmed to 1 */
+	clock-frequency = <2000000>;
+};
+
+&i3c1 {
+	status = "okay";
+	input-clock-frequency = <DT_FREQ_M(150)>;
+	i3c-scl-hz = <DT_FREQ_M(12)>; /* 12 MHz I3C SCL frequency */
+	i2c-scl-hz = <DT_FREQ_K(300)>; /* 400 kHz I2C SCL frequency */
+
+	remoteproc: remoteproc@88fc1fe8fa15 {
+		/* GPIO 61 is boot gpio */
+		boot-gpios = <&gpio1 29 GPIO_ACTIVE_HIGH>;
+		compatible = "tenstorrent,smc-remoteproc";
+		/* No static address, PID of 0x88fc1fe8fa1 */
+		reg = <0x0 0x88fc 0x1fe8fa15>;
+	};
+};

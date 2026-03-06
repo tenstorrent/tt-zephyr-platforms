@@ -1,0 +1,8 @@
+common:
+  tags:
+    - drivers
+tests:
+  lib.tenstorrent.occp:
+    tags: smoke
+    platform_allow:
+      - tt_grendel_smc
