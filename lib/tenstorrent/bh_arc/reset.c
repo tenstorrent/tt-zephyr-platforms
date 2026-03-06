@@ -46,10 +46,21 @@ LOG_MODULE_REGISTER(InitHW, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 STATUS_ERROR_STATUS0_reg_u error_status0;
 
+/* Cable fault mode: true when DMC reports 0W power limit (no cable or improper installation).
+ * In this mode, all tiles are clock-gated via NIU_CFG_0 TILE_CLK_OFF to minimize power draw,
+ * while maintaining the full NOC mesh and ARC-PCIe path for host communication.
+ */
+static bool cable_fault_mode;
+
 static const uint8_t kNocRing;
 static const uint8_t kNocTlb;
 static const uint32_t kSoftReset0Addr = 0xFFB121B0; /* NOC address in each tile */
 static const uint32_t kAllRiscSoftReset = 0x47800;
+
+bool is_cable_fault_mode(void)
+{
+	return cable_fault_mode;
+}
 
 void bh_soft_reset_all_tensix(void)
 {
@@ -65,6 +76,11 @@ static int AssertSoftResets(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP6);
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, tiles are clock-gated - skip soft reset writes */
+	if (cable_fault_mode) {
 		return 0;
 	}
 
@@ -110,6 +126,11 @@ static int DeassertRiscvResets(void)
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEP7);
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, skip RISC-V deasserts to keep cores idle */
+	if (cable_fault_mode) {
 		return 0;
 	}
 
@@ -199,12 +220,36 @@ static int DeassertTileResets(void)
 		return 0;
 	}
 
+	/* Read cable power limit with magic marker check for backward compatibility.
+	 * - If magic marker present: new DMC, check power limit (0 = cable fault)
+	 * - If magic marker absent: legacy DMC, skip cable fault detection
+	 */
+	uint32_t raw_value = ReadReg(DMC_CABLE_POWER_LIMIT_REG_ADDR);
+
+	if ((raw_value & CABLE_POWER_LIMIT_MAGIC_MASK) == CABLE_POWER_LIMIT_MAGIC) {
+		/* New DMC with cable power limit feature */
+		uint16_t cable_power_limit = raw_value & CABLE_POWER_LIMIT_VALUE_MASK;
+
+		LOG_INF("Cable Power Limit: %u", cable_power_limit);
+
+		if (cable_power_limit == 0) {
+			cable_fault_mode = true;
+			error_status0.f.cable_fault = 1;
+			LOG_WRN("Cable fault detected (0W power limit). "
+				"Entering low-power mode - clock-gating all tiles except ARC.");
+		}
+	} else {
+		/* Legacy DMC without cable power limit feature - skip cable fault check */
+		LOG_INF("Legacy DMC detected (no cable power feature), skipping cable fault check");
+	}
+
 	/* Put all PLLs back into bypass, since tile resets need to be deasserted at low speed */
 	ARRAY_FOR_EACH(pll_devs, i) {
 		clock_control_configure(pll_devs[i], NULL,
 					(void *)CLOCK_CONTROL_TT_BH_CONFIG_BYPASS);
 	}
 
+	/* Always deassert NOC, system, and PCIe resets - needed for ARC-PCIe communication */
 	RESET_UNIT_GLOBAL_RESET_reg_u global_reset = {.val = RESET_UNIT_GLOBAL_RESET_REG_DEFAULT};
 
 	global_reset.f.noc_reset_n = 1;
@@ -213,11 +258,6 @@ static int DeassertTileResets(void)
 	global_reset.f.ptp_reset_n_refclk = 1;
 	WriteReg(RESET_UNIT_GLOBAL_RESET_REG_ADDR, global_reset.val);
 
-	RESET_UNIT_ETH_RESET_reg_u eth_reset = {.val = RESET_UNIT_ETH_RESET_REG_DEFAULT};
-
-	eth_reset.f.eth_reset_n = 0x3fff;
-	WriteReg(RESET_UNIT_ETH_RESET_REG_ADDR, eth_reset.val);
-
 	RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = {.val = RESET_UNIT_TENSIX_RESET_REG_DEFAULT};
 
 	tensix_reset.f.tensix_reset_n = 0xffffffff;
@@ -225,6 +265,11 @@ static int DeassertTileResets(void)
 	for (uint32_t i = 0; i < 8; i++) {
 		WriteReg(RESET_UNIT_TENSIX_RESET_0_REG_ADDR + i * 4, tensix_reset.val);
 	}
+
+	RESET_UNIT_ETH_RESET_reg_u eth_reset = {.val = RESET_UNIT_ETH_RESET_REG_DEFAULT};
+
+	eth_reset.f.eth_reset_n = 0x3fff;
+	WriteReg(RESET_UNIT_ETH_RESET_REG_ADDR, eth_reset.val);
 
 	RESET_UNIT_DDR_RESET_reg_u ddr_reset = {.val = RESET_UNIT_DDR_RESET_REG_DEFAULT};
 

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "bh_reset.h"
 #include "gddr.h"
 #include "harvesting.h"
 #include "init.h"
@@ -344,6 +345,13 @@ static int InitMrisc(void)
 		return 0;
 	}
 
+	/* In cable fault mode, GDDR tiles are clock-gated - skip MRISC init
+	 * since tiles are not active.
+	 */
+	if (is_cable_fault_mode()) {
+		return 0;
+	}
+
 	wipe_l1();
 
 	/* Load MRISC (DRAM RISC) FW to all DRAMs in the middle NOC node */
@@ -500,6 +508,13 @@ static int gddr_training(void)
 
 	/* Check GDDR training status. */
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return 0;
+	}
+
+	/* In cable fault mode, GDDR tiles are clock-gated - skip training
+	 * since tiles are not active.
+	 */
+	if (is_cable_fault_mode()) {
 		return 0;
 	}
 
