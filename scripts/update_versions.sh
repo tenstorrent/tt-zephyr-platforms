@@ -23,19 +23,9 @@ case "$1" in
     *) echo "Error: Invalid argument '$1'" >&2; echo "$USAGE" >&2; exit 2 ;;
 esac
 
-SCRIPT="$(realpath "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT")"
-
-# Walk up from the script location until we find the directory that contains the script itself
-# (i.e. the directory named "tt-system-firmware")
-CURRENT="$SCRIPT_DIR"
-while [[ "$CURRENT" != "/" ]]; do
-    if [[ -f "$CURRENT/scripts/update_versions.sh" ]] || [[ -f "$CURRENT/VERSION" ]]; then
-        PROJECT_ROOT="$CURRENT"
-        break
-    fi
-    CURRENT="$(dirname "$CURRENT")"
-done
+# Find the base directory of the repo
+PROJECT_ROOT=$(cd $(dirname $0); git rev-parse --show-toplevel)
+test -f ${PROJECT_ROOT}/scripts/$(basename $0) || { echo "cannot find project root"; exit 1; }
 
 ROOT_VERSION="$PROJECT_ROOT/VERSION"
 SMC_VERSION="$PROJECT_ROOT/app/smc/VERSION"
