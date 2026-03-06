@@ -348,8 +348,8 @@ uint32_t get_enabled_arb_max_bitmask(void)
 }
 
 /** @brief Handles the request to set AICLK busy or idle
- * @param[in] request The request, of type @ref aiclk_set_speed_rqst_t, with command code
- *	@ref MSG_TYPE_AICLK_GO_BUSY to go busy, or @ref MSG_TYPE_AICLK_GO_LONG_IDLE to go idle.
+ * @param[in] request The request, of type @ref aiclk_set_speed_rqst, with command code
+ *	@ref TT_SMC_MSG_AICLK_GO_BUSY to go busy, or @ref TT_SMC_MSG_AICLK_GO_LONG_IDLE to go idle.
  * @param[out] response The response to the host
  * @return 0 for success
  */

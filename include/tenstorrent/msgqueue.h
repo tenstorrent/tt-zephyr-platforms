@@ -95,8 +95,8 @@ struct power_setting_rqst {
 
 	/** @brief The list of On/Off style power flags SMC supports toggling */
 	struct {
-		/** @brief 1 - @ref aiclk_set_busy "Set AICLK to Busy" <br>
-		 *  0 - @ref aiclk_set_busy "Set AICLK to Idle"
+		/** @brief 1 - @ref aiclk_update_busy "Set AICLK to Busy" <br>
+		 *  0 - @ref aiclk_update_busy "Set AICLK to Idle"
 		 */
 		uint16_t max_ai_clk: 1;
 
@@ -183,7 +183,7 @@ struct switch_clk_scheme_rqst {
 	/** @brief Three bytes of padding */
 	uint8_t pad[3];
 
-	/** @brief @ref ClockingScheme "Clock scheme" to switch to*/
+	/** @brief @ref tt_clk_scheme "Clock scheme" to switch to*/
 	uint32_t scheme;
 };
 
@@ -334,7 +334,7 @@ struct test_rqst {
 /** @brief Host request to toggle GDDR reset
  * @details Messages of this type are processed by @ref toggle_gddr_reset.
  *
- * On failure response data[1] contains one of the @ref GDDR_RESET_ERR values.
+ * On failure response data[1] contains one of the @ref gddr_reset_err values.
  */
 struct gddr_reset_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_TOGGLE_GDDR_RESET */
