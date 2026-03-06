@@ -12,12 +12,13 @@ USAGE="Usage: $0 <rc|update-rc|patch|pre-release|post-release>
   patch        - increment patch number: PATCHLEVEL++
   pre-release  - remove rc tag (prepare stable release)
   post-release - final stable: PATCHLEVEL=99, EXTRAVERSION=
+  post-branch  - update main after creating the branch: MINOR++, PATCHLEVEL=99, EXTRAVERSION=
 "
 
 [[ $# -eq 1 ]] || { echo "$USAGE" >&2; exit 2; }
 
 case "$1" in
-    rc|update-rc|patch|pre-release|post-release) MODE="$1" ;;
+    rc|update-rc|patch|pre-release|post-release|post-branch) MODE="$1" ;;
     -h|--help) echo "$USAGE"; exit 0 ;;
     *) echo "Error: Invalid argument '$1'" >&2; echo "$USAGE" >&2; exit 2 ;;
 esac
@@ -88,6 +89,11 @@ update_file() {
             new_patch=99
             new_extra=""
             ;;
+        post-branch)
+            ((new_minor++))
+            new_patch=99
+            new_extra=""
+            ;;
     esac
 
     # Only touch lines that actually change
@@ -121,6 +127,7 @@ do_commit() {
         patch)        msg="update to $ver" ;;
         pre-release)  msg="update to $ver" ;;
         post-release) msg="update to $ver" ;;
+        post-branch)  msg="update to $ver" ;;
     esac
 
     (cd "$PROJECT_ROOT" && git commit -sm "${prefix}version: $msg
