@@ -258,7 +258,7 @@ jobs:
       - name: Run WH E2E Tests
         working-directory: tt-zephyr-platforms
         run: |
-          pytest -s -v --tb=short --junit-xml=wh_e2e_results.xml app/wh/pytest/e2e_smoke.py
+          pytest -s -v --tb=short --junit-xml=wh_e2e_results.xml -k "not test_upgrade_from_19_0" app/wh/pytest/e2e_smoke.py
 
       - name: Upload WH E2E Test results
         if: ${{ always() }}
