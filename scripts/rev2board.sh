@@ -27,6 +27,7 @@ case "$1" in
   p300c) BOARD="tt_blackhole@p300c/tt_blackhole/$CLUSTER";;
   galaxy) BOARD="tt_blackhole@galaxy/tt_blackhole/$CLUSTER";;
   galaxy_revc) BOARD="tt_blackhole@galaxy_revc/tt_blackhole/$CLUSTER";;
+  orion_slt) BOARD="tt_blackhole@orion_slt/tt_blackhole/$CLUSTER";;
   *) >&2 echo "Unknown board: $1"; exit 1;;
 esac
 

@@ -1,0 +1,231 @@
+/*
+ * Copyright (c) 2026 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	model = "Tenstorrent Blackhole Orion SLT board";
+	compatible = "tenstorrent,orion-slt";
+
+	chosen {
+		zephyr,console = &uart0;
+	};
+
+	uart0: rtt_uart {
+		compatible = "segger,rtt-uart";
+	};
+
+	jtagsel {
+		compatible = "gpio-leds";
+		enable1: enable_1 {
+			gpios = <&gpiob 2 GPIO_ACTIVE_LOW>;
+			label = "VOUT Enable Low";
+		};
+	};
+
+	mcureset {
+		compatible = "gpio-leds";
+		mcureset0: mcureset {
+			label = "MCU reset";
+			gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
+		};
+
+		spireset0: spireset {
+			label = "SPI reset";
+			gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
+		};
+
+		powerreset0: powerreset {
+			label = "Power reset";
+			gpios = <&gpiod 1 GPIO_ACTIVE_LOW>;
+		};
+
+		pgood0: pgood {
+			label = "Power good";
+			gpios = <&gpioc 14 GPIO_PULL_DOWN>;
+		};
+
+		presettrigger0: preset_trigger {
+			label = "PRESET trigger";
+			gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		};
+
+		arc_rambus_jtag_mux_sel: arc_rambus_jtag_mux_enable {
+			gpios = <&gpiod 3 GPIO_ACTIVE_LOW>;
+			label = "Enable to select the arc jtag, disable to select rambus";
+		};
+
+		arc_l2_jtag_mux_sel: arc_l2_jtag_mux_enable {
+			gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
+			label = "Enable to select the arc jtag, disable to select l2cpu";
+		};
+	};
+
+	aliases {
+		i2c1 = &i2c1;
+		reset-mcu = &mcureset0;
+		reset-spi = &spireset0;
+		reset-power = &powerreset0;
+		pgood = &pgood0;
+		preset-trigger = &presettrigger0;
+		arc-rambus-jtag-mux-sel = &arc_rambus_jtag_mux_sel;
+		arc-l2-jtag-mux-sel = &arc_l2_jtag_mux_sel;
+		bh-smbus = &smbus3;
+	};
+};
+
+/* Orion SLT does not use strapping - remove strapping to avoid undefined label */
+&chip0 {
+	/delete-node/ strapping;
+};
+
+/* Override JTAG pins for Orion SLT hardware */
+&jtag0 {
+	tck-gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
+	tdi-gpios = <&gpiof 0 GPIO_ACTIVE_HIGH>;
+	tdo-gpios = <&gpiob 14 GPIO_PULL_UP>;
+	tms-gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+	trst-gpios = <&gpiof 1 GPIO_ACTIVE_LOW>;
+};
+
+/* Disable base I2C1 devices Orion SLT doesn't have */
+&ina228 {
+	status = "disabled";
+};
+
+&max6639 {
+	status = "disabled";
+};
+
+/* Replace gpiox with TCA9546A mux + TCA9554A (same addresses) */
+&i2c1 {
+	/* Must remove base nodes before adding different devices at same I2C addresses */
+	/delete-node/ gpio@20;
+	/delete-node/ gpio@21;
+	/delete-node/ gpio@38;
+	/delete-node/ gpio@39;
+	/delete-node/ gpio@3a;
+	/delete-node/ gpio@3b;
+	/delete-node/ gpio@3c;
+	/delete-node/ gpio@3e;
+
+	mux: tca9546a@70 {
+		compatible = "ti,tca9546a";
+		reg = <0x70>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+
+		ch0: mux_i2c@0 {
+			compatible = "ti,tca9546a-channel";
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			gpioX1: tca9554a@21 {
+				compatible = "ti,tca9554a";
+				reg = <0x21>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				gpio-controller;
+				status = "okay";
+			};
+		};
+
+		ch1: mux_i2c@1 {
+			compatible = "ti,tca9546a-channel";
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			gpioX2: tca9554a@22 {
+				compatible = "ti,tca9554a";
+				reg = <0x22>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				gpio-controller;
+				status = "okay";
+			};
+		};
+
+		ch2: mux_i2c@2 {
+			compatible = "ti,tca9546a-channel";
+			reg = <2>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			gpioX3: tca9554a@20 {
+				compatible = "ti,tca9554a";
+				reg = <0x20>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				gpio-controller;
+				status = "okay";
+			};
+		};
+	};
+
+	gpioX4: tca9554a@38 {
+		compatible = "ti,tca9554a";
+		reg = <0x38>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX5: tca9554a@39 {
+		compatible = "ti,tca9554a";
+		reg = <0x39>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX6: tca9554a@3a {
+		compatible = "ti,tca9554a";
+		reg = <0x3a>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX7: tca9554a@3b {
+		compatible = "ti,tca9554a";
+		reg = <0x3b>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX8: tca9554a@3c {
+		compatible = "ti,tca9554a";
+		reg = <0x3c>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX9: tca9554a@3d {
+		compatible = "ti,tca9554a";
+		reg = <0x3d>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+
+	gpioX10: tca9554a@3e {
+		compatible = "ti,tca9554a";
+		reg = <0x3e>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpio-controller;
+		status = "okay";
+	};
+};
