@@ -95,7 +95,22 @@
 /** @brief Ethernet live status. */
 #define TAG_ETH_LIVE_STATUS 21
 
-/** @brief GDDR status. */
+/** @brief GDDR training and BIST status.
+ * [0] - Training complete GDDR 0
+ * [1] - Error GDDR 0
+ * [2] - Training complete GDDR 1
+ * [3] - Error GDDR 1
+ * ...
+ * [14] - Training Complete GDDR 7
+ * [15] - Error GDDR 7
+ * [16] - BIST complete GDDR 0
+ * [17] - BIST failed GDDR 0
+ * [18] - BIST complete GDDR 1
+ * [19] - BIST failed GDDR 1
+ * ...
+ * [30] - BIST complete GDDR 7
+ * [31] - BIST failed GDDR 7
+ */
 #define TAG_GDDR_STATUS 22
 
 /** @brief GDDR speed in megabits per second. */

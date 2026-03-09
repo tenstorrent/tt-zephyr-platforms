@@ -233,15 +233,6 @@ static void UpdateGddrTelemetry(void)
 					     "updating telemetry");
 				continue;
 			}
-			/* DDR Status:
-			 * [0] - Training complete GDDR 0
-			 * [1] - Error GDDR 0
-			 * [2] - Training complete GDDR 1
-			 * [3] - Error GDDR 1
-			 * ...
-			 * [14] - Training Complete GDDR 7
-			 * [15] - Error GDDR 7
-			 */
 			status |= (gddr_telemetry.training_complete << (i * 2)) |
 				  (gddr_telemetry.gddr_error << (i * 2 + 1));
 
@@ -278,6 +269,13 @@ static void UpdateGddrTelemetry(void)
 				       (gddr_telemetry.uncorr_edc_wr_error << (i * 2 + 1));
 			speed = gddr_telemetry.dram_speed;
 		}
+	}
+
+	struct gddr_bist_info bist = get_gddr_bist_info();
+
+	for (int i = 0; i < NUM_GDDR; i++) {
+		status |= (uint32_t)IS_BIT_SET(bist.complete, i) << (16 + i * 2);
+		status |= (uint32_t)IS_BIT_SET(bist.failed, i) << (17 + i * 2);
 	}
 
 	/* Update telemetry atomically after accumulation. */
