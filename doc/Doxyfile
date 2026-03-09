@@ -1,8 +1,8 @@
 DOXYFILE_ENCODING      = UTF-8
-PROJECT_NAME           = "TT Zephyr Platforms"
+PROJECT_NAME           = "TT-System-Firmware APIs"
 PROJECT_NUMBER         = 1.0.0
 PROJECT_BRIEF          = Tenstorrent Firmware
-PROJECT_LOGO           = images/tt_logo.svg
+PROJECT_LOGO           = images/tt_logo_white.png
 OUTPUT_DIRECTORY       = _build_doxygen
 CREATE_SUBDIRS         = NO
 CREATE_SUBDIRS_LEVEL   = 8
@@ -156,10 +156,20 @@ HTML_STYLESHEET        =
 HTML_EXTRA_STYLESHEET  = ../../zephyr/doc/_doxygen/doxygen-awesome.css \
                          ../../zephyr/doc/_doxygen/doxygen-awesome-sidebar-only.css \
                          ../../zephyr/doc/_doxygen/doxygen-awesome-sidebar-only-darkmode-toggle.css \
-                         ../../zephyr/doc/_doxygen/doxygen-awesome-zephyr.css
+                         _doxygen/doxygen-awesome-tt.css
 
 HTML_EXTRA_FILES       = ../../zephyr/doc/_doxygen/doxygen-awesome-darkmode-toggle.js \
-                         ../../zephyr/doc/_doxygen/doxygen-awesome-zephyr.js
+                         _doxygen/doxygen-awesome-tt.js \
+                         _static/fonts/DegularText-Medium.woff \
+                         _static/fonts/DegularText-Medium.woff2 \
+                         _static/fonts/DegularText-Bold.woff \
+                         _static/fonts/DegularText-Bold.woff2 \
+                         _static/fonts/DegularText-MediumItalic.woff \
+                         _static/fonts/DegularText-MediumItalic.woff2 \
+                         _static/fonts/DegularDisplay-Light.woff \
+                         _static/fonts/DegularDisplay-Light.woff2 \
+                         _static/fonts/RMMono-Regular.woff \
+                         _static/fonts/RMMono-Regular.woff2
 HTML_COLORSTYLE        = LIGHT
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
