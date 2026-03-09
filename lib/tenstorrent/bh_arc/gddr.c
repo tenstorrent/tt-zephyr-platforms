@@ -55,6 +55,13 @@ LOG_MODULE_REGISTER(gddr, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtable));
 
+static struct gddr_bist_info gddr_bist;
+
+struct gddr_bist_info get_gddr_bist_info(void)
+{
+	return gddr_bist;
+}
+
 static uint32_t GetGddrSpeedFromCfg(uint8_t *fw_cfg_image)
 {
 	/* GDDR speed is the second DWORD of the MRISC FW Config table */
@@ -274,15 +281,20 @@ static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	int32_t ret = wait_mrisc_not_busy(gddr_inst, timeout, "memtest");
 
 	if (ret != 0) {
+		gddr_bist.complete |= BIT(gddr_inst);
+		gddr_bist.failed |= BIT(gddr_inst);
 		return ret;
 	}
 
 	uint32_t pass = MriscL1Read32(gddr_inst, GDDR_MSG_STRUCT_ADDR + 8 * 4);
 
+	gddr_bist.complete |= BIT(gddr_inst);
 	if (pass != 0) {
+		gddr_bist.failed |= BIT(gddr_inst);
 		LOG_ERR("GDDR %d memory test failed", gddr_inst);
 		return -EIO;
 	}
+	gddr_bist.failed &= ~BIT(gddr_inst);
 	LOG_DBG("GDDR %d memory test passed", gddr_inst);
 	return 0;
 }
@@ -615,6 +627,9 @@ static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
 		rsp->data[1] = GDDR_RESET_ERR_MASKED;
 		return 1;
 	}
+
+	gddr_bist.complete &= ~BIT(gddr_inst);
+	gddr_bist.failed &= ~BIT(gddr_inst);
 
 	if (was_phy_off) {
 		rc = set_mrisc_power_setting(true);

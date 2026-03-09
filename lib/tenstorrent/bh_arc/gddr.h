@@ -50,6 +50,20 @@
 
 int read_gddr_telemetry_table(uint8_t gddr_inst, gddr_telemetry_table_t *gddr_telemetry);
 
+/** @brief BIST status bitmasks (one bit per GDDR instance). */
+struct gddr_bist_info {
+	uint8_t complete;
+	uint8_t failed;
+};
+
+/**
+ * @brief Get GDDR BIST status
+ *
+ * @return Per-instance bitmasks indicating which instances have completed BIST
+ *         and which have failed.
+ */
+struct gddr_bist_info get_gddr_bist_info(void);
+
 /** @brief Sets the MRISC power setting for all active MRISCs
  * @param [in] on `true` to send MRISCs the @ref MRISC_MSG_TYPE_PHY_WAKEUP command <br>
  * `false` to send MRISCs the @ref MRISC_MSG_TYPE_PHY_POWERDOWN command
