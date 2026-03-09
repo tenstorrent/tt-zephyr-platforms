@@ -30,6 +30,7 @@ Major enhancements with this release include:
 ### API Changes
 - New CMFW message `TT_SMC_MSG_TOGGLE_GDDR_RESET` to reset and retrain a specific GDDR controller (0-7).
   Sample usage can be found in the [pytest file](https://github.com/tenstorrent/tt-system-firmware/tree/main/app/smc/pytest/e2e_smoke.py#L961).
+- BIST failure and completion status is now stored in the ``GDDR_STATUS[31:16]`` telemetry tag.
 
 ### Developer Features
 - DMFW and SMFW now store Zephyr's `APP_VERSION_STRING` and `APP_BUILD_VERSION` binary descriptors, which provide the app version and the FW bundle's git revision respectively. These are printed to the boot banner, and can also be accessed using Zephyr's [`west bindesc` tool](https://docs.zephyrproject.org/latest/services/binary_descriptors/index.html).
