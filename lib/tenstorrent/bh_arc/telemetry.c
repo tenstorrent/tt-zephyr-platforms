@@ -241,6 +241,13 @@ static void UpdateGddrTelemetry(void)
 			 * ...
 			 * [14] - Training Complete GDDR 7
 			 * [15] - Error GDDR 7
+			 * [16] - BIST complete GDDR 0
+			 * [17] - BIST failed GDDR 0
+			 * [18] - BIST complete GDDR 1
+			 * [19] - BIST failed GDDR 1
+			 * ...
+			 * [30] - BIST complete GDDR 7
+			 * [31] - BIST failed GDDR 7
 			 */
 			status |= (gddr_telemetry.training_complete << (i * 2)) |
 				  (gddr_telemetry.gddr_error << (i * 2 + 1));
@@ -279,6 +286,8 @@ static void UpdateGddrTelemetry(void)
 			speed = gddr_telemetry.dram_speed;
 		}
 	}
+
+	status |= get_gddr_bist_status();
 
 	/* Update telemetry atomically after accumulation. */
 	for (int i = 0; i < NUM_GDDR / 2; i++) {
