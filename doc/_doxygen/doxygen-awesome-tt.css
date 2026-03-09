@@ -1,0 +1,393 @@
+/*
+ * Copyright (c) 2026 Tenstorrent AI ULC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* TT brand fonts — files shipped via HTML_EXTRA_FILES in Doxyfile */
+@font-face {
+    font-family: "Degular";
+    src: url("DegularText-Medium.woff2") format("woff2"),
+         url("DegularText-Medium.woff") format("woff");
+}
+
+@font-face {
+    font-family: "Degular";
+    src: url("DegularText-Bold.woff2") format("woff2"),
+         url("DegularText-Bold.woff") format("woff");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Degular";
+    src: url("DegularText-MediumItalic.woff2") format("woff2"),
+         url("DegularText-MediumItalic.woff") format("woff");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "DegularDisplay";
+    src: url("DegularDisplay-Light.woff2") format("woff2"),
+         url("DegularDisplay-Light.woff") format("woff");
+}
+
+@font-face {
+    font-family: "RMMono";
+    src: url("RMMono-Regular.woff2") format("woff2"),
+         url("RMMono-Regular.woff") format("woff");
+}
+
+/* TT-System-Firmware branding for doxygen-awesome */
+html {
+    --primary-color: #5164e0;
+    --primary-dark-color: #7584e6;
+    --primary-light-color: #ccd2f9;
+    --primary-lighter-color: #d7dbeb;
+    --primary-lightest-color: #edeff9;
+
+    --side-nav-background: #edeff9;
+    --side-nav-foreground: #202020;
+    --page-outline-vis: #ccd2f9;
+
+    --searchbar-background: #ffffff;
+    --searchbar-foreground: #202020;
+
+    --link-color: #5164e0;
+    --link-color-visited: #7584e6;
+    --param-color: #fa512e;
+
+    --side-nav-fixed-width: 300px;
+    --top-height: 130px;
+
+    --font-family: "Degular", "Inter", "Segoe UI", sans-serif;
+    --font-family-monospace: "RMMono", monospace;
+    --page-font-size: 16px;
+    --content-maxwidth: 1200px;
+
+    --warning-color: #f5e2ba;
+    --warning-color-dark: #f6bc42;
+    --warning-color-darker: #5f4204;
+    --note-color: #c7f1ff;
+    --note-color-dark: #74c5df;
+    --note-color-darker: #1a4a5c;
+    --todo-color: #ccd2f9;
+    --todo-color-dark: #5164e0;
+    --todo-color-darker: #2a2055;
+    --deprecated-color: #f4d8d2;
+    --deprecated-color-dark: #ff9e8a;
+    --deprecated-color-darker: #5a2017;
+    --bug-color: #f4d8d2;
+    --bug-color-dark: #fa512e;
+    --bug-color-darker: #75070f;
+    --invariant-color: #c7efe8;
+    --invariant-color-dark: #6faba0;
+    --invariant-color-darker: #265532;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not(.light-mode) {
+        color-scheme: dark;
+
+        --primary-color: #7584e6;
+        --primary-dark-color: #ccd2f9;
+        --primary-light-color: #5164e0;
+        --primary-lighter-color: #1f2335;
+        --primary-lightest-color: #151827;
+
+        --side-nav-background: #151827;
+        --side-nav-foreground: #edeff9;
+        --searchbar-background: #1f2335;
+        --searchbar-foreground: #edeff9;
+        --link-color: #7584e6;
+        --link-color-visited: #ccd2f9;
+        --param-color: #ff9e8a;
+
+        --warning-color: #3b2e04;
+        --warning-color-dark: #f1b602;
+        --warning-color-darker: #ceb670;
+        --note-color: #0f2e3d;
+        --note-color-dark: #74c5df;
+        --note-color-darker: #c7f1ff;
+        --todo-color: #1f2335;
+        --todo-color-dark: #7584e6;
+        --todo-color-darker: #ccd2f9;
+        --deprecated-color: #2e1917;
+        --deprecated-color-dark: #ff9e8a;
+        --deprecated-color-darker: #f4d8d2;
+        --bug-color: #2e1917;
+        --bug-color-dark: #fa512e;
+        --bug-color-darker: #f5b1aa;
+        --invariant-color: #1a332e;
+        --invariant-color-dark: #6faba0;
+        --invariant-color-darker: #c7efe8;
+    }
+}
+
+html.dark-mode {
+    color-scheme: dark;
+
+    --primary-color: #7584e6;
+    --primary-dark-color: #ccd2f9;
+    --primary-light-color: #5164e0;
+    --primary-lighter-color: #1f2335;
+    --primary-lightest-color: #151827;
+
+    --side-nav-background: #151827;
+    --side-nav-foreground: #edeff9;
+    --searchbar-background: #1f2335;
+    --searchbar-foreground: #edeff9;
+    --link-color: #7584e6;
+    --link-color-visited: #ccd2f9;
+    --param-color: #ff9e8a;
+
+    --warning-color: #3b2e04;
+    --warning-color-dark: #f1b602;
+    --warning-color-darker: #ceb670;
+    --note-color: #0f2e3d;
+    --note-color-dark: #74c5df;
+    --note-color-darker: #c7f1ff;
+    --todo-color: #1f2335;
+    --todo-color-dark: #7584e6;
+    --todo-color-darker: #ccd2f9;
+    --deprecated-color: #2e1917;
+    --deprecated-color-dark: #ff9e8a;
+    --deprecated-color-darker: #f4d8d2;
+    --bug-color: #2e1917;
+    --bug-color-dark: #fa512e;
+    --bug-color-darker: #f5b1aa;
+    --invariant-color: #1a332e;
+    --invariant-color-dark: #6faba0;
+    --invariant-color-darker: #c7efe8;
+}
+
+body,
+table,
+div,
+p {
+    font-family: "Degular", "Inter", "Segoe UI", sans-serif;
+    font-size: var(--page-font-size);
+}
+
+h1,
+h2,
+h3 {
+    font-family: "DegularDisplay", "Degular", "Inter", sans-serif;
+    font-weight: 400;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1rem; }
+h6 { font-size: 0.875rem; }
+
+h4,
+h5,
+h6 {
+    font-family: "Degular", "Inter", "Segoe UI", sans-serif;
+}
+
+a:link,
+a:hover,
+a:focus,
+a:active {
+    color: var(--link-color) !important;
+    transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+a:visited {
+    color: var(--link-color-visited) !important;
+}
+
+.paramname {
+    color: var(--param-color);
+}
+
+dl.section dd,
+dl.bug dd,
+dl.deprecated dd {
+    margin-inline-start: revert;
+}
+
+/* Adjust top region to better match TT Sphinx docs */
+#top {
+    background: var(--side-nav-background);
+}
+
+#titlearea {
+    padding-bottom: 0;
+}
+
+#titlearea table {
+    width: 100%;
+}
+
+#projectlogo img {
+    width: 200px;
+    height: auto;
+    max-height: none !important;
+    padding-top: 12px;
+    object-fit: contain;
+}
+
+#projectalign {
+    display: none;
+}
+
+@media screen and (min-width: 767px) {
+    #doc-content {
+        padding-top: calc(var(--top-height) - 180px);
+    }
+}
+
+/* Style for version text injected by JS */
+#projectversion {
+    color: var(--side-nav-foreground);
+    padding-top: 4px;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+/* Monospace font for code elements */
+code,
+pre.fragment,
+div.fragment,
+div.line,
+.memItemRight,
+.memTemplItemRight,
+.memname,
+tt {
+    font-family: "RMMono", monospace;
+}
+
+/* Inline code highlight to match Sphinx literal styling */
+p code,
+li code,
+td code,
+dd code {
+    color: var(--param-color);
+}
+
+/* Function signature / member item styling to match Sphinx dt blocks */
+div.memitem {
+    border: 1px solid var(--primary-light-color);
+    border-top: 3px solid var(--primary-color);
+}
+
+div.memproto {
+    background: var(--primary-lightest-color);
+}
+
+h2.memtitle {
+    background: var(--primary-lightest-color);
+    border-color: var(--primary-light-color);
+}
+
+a:target + h2.memtitle,
+a:target + h2.memtitle + div.memitem {
+    border-color: var(--primary-color);
+}
+
+/* Navigation sidebar: replace arrows with Sphinx-style [+]/[-] indicators */
+#nav-tree .arrow {
+    opacity: 1 !important;
+    font-size: 0.75rem;
+    font-family: "RMMono", monospace;
+    width: auto;
+    text-align: center;
+    color: var(--side-nav-foreground);
+}
+
+/* Navigation sidebar hover states */
+#nav-tree div.item:hover {
+    background: var(--primary-light-color);
+    transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#nav-tree .selected {
+    background: var(--primary-lighter-color);
+}
+
+/* Search input styling to match Sphinx */
+#MSearchBox {
+    border: 2px solid var(--primary-dark-color) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+#MSearchBox.MSearchBoxActive {
+    border-color: var(--primary-color) !important;
+}
+
+#MSearchField {
+    font-family: "Degular", "Inter", "Segoe UI", sans-serif;
+}
+
+/* Breadcrumb bar (DOM restructured by JS into .tt-breadcrumbs + .tt-footer) */
+#nav-path {
+    margin-top: 2rem;
+    background: var(--primary-lightest-color);
+    border-top: 1px solid var(--primary-light-color);
+}
+
+#nav-path ul.tt-hidden {
+    display: none !important;
+}
+
+.tt-breadcrumbs {
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.tt-breadcrumbs a {
+    color: var(--link-color) !important;
+    text-decoration: none;
+}
+
+.tt-breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.tt-crumb-sep {
+    color: var(--side-nav-foreground);
+    opacity: 0.4;
+    margin: 0 6px;
+}
+
+.tt-footer {
+    text-align: center;
+    color: var(--side-nav-foreground);
+    opacity: 0.4;
+    font-size: 0.75rem;
+    padding: 6px 0 10px;
+    border-top: 1px solid var(--primary-light-color);
+}
+
+.tt-footer img {
+    width: 48px;
+    vertical-align: middle;
+    opacity: 0.6;
+}
+
+/* "Back to docs" banner injected by JS */
+#tt-back-to-docs {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--primary-lightest-color);
+    border-bottom: 1px solid var(--primary-light-color);
+    font-family: "Degular", "Inter", "Segoe UI", sans-serif;
+    font-size: 0.875rem;
+}
+
+#tt-back-to-docs a {
+    color: var(--link-color) !important;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#tt-back-to-docs a:hover {
+    text-decoration: underline;
+}
