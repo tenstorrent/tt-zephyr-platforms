@@ -178,25 +178,26 @@ def upgrade_from_version_test(
     )
 
     logger.info(
-        "Baseline FW: fwbundle:0x{fw_bundle_base:08x} m3:0x{m3_version_base:08x} cm:{cmfw_version_base:08x}"
+        f"Baseline FW: fwbundle:0x{fw_bundle_base:08x} m3:0x{m3_version_base:08x} cm:{cmfw_version_base:08x}"
     )
 
     # flash firmware to update to (the one build in repository)
+    del arc_chip
     unlaunched_dut.launch()
-
+    arc_chip = pyluwen.detect_chips()[asic_id]
     time.sleep(0.5)
 
     arc0_version_new = arc_chip.as_wh().get_telemetry().arc0_fw_version
     fwbundle_version_new = arc_chip.as_wh().get_telemetry().fw_bundle_version
     m3_version_new = arc_chip.as_wh().get_telemetry().m3_app_fw_version
 
-    assert ((19 << 24) | (6 << 16) | (1)) == fwbundle_version_new
-    assert ((2 << 24) | (39 << 16)) == arc0_version_new
-    assert (5 << 24 | 12 << 16) == m3_version_new
-
     logger.info(
-        "FW under test: fwbundle:0x{fwbundle_version_new:08x} m3:0x{m3_version_new:08x} cm:{arc0_version_new:08x}"
+        f"FW under test: fwbundle:0x{fwbundle_version_new:08x} m3:0x{m3_version_new:08x} cm:{arc0_version_new:08x}"
     )
+
+    assert ((19 << 24) | (7 << 16) | (1)) == fwbundle_version_new
+    assert ((2 << 24) | (40 << 16)) == arc0_version_new
+    assert (5 << 24 | 12 << 16) == m3_version_new
 
 
 def test_upgrade_from_19_0(
