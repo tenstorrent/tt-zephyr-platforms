@@ -26,10 +26,14 @@ Major enhancements with this release include:
 - New process based V/F curve reduces TDP, VCORE and Input Power while increasing AICLK frequency.
   - Note that since the V/F curve is process based, results for every chip will differ.
   - On chips we measured, we saw TDP and VCORE reduction by 4-8%, Input Power reduction by 1-3%, and AICLK increase by 2-3%.
+- Updated tuning for TDP throttler
+- Updated GDDR temperature limit to `89 C` across all boards
+- Fix telemetry reporting of limiting arbiter in `TAG_AICLK_ARB_MIN`, `TAG_AICLK_ARB_MAX`, and `TAG_AICLK_PPM_INFO`
 
 ### API Changes
 - New CMFW message `TT_SMC_MSG_TOGGLE_GDDR_RESET` to reset and retrain a specific GDDR controller (0-7).
   Sample usage can be found in the [pytest file](https://github.com/tenstorrent/tt-system-firmware/tree/main/app/smc/pytest/e2e_smoke.py#L961).
+- Publish `TAG_AICLK_PPM_INFO` in telemetry tag table
 
 ### Developer Features
 - DMFW and SMFW now store Zephyr's `APP_VERSION_STRING` and `APP_BUILD_VERSION` binary descriptors, which provide the app version and the FW bundle's git revision respectively. These are printed to the boot banner, and can also be accessed using Zephyr's [`west bindesc` tool](https://docs.zephyrproject.org/latest/services/binary_descriptors/index.html).
