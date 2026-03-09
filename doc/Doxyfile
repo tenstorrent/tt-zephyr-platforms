@@ -109,7 +109,6 @@ WARN_FORMAT            = "$file:$line: $text"
 WARN_LINE_FORMAT       = "at line $line of file $file"
 WARN_LOGFILE           =
 INPUT                  = _doxygen/main.md \
-                         _doxygen/groups.dox \
                          ../include \
                          ../lib
 INPUT_ENCODING         = UTF-8
