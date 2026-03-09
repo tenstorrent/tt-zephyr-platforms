@@ -32,6 +32,11 @@ Shell Commands
 
 The board provides shell commands for testing and interacting with various peripherals.
 
+Where available, tab completion can be used to provide a list of valid inputs. This works
+with no command entered to get a list of all available zephyr commands.
+
+-h can be used with commands to provide an overview of the command/subcommand entered.
+
 GPIO Commands
 =============
 
@@ -96,6 +101,39 @@ Test internal flash functionality:
 
    # Write data to internal flash (address 0x10000, data "deadbeef")
    dm_test_app:~$ flash write flash 0x10000 deadbeef
+
+Log Commands
+============
+
+Check the status of the logs, and list logger modules available for configuration:
+
+.. code-block:: console
+
+   dm_test_app:~$ log status
+
+Disable logs for a given module (e.g. spi_ll_stm32):
+
+.. code-block:: console
+
+   dm_test_app:~$ log disable spi_ll_stm32
+
+Enable logs for a given module (e.g. spi_ll_stm32 at debug log level):
+
+.. code-block:: console
+
+   dm_test_app:~$ log enable dbg spi_ll_stm32
+
+Disable all logs
+
+.. code-block:: console
+
+   dm_test_app:~$ log disable
+
+Enable all logs to a given log level (e.g. debug log level)
+
+.. code-block:: console
+
+   dm_test_app:~$ log enable dbg
 
 Programming and Debugging
 *************************
