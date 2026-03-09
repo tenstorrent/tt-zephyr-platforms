@@ -6,6 +6,7 @@ tests:
   lib.tenstorrent.boot_fs.python:
     # Although the zephyr pytest harness is usually used for testing host + device interaction,
     # here, we use it only to test the scripts/tt_boot_fs.py script.
+    timeout: 120
     harness: pytest
     harness_config:
       pytest_root:
