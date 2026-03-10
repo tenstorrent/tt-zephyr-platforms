@@ -163,7 +163,7 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 		.msg = &_msgtype##_msg,                                                            \
 	}
 
-	uint8_t buffer[96];
+	uint8_t buffer[256];
 	size_t bytes_read = 0;
 	struct bh_fwtable_data *data = dev->data;
 	const struct bh_fwtable_config *config = dev->config;
@@ -184,11 +184,16 @@ static int tt_bh_fwtable_load(const struct device *dev, enum bh_fwtable_e table)
 	int result =
 		tt_boot_fs_find_fd_by_tag(config->flash, (uint8_t *)loadcfg[table].tag, &fd_data);
 	if (result != TT_BOOT_FS_OK) {
-		LOG_ERR("%s() failed with error code %d", loadcfg[table].tag, result);
+		LOG_ERR("%8s() failed with error code %d", loadcfg[table].tag, result);
 		return -EIO;
 	}
 
 	bytes_read = fd_data.flags.f.image_size;
+
+	if (bytes_read > sizeof(buffer)) {
+		LOG_ERR("Buffer is too small for %8s", loadcfg[table].tag);
+		return -ENOMEM;
+	}
 
 	flash_read(config->flash, fd_data.spi_addr, buffer, bytes_read);
 	/* Convert the binary data to a pb_istream_t that is expected by decode */
