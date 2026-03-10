@@ -990,10 +990,12 @@ def test_pvt_comprehensive(arc_chip_dut, asic_id):
 def test_gddr_reset(arc_chip_dut, asic_id):
     """
     Validates the GDDR reset message by toggling MRISC reset on each
-    GDDR controller, verifying that BIST passes.
+    GDDR controller, verifying that BIST passes and TAG_GDDR_STATUS
+    reflects the result.
     """
 
     NUM_GDDR = 8
+    TAG_GDDR_STATUS = 22
     GDDR_RESET_ERR_HARVESTED = 2
 
     arc_chip = pyluwen.detect_chips()[asic_id]
@@ -1014,5 +1016,30 @@ def test_gddr_reset(arc_chip_dut, asic_id):
             fail_count += 1
         else:
             logger.info(f"GDDR {gddr_inst} reset passed")
+
+        # Check GDDR telemetry
+        if detail != GDDR_RESET_ERR_HARVESTED:
+            time.sleep(0.2)
+            gddr_status = read_telem(asic_id, TAG_GDDR_STATUS)
+            bist_complete = (gddr_status >> (16 + gddr_inst * 2)) & 1
+            bist_failed = (gddr_status >> (17 + gddr_inst * 2)) & 1
+
+            logger.info(f"GDDR {gddr_inst} TAG_GDDR_STATUS=0x{gddr_status:08x} ")
+
+            assert bist_complete == 1, (
+                f"GDDR {gddr_inst} BIST complete bit not set in TAG_GDDR_STATUS "
+                f"(0x{gddr_status:08x})"
+            )
+
+            if status == 0:
+                assert bist_failed == 0, (
+                    f"GDDR {gddr_inst} BIST failed bit set despite successful reset in "
+                    f"TAG_GDDR_STATUS (0x{gddr_status:08x})"
+                )
+            else:
+                assert bist_failed == 1, (
+                    f"GDDR {gddr_inst} BIST failed bit not set despite failed reset in "
+                    f"TAG_GDDR_STATUS (0x{gddr_status:08x})"
+                )
 
     assert fail_count == 0, f"{fail_count} non-harvested GDDR instances failed reset"
