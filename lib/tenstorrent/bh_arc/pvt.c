@@ -54,6 +54,9 @@ static struct pvt_tt_bh_rtio_data pd_buf[DT_PROP(DT_NODELABEL(pvt), num_pd)];
 static struct pvt_tt_bh_rtio_data vm_buf[DT_PROP(DT_NODELABEL(pvt), num_vm)];
 static struct pvt_tt_bh_rtio_data ts_buf[DT_PROP(DT_NODELABEL(pvt), num_ts)];
 
+BUILD_ASSERT(offsetof(union request, read_ts.sensor_id) == offsetof(union request, data[1]),
+	     "read_ts.sensor_id must alias data[1]");
+
 /* return selected TS raw reading and temperature in telemetry format */
 static uint8_t read_ts_handler(const union request *request, struct response *response)
 {
@@ -71,7 +74,7 @@ static uint8_t read_ts_handler(const union request *request, struct response *re
 	if (ret != 0) {
 		return ret;
 	}
-	uint32_t id = request->data[1];
+	uint32_t id = request->read_ts.sensor_id;
 
 	decoder->decode((uint8_t *)ts_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_TS, id},
 			NULL, pvt_cfg->num_ts, &celcius);
