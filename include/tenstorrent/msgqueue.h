@@ -369,6 +369,23 @@ struct asic_state_rqst {
 	uint8_t command_code;
 };
 
+/** @brief Host request to read a temperature sensor
+ * @details Messages of this type are processed by @ref read_ts_handler.
+ *
+ * On success, response data[1] contains the raw sensor reading and
+ * data[2] contains the temperature in telemetry format.
+ */
+struct read_ts_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_READ_TS */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Temperature sensor instance ID */
+	uint32_t sensor_id;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -429,6 +446,9 @@ union request {
 
 	/** @brief A GDDR reset request */
 	struct gddr_reset_rqst gddr_reset;
+
+	/** @brief A temperature sensor read request */
+	struct read_ts_rqst read_ts;
 };
 
 /** @} */
