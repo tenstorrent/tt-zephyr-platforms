@@ -56,7 +56,7 @@ jobs:
         - /dev/hugepages:/dev/hugepages
         - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged --user=root'
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
