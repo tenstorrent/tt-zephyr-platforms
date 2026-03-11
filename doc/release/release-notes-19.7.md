@@ -1,7 +1,5 @@
 # v19.7.0
 
-> This is a working draft for the up-coming 19.7.0 release.
-
 We are pleased to announce the release of TT System Firmware firmware version 19.7.0 🥳🎉.
 
 .. note::
