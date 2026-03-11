@@ -122,7 +122,7 @@ jobs:
           INSERT="    pytest tests/didt/test_resnet_conv.py::test_resnet_conv -k \"all\" --didt-workload-iterations 100 --determinism-check-interval 0"
           sed -i "/$SEARCH/a$INSERT" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
           # To verify patch was applied
-          git diff
+          cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
 
       - name: Run Container Test
         run: |
