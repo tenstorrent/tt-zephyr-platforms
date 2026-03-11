@@ -386,6 +386,26 @@ struct read_ts_rqst {
 	uint32_t sensor_id;
 };
 
+/** @brief Host request to read a process detector
+ * @details Messages of this type are processed by @ref read_pd_handler.
+ *
+ * On success, response data[1] contains the raw sensor reading and
+ * data[2] contains the frequency in telemetry format.
+ */
+struct read_pd_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_READ_PD */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Delay chain selection */
+	uint32_t delay_chain;
+
+	/** @brief Process detector instance ID */
+	uint32_t sensor_id;
+};
+
 /** @brief Host request to read a voltage monitor
  * @details Messages of this type are processed by @ref read_vm_handler.
  *
@@ -469,6 +489,9 @@ union request {
 
 	/** @brief A voltage monitor read request */
 	struct read_vm_rqst read_vm;
+
+	/** @brief A process detector read request */
+	struct read_pd_rqst read_pd;
 };
 
 /** @} */
