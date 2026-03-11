@@ -4,6 +4,10 @@
 
 We are pleased to announce the release of TT System Firmware firmware version 19.7.0 🥳🎉.
 
+.. note::
+
+Upgrade ``tt-smi`` version to ``v4.1.1`` to display accurate DRAM training status. Older versions of ``tt-smi`` will show DRAM training status to be ``N`` when it is trained. This is a visual bug and does not affect actual DRAM training.
+
 Major enhancements with this release include:
 
 ## Wormhole
