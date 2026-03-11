@@ -386,6 +386,23 @@ struct read_ts_rqst {
 	uint32_t sensor_id;
 };
 
+/** @brief Host request to read a voltage monitor
+ * @details Messages of this type are processed by @ref read_vm_handler.
+ *
+ * On success, response data[1] contains the raw sensor reading and
+ * data[2] contains the voltage in millivolts.
+ */
+struct read_vm_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_READ_VM */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Voltage monitor instance ID */
+	uint32_t sensor_id;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -449,6 +466,9 @@ union request {
 
 	/** @brief A temperature sensor read request */
 	struct read_ts_rqst read_ts;
+
+	/** @brief A voltage monitor read request */
+	struct read_vm_rqst read_vm;
 };
 
 /** @} */
