@@ -135,7 +135,7 @@ static uint8_t read_vm_handler(const union request *request, struct response *re
 		return ret;
 	}
 
-	uint32_t id = request->data[1];
+	uint32_t id = request->read_vm.sensor_id;
 
 	decoder->decode((uint8_t *)vm_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_VM, id},
 			NULL, pvt_cfg->num_vm, &volts);
