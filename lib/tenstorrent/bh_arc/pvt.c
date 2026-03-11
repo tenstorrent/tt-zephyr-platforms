@@ -54,9 +54,6 @@ static struct pvt_tt_bh_rtio_data pd_buf[DT_PROP(DT_NODELABEL(pvt), num_pd)];
 static struct pvt_tt_bh_rtio_data vm_buf[DT_PROP(DT_NODELABEL(pvt), num_vm)];
 static struct pvt_tt_bh_rtio_data ts_buf[DT_PROP(DT_NODELABEL(pvt), num_ts)];
 
-BUILD_ASSERT(offsetof(union request, read_ts.sensor_id) == offsetof(union request, data[1]),
-	     "read_ts.sensor_id must alias data[1]");
-
 /* return selected TS raw reading and temperature in telemetry format */
 static uint8_t read_ts_handler(const union request *request, struct response *response)
 {
@@ -93,7 +90,7 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 	const struct pvt_tt_bh_config *pvt_cfg = pvt->config;
 	int ret;
 
-	uint32_t delay_chain = request->data[1];
+	uint32_t delay_chain = request->read_pd.delay_chain;
 
 	pvt_tt_bh_delay_chain_set(delay_chain);
 
@@ -106,7 +103,7 @@ static uint8_t read_pd_handler(const union request *request, struct response *re
 	if (ret != 0) {
 		return ret;
 	}
-	uint32_t id = request->data[2];
+	uint32_t id = request->read_pd.sensor_id;
 
 	decoder->decode((uint8_t *)pd_buf, (struct sensor_chan_spec){SENSOR_CHAN_PVT_TT_BH_PD, id},
 			NULL, pvt_cfg->num_pd, &freq);

@@ -52,6 +52,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_WRITE_EEPROM = 0x1A,
 	/** @brief @ref read_ts_rqst "Read temperature sensor request" */
 	TT_SMC_MSG_READ_TS = 0x1B,
+	/** @brief @ref read_pd_rqst "Read process detector request" */
 	TT_SMC_MSG_READ_PD = 0x1C,
 	/** @brief @ref read_vm_rqst "Read voltage monitor request" */
 	TT_SMC_MSG_READ_VM = 0x1D,
