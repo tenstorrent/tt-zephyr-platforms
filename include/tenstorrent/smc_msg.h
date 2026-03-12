@@ -48,7 +48,9 @@ enum tt_smc_msg {
 	/** @brief @ref switch_vout_control_rqst "Switch VOUT control request" */
 	TT_SMC_MSG_SWITCH_VOUT_CONTROL = 0x18,
 
+	/** @brief @ref eeprom_rqst "Read SPI EEPROM request" */
 	TT_SMC_MSG_READ_EEPROM = 0x19,
+	/** @brief @ref eeprom_rqst "Write SPI EEPROM request" */
 	TT_SMC_MSG_WRITE_EEPROM = 0x1A,
 	/** @brief @ref read_ts_rqst "Read temperature sensor request" */
 	TT_SMC_MSG_READ_TS = 0x1B,
