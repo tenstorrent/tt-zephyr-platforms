@@ -386,6 +386,35 @@ struct read_ts_rqst {
 	uint32_t sensor_id;
 };
 
+/** @brief Host request to read or write SPI EEPROM
+ * @details Read messages are processed by @ref read_eeprom_handler.
+ *          Write messages are processed by @ref write_eeprom_handler.
+ *
+ * The host must use flash unlock (@ref TT_SMC_MSG_FLASH_UNLOCK) before writing.
+ * The CSM buffer address must fall within the SPI global buffer region.
+ */
+struct eeprom_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_READ_EEPROM or
+	 * @ref TT_SMC_MSG_WRITE_EEPROM
+	 */
+	uint8_t command_code;
+
+	/** @brief Buffer memory type (0 = CSM scratch buffer) */
+	uint8_t buffer_mem_type;
+
+	/** @brief Two bytes of padding */
+	uint8_t pad[2];
+
+	/** @brief SPI flash address to read from or write to */
+	uint32_t spi_address;
+
+	/** @brief Number of bytes to transfer */
+	uint32_t num_bytes;
+
+	/** @brief CSM buffer address for the data */
+	uint32_t csm_addr;
+};
+
 /** @brief Host request to read a process detector
  * @details Messages of this type are processed by @ref read_pd_handler.
  *
@@ -512,6 +541,9 @@ union request {
 
 	/** @brief A set TDP limit request */
 	struct set_tdp_limit_rqst set_tdp_limit;
+
+	/** @brief An EEPROM read or write request */
+	struct eeprom_rqst eeprom;
 };
 
 /** @} */
