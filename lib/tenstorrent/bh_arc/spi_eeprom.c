@@ -170,10 +170,10 @@ static bool check_csm_region(uint32_t addr, uint32_t num_bytes)
 
 static uint8_t read_eeprom_handler(const union request *request, struct response *response)
 {
-	uint8_t buffer_mem_type = BYTE_GET(request->data[0], 1);
-	uint32_t spi_address = request->data[1];
-	uint32_t num_bytes = request->data[2];
-	uint8_t *csm_addr = (uint8_t *)request->data[3];
+	uint8_t buffer_mem_type = request->eeprom.buffer_mem_type;
+	uint32_t spi_address = request->eeprom.spi_address;
+	uint32_t num_bytes = request->eeprom.num_bytes;
+	uint8_t *csm_addr = (uint8_t *)request->eeprom.csm_addr;
 
 	if (!device_is_ready(flash)) {
 		/* Flash init failed */
@@ -194,10 +194,10 @@ static uint8_t read_eeprom_handler(const union request *request, struct response
 
 static uint8_t write_eeprom_handler(const union request *request, struct response *response)
 {
-	uint8_t buffer_mem_type = BYTE_GET(request->data[0], 1);
-	uint32_t spi_address = request->data[1];
-	uint32_t num_bytes = request->data[2];
-	uint8_t *csm_addr = (uint8_t *)request->data[3];
+	uint8_t buffer_mem_type = request->eeprom.buffer_mem_type;
+	uint32_t spi_address = request->eeprom.spi_address;
+	uint32_t num_bytes = request->eeprom.num_bytes;
+	uint8_t *csm_addr = (uint8_t *)request->eeprom.csm_addr;
 
 	if (flash_locked) {
 		/* Flash is locked; cannot write */
