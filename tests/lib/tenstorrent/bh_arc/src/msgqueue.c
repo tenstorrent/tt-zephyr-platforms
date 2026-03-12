@@ -437,4 +437,40 @@ ZTEST(msgqueue, test_msg_type_asic_state)
 	zexpect_equal(get_asic_state(), A0State);
 }
 
+ZTEST(msgqueue, test_msg_type_read_eeprom_no_flash)
+{
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.eeprom.command_code = TT_SMC_MSG_READ_EEPROM;
+	req.eeprom.buffer_mem_type = 0;
+	req.eeprom.spi_address = 0x1000;
+	req.eeprom.num_bytes = 64;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Flash device is not available in test, handler returns 1 */
+	zassert_equal(rsp.data[0], 1);
+}
+
+ZTEST(msgqueue, test_msg_type_write_eeprom_locked)
+{
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.eeprom.command_code = TT_SMC_MSG_WRITE_EEPROM;
+	req.eeprom.buffer_mem_type = 0;
+	req.eeprom.spi_address = 0x1000;
+	req.eeprom.num_bytes = 64;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Flash is locked by default, handler returns 2 */
+	zassert_equal(rsp.data[0], 2);
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
