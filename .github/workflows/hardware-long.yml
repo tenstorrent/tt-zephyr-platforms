@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
+      mfg-matrix-config: ${{ steps.gen-config.outputs.mfg-matrix-config }}
     steps:
       - uses: actions/checkout@v4
       - id: gen-config
@@ -41,6 +42,9 @@ jobs:
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
           MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
+          # Same filter, but exclude galaxy board (for manufacturing tests)
+          MFG_MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh" and .board != "galaxy") | del(.product)]' .github/ci_boards.json)"
+          echo "mfg-matrix-config=$MFG_MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   e2e-stress-test:
     needs: [gen-config]
@@ -163,3 +167,210 @@ jobs:
             exit 1
           fi
           echo "Successfully verified that tensix-enabled column count is correct: $TENSIX_COUNT"
+
+  manufacturing-test:
+    needs: [build-fw-artifact, gen-config]
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.gen-config.outputs.mfg-matrix-config) }}
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Cleanup State
+        if: ${{ always() }}
+        run: |
+          ls -la
+          rm -rf *
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          path: tt-system-firmware
+
+      - name: Prepare Container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
+        with:
+          app-path: tt-system-firmware
+          kmd-version: ${{ matrix.config.kmd_build }}
+
+      - name: Derive board properties
+        id: board-map
+        shell: bash
+        run: |
+          BOARD="${{ matrix.config.board }}"
+          ASSEMBLY_BOARD=$(echo "$BOARD" | sed 's/[a-z]$//')
+          echo "assembly_board=$ASSEMBLY_BOARD" | tee -a $GITHUB_OUTPUT
+          # p300 variants have 2 ASICs, all others have 1
+          if [[ "$ASSEMBLY_BOARD" == p300 ]]; then
+            echo "num_asics=2" | tee -a $GITHUB_OUTPUT
+          else
+            echo "num_asics=1" | tee -a $GITHUB_OUTPUT
+          fi
+
+      - name: Download preflash firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: preflash-fw
+          path: artifacts/preflash
+
+      - name: Download assembly test firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-fw-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-fw
+
+      - name: Download assembly MCUBoot
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-mcuboot-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-mcuboot
+
+      - name: Download combined firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: artifacts/fwbundle
+
+      - name: Download Flash Loader Module
+        uses: actions/download-artifact@v4
+        with:
+          name: bh-flm
+          path: tt-system-firmware/scripts/tooling/blackhole_recovery/data/bh_flm/build
+
+      # ---- Step 1: Erase SPI + flash preflash ihex ----
+      - name: Erase SPI and flash preflash ihex
+        shell: bash
+        run: |
+          PREFLASH_IHEX=$(ls artifacts/preflash/preflash-*.ihex | head -1)
+          echo "Using preflash image: $PREFLASH_IHEX"
+          python3 tt-system-firmware/scripts/spi_flash.py \
+            --board-name ${{ matrix.config.board }} --no-prompt -v full_erase
+          python3 tt-system-firmware/scripts/spi_flash.py \
+            --board-name ${{ matrix.config.board }} --no-prompt -v \
+            write_from_ihex "$PREFLASH_IHEX"
+
+      # ---- Step 2: Flash assembly test FW to DMC via pyocd ----
+      - name: Flash assembly test firmware to DMC
+        shell: bash
+        run: |
+          MCUBOOT_ELF="artifacts/assembly-mcuboot/zephyr.elf"
+          APP_HEX="artifacts/assembly-fw/zephyr.signed.hex"
+
+          echo "Flashing MCUBoot bootloader: $MCUBOOT_ELF"
+          echo "Flashing assembly test app: $APP_HEX"
+
+          if [ ! -f "$MCUBOOT_ELF" ]; then
+            echo "ERROR: MCUBoot ELF not found at $MCUBOOT_ELF"
+            exit 1
+          fi
+          if [ ! -f "$APP_HEX" ]; then
+            echo "ERROR: Assembly test app hex not found at $APP_HEX"
+            exit 1
+          fi
+          python3 tt-system-firmware/scripts/dmc_flash.py --no-prompt -v \
+            flash "$APP_HEX" "$MCUBOOT_ELF"
+
+
+      # ---- Step 3: DMC reset (simulate power-on) ----
+      - name: DMC reset after assembly flash
+        shell: bash
+        run: |
+          echo "Resetting DMC..."
+          python3 tt-system-firmware/scripts/dmc_reset.py
+
+      # ---- Step 4: Verify PCIe enumeration (assembly test FW + preflash) ----
+      - name: Verify PCIe enumeration (assembly test FW)
+        shell: bash
+        run: |
+          echo "Verifying PCIe enumeration with assembly test FW + preflash..."
+          EXPECTED=${{ steps.board-map.outputs.num_asics }}
+          TIMEOUT=60
+          ELAPSED=0
+          while true; do
+            COUNT=0
+            for dev in /sys/bus/pci/devices/*/vendor; do
+              if [ -f "$dev" ] && [ "$(cat "$dev")" = "0x1e52" ]; then
+                COUNT=$((COUNT + 1))
+              fi
+            done
+            echo "Detected $COUNT Tenstorrent PCIe endpoint(s), expected $EXPECTED"
+            if [ "$COUNT" -ge "$EXPECTED" ]; then
+              echo "PASS: All $EXPECTED endpoint(s) enumerated"
+              break
+            fi
+            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "FAIL: Only $COUNT of $EXPECTED endpoint(s) enumerated after ${TIMEOUT}s"
+              exit 1
+            fi
+            echo "Rescanning PCIe bus..."
+            echo 1 > /sys/bus/pci/rescan
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+          done
+
+      # ---- Step 5: Flash production FW via tt-flash ----
+      - name: Flash production firmware
+        shell: bash
+        run: |
+          echo "Flashing production firmware bundle..."
+          FWBUNDLE=$(ls artifacts/fwbundle/fw_pack*.fwbundle | head -1)
+          echo "Using firmware bundle: $FWBUNDLE"
+          tt-flash "$FWBUNDLE" --force
+
+      # ---- Step 6: DMC reset (simulate cold boot after bootstrap) ----
+      - name: DMC reset after production flash
+        shell: bash
+        run: |
+          echo "Resetting DMC after production FW flash..."
+          python3 tt-system-firmware/scripts/dmc_reset.py
+
+      # ---- Step 7: Verify PCIe enumeration (production FW) ----
+      - name: Verify PCIe enumeration (production FW)
+        shell: bash
+        run: |
+          echo "Verifying PCIe enumeration with production FW..."
+          EXPECTED=${{ steps.board-map.outputs.num_asics }}
+          TIMEOUT=60
+          ELAPSED=0
+          while true; do
+            COUNT=0
+            for dev in /sys/bus/pci/devices/*/vendor; do
+              if [ -f "$dev" ] && [ "$(cat "$dev")" = "0x1e52" ]; then
+                COUNT=$((COUNT + 1))
+              fi
+            done
+            echo "Detected $COUNT Tenstorrent PCIe endpoint(s), expected $EXPECTED"
+            if [ "$COUNT" -ge "$EXPECTED" ]; then
+              echo "PASS: All $EXPECTED endpoint(s) enumerated"
+              break
+            fi
+            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "FAIL: Only $COUNT of $EXPECTED endpoint(s) enumerated after ${TIMEOUT}s"
+              exit 1
+            fi
+            echo "Rescanning PCIe bus..."
+            echo 1 > /sys/bus/pci/rescan
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+          done
+
+      # ---- Debug info on failure ----
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-system-firmware
+        run: |
+          echo "DMC RTT logs:"
+          python3 ./scripts/dmc_rtt.py -n
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_console.py --rtt -n
+          NUM_ASICS=${{ steps.board-map.outputs.num_asics }}
+          for ((i=0; i<NUM_ASICS; i++)); do
+            echo "SMC state dump for ASIC $i:"
+            python3 ./scripts/dump_smc_state.py --asic-id $i
+          done
