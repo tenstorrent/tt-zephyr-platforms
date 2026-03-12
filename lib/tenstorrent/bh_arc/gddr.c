@@ -281,7 +281,6 @@ static int CheckHwMemtestResult(uint8_t gddr_inst, k_timepoint_t timeout)
 	int32_t ret = wait_mrisc_not_busy(gddr_inst, timeout, "memtest");
 
 	if (ret != 0) {
-		gddr_bist.complete |= BIT(gddr_inst);
 		gddr_bist.failed |= BIT(gddr_inst);
 		return ret;
 	}
