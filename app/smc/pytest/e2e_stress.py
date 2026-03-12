@@ -65,7 +65,7 @@ def tt_smi_reset():
     """
     Resets the SMC using tt-smi
     """
-    smi_reset_cmd = "tt-smi -r"
+    smi_reset_cmd = "tt-smi -r --eth_train_skip"
     smi_reset_result = subprocess.run(
         smi_reset_cmd.split(), capture_output=True, check=False
     ).returncode
