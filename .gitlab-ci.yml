@@ -41,8 +41,9 @@ test-job:
     - export BUILD_DIR_1=uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin
     - export TARGET_DIR=./firmware/zephyr/grendel_smc_hello_world_smp_zephyr
     - cp $BUILD_DIR_0$BUILD_DIR_1 $TARGET_DIR/grendel_smc_hello_world_smp_zephyr.bin
-    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test >
-        --stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet
+    - export TTEM_ARGS="--stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet"
+    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test $TTEM_ARGS
+
   artifacts:
     when: always
     paths:
