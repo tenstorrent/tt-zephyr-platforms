@@ -1,3 +1,9 @@
+orion_slt:
+  - upi: 0x37
+    name: "ORION_SLT-1"
+    bootfs-name: "tt_boot_fs"
+    protobuf-name: "ORION_SLT"
+    pyocd-config: "pyocd_config_spi1.py"
 p100a:
   - upi: 0x43
     name: "P100A-1"
