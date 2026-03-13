@@ -94,6 +94,7 @@ TT_SMC_MSG_SET_WDT = 0xC1
 TT_SMC_MSG_READ_TS = 0x1B
 TT_SMC_MSG_READ_PD = 0x1C
 TT_SMC_MSG_READ_VM = 0x1D
+TT_SMC_MSG_SET_TDP_LIMIT = 0x22
 TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 
 # Telemetry tags
@@ -1016,3 +1017,45 @@ def test_gddr_reset(arc_chip_dut, asic_id):
             logger.info(f"GDDR {gddr_inst} reset passed")
 
     assert fail_count == 0, f"{fail_count} non-harvested GDDR instances failed reset"
+
+
+def test_set_tdp_limit(arc_chip_dut, asic_id):
+    """
+    Validates that the SET_TDP_LIMIT message works
+
+    Sets a TDP limit of 75 W, since that should be lower than the default on all boards.
+    Verifies through telemetry that the TDP limit was set correctly.
+    Verifies that the TDP limit can be restored to the default value.
+
+    Note that this test currently still works even if the TDP throttler is disabled.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    orig_tdp_limit = arc_chip.get_telemetry().tdp_limit_max
+    logger.info(f"Original TDP limit: {orig_tdp_limit}")
+
+    # Set TDP limit to 75 watts
+    NEW_TDP_LIMIT = 75
+
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_TDP_LIMIT, NEW_TDP_LIMIT, 0, 0, 0, 0, 0, 0]
+    )
+    assert response[0] == 0, f"Failed to set TDP limit to {NEW_TDP_LIMIT} watts"
+
+    tdp_limit = arc_chip.get_telemetry().tdp_limit_max
+    logger.info(f"New TDP limit: {tdp_limit}")
+
+    assert tdp_limit == NEW_TDP_LIMIT, f"TDP limit not set to {NEW_TDP_LIMIT} watts"
+
+    # Set TDP limit to default
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_TDP_LIMIT, 0, 1, 0, 0, 0, 0, 0]
+    )
+    assert response[0] == 0, "Failed to restore default TDP limit"
+
+    tdp_limit = arc_chip.get_telemetry().tdp_limit_max
+    logger.info(f"Default TDP limit: {tdp_limit}")
+
+    assert tdp_limit == orig_tdp_limit, (
+        f"TDP limit not restored to {orig_tdp_limit} watts"
+    )
