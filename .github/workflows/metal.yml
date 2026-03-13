@@ -43,6 +43,7 @@ jobs:
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   metal-test:
+    name: Metal Test on ${{ matrix.config.board }}
     needs: [build-fw-artifact, gen-config]
     strategy:
       fail-fast: false
@@ -56,7 +57,7 @@ jobs:
         - /dev/hugepages:/dev/hugepages
         - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged'
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged --user=root'
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
@@ -121,8 +122,6 @@ jobs:
           SEARCH="echo \"\[upstream-tests\] Running BH upstream didt tests\""
           INSERT="    pytest tests/didt/test_resnet_conv.py::test_resnet_conv -k \"all\" --didt-workload-iterations 100 --determinism-check-interval 0"
           sed -i "/$SEARCH/a$INSERT" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
-          # To verify patch was applied
-          git diff
 
       - name: Run Container Test
         run: |
