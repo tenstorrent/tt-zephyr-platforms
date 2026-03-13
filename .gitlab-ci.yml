@@ -6,7 +6,7 @@ build-job:
   stage: build
   image: ghcr.io/tenstorrent/tt-system-firmware/ci-image:v19.7.0
   script:
-    - cd /tt-zephyr/tt-zephyr-platforms
+    - cd /tt-zephyr/tt-system-firmware
     # Pull repo revision to run CI on
     - git remote add ci $CI_REPOSITORY_URL
     - git fetch ci $CI_COMMIT_SHA
@@ -14,7 +14,7 @@ build-job:
     - west packages pip --install
     - west update
     - cd /tt-zephyr
-    - ./tt-zephyr-platforms/scripts/ci/build-grendel.sh
+    - ./tt-system-firmware/scripts/ci/build-grendel.sh
     - ls -la $OUTDIR
   artifacts:
     paths:
