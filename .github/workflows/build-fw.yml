@@ -29,7 +29,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.sha }}
+  group: ${{ github.workflow }}-build-fw-${{ github.event.pull_request.number || github.event.merge_group.base_sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
