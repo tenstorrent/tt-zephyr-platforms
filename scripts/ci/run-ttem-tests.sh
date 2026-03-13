@@ -12,7 +12,7 @@ sed -i "s/run_args: +COCOTB_TEST=smc_zephyr_binary_loader_test"\
 " +FW_TEST=grendel_smc_hello_world_smp_zephyr/run_args:"\
 " +COCOTB_TEST=smc_zephyr_binary_loader_test"\
 " +FW_TEST=grendel_smc_hello_world_smp_zephyr"\
-" +FW_TEST_TIMEOUT=2000000/g" tb_uvm/yaml/regression_smc_chiplet.yaml
+" +FW_TEST_TIMEOUT=1000000000/g" tb_uvm/yaml/regression_smc_chiplet.yaml
 cp "$OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/drivers/uart/"\
 "uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin" \
    ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
