@@ -45,6 +45,7 @@ jobs:
           echo "matrix-config-wh=$MATRIX_CONFIG_WH" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
+    name: BH Hardware Smoke Test on ${{ matrix.config.board }}
     if: github.event_name != 'schedule'
     needs: [gen-config]
     env:
@@ -137,6 +138,7 @@ jobs:
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-test:
+    name: BH Smoke E2E Test on ${{ matrix.config.board }}
     if: github.event_name != 'schedule'
     needs: [gen-config]
     strategy:
@@ -223,6 +225,7 @@ jobs:
           python3 ./scripts/dump_smc_state.py --asic-id $ASIC_ID
 
   smoke-e2e-wh-test:
+    name: WH Smoke E2E Test on ${{ matrix.config.board }}
     needs: [gen-config]
     if: github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'wh-tests')
     strategy:
