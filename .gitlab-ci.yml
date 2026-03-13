@@ -4,7 +4,7 @@ variables:
 
 build-job:
   stage: build
-  image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v19.4.2
+  image: ghcr.io/tenstorrent/tt-system-firmware/ci-image:v19.7.0
   script:
     - cd /tt-zephyr/tt-zephyr-platforms
     # Pull repo revision to run CI on
@@ -36,8 +36,10 @@ test-job:
     - module list || true
     - bender checkout --force || bender checkout --force
     - ls -la $OUTDIR
-    - cp $OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/drivers/uart/uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
-    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test --stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet
+    - cp $OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/drivers/uart/uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin >
+        ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
+    - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test >
+        --stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet
   artifacts:
     when: always
     paths:
