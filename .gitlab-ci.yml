@@ -36,9 +36,11 @@ test-job:
     - module list || true
     - bender checkout --force || bender checkout --force
     - ls -la $OUTDIR
-    - cp $OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/drivers/uart/>
-        uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin >
-        ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
+    # Use a few environment variables to get around line length limits in compliance checks
+    - export BUILD_DIR_0=$OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr/tests/drivers/uart/
+    - export BUILD_DIR_1=uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin
+    - export TARGET_DIR=./firmware/zephyr/grendel_smc_hello_world_smp_zephyr
+    - cp $BUILD_DIR_0$BUILD_DIR_1 $TARGET_DIR/grendel_smc_hello_world_smp_zephyr.bin
     - ttem tb_uvm/yaml/regression_smc_chiplet.yaml smc_zephyr_hello_world_smp_test >
         --stack flist,cgen,compile_smc_chiplet,sim --no-wave --lsf --seed 1 --c compile_smc_chiplet
   artifacts:
