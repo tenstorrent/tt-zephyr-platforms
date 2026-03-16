@@ -1,0 +1,28 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_TT_GRENDEL_SMC
+	bool "Tenstorrent Grendel SMC AXI DMA driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_GRENDEL_SMC_DMA_ENABLED
+	help
+	  Enable the Tenstorrent Grendel SMC AXI DMA controller driver.
+	  This driver supports memory-to-memory DMA transfers using the
+	  hardware AXI DMA engine on the Grendel SMC.
+
+config DMA_TT_GRENDEL_SMC_TIMEOUT_MS
+	int "DMA transfer timeout in milliseconds"
+	default 1000
+	depends on DMA_TT_GRENDEL_SMC
+	help
+	  Maximum time to wait for a single DMA block transfer to complete.
+	  The hardware lacks a completion interrupt, so the driver polls
+	  the DONE register until this timeout expires.
+
+config DMA_TT_GRENDEL_SMC_MAX_BLOCKS
+	int "Maximum number of blocks per transfer"
+	default 4
+	depends on DMA_TT_GRENDEL_SMC
+	help
+	  Maximum number of DMA blocks that can be chained in a single
+	  transfer.
