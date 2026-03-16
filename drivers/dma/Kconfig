@@ -8,6 +8,7 @@ menu "DMA drivers"
 # zephyr-keep-sorted-start
 rsource "Kconfig.arc_hs"
 rsource "Kconfig.tt_bh"
+rsource "Kconfig.tt_grendel"
 # zephyr-keep-sorted-stop
 
 endmenu
