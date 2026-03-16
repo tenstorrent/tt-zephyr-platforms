@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+compatible: "tenstorrent,grendel-smc-dma"
+include: [dma-controller.yaml, base.yaml]
+
+description: |
+  Tenstorrent Grendel SMC DMA Controller.
+
+properties:
+  reg:
+    required: true
+
+  "#dma-cells":
+    const: 1
+
+dma-cells:
+  - channel
