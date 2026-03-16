@@ -327,6 +327,8 @@ def upgrade_from_version_test(
 def pvt_comprehensive_test(arc_chip_dut, asic_id):
     fail_count = 0
     arc_chip = pyluwen.detect_chips()[asic_id]
+    # Set high power state
+    arc_chip.set_power_state("high")
     test_sensors = [
         (TT_SMC_MSG_READ_TS, 0),
         (TT_SMC_MSG_READ_PD, 19),
@@ -372,6 +374,9 @@ def process_detectors_test(arc_chip_dut, asic_id):
     fail_count = 0
     fmin = 95
     fmax = 240
+
+    # Set high power state
+    arc_chip.set_power_state("high")
 
     delay_chains = [19, 20, 21]
     for delay_chain in delay_chains:
