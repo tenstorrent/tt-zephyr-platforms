@@ -2,13 +2,23 @@ common:
   tags:
     - smoke
     - dma
-  platform_allow:
-    - tt_blackhole@p100a/tt_blackhole/smc
-    - tt_blackhole@p150a/tt_blackhole/smc
-    - tt_blackhole@p150b/tt_blackhole/smc
-    - tt_blackhole@p300a/tt_blackhole/smc
 tests:
+  drivers.dma.scatter_gather.tt_grendel_smc:
+    platform_allow:
+      - tt_grendel_smc
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+         ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
+         tt_grendel_smc.overlay"
+      - "EXTRA_CONF_FILE=\
+         ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
+         tt_grendel_smc.conf"
   drivers.dma.scatter_gather.tt_bh_noc:
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
@@ -17,6 +27,11 @@ tests:
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
          tt_bh_noc.conf"
   drivers.dma.scatter_gather.arc_hs.interrupts:
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
@@ -25,6 +40,11 @@ tests:
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
          arc_hs.conf"
   drivers.dma.scatter_gather.arc_hs.polling:
+    platform_allow:
+      - tt_blackhole@p100a/tt_blackhole/smc
+      - tt_blackhole@p150a/tt_blackhole/smc
+      - tt_blackhole@p150b/tt_blackhole/smc
+      - tt_blackhole@p300a/tt_blackhole/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
