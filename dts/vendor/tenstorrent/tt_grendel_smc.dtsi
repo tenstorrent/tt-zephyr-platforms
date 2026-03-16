@@ -298,6 +298,13 @@
 			riscv,max-priority = <7>;
 			riscv,ndev = <198>;
 		};
+		dma0: dma@c0038000 {
+			compatible = "tenstorrent,grendel-smc-dma";
+			reg = <0x0 0xc0038000 0x0 0x138>;
+			dma-channels = <1>;
+			#dma-cells = <1>;
+			status = "okay";
+		};
 		rom: rom@c0040000 {
 			compatible = "sifive,rom0";
 			reg = <0x0 0xc0040000 0x0 0x8000>;
