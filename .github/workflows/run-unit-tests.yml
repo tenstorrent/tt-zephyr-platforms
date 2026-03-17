@@ -3,7 +3,6 @@ name: Unit
 on:
   push:
     branches:
-      - main
       - v*-branch
   pull_request:
     types:

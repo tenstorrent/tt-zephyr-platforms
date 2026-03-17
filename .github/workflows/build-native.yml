@@ -3,7 +3,6 @@ name: Build tt-native
 on:
   push:
     branches:
-      - main
       - v*-branch
   pull_request:
     types:
