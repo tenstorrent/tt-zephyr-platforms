@@ -3,7 +3,6 @@ name: Copyright Check
 on:
   push:
     branches:
-      - main
       - v*-branch
       - collab*
   pull_request:
