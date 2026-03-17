@@ -14,6 +14,7 @@ import pytest
 from e2e_smoke import (
     dirty_reset_test,
     smi_reset_test,
+    smi_reset_with_eth,
     arc_watchdog_test,
     pcie_fw_load_time_test,
     upgrade_from_version_test,
@@ -183,6 +184,32 @@ def test_smi_reset(arc_chip_dut, asic_id):
     report_results(test_name, fail_count, total_tries)
     assert fail_count <= failure_fail_count, (
         f"{test_name} failed {fail_count}/{total_tries} times."
+    )
+
+
+def test_smi_reset_with_eth(arc_chip_dut, asic_id):
+    """
+    Checks that tt-smi resets with ethernet training are working successfully
+    """
+    # Ethernet training takes significantly longer, so we reduce the number of
+    # iterations to keep test runtime reasonable, while still providing some confidence in stability
+    total_tries = 10
+    fail_count = 0
+    for i in range(total_tries):
+        logger.info(f"Iteration {i}:")
+        result = smi_reset_with_eth(asic_id)
+
+        if not result:
+            logger.warning(
+                f"tt-smi reset with ethernet training failed on iteration {i}"
+            )
+            fail_count += 1
+
+    logger.info(
+        f"'tt-smi -r' with ethernet training failed {fail_count}/{total_tries} times."
+    )
+    assert fail_count == 0, (
+        "'tt-smi -r' with ethernet training failed a non-zero number of times."
     )
 
 

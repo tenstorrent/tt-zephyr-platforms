@@ -720,6 +720,23 @@ def smi_reset_test(asic_id):
     return smi_reset_result.returncode == 0
 
 
+def smi_reset_with_eth(asic_id):
+    """
+    Helper to run tt-smi reset test with ethernet training. Returns True if test passed, False otherwise
+    """
+    smi_reset_cmd = "tt-smi -r"
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    )
+    if smi_reset_result.returncode != 0:
+        logger.warning(
+            f"'tt-smi -r' with ethernet training failed: {smi_reset_result.stdout.decode()}"
+        )
+        smc_test_recovery.recover_smc(asic_id)
+
+    return smi_reset_result.returncode == 0
+
+
 def test_smi_reset(arc_chip_dut, asic_id):
     """
     Checks that tt-smi resets are working successfully
@@ -736,6 +753,32 @@ def test_smi_reset(arc_chip_dut, asic_id):
 
     logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
     assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
+
+
+def test_smi_reset_with_eth(arc_chip_dut, asic_id):
+    """
+    Checks that tt-smi resets with ethernet training are working successfully
+    """
+    # Ethernet training takes significantly longer, so we reduce the number of
+    # iterations to keep test runtime reasonable, while still providing some confidence in stability
+    total_tries = 2
+    fail_count = 0
+    for i in range(total_tries):
+        logger.info(f"Iteration {i}:")
+        result = smi_reset_with_eth(asic_id)
+
+        if not result:
+            logger.warning(
+                f"tt-smi reset with ethernet training failed on iteration {i}"
+            )
+            fail_count += 1
+
+    logger.info(
+        f"'tt-smi -r' with ethernet training failed {fail_count}/{total_tries} times."
+    )
+    assert fail_count == 0, (
+        "'tt-smi -r' with ethernet training failed a non-zero number of times."
+    )
 
 
 def dirty_reset_test():
