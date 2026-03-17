@@ -169,6 +169,7 @@ jobs:
         uses: ./tt-system-firmware/.github/workflows/prepare-container
         with:
           app-path: tt-system-firmware
+          kmd-version: ${{ matrix.config.kmd_build }}
 
       - name: Set ASIC ID
         shell: bash
@@ -254,6 +255,7 @@ jobs:
         uses: ./tt-zephyr-platforms/.github/workflows/prepare-container
         with:
           app-path: tt-zephyr-platforms
+          kmd-version: ${{ matrix.config.kmd_build }}
 
       - name: Run WH E2E Tests
         working-directory: tt-zephyr-platforms
