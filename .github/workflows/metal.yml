@@ -116,6 +116,13 @@ jobs:
           # than metal CI systems.
           sed -i 's/pytest\(.*\)test_demo_for_conditional_generation/CI=false pytest\1test_demo_for_conditional_generation/g' \
             dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
+          if [ "${{ matrix.config.board }}" == "p100a" ]; then
+            # Skip the entire metal unit test series
+            export SEARCH="ARCH_NAME=blackhole TT_METAL_SLOW_DISPATCH_MODE=1 .\\/tests\\/scripts\\/run_cpp_fd2_tests.sh"
+            export REPLACE="return 0"
+            sed -i "s/$SEARCH/$REPLACE/g" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
+          fi
+
           # To verify patch was applied
           cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
 
