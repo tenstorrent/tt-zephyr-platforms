@@ -697,6 +697,21 @@ struct toggle_tensix_reset_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_TOGGLE_TENSIX_RESET */
 	uint8_t command_code;
 };
+/** @brief Host request for DMC command code
+ * @details Messages of this type are processed by @ref dmc_command_handler
+ */
+struct dmc_command_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_DMC_COMMAND */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief DMC command code to send to DMFW.
+	 * Format is given by @ref dmcCommandData
+	 */
+	uint32_t dmc_command_code;
+};
 
 /** @brief A tenstorrent host request*/
 union request {
@@ -799,6 +814,9 @@ union request {
 
 	/** @brief A generic counter request */
 	struct counter_rqst counter;
+
+	/** @brief A DMC command request */
+	struct dmc_command_rqst dmc_command;
 };
 
 /** @} */
