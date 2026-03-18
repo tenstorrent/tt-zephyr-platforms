@@ -235,6 +235,28 @@ static uint8_t ping_dm_handler(const union request *request, struct response *re
 
 REGISTER_MESSAGE(TT_SMC_MSG_PING_DM, ping_dm_handler);
 
+
+/**
+ * @brief Handler to send command codes to DMC
+ *
+ * Handler for a host request to send command codes to the DMC. This request
+ * is used for debugging purposes, such as resetting a specific ASIC or
+ * collecting ASIC state information.
+ * @param[in] request The request, of type @ref dmc_command_rqst, with command code
+ *	@ref TT_SMC_MSG_DMC_COMMAND to send a command to the DMC. Note that
+ *	the command code format is given by @ref dmcCommandData, but the message
+ *	interface on the SMC treats it as a single uint32_t.
+ * @param[out] response The response to the host. Not currently used.
+ * @return 0
+ */
+static uint8_t dmc_command_handler(const union request *request, struct response *response)
+{
+	PostCm2DmMsg(kCm2DmMsgCmd, request->dmc_command.dmc_command_code);
+	return 0;
+}
+
+REGISTER_MESSAGE(TT_SMC_MSG_DMC_COMMAND, dmc_command_handler);
+
 static uint8_t set_watchdog_timeout(const union request *request, struct response *response)
 {
 	const struct device *wdt_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));

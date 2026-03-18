@@ -440,6 +440,22 @@ struct set_tdp_limit_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Host request for DMC command code
+ * @details Messages of this type are processed by @ref dmc_command_handler
+ */
+struct dmc_command_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_DMC_COMMAND */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief DMC command code to send to DMFW.
+	 * Format is given by @ref dmcCommandData
+	 */
+	uint32_t dmc_command_code;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -512,6 +528,9 @@ union request {
 
 	/** @brief A set TDP limit request */
 	struct set_tdp_limit_rqst set_tdp_limit;
+
+	/** @brief A DMC command request */
+	struct dmc_command_rqst dmc_command;
 };
 
 /** @} */

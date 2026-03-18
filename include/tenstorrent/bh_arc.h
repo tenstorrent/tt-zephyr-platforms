@@ -22,6 +22,7 @@ typedef enum {
 	kCm2DmMsgTelemHeartbeatUpdate = 6,
 	kCm2DmMsgIdForcedFanSpeedUpdate = 7,
 	kCm2DmMsgIdLedBlink = 8,
+	kCm2DmMsgCmd = 9,
 	kCm2DmMsgCount
 } Cm2DmMsgId;
 
@@ -30,6 +31,36 @@ typedef enum {
 	kCm2DmResetLevelAsic = 0,
 	kCm2DmResetLevelDmc = 3,
 } Cm2DmResetLevel;
+
+/* DMC command codes for TT_SMC_MSG_DMC_COMMAND */
+enum {
+	/* Dumps state of ASICs to logs. Useful to see if ASICs are alive */
+	kDmcCmdDumpAsicState = 0,
+	/* Sets the ASIC where the DMC will send its logs. ARG0 sets the target */
+	kDmcCmdSetLogTarget = 1,
+	/* Resets a specific ASIC. ARG0 sets the target */
+	kDmcCmdResetAsic = 2,
+	/* Set JTAG dump address. Address is encoded as
+	 * (arg2 << 24) | (arg1 << 16) | (arg0 << 8)
+	 */
+	kDmcCmdSetJtagDumpAddr = 3,
+	/* Dump data via JTAG from address specified by kDmcCmdSetJtagDumpAddr.
+	 * arg0 sets the ASIC to dump from arg1 sets the number of bytes to dump
+	 */
+	kDmcCmdDumpJtagData = 4,
+};
+
+/* DMC command code structure. Used for debugging purposes */
+typedef union dmcCommandData {
+	/* Used for TT_SMC_MSG_DMC_COMMAND */
+	struct {
+		uint8_t dmc_command_code;
+		uint8_t arg0;
+		uint8_t arg1;
+		uint8_t arg2;
+	} __packed dmc_command_data;
+	uint32_t raw_data;
+} dmc_command_data;
 
 typedef struct dmStaticInfo {
 	/*
