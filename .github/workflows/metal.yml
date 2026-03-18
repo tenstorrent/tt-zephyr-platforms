@@ -95,10 +95,8 @@ jobs:
         run: |
           mkdir -p $HOME
       - name: Download the latest firmware bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
-          path: ${{ env.HOME }}
+        run: |
+          wget https://github.com/tenstorrent/tt-system-firmware/releases/download/v19.5.0/fw_pack-19.5.0.fwbundle -O $HOME/fw_pack-19.5.0.fwbundle
       - name: Run the rescan-pcie.sh script
         run: |
           curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-system-firmware/${{ github.sha }}/scripts/rescan-pcie.sh
@@ -109,23 +107,6 @@ jobs:
           source .env/bin/activate
           pip install tt-flash@git+https://github.com/tenstorrent/tt-flash.git@73969bd2e2c5d843f4427c460e3a1eeff7fd1aa1
           tt-flash $HOME/fw_pack-*.fwbundle --force
-      - name: Patch Test Command
-        run: |
-          # Patch whisper demo test to run with CI=false to skip the performance checks.
-          # These tests fail on syseng CI because the runners have different configurations
-          # than metal CI systems.
-          sed -i 's/pytest\(.*\)test_demo_for_conditional_generation/CI=false pytest\1test_demo_for_conditional_generation/g' \
-            dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
-          if [ "${{ matrix.config.board }}" == "p100a" ]; then
-            # Skip the entire metal unit test series
-            export SEARCH="ARCH_NAME=blackhole TT_METAL_SLOW_DISPATCH_MODE=1 .\\/tests\\/scripts\\/run_cpp_fd2_tests.sh"
-            export REPLACE="return 0"
-            sed -i "s/$SEARCH/$REPLACE/g" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
-          fi
-
-          # To verify patch was applied
-          cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
-
       - name: Run Container Test
         run: |
           sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
