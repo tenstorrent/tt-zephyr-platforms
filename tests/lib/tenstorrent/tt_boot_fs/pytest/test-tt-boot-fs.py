@@ -25,6 +25,7 @@ sys.path.append(str(MODULE_ROOT / "scripts"))
 sys.path.append(str(ZEPHYR_BASE / "scripts" / "dts" / "python-devicetree" / "src"))
 
 import tt_boot_fs  # noqa: E402
+import tt_fwbundle  # noqa: E402
 import update_bar4_size  # noqa: E402
 import fwtable_tooling  # noqa: E402
 import update_tensix_disable_count  # noqa: E402
@@ -489,7 +490,7 @@ def test_tensix_disable(tmp_path: Path):
     url = release_dl_url_base + f"v{version}/fw_pack-{version}.fwbundle"
 
     input_path = tmp_path / "input.fwbundle"
-    output_path = input_path
+    output_path = tmp_path / "output.fwbundle"
 
     print(f"Downloading v{version} firmware bundle from {url}...")
 
@@ -511,4 +512,8 @@ def test_tensix_disable(tmp_path: Path):
         update_tensix_disable_count.set_tensix_disable_count,
         cb_object,
         True,
+    )
+
+    assert tt_fwbundle.diff_fw_bundles(input_path, output_path) != os.EX_OK, (
+        "diff_fw_bundles should detect changes after Tensix disable count update"
     )
