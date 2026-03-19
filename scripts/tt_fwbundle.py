@@ -145,7 +145,7 @@ def build_bootfs_digest_map(bootfs: list[dict]) -> dict[str, str]:
     for entry in bootfs:
         tag = entry["image_tag"]
         digest = entry.get("digest")
-        if digest:
+        if digest and digest != "N/A":
             digest_map[tag] = digest
         else:
             # Fall back to data_crc if digest not present
