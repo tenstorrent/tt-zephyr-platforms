@@ -146,6 +146,10 @@ static int DeassertRiscvResets(void)
 }
 SYS_INIT_APP(DeassertRiscvResets);
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_TOGGLE_TENSIX_RESET
+ * @see toggle_tensix_reset_rqst
+ */
 static __maybe_unused uint8_t ToggleTensixReset(const union request *req, struct response *rsp)
 {
 	/* Assert reset (active low) */
@@ -169,8 +173,10 @@ REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_TENSIX_RESET, ToggleTensixReset);
 #endif
 
 /**
- * @brief Redo Tensix init that gets cleared on Tensix reset
+ * @brief Handler for @ref TT_SMC_MSG_REINIT_TENSIX
+ * @see reinit_tensix_rqst
  *
+ * Redo Tensix init that gets cleared on Tensix reset.
  * This includes all NOC programming and any programming within the tile.
  */
 static __maybe_unused uint8_t ReinitTensix(const union request *req, struct response *rsp)
