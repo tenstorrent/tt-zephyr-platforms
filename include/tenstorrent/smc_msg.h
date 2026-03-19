@@ -63,6 +63,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_I2C_MESSAGE = 0x1E,
 	/** @brief eFuse burn bits request (not supported) */
 	TT_SMC_MSG_EFUSE_BURN_BITS = 0x1F,
+	/** @brief @ref reinit_tensix_rqst "Reinitialize Tensix request" */
 	TT_SMC_MSG_REINIT_TENSIX = 0x20,
 	/** @brief @ref power_setting_rqst "Power Setting Request"*/
 	TT_SMC_MSG_POWER_SETTING = 0x21,
@@ -111,6 +112,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_FORCE_FAN_SPEED = 0xAC,
 	/** @brief Get DRAM temperature request (not supported) */
 	TT_SMC_MSG_GET_DRAM_TEMPERATURE = 0xAD,
+	/** @brief @ref toggle_tensix_reset_rqst "Toggle Tensix reset request" */
 	TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF,
 	/** @brief DRAM BIST start request (not supported) */
 	TT_SMC_MSG_DRAM_BIST_START = 0xB0,

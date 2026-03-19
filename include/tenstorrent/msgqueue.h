@@ -494,6 +494,26 @@ struct set_asic_host_fmax_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Host request to reinitialize Tensix NOC programming and tile configuration
+ * @details Messages of this type are processed by @ref ReinitTensix.
+ *
+ * This is a command-only request with no additional arguments.
+ */
+struct reinit_tensix_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_REINIT_TENSIX */
+	uint8_t command_code;
+};
+
+/** @brief Host request to toggle Tensix reset
+ * @details Messages of this type are processed by @ref ToggleTensixReset.
+ *
+ * This is a command-only request with no additional arguments.
+ */
+struct toggle_tensix_reset_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_TOGGLE_TENSIX_RESET */
+	uint8_t command_code;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -569,9 +589,6 @@ union request {
 
 	/** @brief An EEPROM read or write request */
 	struct eeprom_rqst eeprom;
-
-	/** @brief A report scratch-only request */
-	struct report_scratch_only_rqst report_scratch_only;
 
 	/** @brief A set ASIC host fmax request */
 	struct set_asic_host_fmax_rqst set_asic_host_fmax;
