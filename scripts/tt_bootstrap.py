@@ -383,7 +383,7 @@ class TTBootStrapRunner(ZephyrBinaryRunner):
             )
             timeout = 60  # Timeout in seconds
             start_time = time.time()
-            while time.time() - start_time > timeout:
+            while time.time() - start_time < timeout:
                 pcie_utils.rescan_pcie()
                 if len(pcie_utils.find_tt_devs()) == len(self.flash_data):
                     # All devices found, exit loop and flash next ASIC
