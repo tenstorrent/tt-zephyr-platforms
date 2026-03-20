@@ -986,11 +986,11 @@ static int dma_arc_hs_init(const struct device *dev)
 		irq_enable(DT_INST_IRQ_BY_IDX(inst, idx, irq)); \
 	))
 
+/* clang-format off */
 #define ARC_DMA_INIT(inst)                                                                         \
-	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
-		static void arc_dma_irq_config_##inst(void); \
-	))                                    \
-                                                                                                   \
+	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts),                                        \
+		   (static void arc_dma_irq_config_##inst(void);)) \
+                                                                                                \
 	static const struct arc_dma_config arc_dma_config_##inst = {                               \
 		.base = DMA_AUX_BASE, /*not in addressable memory*/                                \
 		.channels = DT_INST_PROP(inst, dma_channels),                                      \
@@ -1004,8 +1004,8 @@ static int dma_arc_hs_init(const struct device *dev)
 		.interrupts_available = DT_INST_NODE_HAS_PROP(inst, interrupts),                   \
 		IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
 			.irq_config = arc_dma_irq_config_##inst, \
-		)) };      \
-                                                                                                   \
+		)) };        \
+                                                                                        \
 	/* Allocate only the needed number of channels */                                          \
 	static struct arc_dma_channel arc_dma_channels_##inst[DT_INST_PROP(inst, dma_channels)];   \
 	/* Statically allocate transfer blocks - sized by max descriptors */                       \
@@ -1014,11 +1014,11 @@ static int dma_arc_hs_init(const struct device *dev)
 		.channels = arc_dma_channels_##inst,                                               \
 		.transfer_blocks = arc_dma_blocks_##inst,                                          \
 	};                                                                                         \
-                                                                                                   \
+                                                                                        \
 	DEVICE_DT_INST_DEFINE(inst, dma_arc_hs_init, NULL, &arc_dma_data_##inst,                   \
 			      &arc_dma_config_##inst, POST_KERNEL, CONFIG_DMA_INIT_PRIORITY,       \
 			      &dma_arc_hs_api);                                                    \
-                                                                                                   \
+                                                                                        \
 	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, interrupts), ( \
 		static void arc_dma_irq_config_##inst(void)                                        \
 		{                                                                                  \
@@ -1027,4 +1027,5 @@ static int dma_arc_hs_init(const struct device *dev)
 		} \
 	))
 
+/* clang-format on */
 DT_INST_FOREACH_STATUS_OKAY(ARC_DMA_INIT)

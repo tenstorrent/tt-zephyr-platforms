@@ -30,8 +30,8 @@
  * 0x3-0x7 : reserved
  */
 
-#define OPCODE_ASCII	0x0
-#define OPCODE_HEX	0x1
+#define OPCODE_ASCII 0x0
+#define OPCODE_HEX   0x1
 
 struct tt_virt_console_msg {
 	uint32_t toggle: 1;

@@ -208,8 +208,7 @@ ZTEST(pvt_tt_bh_tests, test_read_decode_ts_avg)
 			9, &celcius_from_avg_channel);
 
 	/* Assert celcius temperature from manual average and average channel are equal */
-	zassert_within(celcius_from_manual_avg, celcius_from_avg_channel,
-		       AVG_TEMP_TOLERANCE);
+	zassert_within(celcius_from_manual_avg, celcius_from_avg_channel, AVG_TEMP_TOLERANCE);
 }
 
 /*

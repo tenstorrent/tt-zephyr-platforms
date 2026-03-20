@@ -23,12 +23,12 @@
 #define P0V8_VCORE_ADDR             0x64
 #define P0V8_VCOREM_ADDR            0x65
 
-typedef enum {
+enum VoltageCmdSource {
 	VoutCommand = 0,
 	VoutMarginLow = 1,
 	VoutMarginHigh = 2,
 	AVSVoutCommand = 3,
-} VoltageCmdSource;
+};
 
 uint32_t get_vcore(void);  /* returns voltage in mV. */
 uint32_t get_vcorem(void); /* returns voltage in mV. */
@@ -37,5 +37,5 @@ void set_vcorem(uint32_t voltage_in_mv);
 void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv);
 float GetVcoreCurrent(void);
 float GetVcorePower(void);
-void SwitchVoutControl(VoltageCmdSource source);
+void SwitchVoutControl(enum VoltageCmdSource source);
 #endif
