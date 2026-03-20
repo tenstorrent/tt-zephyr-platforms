@@ -56,17 +56,15 @@
 #define SCRAPPY_GDDR_VDDR_FB1 1.07
 #define SCRAPPY_GDDR_VDDR_FB2 3.48
 
-/* clang-format off */
-typedef struct {
-	uint8_t reserved : 1;
-	uint8_t transition_control : 1;
-	uint8_t margin_fault_response : 2;
+struct OperationBits {
+	uint8_t reserved: 1;
+	uint8_t transition_control: 1;
+	uint8_t margin_fault_response: 2;
 
-	VoltageCmdSource voltage_command_source : 2;
-	uint8_t turn_off_behaviour : 1;
-	uint8_t on_off_state : 1;
-} OperationBits;
-/* clang-format on */
+	enum VoltageCmdSource voltage_command_source: 2;
+	uint8_t turn_off_behaviour: 1;
+	uint8_t on_off_state: 1;
+};
 LOG_MODULE_REGISTER(regulator);
 
 /* The default value is the regulator default */
@@ -196,10 +194,10 @@ void set_gddr_vddr(PcbType board_type, uint32_t voltage_in_mv)
 	}
 }
 
-void SwitchVoutControl(VoltageCmdSource source)
+void SwitchVoutControl(enum VoltageCmdSource source)
 {
 	I2CInit(I2CMst, P0V8_VCORE_ADDR, I2CFastMode, PMBUS_MST_ID);
-	OperationBits operation;
+	struct OperationBits operation;
 
 	I2CReadBytes(PMBUS_MST_ID, OPERATION, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&operation,
 		     OPERATION_DATA_BYTE_SIZE, PMBUS_FLIP_BYTES);

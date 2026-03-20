@@ -21,10 +21,10 @@
 
 LOG_MODULE_REGISTER(jtag_emul, CONFIG_JTAG_LOG_LEVEL);
 
+/* clang-format off */
 static const enum jtag_state next_state[2][16] = {
 	/* TMS low */
 	[0] = {
-
 			[JTAG_RESET] = IDLE,
 			[IDLE] = IDLE,
 			[SCAN_DR] = CAPTURE_DR,
@@ -44,7 +44,6 @@ static const enum jtag_state next_state[2][16] = {
 		},
 	/* TMS high */
 	[1] = {
-
 			[JTAG_RESET] = JTAG_RESET,
 			[IDLE] = SCAN_DR,
 			[SCAN_DR] = SCAN_IR,
@@ -63,6 +62,7 @@ static const enum jtag_state next_state[2][16] = {
 			[UPDATE_IR] = SCAN_DR,
 		},
 };
+/* clang-format on */
 
 __maybe_unused static const char *const jtag_state_to_str[] = {
 	"RESET  ", "IDLE   ", "SCAN_DR", "SCAN_IR",  "CAPT_DR ", "CAPT_IR", "SHFT_DR", "SHFT_IR",

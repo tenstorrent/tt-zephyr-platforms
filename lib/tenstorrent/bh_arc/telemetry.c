@@ -171,6 +171,7 @@ static struct telemetry_table telemetry_table = {
 		[64] = {TAG_AICLK_PPM_INFO, TELEM_OFFSET(TAG_AICLK_PPM_INFO)},
 	},
 };
+/* clang-format on */
 
 /**
  * @brief Pointer to the telemetry data buffer.
@@ -387,7 +388,7 @@ static void update_telemetry(void)
 			.vcore_power; /* reported in W, will be truncated to uint32_t */
 	telemetry[TAG_TDC] =
 		telemetry_internal_data
-			.vcore_current;         /* reported in A, will be truncated to uint32_t */
+			.vcore_current; /* reported in A, will be truncated to uint32_t */
 	telemetry[TAG_ASIC_TEMPERATURE] = ConvertFloatToTelemetry(
 		telemetry_internal_data.asic_temperature); /* ASIC temperature - reported in
 							    * signed int 16.16 format
