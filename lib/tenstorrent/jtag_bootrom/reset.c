@@ -29,7 +29,7 @@ const size_t get_bootcode_len(void)
 	return sizeof(bootcode) / sizeof(uint32_t);
 }
 
-int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
+int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset, uint16_t cable_power_limit)
 {
 	const uint32_t *const patch = (const uint32_t *)bootcode;
 	const size_t patch_len = get_bootcode_len();
@@ -63,6 +63,8 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset)
 	if (jtag_bootrom_verify(chip->config.jtag, patch, patch_len) != 0) {
 		printk("Bootrom verification failed\n");
 	}
+
+	jtag_bootrom_set_cable_power_limit(chip, cable_power_limit);
 
 	start = k_uptime_get();
 
