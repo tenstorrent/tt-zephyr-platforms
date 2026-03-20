@@ -29,9 +29,7 @@ typedef enum {
 
 struct smbus_target_data {
 	struct i2c_target_config config;
-	/* clang-format off */
-	const SmbusCmdDef * cmd_defs[256];
-	/* clang-format on */
+	const struct SmbusCmdDef *cmd_defs[256];
 	SmbusState state;
 	uint8_t command;
 	uint8_t blocksize_r;
@@ -46,7 +44,7 @@ struct smbus_target_config {
 	struct i2c_dt_spec bus;
 };
 
-static const SmbusCmdDef *get_cmd_def(struct smbus_target_data *smbus_data, uint8_t cmd)
+static const struct SmbusCmdDef *get_cmd_def(struct smbus_target_data *smbus_data, uint8_t cmd)
 {
 	return smbus_data->cmd_defs[cmd];
 }
@@ -77,7 +75,7 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 	int32_t ret = 0;
 	struct smbus_target_data *smbus_data =
 		CONTAINER_OF(config, struct smbus_target_data, config);
-	const SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
+	const struct SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
 
 	if (smbus_data->state == kSmbusStateIdle) {
 		/*Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de1030); */
@@ -96,8 +94,7 @@ static int smbus_write_handler(struct i2c_target_config *config, uint8_t val)
 		case kSmbusTransBlockWriteBlockRead:
 			smbus_data->blocksize_w = val;
 			if (smbus_data->blocksize_w > CONFIG_SMBUS_MAX_MSG_SIZE) {
-				LOG_ERR("Oversized SMBUS block write: %d",
-					smbus_data->blocksize_w);
+				LOG_ERR("Oversized SMBUS block write: %d", smbus_data->blocksize_w);
 				/* block size too big */
 				smbus_data->state = kSmbusStateWaitIdle;
 				ret = -1;
@@ -189,7 +186,7 @@ static int32_t smbus_read_handler(struct i2c_target_config *config, uint8_t *val
 	struct smbus_target_data *smbus_data =
 		CONTAINER_OF(config, struct smbus_target_data, config);
 
-	const SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
+	const struct SmbusCmdDef *curr_cmd = get_cmd_def(smbus_data, smbus_data->command);
 
 	if (smbus_data->state == kSmbusStateCmd) {
 		/* Log something like WriteReg(I2C0_TARGET_DEBUG_STATE_REG_ADDR, 0xc0de0010); */
@@ -357,7 +354,7 @@ static int32_t smbus_target_init(const struct device *dev)
 }
 
 int32_t smbus_target_register_cmd(const struct device *dev, uint8_t cmd_id,
-				  const SmbusCmdDef *smbus_cmd)
+				  const struct SmbusCmdDef *smbus_cmd)
 {
 	struct smbus_target_data *data = dev->data;
 
