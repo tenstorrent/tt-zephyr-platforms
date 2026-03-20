@@ -469,6 +469,59 @@ struct set_tdp_limit_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Host request to start or stop AICLK frequency sweep
+ * @details Start messages are processed by @ref SweepAiclkHandler.
+ *          Stop messages are processed by @ref SweepAiclkHandler.
+ *
+ * For @ref TT_SMC_MSG_AISWEEP_START, sweep_low and sweep_high specify the
+ * frequency range in MHz. Both must be non-zero.
+ * For @ref TT_SMC_MSG_AISWEEP_STOP, no additional arguments are used.
+ */
+struct aisweep_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_AISWEEP_START or
+	 * @ref TT_SMC_MSG_AISWEEP_STOP
+	 */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Low end of sweep range in MHz */
+	uint32_t sweep_low;
+
+	/** @brief High end of sweep range in MHz */
+	uint32_t sweep_high;
+};
+
+/** @brief Host request to force AICLK to a specific frequency
+ * @details Messages of this type are processed by @ref ForceAiclkHandler.
+ *
+ * Set forced_freq to 0 to disable forcing and restore the boot frequency.
+ */
+struct force_aiclk_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_FORCE_AICLK */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Frequency to force in MHz, or 0 to disable */
+	uint32_t forced_freq;
+};
+
+/** @brief Host request to get the current AICLK frequency and control mode
+ * @details Messages of this type are processed by @ref get_aiclk_handler.
+ *
+ * This is a command-only request with no additional arguments.
+ * On success, response data[1] contains the current AICLK frequency in MHz
+ * and data[2] contains the clock control mode (1 = uncontrolled,
+ * 2 = PPM forced, 3 = PPM unforced).
+ */
+struct get_aiclk_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_GET_AICLK */
+	uint8_t command_code;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -544,6 +597,15 @@ union request {
 
 	/** @brief An EEPROM read or write request */
 	struct eeprom_rqst eeprom;
+
+	/** @brief An AICLK sweep start or stop request */
+	struct aisweep_rqst aisweep;
+
+	/** @brief A force AICLK frequency request */
+	struct force_aiclk_rqst force_aiclk;
+
+	/** @brief A get AICLK frequency request */
+	struct get_aiclk_rqst get_aiclk;
 };
 
 /** @} */
