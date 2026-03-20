@@ -26,7 +26,7 @@ const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *de
 const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev);
 
 /* Board type values extracted from board_id */
-#define BOARDTYPE_ORION 0x37
+#define BOARDTYPE_ORION_SLT 0x37
 #define BOARDTYPE_P100A 0x43
 #define BOARDTYPE_P150A 0x40
 #define BOARDTYPE_P150  0x41
@@ -37,7 +37,7 @@ const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev);
 #define BOARDTYPE_UBB   0x47
 
 typedef enum {
-	PcbTypeOrion = 0,
+	PcbTypeOrionSLT = 0,
 	PcbTypeP100 = 1,
 	PcbTypeP150 = 2,
 	PcbTypeP300 = 3,
