@@ -9,6 +9,8 @@
 #include "noc.h"
 #include "compiler.h"
 
+#include <zephyr/sys/__assert.h>
+
 #define NOC_REGS_START_ADDR     0xFFB20000
 #define NOC_INSTANCE_OFFSET_BIT 16
 #define NOC_OVERLAY_START_ADDR  0xFFB40000
@@ -129,7 +131,16 @@ uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id)
 			return i;
 		}
 	}
-	/* Invalid */
+	return 0xFF;
+}
+
+uint8_t NocToTensixPhysY(uint8_t y, uint8_t noc_id)
+{
+	for (uint8_t i = 0; i < 10; i++) {
+		if (TensixPhysYToNoc(i, noc_id) == y) {
+			return i;
+		}
+	}
 	return 0xFF;
 }
 
@@ -190,4 +201,14 @@ void GetSerdesNocCoords(uint8_t serdes_inst, uint8_t noc_id, uint8_t *x, uint8_t
 
 	*x = PhysXToNoc(phys_x, noc_id);
 	*y = PhysYToNoc(phys_y, noc_id);
+}
+
+uint8_t noc_to_tensix_index(uint8_t noc_id, uint8_t noc_x, uint8_t noc_y)
+{
+	uint8_t phys_x = NocToTensixPhysX(noc_x, noc_id);
+	uint8_t phys_y = NocToTensixPhysY(noc_y, noc_id);
+
+	__ASSERT_NO_MSG(phys_x != 0xFF && phys_y != 0xFF);
+
+	return (phys_x * NUM_TENSIX_Y) + phys_y;
 }
