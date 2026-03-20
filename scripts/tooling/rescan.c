@@ -293,6 +293,12 @@ static int pcie_rescan_sysfs(void)
  */
 int rescan_pcie(const char *tt_dev_name)
 {
-	/* Try rescan via IOCTL, and fall back to sysfs if that fails */
-	return pcie_rescan_ioctl(tt_dev_name) || pcie_rescan_sysfs();
+	int ret = pcie_rescan_ioctl(tt_dev_name);
+
+	if (ret > 0) {
+		return ret;
+	}
+
+	/* IOCTL rescan failed or found no devices, fall back to sysfs */
+	return pcie_rescan_sysfs();
 }
