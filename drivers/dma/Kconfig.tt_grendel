@@ -1,0 +1,11 @@
+# Copyright (c) 2025 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_TT_GRENDEL_SMC
+	bool "Tenstorrent Grendel SMC AXI DMA driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_GRENDEL_SMC_DMA_ENABLED
+	help
+	  Enable the Tenstorrent Grendel SMC AXI DMA controller driver.
+	  This driver supports memory-to-memory DMA transfers using the
+	  hardware AXI DMA engine on the Grendel SMC.
