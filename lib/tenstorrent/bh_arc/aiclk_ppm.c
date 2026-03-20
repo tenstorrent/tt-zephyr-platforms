@@ -367,14 +367,21 @@ static uint8_t aiclk_busy_handler(const union request *request, struct response 
 	return 0;
 }
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_FORCE_AICLK
+ * @see force_aiclk_rqst
+ */
 static uint8_t ForceAiclkHandler(const union request *request, struct response *response)
 {
-	uint32_t forced_freq = request->data[1];
+	uint32_t forced_freq = request->force_aiclk.forced_freq;
 
 	return ForceAiclk(forced_freq);
 }
 
-/* This message returns aiclk and aiclk control mode */
+/**
+ * @brief Handler for @ref TT_SMC_MSG_GET_AICLK
+ * @see get_aiclk_rqst
+ */
 static uint8_t get_aiclk_handler(const union request *request, struct response *response)
 {
 	clock_control_get_rate(pll_dev_0, (clock_control_subsys_t)CLOCK_CONTROL_TT_BH_CLOCK_AICLK,
@@ -391,14 +398,18 @@ static uint8_t get_aiclk_handler(const union request *request, struct response *
 	return 0;
 }
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_AISWEEP_START and @ref TT_SMC_MSG_AISWEEP_STOP
+ * @see aisweep_rqst
+ */
 static uint8_t SweepAiclkHandler(const union request *request, struct response *response)
 {
 	if (request->command_code == TT_SMC_MSG_AISWEEP_START) {
-		if (request->data[1] == 0 || request->data[2] == 0) {
+		if (request->aisweep.sweep_low == 0 || request->aisweep.sweep_high == 0) {
 			return 1;
 		}
-		aiclk_ppm.sweep_low = MAX(request->data[1], aiclk_ppm.fmin);
-		aiclk_ppm.sweep_high = MIN(request->data[2], aiclk_ppm.fmax);
+		aiclk_ppm.sweep_low = MAX(request->aisweep.sweep_low, aiclk_ppm.fmin);
+		aiclk_ppm.sweep_high = MIN(request->aisweep.sweep_high, aiclk_ppm.fmax);
 		aiclk_ppm.sweep_en = 1;
 	} else {
 		aiclk_ppm.sweep_en = 0;
