@@ -89,6 +89,7 @@ TT_SMC_MSG_FORCE_AICLK = 0x33
 TT_SMC_MSG_GET_AICLK = 0x34
 TT_SMC_MSG_TEST = 0x90
 TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF
+TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET = 0xAE
 TT_SMC_MSG_PING_DM = 0xC0
 TT_SMC_MSG_SET_WDT = 0xC1
 TT_SMC_MSG_READ_TS = 0x1B
@@ -900,6 +901,65 @@ def test_tensix_reset(arc_chip_dut, asic_id):
         )
 
         logger.info(f"Tensix reset test iteration {i} passed")
+
+
+def test_tensix_reset_single(arc_chip_dut, asic_id):
+    """
+    Validates single tensix reset message
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    try:
+        arc_chip.set_power_state("high")
+    except Exception:
+        logger.info("No driver support for power IOCTL; continue.")
+
+    TRISC0_RESET_PC = 0xFFB12228
+    SCRATCH_PATTERN = 0xA5A5
+
+    target_noc_x, target_noc_y = 1, 2
+    other_noc_x, other_noc_y = 2, 2
+
+    # Set scratch bit on the target tensix
+    arc_chip.noc_write32(
+        noc_id=0,
+        x=target_noc_x,
+        y=target_noc_y,
+        addr=TRISC0_RESET_PC,
+        data=SCRATCH_PATTERN,
+    )
+
+    # Set scratch bit on a different tensix (should survive the reset)
+    arc_chip.noc_write32(
+        noc_id=0,
+        x=other_noc_x,
+        y=other_noc_y,
+        addr=TRISC0_RESET_PC,
+        data=SCRATCH_PATTERN,
+    )
+
+    # Reset only the target tensix — FW computes (reg, bit) from NOC coords
+    response = arc_chip.arc_msg(
+        TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET, arg0=target_noc_x | (target_noc_y << 8)
+    )
+    assert response[1] == 0, (
+        f"Reset failed for tensix NOC0({target_noc_x},{target_noc_y})"
+    )
+
+    target_scratch = arc_chip.noc_read32(
+        noc_id=0, x=target_noc_x, y=target_noc_y, addr=TRISC0_RESET_PC
+    )
+    other_scratch = arc_chip.noc_read32(
+        noc_id=0, x=other_noc_x, y=other_noc_y, addr=TRISC0_RESET_PC
+    )
+    logger.info(f"After reset: target={target_scratch:#x}, other={other_scratch:#x}")
+
+    assert target_scratch == 0x0, (
+        "Target tensix scratch bit not cleared — single reset failed"
+    )
+    assert other_scratch == SCRATCH_PATTERN, (
+        "Other tensix scratch bit was cleared — reset affected wrong tile"
+    )
 
 
 def test_aiclk(arc_chip_dut, asic_id):
