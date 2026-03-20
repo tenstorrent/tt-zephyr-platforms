@@ -16,6 +16,7 @@
 #include "reg.h"
 #include "status_reg.h"
 #include "tensix_init.h"
+#include "aiclk_ppm.h"
 #include "bh_reset.h"
 
 #include <stdint.h>
@@ -166,6 +167,95 @@ static __maybe_unused uint8_t ToggleTensixReset(const union request *req, struct
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_TENSIX_RESET, ToggleTensixReset);
+#endif
+
+#define DBG_INSTRN_BUF_CTRL0 0xFFB120A0
+#define DBG_INSTRN_BUF_CTRL1 0xFFB120A4
+#define UNPACR_DUMMY          0x42800091u
+#define INJECT_THREAD         0
+
+static void inject_unpackr(void)
+{
+	uint8_t ring = 0;
+	uint8_t noc_tlb = 0;
+	uint32_t override = 1u << INJECT_THREAD;
+	uint32_t write = 1u << (INJECT_THREAD + 4);
+
+	NOC2AXITensixBroadcastTlbSetup(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0,
+					kNoc2AxiOrderingStrict);
+
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0, 0);
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL1, UNPACR_DUMMY);
+
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0, override);
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0, override | write);
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0, override);
+
+	NOC2AXIWrite32(ring, noc_tlb, DBG_INSTRN_BUF_CTRL0, 0);
+}
+
+static __maybe_unused uint8_t ToggleSingleTensixReset(const union request *req,
+						      struct response *rsp)
+{
+	uint8_t noc_x = req->toggle_single_tensix_reset.noc_x;
+	uint8_t noc_y = req->toggle_single_tensix_reset.noc_y;
+
+	if (noc_x >= NOC_X_SIZE || noc_y >= NOC_Y_SIZE) {
+		rsp->data[1] = 1;
+		return 1;
+	}
+
+	/* Derive which TENSIX_RESET register and bit within that register to toggle. */
+	uint8_t tensix_index = noc_to_tensix_index(0, noc_x, noc_y);
+	uint8_t reg_index = tensix_index / 32;
+	uint8_t bit_index = tensix_index % 32;
+
+	uint32_t tile_addr = RESET_UNIT_TENSIX_RESET_0_REG_ADDR + 4 * reg_index;
+	uint32_t risc_addr = RESET_UNIT_TENSIX_RISC_RESET_0_REG_ADDR + 4 * reg_index;
+
+	/* Force AICLK to safe frequency 250 MHz. */
+	ForceAiclk(250);
+
+	/* Hold RISC in reset while the tile reset is toggled */
+	uint32_t risc_val = sys_read32(risc_addr);
+	WriteReg(risc_addr, risc_val & ~(1u << bit_index));
+
+	/* Assert tile reset (active low) */
+	RESET_UNIT_TENSIX_RESET_reg_u tensix_reset = { .val = sys_read32(tile_addr) };
+
+	tensix_reset.val &= ~(1u << bit_index);
+	WriteReg(tile_addr, tensix_reset.val);
+
+	/* Deassert tile reset */
+	tensix_reset.val |= (1u << bit_index);
+	WriteReg(tile_addr, tensix_reset.val);
+
+	/* Tile reset clears NOC and tile programming; restore it */
+	ClearNocTranslation();
+	NocInit();
+	TensixInit();
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.noc_translation_en) {
+		InitNocTranslationFromHarvesting();
+	}
+
+	/* Assert soft reset on the target tile's RISC cores */
+	NOC2AXITlbSetup(kNocRing, kNocTlb, noc_x, noc_y, kSoftReset0Addr);
+	NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr, kAllRiscSoftReset);
+
+	/* Release RISC from reset */
+	risc_val = sys_read32(risc_addr);
+	WriteReg(risc_addr, risc_val | (1u << bit_index));
+
+	inject_unpackr();
+
+	ForceAiclk(0);
+
+	rsp->data[1] = 0;
+	return 0;
+}
+
+#ifndef CONFIG_TT_SMC_RECOVERY
+REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET, ToggleSingleTensixReset);
 #endif
 
 /**
