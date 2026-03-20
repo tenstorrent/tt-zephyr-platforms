@@ -19,7 +19,7 @@
 #include "reg.h"
 #include "irqnum.h"
 
-#define MSGHANDLER_COMPAT_MASK 0x1
+#define MSGHANDLER_COMPAT_MASK      0x1
 
 #define MSG_ERROR_REPLY 0xff
 
