@@ -38,12 +38,12 @@ typedef int32_t (*SmbusRcvHandler)(const uint8_t *data, uint8_t size);
  */
 typedef int32_t (*SmbusSendHandler)(uint8_t *data, uint8_t *size);
 
-typedef struct {
+struct SmbusCmdDef {
 	SmbusTransType trans_type;
 	SmbusRcvHandler rcv_handler;
 	SmbusSendHandler send_handler;
 	uint8_t pec: 1;
-} SmbusCmdDef;
+};
 
 /**
  * @brief Register the given command to the SMBUS target implementation
@@ -54,5 +54,5 @@ typedef struct {
  *                  registered to the I2C.
  */
 int32_t smbus_target_register_cmd(const struct device *dev, uint8_t cmd_id,
-				  const SmbusCmdDef *smbus_cmd);
+				  const struct SmbusCmdDef *smbus_cmd);
 #endif

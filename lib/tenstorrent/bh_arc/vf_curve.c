@@ -71,8 +71,7 @@ void InitVFCurve(void)
 	if (use_process_vf_curve) {
 		float ro_n = (process_RO - RO_NORM_MEAN) / RO_NORM_STD;
 
-		vf_ro_base = VF_INTERCEPT + VF_COEFF_RO * ro_n +
-			     VF_COEFF_RO_SQ * ro_n * ro_n;
+		vf_ro_base = VF_INTERCEPT + VF_COEFF_RO * ro_n + VF_COEFF_RO_SQ * ro_n * ro_n;
 		vf_freq_linear = VF_COEFF_FREQ + VF_COEFF_RO_FREQ * ro_n;
 	}
 
@@ -112,8 +111,8 @@ float VFCurve(float freq_mhz)
 
 	float freq_n = (freq_mhz - FREQ_NORM_MEAN) / FREQ_NORM_STD;
 
-	float voltage_mv = vf_ro_base + vf_freq_linear * freq_n +
-			   VF_COEFF_FREQ_SQ * freq_n * freq_n;
+	float voltage_mv =
+		vf_ro_base + vf_freq_linear * freq_n + VF_COEFF_FREQ_SQ * freq_n * freq_n;
 
 	return voltage_mv + voltage_margin;
 }

@@ -122,84 +122,86 @@ int32_t UpdateArcStateHandler(const uint8_t *data, uint8_t size)
 
 /***End of SMBus handlers***/
 
-static const SmbusCmdDef smbus_req_cmd_def = {
+static const struct SmbusCmdDef smbus_req_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockRead, .send_handler = &Cm2DmMsgReqSmbusHandler};
 
-static const SmbusCmdDef smbus_ack_cmd_def = {
+static const struct SmbusCmdDef smbus_ack_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Cm2DmMsgAckSmbusHandler};
 
-static const SmbusCmdDef smbus_update_arc_state_cmd_def = {
+static const struct SmbusCmdDef smbus_update_arc_state_cmd_def = {
 	.pec = 0U, .trans_type = kSmbusTransBlockWrite, .rcv_handler = &UpdateArcStateHandler};
 
-static const SmbusCmdDef smbus_dm_static_info_cmd_def = {
+static const struct SmbusCmdDef smbus_dm_static_info_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockWrite, .rcv_handler = &Dm2CmSendDataHandler};
 
-static const SmbusCmdDef smbus_ping_cmd_def = {
+static const struct SmbusCmdDef smbus_ping_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Dm2CmPingHandler};
 
-static const SmbusCmdDef smbus_fan_speed_cmd_def = {
+static const struct SmbusCmdDef smbus_fan_speed_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Dm2CmSendFanSpeedHandler};
 
-static const SmbusCmdDef smbus_fan_rpm_cmd_def = {
+static const struct SmbusCmdDef smbus_fan_rpm_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Dm2CmSendFanRPMHandler};
 
 #ifndef CONFIG_TT_SMC_RECOVERY
-static const SmbusCmdDef smbus_telem_read_cmd_def = {.pec = 0U,
-						     .trans_type = kSmbusTransBlockWriteBlockRead,
-						     .rcv_handler = SMBusTelemRegHandler,
-						     .send_handler = SMBusTelemDataHandler};
+static const struct SmbusCmdDef smbus_telem_read_cmd_def = {.pec = 0U,
+							    .trans_type =
+								    kSmbusTransBlockWriteBlockRead,
+							    .rcv_handler = SMBusTelemRegHandler,
+							    .send_handler = SMBusTelemDataHandler};
 
-static const SmbusCmdDef smbus_telem_write_cmd_def = {.pec = 0U,
-						      .trans_type = kSmbusTransBlockWriteBlockRead,
-						      .rcv_handler = Dm2CmWriteTelemetry,
-						      .send_handler = Dm2CmReadControlData};
+static const struct SmbusCmdDef smbus_telem_write_cmd_def = {.pec = 0U,
+							     .trans_type =
+								     kSmbusTransBlockWriteBlockRead,
+							     .rcv_handler = Dm2CmWriteTelemetry,
+							     .send_handler = Dm2CmReadControlData};
 
-static const SmbusCmdDef smbus_power_limit_cmd_def = {
+static const struct SmbusCmdDef smbus_power_limit_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Dm2CmSetBoardPowerLimit};
 
-static const SmbusCmdDef smbus_power_instant_cmd_def = {
+static const struct SmbusCmdDef smbus_power_instant_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &Dm2CmSendPowerHandler};
 
-static const SmbusCmdDef smbus_telem_reg_cmd_def = {
+static const struct SmbusCmdDef smbus_telem_reg_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteByte, .rcv_handler = &SMBusTelemRegHandler};
 
-static const SmbusCmdDef smbus_telem_data_cmd_def = {
+static const struct SmbusCmdDef smbus_telem_data_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockRead, .send_handler = &SMBusTelemDataHandler};
 
-static const SmbusCmdDef smbus_therm_trip_count_cmd_def = {.pec = 1U,
-							   .trans_type = kSmbusTransWriteWord,
-							   .rcv_handler =
-								   &Dm2CmSendThermTripCountHandler};
+static const struct SmbusCmdDef smbus_therm_trip_count_cmd_def = {
+	.pec = 1U,
+	.trans_type = kSmbusTransWriteWord,
+	.rcv_handler = &Dm2CmSendThermTripCountHandler};
 
 #endif /*CONFIG_TT_SMC_RECOVERY*/
-static const SmbusCmdDef smbus_dmc_log_cmd_def = {
+static const struct SmbusCmdDef smbus_dmc_log_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockWrite, .rcv_handler = &Dm2CmDMCLogHandler};
 
-static const SmbusCmdDef smbus_test_read_byte_cmd_def = {
+static const struct SmbusCmdDef smbus_test_read_byte_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransReadByte, .send_handler = &ReadByteTest};
 
-static const SmbusCmdDef smbus_test_write_byte_cmd_def = {
+static const struct SmbusCmdDef smbus_test_write_byte_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteByte, .rcv_handler = &WriteByteTest};
 
-static const SmbusCmdDef smbus_test_read_word_cmd_def = {
+static const struct SmbusCmdDef smbus_test_read_word_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransReadWord, .send_handler = &ReadWordTest};
 
-static const SmbusCmdDef smbus_test_write_word_cmd_def = {
+static const struct SmbusCmdDef smbus_test_write_word_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransWriteWord, .rcv_handler = &WriteWordTest};
 
-static const SmbusCmdDef smbus_block_write_block_read_test = {
+static const struct SmbusCmdDef smbus_block_write_block_read_test = {
 	.pec = 1U,
 	.trans_type = kSmbusTransBlockWriteBlockRead,
 	.rcv_handler = &BlockWriteTest,
 	.send_handler = BlockReadTest};
 
-static const SmbusCmdDef smbus_test_read_block_cmd_def = {
+static const struct SmbusCmdDef smbus_test_read_block_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockRead, .send_handler = &BlockReadTest};
 
-static const SmbusCmdDef smbus_test_write_block_cmd_def = {
+static const struct SmbusCmdDef smbus_test_write_block_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransBlockWrite, .rcv_handler = &BlockWriteTest};
 
-static const SmbusCmdDef smbus_ping_v2_cmd_def = {
+static const struct SmbusCmdDef smbus_ping_v2_cmd_def = {
 	.pec = 1U, .trans_type = kSmbusTransReadWord, .send_handler = &Dm2CmPingV2};
 
 static int InitSmbusTarget(void)
