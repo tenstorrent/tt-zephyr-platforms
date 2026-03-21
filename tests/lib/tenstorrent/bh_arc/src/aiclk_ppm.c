@@ -436,4 +436,78 @@ ZTEST(aiclk_ppm, test_arb_bitmask_independent)
 		      "Max bitmask should only reflect max arbiters");
 }
 
+ZTEST(aiclk_ppm, test_msg_type_force_aiclk)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.force_aiclk.command_code = TT_SMC_MSG_FORCE_AICLK;
+	req.force_aiclk.forced_freq = 1000;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+
+	/* Disable forcing */
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.force_aiclk.command_code = TT_SMC_MSG_FORCE_AICLK;
+	req.force_aiclk.forced_freq = 0;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+}
+
+ZTEST(aiclk_ppm, test_msg_type_get_aiclk)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.get_aiclk.command_code = TT_SMC_MSG_GET_AICLK;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+	/* data[1] = current AICLK, data[2] = clock mode; just verify non-failure */
+	zassert_true(rsp.data[2] >= 1 && rsp.data[2] <= 3, "Clock mode (%d) should be 1, 2, or 3",
+		     rsp.data[2]);
+}
+
+ZTEST(aiclk_ppm, test_msg_type_aisweep_start_stop)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Start sweep with valid range */
+	req.aisweep.command_code = TT_SMC_MSG_AISWEEP_START;
+	req.aisweep.sweep_low = fmin;
+	req.aisweep.sweep_high = fmax;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+
+	/* Stop sweep */
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.aisweep.command_code = TT_SMC_MSG_AISWEEP_STOP;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0);
+}
+
 ZTEST_SUITE(aiclk_ppm, NULL, aiclk_ppm_setup, reset_arb, NULL, reinit_arb);

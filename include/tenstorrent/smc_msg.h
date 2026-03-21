@@ -69,9 +69,13 @@ enum tt_smc_msg {
 	TT_SMC_MSG_SET_TDP_LIMIT = 0x22,
 	/** @brief @ref get_freq_curve_from_voltage_rqst "Frequency Curve from Voltage Request"*/
 	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
+	/** @brief @ref aisweep_rqst "Start AICLK sweep request" */
 	TT_SMC_MSG_AISWEEP_START = 0x31,
+	/** @brief @ref aisweep_rqst "Stop AICLK sweep request" */
 	TT_SMC_MSG_AISWEEP_STOP = 0x32,
+	/** @brief @ref force_aiclk_rqst "Force AICLK frequency request" */
 	TT_SMC_MSG_FORCE_AICLK = 0x33,
+	/** @brief @ref get_aiclk_rqst "Get AICLK frequency request" */
 	TT_SMC_MSG_GET_AICLK = 0x34,
 	TT_SMC_MSG_FORCE_VDD = 0x39,
 	/** @brief PCIe index request (not supported) */
