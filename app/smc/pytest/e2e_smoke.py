@@ -95,6 +95,7 @@ TT_SMC_MSG_READ_TS = 0x1B
 TT_SMC_MSG_READ_PD = 0x1C
 TT_SMC_MSG_READ_VM = 0x1D
 TT_SMC_MSG_SET_TDP_LIMIT = 0x22
+TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23
 TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 
 # Telemetry tags
@@ -102,6 +103,7 @@ TAG_CM_FW_VERSION = 29
 TAG_DM_APP_FW_VERSION = 26
 TAG_TDP = 7
 TAG_INPUT_POWER = 54
+TAG_HOST_AICLK_LIMIT = 70
 
 NUM_PD = 16
 NUM_VM = 8
@@ -1191,3 +1193,54 @@ def test_set_tdp_limit(arc_chip_dut, asic_id):
     assert tdp_limit == orig_tdp_limit, (
         f"TDP limit not restored to {orig_tdp_limit} watts"
     )
+
+
+def test_set_asic_host_fmax(arc_chip_dut, asic_id):
+    """
+    Validates that the SET_ASIC_HOST_FMAX message works.
+
+    Sets a host fmax of 1000 MHz, which should be within the valid range
+    [AICLK_FMAX_MIN=800, AICLK_FMAX_MAX=1400] on all boards.
+    Verifies through telemetry (TAG_HOST_AICLK_LIMIT) that the limit was applied.
+    Verifies that the limit can be restored to default (disabled).
+    Verifies that out-of-range values are rejected.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    NEW_HOST_FMAX = 1000  # MHz
+
+    # Positive case: set a valid host fmax
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_ASIC_HOST_FMAX, NEW_HOST_FMAX, 0, 0, 0, 0, 0, 0]
+    )
+    assert response[0] == 0, f"Failed to set host fmax to {NEW_HOST_FMAX} MHz"
+
+    host_fmax = read_telem(arc_chip, TAG_HOST_AICLK_LIMIT)
+    logger.info(f"Host fmax telemetry: {host_fmax}")
+    assert host_fmax == NEW_HOST_FMAX, (
+        f"TAG_HOST_AICLK_LIMIT ({host_fmax}) not set to {NEW_HOST_FMAX} MHz"
+    )
+
+    # Positive case: restore default (disables the arbiter)
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_ASIC_HOST_FMAX, 0, 1, 0, 0, 0, 0, 0]
+    )
+    assert response[0] == 0, "Failed to restore default host fmax"
+
+    host_fmax = read_telem(arc_chip, TAG_HOST_AICLK_LIMIT)
+    logger.info(f"Host fmax after restore: {host_fmax}")
+    assert host_fmax == 0, (
+        f"TAG_HOST_AICLK_LIMIT ({host_fmax}) should be 0 after restore_default"
+    )
+
+    # Negative case: value too high
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_ASIC_HOST_FMAX, 9999, 0, 0, 0, 0, 0, 0]
+    )
+    assert response[0] != 0, "Expected error for out-of-range fmax (too high)"
+
+    # Negative case: value too low
+    response = arc_chip.as_bh().arc_msg_buf(
+        [TT_SMC_MSG_SET_ASIC_HOST_FMAX, 100, 0, 0, 0, 0, 0, 0]
+    )
+    assert response[0] != 0, "Expected error for out-of-range fmax (too low)"
