@@ -469,6 +469,17 @@ struct set_tdp_limit_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Host request to report scratch-only status
+ * @details Messages of this type are processed by @ref process_queued_message.
+ * This is a command-only message with no payload fields.
+ *
+ * The response data[0] is set to @ref MESSAGE_QUEUE_STATUS_SCRATCH_ONLY (0xfe).
+ */
+struct report_scratch_only_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_REPORT_SCRATCH_ONLY */
+	uint8_t command_code;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -544,6 +555,9 @@ union request {
 
 	/** @brief An EEPROM read or write request */
 	struct eeprom_rqst eeprom;
+
+	/** @brief A report scratch-only request */
+	struct report_scratch_only_rqst report_scratch_only;
 };
 
 /** @} */
