@@ -473,4 +473,46 @@ ZTEST(msgqueue, test_msg_type_write_eeprom_locked)
 	zassert_equal(rsp.data[0], 2);
 }
 
+ZTEST(msgqueue, test_msg_type_force_vdd)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Force a valid voltage */
+	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
+	req.force_vdd.forced_voltage = 800;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0, "Valid voltage should succeed");
+
+	/* Disable forcing with 0 */
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
+	req.force_vdd.forced_voltage = 0;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0, "Disabling forcing should succeed");
+
+	/* Out-of-range voltage should be rejected */
+	req = (union request){0};
+	rsp = (struct response){0};
+
+	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
+	req.force_vdd.forced_voltage = 9999;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 1, "Out-of-range voltage should fail");
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
