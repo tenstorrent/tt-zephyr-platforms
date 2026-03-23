@@ -14,6 +14,8 @@
 
 #include <soc.h>
 
+#define SMC_SRAM_OCCP_BASE 0xc0066400 /* Start of SMC RAM scratch region */
+
 const struct device *smc_dev = DEVICE_DT_GET(DT_NODELABEL(remoteproc));
 
 uint8_t remote_smc_bin[] = {
@@ -29,7 +31,8 @@ ZTEST(tt_smc_remoteproc, test_boot)
 
 	zassert_true(device_is_ready(smc_dev), "Remote SMC device not ready");
 
-	ret = tt_smc_remoteproc_boot(smc_dev, 0xc0066000, remote_smc_bin, remote_smc_bin_len);
+	ret = tt_smc_remoteproc_boot(smc_dev, SMC_SRAM_OCCP_BASE, remote_smc_bin,
+				     remote_smc_bin_len);
 	zassert_equal(ret, 0, "Failed to boot remote SMC: %d", ret);
 
 	/*
