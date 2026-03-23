@@ -35,13 +35,7 @@ test-job:
     - build-job
 
   script:
-    # Pull tt-smc repo to run Zephyr tests
-    - git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
-    - cd tt_smc
-    - source bin/setup_env.sh
-    - module list || true
-    - bender checkout --force || bender checkout --force
-    - $CI_PROJECT_DIR/scripts/ci/run-ttem-tests.sh
+    - $CI_PROJECT_DIR/scripts/ci/run-grendel-smoke.sh
 
   artifacts:
     when: always
