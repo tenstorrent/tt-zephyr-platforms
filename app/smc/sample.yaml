@@ -77,6 +77,20 @@ tests:
           - >-
             INFO: (?P<test_name>.*) completed.
             Failed (?P<fail_count>\d+)/(?P<total_tries>\d+) times.
+  # Runs production firmware tests when compiled with CONFIG_ASSERT=y
+  app.e2e-prod-assert:
+    tags: e2e-stress
+    timeout: 720 # 12 minutes
+    harness: pytest
+    sysbuild: true
+    harness_config:
+      pytest_root:
+        - pytest/e2e_smoke.py
+      pytest_args:
+        - "--dut-scope=session"
+    extra_args:
+      - dmc_CONFIG_DMC_RUN_SMBUS_TESTS=y
+      - CONFIG_ASSERT=y
   app.tracing:
     build_only: true
     sysbuild: true
