@@ -81,6 +81,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_FORCE_AICLK = 0x33,
 	/** @brief @ref get_aiclk_rqst "Get AICLK frequency request" */
 	TT_SMC_MSG_GET_AICLK = 0x34,
+	/** @brief @ref force_vdd_rqst "Force VDD voltage request" */
 	TT_SMC_MSG_FORCE_VDD = 0x39,
 	/** @brief PCIe index request (not supported) */
 	TT_SMC_MSG_PCIE_INDEX = 0x51,

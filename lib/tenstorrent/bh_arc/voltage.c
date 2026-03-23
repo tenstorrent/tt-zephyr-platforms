@@ -95,9 +95,13 @@ uint8_t ForceVdd(uint32_t voltage)
 	return 0;
 }
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_FORCE_VDD
+ * @see force_vdd_rqst
+ */
 static uint8_t ForceVddHandler(const union request *request, struct response *response)
 {
-	uint32_t forced_voltage = request->data[1];
+	uint32_t forced_voltage = request->force_vdd.forced_voltage;
 
 	return ForceVdd(forced_voltage);
 }
