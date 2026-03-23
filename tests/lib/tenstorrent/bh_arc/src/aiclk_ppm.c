@@ -436,4 +436,73 @@ ZTEST(aiclk_ppm, test_arb_bitmask_independent)
 		      "Max bitmask should only reflect max arbiters");
 }
 
+static void send_set_host_fmax(uint32_t freq, uint8_t restore_default, uint8_t *status_out)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.set_asic_host_fmax.command_code = TT_SMC_MSG_SET_ASIC_HOST_FMAX;
+	req.set_asic_host_fmax.asic_fmax = freq;
+	req.set_asic_host_fmax.restore_default = restore_default;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+	if (status_out != NULL) {
+		*status_out = rsp.data[0];
+	}
+}
+
+ZTEST(aiclk_ppm, test_set_host_fmax_valid)
+{
+	uint8_t status;
+	uint32_t new_fmax = 1000; /* MHz, within [AICLK_FMAX_MIN, AICLK_FMAX_MAX] */
+	enum aiclk_arb_max effective_arb;
+	uint32_t effective_max;
+
+	send_set_host_fmax(new_fmax, 0, &status);
+	zassert_equal(status, 0, "Expected success for valid fmax");
+
+	effective_max = get_aiclk_effective_arb_max(&effective_arb);
+	zassert_equal(effective_max, new_fmax,
+		      "Effective arb max (%d) should reflect new host fmax (%d)", effective_max,
+		      new_fmax);
+	zassert_equal(effective_arb, aiclk_arb_max_host_fmax,
+		      "Effective arbiter should be aiclk_arb_max_host_fmax");
+}
+
+ZTEST(aiclk_ppm, test_set_host_fmax_restore_default)
+{
+	uint8_t status;
+	uint32_t bitmask;
+
+	/* First set a host fmax limit */
+	send_set_host_fmax(1000, 0, &status);
+	zassert_equal(status, 0);
+
+	/* Then restore to default */
+	send_set_host_fmax(0, 1, &status);
+	zassert_equal(status, 0, "Expected success for restore_default");
+
+	/* Verify the host fmax arbiter is disabled */
+	bitmask = get_enabled_arb_max_bitmask();
+	zassert_equal(bitmask & (1 << aiclk_arb_max_host_fmax), 0,
+		      "host fmax arbiter should be disabled after restore_default");
+}
+
+ZTEST(aiclk_ppm, test_set_host_fmax_out_of_range_high)
+{
+	uint8_t status;
+
+	send_set_host_fmax(9999, 0, &status);
+	zassert_not_equal(status, 0, "Expected error for out-of-range fmax (too high)");
+}
+
+ZTEST(aiclk_ppm, test_set_host_fmax_out_of_range_low)
+{
+	uint8_t status;
+
+	send_set_host_fmax(100, 0, &status);
+	zassert_not_equal(status, 0, "Expected error for out-of-range fmax (too low)");
+}
+
 ZTEST_SUITE(aiclk_ppm, NULL, aiclk_ppm_setup, reset_arb, NULL, reinit_arb);
