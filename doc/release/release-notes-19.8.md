@@ -22,13 +22,16 @@ Major enhancements with this release include:
 <!-- External Project Collaboration Efforts, if applicable -->
 ### Stability Improvements
 
-- Updated Blackhole ERISC FW to v1.10.0
-  - Improve link stability and training reliability for ANLT mode (LT mode)
-    - Added LT only training mode without AN, now default over ANLT
-  - Fixed bug in Manual EQ sequence that caused reinits to hang
-  - Updated ETH mailbox message selection
-    - Removed INTERRUPT, CABLE_CHECK, TELEMETRY_EVENT, REMOTE_ALIVE, PORT_MODE messages as they were deemed unneeded
-    - Did not re-number messages to avoid updates in higher layer software
+- Updated Blackhole ERISC FW to v1.10.1, change list from v1.9.0:
+  - v1.10.1
+    - Fix retraining sequence in LT only mode caused by missing register clear
+  - v1.10.0
+    - Improve link stability and training reliability for ANLT mode (LT mode)
+      - Added LT only training mode without AN, now default over ANLT
+    - Fixed bug in Manual EQ sequence that caused reinits to hang
+    - Updated ETH mailbox message selection
+      - Removed INTERRUPT, CABLE_CHECK, TELEMETRY_EVENT, REMOTE_ALIVE, PORT_MODE messages as they were deemed unneeded
+      - Did not re-number messages to avoid updates in higher layer software
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
