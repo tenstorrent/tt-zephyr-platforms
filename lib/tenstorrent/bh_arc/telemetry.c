@@ -169,6 +169,7 @@ static struct telemetry_table telemetry_table = {
 		[62] = {TAG_ENABLED_MIN_ARB, TELEM_OFFSET(TAG_ENABLED_MIN_ARB)},
 		[63] = {TAG_ENABLED_MAX_ARB, TELEM_OFFSET(TAG_ENABLED_MAX_ARB)},
 		[64] = {TAG_AICLK_PPM_INFO, TELEM_OFFSET(TAG_AICLK_PPM_INFO)},
+		[65] = {TAG_HOST_AICLK_LIMIT, TELEM_OFFSET(TAG_HOST_AICLK_LIMIT)},
 	},
 };
 
@@ -520,6 +521,11 @@ void UpdateTelemetryTdpLimit(uint32_t tdp_limit)
 void UpdateTelemetryThermTripCount(uint16_t therm_trip_count)
 {
 	telemetry[TAG_THERM_TRIP_COUNT] = therm_trip_count;
+}
+
+void UpdateTelemetryHostAiclkLimit(uint32_t fmax)
+{
+	telemetry[TAG_HOST_AICLK_LIMIT] = fmax;
 }
 
 bool GetTelemetryTagValid(uint16_t tag)
