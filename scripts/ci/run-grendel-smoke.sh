@@ -30,7 +30,8 @@ cd ..
 # Clone the VDK utilities repo, which contains a grendel fast functional SIM
 git clone git@yyz-gitlab.local.tenstorrent.com:syseng-platform/vdk-utils.git
 cd vdk-utils
-ZEPHYR_ELF=$TWISTER_DIR/tt-system-firmware/tests/drivers/tt_smc_remoteproc/drivers.tt_smc_remoteproc.bl1_primary/tt_smc_remoteproc/zephyr/zephyr.elf
+ZEPHYR_ELF=$TWISTER_DIR/tt-system-firmware/tests/drivers/tt_smc_remoteproc/
+ZEPHYR_ELF+=drivers.tt_smc_remoteproc.bl1_primary/tt_smc_remoteproc/zephyr/zephyr.elf
 PROD_ROM_ELF=../tt_smc/firmware/prod_rom-1.1.1-20260117-794e39bc/build/release/bin/prod_rom.elf
 # Watch this command until it outputs "Test PASSED"
 timeout 300 bash -c '
