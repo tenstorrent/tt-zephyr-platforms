@@ -480,6 +480,20 @@ struct report_scratch_only_rqst {
 	uint8_t command_code;
 };
 
+/** @brief Host request to set the ASIC fmax
+ * @details Messages of this type are processed by @ref set_arb_host_fmax_handler
+ */
+struct set_asic_host_fmax_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SET_ASIC_HOST_FMAX */
+	uint8_t command_code;
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+	/** @brief The ASIC host fmax to set in MHz */
+	uint32_t asic_fmax;
+	/** @brief Restore the ASIC host fmax to the default value */
+	uint8_t restore_default: 1;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -558,6 +572,9 @@ union request {
 
 	/** @brief A report scratch-only request */
 	struct report_scratch_only_rqst report_scratch_only;
+
+	/** @brief A set ASIC host fmax request */
+	struct set_asic_host_fmax_rqst set_asic_host_fmax;
 };
 
 /** @} */

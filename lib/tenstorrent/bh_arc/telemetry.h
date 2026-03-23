@@ -299,12 +299,22 @@
  */
 #define TAG_AICLK_PPM_INFO 69
 
+/**
+ * @brief Host-adjustable AICLK fmax ceiling in megahertz.
+ *
+ * This tag reflects the value set by the TT_SMC_MSG_SET_ASIC_HOST_FMAX message.
+ * A value of 0 indicates the host has not set a limit.
+ *
+ * @see @ref set_asic_host_fmax_rqst
+ */
+#define TAG_HOST_AICLK_LIMIT 70
+
 /** @} */ /* end of telemetry_tag group */
 
 /* Not a real tag, signifies the last tag in the list.
  * MUST be incremented if new tags are defined.
  */
-#define TAG_COUNT 70
+#define TAG_COUNT 71
 
 /* Telemetry tags are at offset `tag` in the telemetry buffer */
 #define TELEM_OFFSET(tag) (tag)
@@ -319,6 +329,7 @@ void UpdateTelemetryNocTranslation(bool translation_enabled);
 void UpdateTelemetryBoardPowerLimit(uint32_t power_limit);
 void UpdateTelemetryTdpLimit(uint32_t tdp_limit);
 void UpdateTelemetryThermTripCount(uint16_t therm_trip_count);
+void UpdateTelemetryHostAiclkLimit(uint32_t fmax);
 bool GetTelemetryTagValid(uint16_t tag);
 uint32_t GetTelemetryTag(uint16_t tag);
 

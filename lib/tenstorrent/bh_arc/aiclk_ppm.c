@@ -6,6 +6,7 @@
 
 #include "aiclk_ppm.h"
 #include "dvfs.h"
+#include "telemetry.h"
 #include "voltage.h"
 #include "vf_curve.h"
 
@@ -22,7 +23,10 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
 #include <zephyr/drivers/clock_control.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/tracing/tracing.h>
+
+LOG_MODULE_REGISTER(aiclk_ppm, CONFIG_TT_APP_LOG_LEVEL);
 
 static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
 
@@ -234,7 +238,10 @@ static int InitAiclkPPM(void)
 		aiclk_ppm.arbiter_min[i].value = aiclk_ppm.fmin;
 		aiclk_ppm.arbiter_min[i].enabled = true;
 	}
-
+	/* Disable aiclk_arb_max_host_fmax at init; only activated when
+	 * TT_SMC_MSG_SET_ASIC_HOST_FMAX is received.
+	 */
+	EnableArbMax(aiclk_arb_max_host_fmax, false);
 	return 0;
 }
 SYS_INIT_APP(InitAiclkPPM);
@@ -404,9 +411,37 @@ union aiclk_targ_freq_info get_targ_aiclk_info(void)
 	return aiclk_ppm.lim_arb_info;
 }
 
+static uint8_t set_arb_host_fmax_handler(const union request *request, struct response *response)
+{
+	uint32_t new_fmax;
+
+	if (request->set_asic_host_fmax.restore_default) {
+		/* Disable the host_fmax arbiter */
+		EnableArbMax(aiclk_arb_max_host_fmax, false);
+		UpdateTelemetryHostAiclkLimit(0);
+		LOG_INF("host fmax arbiter disabled");
+		return 0;
+	}
+
+	new_fmax = request->set_asic_host_fmax.asic_fmax;
+
+	/* Reject if outside valid range [AICLK_FMAX_MIN, AICLK_FMAX_MAX] */
+	if (new_fmax > (uint32_t)AICLK_FMAX_MAX || new_fmax < (uint32_t)AICLK_FMAX_MIN) {
+		return 1;
+	}
+
+	EnableArbMax(aiclk_arb_max_host_fmax, true);
+	SetAiclkArbMax(aiclk_arb_max_host_fmax, (float)new_fmax);
+	UpdateTelemetryHostAiclkLimit(new_fmax);
+	LOG_INF("host fmax arbiter enabled, host fmax set to %u MHz", new_fmax);
+
+	return 0;
+}
+
 REGISTER_MESSAGE(TT_SMC_MSG_AICLK_GO_BUSY, aiclk_busy_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_AICLK_GO_LONG_IDLE, aiclk_busy_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_FORCE_AICLK, ForceAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_GET_AICLK, get_aiclk_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_START, SweepAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_STOP, SweepAiclkHandler);
+REGISTER_MESSAGE(TT_SMC_MSG_SET_ASIC_HOST_FMAX, set_arb_host_fmax_handler);
