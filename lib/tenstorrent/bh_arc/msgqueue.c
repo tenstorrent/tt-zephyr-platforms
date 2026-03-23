@@ -282,6 +282,10 @@ static void handle_test(struct message_queue *queue, const union request *reques
 	response->data[2] = queue->header.last_serial + 1;
 }
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_REPORT_SCRATCH_ONLY
+ * @see report_scratch_only_rqst
+ */
 static void report_scratch_only_message(struct response *response)
 {
 	response->data[0] = MESSAGE_QUEUE_STATUS_SCRATCH_ONLY;
