@@ -159,6 +159,24 @@ struct get_voltage_rqst {
 	uint32_t slave_addr;
 };
 
+/** @brief Host request to force the VDD core voltage
+ * @details Messages of this type are processed by @ref ForceVddHandler.
+ *
+ * A forced_voltage of 0 disables forcing and restores the default voltage.
+ * Values outside the valid range (VDD_MIN to VDD_MAX) are rejected with
+ * return code 1.
+ */
+struct force_vdd_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_FORCE_VDD */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The voltage to force in millivolts, or 0 to disable forcing */
+	uint32_t forced_voltage;
+};
+
 /** @brief Host request to switch VOUT control
  * @details Messages of this type are processed by @ref switch_vout_control_handler
  */
@@ -493,6 +511,9 @@ union request {
 
 	/** @brief A get voltage request */
 	struct get_voltage_rqst get_voltage;
+
+	/** @brief A force VDD voltage request */
+	struct force_vdd_rqst force_vdd;
 
 	/** @brief A switch VOUT control request */
 	struct switch_vout_control_rqst switch_vout_control;
