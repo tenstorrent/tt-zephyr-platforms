@@ -10,6 +10,7 @@ set -e
 # Clone the VDK utilities repo, which contains a grendel fast functional SIM
 git clone git@yyz-gitlab.local.tenstorrent.com:syseng-platform/vdk-utils.git
 cd vdk-utils
+TWISTER_DIR=$OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr
 ZEPHYR_ELF=$TWISTER_DIR/tt-system-firmware/tests/drivers/tt_smc_remoteproc/
 ZEPHYR_ELF+=drivers.tt_smc_remoteproc.bl1_primary/tt_smc_remoteproc/zephyr/zephyr.elf
 PROD_ROM_ELF=../tt_smc/firmware/prod_rom-1.1.1-20260117-794e39bc/build/release/bin/prod_rom.elf
@@ -38,7 +39,6 @@ sed -i "s/run_args: +COCOTB_TEST=smc_zephyr_binary_loader_test"\
 " +COCOTB_TEST=smc_zephyr_binary_loader_test"\
 " +FW_TEST=grendel_smc_hello_world_smp_zephyr"\
 " +FW_TEST_TIMEOUT=1000000000/g" tb_uvm/yaml/regression_smc_chiplet.yaml
-TWISTER_DIR=$OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr
 cp "$TWISTER_DIR/tests/drivers/uart/"\
 "uart_elementary/drivers.uart.uart_elementary.grendel_uart/zephyr/zephyr.bin" \
    ./firmware/zephyr/grendel_smc_hello_world_smp_zephyr/grendel_smc_hello_world_smp_zephyr.bin
