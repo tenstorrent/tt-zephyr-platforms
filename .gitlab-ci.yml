@@ -37,6 +37,7 @@ test-job:
     when: always
     paths:
       - tt_smc/tb_uvm/out/
+      - vdk-logs/
   tags:
     - chiplet-ip
   timeout: 120m
