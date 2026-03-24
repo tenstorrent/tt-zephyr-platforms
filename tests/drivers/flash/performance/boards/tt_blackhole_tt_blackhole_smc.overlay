@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2025 Tenstorrent AI ULC
+ * Copyright (c) 2025-2026 Tenstorrent AI ULC
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <mem.h>
 
 storage_partition: &storage {
-	reg = <0x500000 DT_SIZE_K(32)>;
+	reg = <0x600000 DT_SIZE_K(32)>;
 };
 
 /* Raise CSM to 256KB */
