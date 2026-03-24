@@ -75,7 +75,7 @@ static int SpiSmartWrite(uint32_t address, const uint8_t *data, uint32_t num_byt
 	uint32_t chunk_size;
 	int rc;
 
-	__ASSERT(sector_size > sizeof(spi_page_buf), "Sector size is larger than temp buffer");
+	__ASSERT(sector_size <= sizeof(spi_page_buf), "Sector size is larger than temp buffer");
 	sys_trace_named_event("spiwrite", address, num_bytes);
 
 	/* Phase 1: Write first chunk (may be unaligned)*/
