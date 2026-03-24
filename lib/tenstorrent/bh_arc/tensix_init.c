@@ -8,6 +8,7 @@
 #include "noc2axi.h"
 #include "noc_init.h"
 #include "harvesting.h"
+#include "tensix.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -322,6 +323,11 @@ void TensixInit(void)
 	}
 
 	/* wipe_l1()/wipe_dest() aren't here because they're only needed on boot & board reset. */
+
+	/* LLK observes the first UNPACR instruction to be corrupted after boot.
+	 * Inject dummy UNPACR instruction first to workaround issue.
+	 */
+	tensix_inject_instruction(TENSIX_INSTRUCTION_UNPACR, 0, true, 0, 0);
 }
 
 static int tensix_init(void)
