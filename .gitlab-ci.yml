@@ -1,8 +1,4 @@
 workflow:
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: always
-    - when: never
 
 variables:
   OUTDIR: $CI_PROJECT_DIR/twister-out
@@ -35,18 +31,13 @@ test-job:
     - build-job
 
   script:
-    # Pull tt-smc repo to run Zephyr tests
-    - git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
-    - cd tt_smc
-    - source bin/setup_env.sh
-    - module list || true
-    - bender checkout --force || bender checkout --force
-    - $CI_PROJECT_DIR/scripts/ci/run-ttem-tests.sh
+    - $CI_PROJECT_DIR/scripts/ci/run-grendel-smoke.sh
 
   artifacts:
     when: always
     paths:
       - tt_smc/tb_uvm/out/
+      - vdk-logs/
   tags:
     - chiplet-ip
   timeout: 120m
