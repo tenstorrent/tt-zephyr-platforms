@@ -32,6 +32,9 @@ Major enhancements with this release include:
     - Updated ETH mailbox message selection
       - Removed INTERRUPT, CABLE_CHECK, TELEMETRY_EVENT, REMOTE_ALIVE, PORT_MODE messages as they were deemed unneeded
       - Did not re-number messages to avoid updates in higher layer software
+- Updated Blackhole MRISC FW to v2.14
+  - Fix training instability in revB UBBs
+  - Clear EDC error counters after training so they don't get reported in telemetry
 
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
