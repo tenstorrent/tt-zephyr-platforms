@@ -217,6 +217,17 @@ float ConvertTelemetryToFloat(int32_t value)
 	}
 }
 
+static void UpdateEthTelemetry(void)
+{
+	/* ETH live status lower 16 bits: heartbeat status,
+	 * upper 16 bits: live link status (1 = link up, 0 = link down)
+	 */
+	uint32_t heartbeat_status = GetEthHeartbeatStatus(0);
+	uint32_t link_status = GetEthLinkStatus(0);
+
+	telemetry[TAG_ETH_LIVE_STATUS] = (link_status << 16) | (heartbeat_status & 0xFFFF);
+}
+
 static void UpdateGddrTelemetry(void)
 {
 	uint32_t temperature[NUM_GDDR / 2] = {0};
@@ -441,12 +452,9 @@ static void update_telemetry(void)
 					     * yet), lower 16 bits - current L2CPUCLK3
 					     */
 
-	telemetry[TAG_ETH_LIVE_STATUS] =
-		0x00000000; /* ETH live status lower 16 bits: heartbeat status, upper 16 bits:
-			     * retrain_status - Not Available yet
-			     */
 	telemetry[TAG_FAN_SPEED] = GetFanSpeed(); /* Target fan speed - reported in percentage */
 	telemetry[TAG_FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
+	UpdateEthTelemetry();
 	UpdateGddrTelemetry();
 	telemetry[TAG_MAX_GDDR_TEMP] = GetMaxGDDRTemp();
 	telemetry[TAG_INPUT_POWER] = GetInputPower(); /* Input power - reported in W */
