@@ -623,8 +623,10 @@ static void assert_mrisc_soft_reset(uint8_t gddr_inst)
 static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
 {
 	uint32_t gddr_inst = req->gddr_reset.gddr_inst;
-	bool was_phy_off = !bh_get_mrisc_power_state();
+	bool original_mrisc_state;
 	int rc;
+
+	bh_power_state_get(BH_POWER_DOMAIN_MRISC, &original_mrisc_state);
 
 	if (gddr_inst >= NUM_GDDR) {
 		rsp->data[1] = GDDR_RESET_ERR_INVALID_INST;
@@ -644,7 +646,7 @@ static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
 	gddr_bist.complete &= ~BIT(gddr_inst);
 	gddr_bist.failed &= ~BIT(gddr_inst);
 
-	if (was_phy_off) {
+	if (!original_mrisc_state) {
 		rc = set_mrisc_power_setting(true);
 		if (rc < 0) {
 			rsp->data[1] = GDDR_RESET_ERR_POWERDOWN;
@@ -678,7 +680,7 @@ static uint8_t toggle_gddr_reset(const union request *req, struct response *rsp)
 		return 1;
 	}
 
-	if (was_phy_off) {
+	if (!original_mrisc_state) {
 		rc = set_mrisc_power_setting(false);
 		if (rc < 0) {
 			rsp->data[1] = GDDR_RESET_ERR_POWERDOWN;
