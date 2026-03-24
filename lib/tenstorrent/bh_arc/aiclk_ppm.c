@@ -285,7 +285,11 @@ uint32_t GetAiclkFmax(void)
 
 void aiclk_update_busy(void)
 {
-	if (last_msg_busy || bh_get_aiclk_busy()) {
+	bool aiclk_state;
+
+	bh_power_state_get(BH_POWER_DOMAIN_AICLK, &aiclk_state);
+
+	if (last_msg_busy || aiclk_state) {
 		SetAiclkArbMin(aiclk_arb_min_busy, aiclk_ppm.fmax);
 	} else {
 		SetAiclkArbMin(aiclk_arb_min_busy, aiclk_ppm.fmin);
