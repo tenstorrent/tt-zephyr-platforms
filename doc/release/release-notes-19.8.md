@@ -36,6 +36,10 @@ Major enhancements with this release include:
   - Fix training instability in revB UBBs
   - Clear EDC error counters after training so they don't get reported in telemetry
 
+### Power Management
+
+- Re-enabled PHY powerdown for MRISC on Galaxy systems
+
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
 <!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
