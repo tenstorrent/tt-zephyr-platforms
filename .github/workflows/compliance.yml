@@ -104,7 +104,7 @@ jobs:
           fi
           # FIXME: why do i need to reinstall packages here?
           pip install dotenv jsonschema
-          ${{ env.ZEPHYR_BASE }}/scripts/ci/check_compliance.py --annotate $excludes \
+          ./scripts/check_sysfw_compliance.py --annotate $excludes \
             -c origin/${BASE_REF}..
 
       - name: upload-results
