@@ -7,8 +7,12 @@
 
 set -e
 
+# Pull required repos
 # Clone the VDK utilities repo, which contains a grendel fast functional SIM
 git clone git@yyz-gitlab.local.tenstorrent.com:syseng-platform/vdk-utils.git
+# Pull tt-smc repo to run Zephyr tests
+git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
+
 cd vdk-utils
 TWISTER_DIR=$OUTDIR/tt_grendel_smc_tt_grendel_smc/zephyr
 ZEPHYR_ELF=$TWISTER_DIR/tt-system-firmware/tests/drivers/tt_smc_remoteproc/
@@ -27,8 +31,6 @@ timeout 300 bash -c '
 ' _ "$ZEPHYR_ELF" "$PROD_ROM_ELF"
 # Back out of tt-smc repo
 cd ..
-# Pull tt-smc repo to run Zephyr tests
-git clone git@yyz-gitlab.local.tenstorrent.com:tensix/tensix-hw/tt_smc.git
 cd tt_smc
 source bin/setup_env.sh
 module list || true
