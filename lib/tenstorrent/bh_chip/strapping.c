@@ -76,4 +76,14 @@ int i2c_straps(void)
 	return 0;
 }
 
+int deinit_i2c_straps(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		/* Disable I2C bus connection for strapping */
+		bharc_disable_i2cbus(&chip->config.arc);
+	}
+	return 0;
+}
+
 SYS_INIT(i2c_straps, POST_KERNEL, CONFIG_TT_I2C_STRAP_INIT_PRIORITY);
+SYS_INIT(deinit_i2c_straps, APPLICATION, CONFIG_TT_I2C_STRAP_INIT_PRIORITY);
