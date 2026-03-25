@@ -17,22 +17,29 @@ ZEPHYR_ROOT = TT_SYS_FW_ROOT.parents[1] / "zephyr"
 zephyr_scripts_dir = ZEPHYR_ROOT / "scripts" / "ci"
 
 sys.path.insert(0, str(zephyr_scripts_dir))
-
 import check_compliance  # noqa: E402
 
 
-class StrictClangFormatCheck(check_compliance.ClangFormatCheck):
-    """
-    Strict clang-format check that treats any formatting deviation as a hard failure.
-    """
+# Patch all ComplianceTest inheritors to convert warnings to errors
+def err_fmtd(original, always_error):
+    return lambda self, severity, *args, **kwargs: original(
+        self,
+        "error" if severity == "warning" or always_error else severity,
+        *args,
+        **kwargs,
+    )
 
-    name = "StrictClangFormat"
 
-    def fmtd_failure(self, severity, description, file, line=None, col=None, desc=None):
-        reason_str = "Code formatting does not comply with clang-format rules"
-        super().fmtd_failure("failure", reason_str, file, line, col, desc)
+# items in this list will return the severity based on zephyr upstream
+default_fmtd = ["Checkpatch"]
+# items in this list will always return a severity of error
+all_errors = ["ClangFormat"]
+
+# all other items will convert warnings to errors only
+for cls in check_compliance.inheritors(check_compliance.ComplianceTest):
+    if cls.name not in default_fmtd:
+        cls.fmtd_failure = err_fmtd(cls.fmtd_failure, cls.name in all_errors)
 
 
 if __name__ == "__main__":
-    sys.argv[1:1] = ["-e", "ClangFormat"]
     check_compliance.main()
