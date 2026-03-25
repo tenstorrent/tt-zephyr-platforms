@@ -265,6 +265,9 @@ static void process_l2_message_queue(const union request *request, struct respon
 
 static void handle_set_last_serial(struct message_queue *queue, const union request *request)
 {
+	volatile uint32_t i = 0;
+	for (; i < 5; i++) {
+	}
 	queue->header.last_serial = request->data[1];
 }
 

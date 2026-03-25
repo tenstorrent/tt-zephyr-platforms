@@ -356,7 +356,7 @@ struct i2c_message_rqst {
 	uint8_t command_code;
 
 	/** @brief I2C master ID */
-	uint8_t i2c_mst_id;
+	uint8_t       i2c_mst_id;
 
 	/** @brief I2C slave address (7-bit) */
 	uint8_t i2c_slave_address;
