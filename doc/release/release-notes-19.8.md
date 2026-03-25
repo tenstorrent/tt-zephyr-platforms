@@ -6,6 +6,17 @@ We are pleased to announce the release of TT System Firmware firmware version 19
 
 Major enhancements with this release include:
 
+## Wormhole
+
+### Bug Fixes
+- Fix GDDR speed reporting in tt-smi (regression introduced in 19.5.1 / 19.6.0)
+
+### Power & Performance Improvements
+- Add support for more idle power saving features
+  - GDDR low power mode
+  - PCIe switch to Gen1
+  - Lower vcore voltage when in aiclk idle
+
 ## Blackhole
 
 <!-- Subsections can break down improvements by (area or board) -->
