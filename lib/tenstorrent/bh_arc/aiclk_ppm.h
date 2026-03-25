@@ -92,4 +92,9 @@ uint32_t get_aiclk_effective_arb_max(enum aiclk_arb_max *effective_max_arb);
 uint32_t get_enabled_arb_min_bitmask(void);
 uint32_t get_enabled_arb_max_bitmask(void);
 union aiclk_targ_freq_info get_targ_aiclk_info(void);
+
+struct response;
+union request;
+uint8_t throttler_counter_handler(const union request *request, struct response *response);
+
 #endif

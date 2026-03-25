@@ -72,6 +72,10 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 
 static bool last_msg_busy;
 
+static uint32_t final_arbiter_count[aiclk_arb_max_count];
+static uint32_t throttler_frozen_mask;
+static uint32_t throttler_overflow_mask;
+
 void SetAiclkArbMax(enum aiclk_arb_max arb_max, float freq)
 {
 	aiclk_ppm.arbiter_max[arb_max].value = CLAMP(freq, aiclk_ppm.fmin, aiclk_ppm.fmax);
@@ -112,6 +116,23 @@ void CalculateTargAiclk(void)
 		aiclk_ppm.targ_freq = max_arb_freq;
 		info.reason = limit_reason_max_arb;
 		info.arbiter = max_arb;
+	}
+
+	/* Throttling only if we are below Fmax and busy arbiter is at Fmax */
+	bool throttling = (aiclk_ppm.targ_freq != aiclk_ppm.fmax);
+	bool aiclk_busy = (aiclk_ppm.arbiter_min[aiclk_arb_min_busy].value == aiclk_ppm.fmax);
+
+	for (enum aiclk_arb_max i = 0; i < aiclk_arb_max_count; ++i) {
+		bool arbiter_enabled = aiclk_ppm.arbiter_max[i].enabled;
+
+		if (arbiter_enabled && aiclk_ppm.arbiter_max[i].value == aiclk_ppm.targ_freq &&
+		    throttling && aiclk_busy && !(throttler_frozen_mask & BIT(i))) {
+			if (final_arbiter_count[i] < UINT32_MAX) {
+				final_arbiter_count[i]++;
+			} else {
+				throttler_overflow_mask |= BIT(i);
+			}
+		}
 	}
 
 	/* Make sure target is not below Fmin */
@@ -445,6 +466,40 @@ static uint8_t set_arb_host_fmax_handler(const union request *request, struct re
 	SetAiclkArbMax(aiclk_arb_max_host_fmax, (float)new_fmax);
 	UpdateTelemetryHostAiclkLimit(new_fmax);
 	LOG_INF("host fmax arbiter enabled, host fmax set to %u MHz", new_fmax);
+	return 0;
+}
+
+uint8_t throttler_counter_handler(const union request *request, struct response *response)
+{
+	switch (request->counter.command) {
+	case COUNTER_CMD_GET: {
+		uint32_t idx = request->counter.bank_index;
+
+		if (idx >= aiclk_arb_max_count) {
+			return 1;
+		}
+
+		uint32_t ovf = (throttler_overflow_mask & BIT(idx)) ? 1U : 0U;
+		uint32_t frz = (throttler_frozen_mask & BIT(idx)) ? 1U : 0U;
+
+		response->data[1] = ovf | (frz << 16);
+		response->data[2] = final_arbiter_count[idx];
+		break;
+	}
+	case COUNTER_CMD_CLEAR:
+		for (uint32_t i = 0; i < aiclk_arb_max_count; i++) {
+			if (request->counter.mask & BIT(i)) {
+				final_arbiter_count[i] = 0;
+				throttler_overflow_mask &= ~BIT(i);
+			}
+		}
+		break;
+	case COUNTER_CMD_FREEZE:
+		throttler_frozen_mask = request->counter.mask;
+		break;
+	default:
+		return 1;
+	}
 
 	return 0;
 }
