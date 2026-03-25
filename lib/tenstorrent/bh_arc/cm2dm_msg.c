@@ -180,9 +180,13 @@ void reset_request_handler(struct k_timer *timer)
 
 K_TIMER_DEFINE(reset_timer, reset_request_handler, NULL);
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_TRIGGER_RESET
+ * @see trigger_reset_rqst
+ */
 static uint8_t reset_dm_handler(const union request *request, struct response *response)
 {
-	reset_type = request->data[1];
+	reset_type = request->trigger_reset.reset_level;
 
 	/* Don't expect a response from the dmfw so need to check here for a valid reset level */
 	uint8_t ret = 0;
