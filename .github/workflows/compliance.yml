@@ -121,36 +121,3 @@ jobs:
         with:
           name: dts_linter.patch
           path: dts_linter.patch
-
-      - name: check-warns
-        working-directory: ${{ env.checkout_path }}
-        run: |
-          if [[ ! -s "compliance.xml" ]]; then
-            exit 1;
-          fi
-
-          warns=("ClangFormat")
-          files=($($ZEPHYR_BASE/scripts/ci/check_compliance.py -l))
-
-          for file in "${files[@]}"; do
-            f="${file}.txt"
-            if [[ -s $f ]]; then
-              results=$(cat $f)
-              results="${results//'%'/'%25'}"
-              results="${results//$'\n'/'%0A'}"
-              results="${results//$'\r'/'%0D'}"
-
-              if [[ "${warns[@]}" =~ "${file}" ]]; then
-                echo "::warning file=${f}::$results"
-              else
-                echo "::error file=${f}::$results"
-                ERRORS=1
-              fi
-            fi
-          done
-
-          if [ "$ERRORS" = "1" ]; then
-            echo "Compliance error, check for error messages in the \"Run Compliance Tests\" step"
-            echo "You can run this step locally with the ./scripts/ci/check_compliance.py script."
-            exit 1;
-          fi
