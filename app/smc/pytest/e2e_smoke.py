@@ -96,6 +96,7 @@ TT_SMC_MSG_READ_PD = 0x1C
 TT_SMC_MSG_READ_VM = 0x1D
 TT_SMC_MSG_SET_TDP_LIMIT = 0x22
 TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23
+TT_SMC_MSG_COUNTER = 0x35
 TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 
 # Telemetry tags
@@ -456,6 +457,51 @@ def test_dmc_msg(arc_chip_dut, asic_id):
     assert response[0] == 1, "DMC did not respond to ping from SMC"
     assert response[1] == 0, "SMC response invalid"
     logger.info('DMC ping message response "%d"', response[0])
+
+
+def test_counter_msg(arc_chip_dut, asic_id):
+    """
+    Validates the counter ARC message by exercising GET, FREEZE and CLEAR
+    sub-commands on each throttler arbiter and checking return code == 0.
+    """
+    COUNTER_CMD_GET = 0
+    COUNTER_CMD_CLEAR = 1
+    COUNTER_CMD_FREEZE = 2
+    COUNTER_BANK_THROTTLERS = 0
+    COUNTER_THROTTLER_MASK_ALL = 0x3FF
+    THROTTLER_NUM_ARBITERS = 9
+
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    for arb in range(THROTTLER_NUM_ARBITERS):
+        response = arc_chip.as_bh().arc_msg_buf(
+            [
+                TT_SMC_MSG_COUNTER,
+                COUNTER_CMD_GET | (COUNTER_BANK_THROTTLERS << 8) | (arb << 16),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ]
+        )
+        assert response[0] == 0, f"Counter GET arb={arb} failed with rc={response[0]}"
+        logger.info("Throttler counter[%d]: count=%d", arb, response[2])
+
+    response = arc_chip.arc_msg(
+        TT_SMC_MSG_COUNTER,
+        arg0=COUNTER_CMD_FREEZE | (COUNTER_BANK_THROTTLERS << 8),
+        arg1=COUNTER_THROTTLER_MASK_ALL,
+    )
+    assert response[0] == 0, f"Counter FREEZE failed with rc={response[0]}"
+
+    response = arc_chip.arc_msg(
+        TT_SMC_MSG_COUNTER,
+        arg0=COUNTER_CMD_CLEAR | (COUNTER_BANK_THROTTLERS << 8),
+        arg1=COUNTER_THROTTLER_MASK_ALL,
+    )
+    assert response[0] == 0, f"Counter CLEAR failed with rc={response[0]}"
 
 
 def test_boot_status(arc_chip_dut, asic_id):
