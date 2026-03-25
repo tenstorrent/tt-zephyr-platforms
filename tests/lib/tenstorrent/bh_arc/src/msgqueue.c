@@ -515,4 +515,20 @@ ZTEST(msgqueue, test_msg_type_force_vdd)
 	zassert_equal(rsp.data[0], 1, "Out-of-range voltage should fail");
 }
 
+ZTEST(msgqueue, test_msg_type_trigger_reset_invalid)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Invalid reset level should be rejected */
+	req.trigger_reset.command_code = TT_SMC_MSG_TRIGGER_RESET;
+	req.trigger_reset.reset_level = 5;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 5, "Invalid level should return the level as error");
+}
+
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
