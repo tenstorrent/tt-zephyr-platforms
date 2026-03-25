@@ -10,6 +10,7 @@ zephyr_library_sources_ifndef(
   aiclk_ppm.c
   bh_power.c
   clock_wave.c
+  counter.c
   dvfs.c
   efuse.c
   eth.c
