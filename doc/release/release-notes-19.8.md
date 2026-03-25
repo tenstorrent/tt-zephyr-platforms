@@ -19,6 +19,10 @@ Major enhancements with this release include:
 
 <!-- Performance Improvements, if applicable -->
 <!-- New and Experimental Features, if applicable -->
+### New Features
+
+- Added cable fault detection to protect the board when the 12V-2x6 power cable is missing or improperly installed. The DMC detects the cable power limit via GPIO sense pins and writes it to SCRATCH_1 before ARC soft reset. If the SMC reads a power limit of 0, it enters a low-power cable fault mode: all tiles are clock-gated, firmware init is skipped for affected subsystems, and PCIe communication with the host is maintained.
+
 <!-- External Project Collaboration Efforts, if applicable -->
 ### Stability Improvements
 
