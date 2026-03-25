@@ -55,6 +55,61 @@ struct message_queue_header {
  * @{
  */
 
+/** @brief Counter commands */
+enum counter_cmd {
+	/** @brief Read counter values and status */
+	COUNTER_CMD_GET,
+	/** @brief Clear selected counters and their overflow bits */
+	COUNTER_CMD_CLEAR,
+	/** @brief Set the frozen bitmask; frozen counters stop counting */
+	COUNTER_CMD_FREEZE,
+};
+
+/** @brief Available counter banks */
+enum counter_bank {
+	/** @brief Throttler counters indexed by @ref aiclk_arb_max */
+	COUNTER_BANK_THROTTLERS,
+};
+
+/** @brief Host request for generic counter operations
+ * @details Messages of this type are dispatched from @c counter.c (bank-specific handlers).
+ *
+ * For @ref COUNTER_CMD_GET, bank_index selects one counter index
+ * within counter_bank (e.g. throttler arbiters 0..N-1).
+ * Response:
+ * - data[1] bits [31:16]: 1 if that counter is frozen, else 0
+ * - data[1] bits [15:0]: 1 if that counter has overflowed since last clear, else 0
+ * - data[2]: selected counter value
+ *
+ * For @ref COUNTER_CMD_CLEAR, each set bit in mask clears that
+ * counter to zero and clears its overflow flag.
+ *
+ * For @ref COUNTER_CMD_FREEZE, mask is the frozen bitmask for
+ * the bank (set = frozen, clear = running). Use mask 0 to unfreeze all.
+ */
+struct counter_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_COUNTER */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The command to execute, of type @ref counter_cmd */
+	uint8_t command;
+
+	/** @brief The counter bank to operate on, of type @ref counter_bank */
+	uint8_t counter_bank;
+
+	/** @brief For GET: counter index within @ref counter_bank; ignored for CLEAR/FREEZE */
+	uint8_t bank_index;
+
+	/** @brief Reserved; host must set to zero */
+	uint8_t reserved[1];
+
+	/** @brief CLEAR (bits to reset) and FREEZE (frozen bitmask) */
+	uint16_t mask;
+};
+
 /** @brief Host request to force the fan speed */
 struct force_fan_speed_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_FORCE_FAN_SPEED*/
@@ -675,6 +730,11 @@ union request {
 
 	/** @brief A set ASIC host fmax request */
 	struct set_asic_host_fmax_rqst set_asic_host_fmax;
+	/** @brief A report scratch-only request */
+	struct report_scratch_only_rqst report_scratch_only;
+
+	/** @brief A generic counter request */
+	struct counter_rqst counter;
 };
 
 /** @} */
