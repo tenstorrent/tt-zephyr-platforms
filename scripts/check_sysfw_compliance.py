@@ -30,7 +30,7 @@ class StrictClangFormatCheck(check_compliance.ClangFormatCheck):
 
     def fmtd_failure(self, severity, description, file, line=None, col=None, desc=None):
         reason_str = "Code formatting does not comply with clang-format rules"
-        super().fmtd_failure("failure", reason_str, file, line, col, desc)
+        super().fmtd_failure("error", reason_str, file, line=line, desc=desc)
 
 
 if __name__ == "__main__":
