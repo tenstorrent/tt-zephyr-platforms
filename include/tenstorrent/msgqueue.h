@@ -428,6 +428,24 @@ enum gddr_reset_err {
 	GDDR_RESET_ERR_POWERDOWN = 6,
 };
 
+/** @brief Host request to trigger a chip reset
+ * @details Messages of this type are processed by @ref reset_dm_handler.
+ *
+ * The reset is delayed by 5 ms to allow the response to be sent before
+ * the reset occurs. Invalid reset levels are rejected with the level
+ * returned as the error code.
+ */
+struct trigger_reset_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_TRIGGER_RESET */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Reset level: 0 = ASIC-only reset, 3 = ASIC + M3 (DMC) reset */
+	uint32_t reset_level;
+};
+
 /** @brief Host request to change ASIC state
  * @details Messages of this type are processed by @ref asic_state_handler.
  */
@@ -654,6 +672,9 @@ union request {
 
 	/** @brief An ASIC state transition request */
 	struct asic_state_rqst asic_state;
+
+	/** @brief A trigger reset request */
+	struct trigger_reset_rqst trigger_reset;
 
 	/** @brief A GDDR reset request */
 	struct gddr_reset_rqst gddr_reset;
