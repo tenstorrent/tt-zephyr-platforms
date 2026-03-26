@@ -515,6 +515,44 @@ ZTEST(msgqueue, test_msg_type_force_vdd)
 	zassert_equal(rsp.data[0], 1, "Out-of-range voltage should fail");
 }
 
+ZTEST(msgqueue, test_msg_type_pcie_dma_chip_to_host)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.pcie_dma_transfer.command_code = TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER;
+	req.pcie_dma_transfer.completion_data = 0xAB;
+	req.pcie_dma_transfer.transfer_size_bytes = 4096;
+	req.pcie_dma_transfer.chip_addr = 0x100000;
+	req.pcie_dma_transfer.host_addr = 0x200000;
+	req.pcie_dma_transfer.msi_completion_addr = 0x300000;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0, "Chip-to-host DMA transfer should succeed");
+}
+
+ZTEST(msgqueue, test_msg_type_pcie_dma_host_to_chip)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	req.pcie_dma_transfer.command_code = TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER;
+	req.pcie_dma_transfer.completion_data = 0xCD;
+	req.pcie_dma_transfer.transfer_size_bytes = 2048;
+	req.pcie_dma_transfer.chip_addr = 0x400000;
+	req.pcie_dma_transfer.host_addr = 0x500000;
+	req.pcie_dma_transfer.msi_completion_addr = 0x600000;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0, "Host-to-chip DMA transfer should succeed");
+}
+
 ZTEST(msgqueue, test_msg_type_trigger_reset_invalid)
 {
 	union request req = {0};
