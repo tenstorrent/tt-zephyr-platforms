@@ -22,6 +22,8 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
+LOG_MODULE_DECLARE(jtag_bootrom, CONFIG_TT_JTAG_BOOTROM_LOG_LEVEL);
+
 static bool perst_seen;
 static uint32_t arc_start_time;
 static uint32_t perst_start_time;
@@ -84,6 +86,40 @@ void gpio_asic_reset_callback(const struct device *port, struct gpio_callback *c
 static struct gpio_callback preset_cb_data;
 #endif /* IS_ENABLED(CONFIG_JTAG_LOAD_ON_PRESET) */
 
+int jtag_trigger_mem_repair(struct bh_chip *chip)
+{
+#ifdef CONFIG_JTAG_LOAD_BOOTROM
+	const struct device *dev = chip->config.jtag;
+
+	int64_t start_cycles = k_cycle_get_64();
+	int64_t deadline_cycles = start_cycles + k_us_to_cyc_floor64(20000);
+
+	LOG_DBG("start mem_repair at %lld us since boot", k_cyc_to_us_floor64(start_cycles));
+
+	/* Start mem repair */
+	jtag_axi_write32(dev, RESET_UNIT_MEM_REPAIR_CNTL_REG_ADDR, 1);
+
+	uint32_t mem_repair_status;
+
+	do {
+		jtag_axi_read32(dev, RESET_UNIT_MEM_REPAIR_STATUS_REG_ADDR, &mem_repair_status);
+		int64_t current_cycles = k_cycle_get_64();
+
+		if (current_cycles - deadline_cycles >= 0) {
+			LOG_ERR("mem repair timed out at %lld us",
+				k_cyc_to_us_floor64(current_cycles));
+			return -ETIMEDOUT;
+		}
+	} while (mem_repair_status == 0);
+
+	LOG_DBG("mem repair finished at %lld us, status=0x%08x",
+		k_cyc_to_us_floor64(k_cycle_get_64()), mem_repair_status);
+#else
+	ARG_UNUSED(chip);
+#endif
+	return 0;
+}
+
 int jtag_bootrom_reset_asic(struct bh_chip *chip)
 {
 	/* Only check for pgood if we aren't emulating */
@@ -126,6 +162,8 @@ int jtag_bootrom_reset_asic(struct bh_chip *chip)
 	while (!jtag_axiwait(chip->config.jtag, STATUS_POST_CODE_REG_ADDR)) {
 		k_yield();
 	}
+
+	jtag_trigger_mem_repair(chip);
 
 	jtag_reset(chip->config.jtag);
 
