@@ -395,8 +395,6 @@ def test_power_virus(arc_chip_dut, asic_id):
     -       The tt-burnin command completes
     """
     arc_chip = pyluwen.detect_chips()[asic_id]
-    # Raise to high power state
-    arc_chip.set_power_state("high")
 
     def read_ts_once(chip, sensor_idx: int):
         # ARC handler expects sensor id; returns status in response[1]
