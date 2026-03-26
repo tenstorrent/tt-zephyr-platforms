@@ -184,13 +184,18 @@ bool PcieDmaReadTransfer(uint64_t chip_addr, uint64_t host_addr, uint32_t transf
 	return true;
 }
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER and
+ *        @ref TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER
+ * @see pcie_dma_transfer_rqst
+ */
 static uint8_t pcie_dma_transfer_handler(const union request *request, struct response *response)
 {
-	uint8_t completion_data = (request->data[0] >> 8) & 0xff;
-	uint32_t transfer_size_bytes = request->data[1];
-	uint64_t chip_addr = ((uint64_t)request->data[3] << 32) | request->data[2];
-	uint64_t host_addr = ((uint64_t)request->data[5] << 32) | request->data[4];
-	uint64_t msi_completion_addr = ((uint64_t)request->data[7] << 32) | request->data[6];
+	uint8_t completion_data = request->pcie_dma_transfer.completion_data;
+	uint32_t transfer_size_bytes = request->pcie_dma_transfer.transfer_size_bytes;
+	uint64_t chip_addr = request->pcie_dma_transfer.chip_addr;
+	uint64_t host_addr = request->pcie_dma_transfer.host_addr;
+	uint64_t msi_completion_addr = request->pcie_dma_transfer.msi_completion_addr;
 
 	bool accept;
 
