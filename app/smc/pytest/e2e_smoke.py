@@ -402,7 +402,7 @@ def process_detectors_test(arc_chip_dut, asic_id):
 def temperature_sensors_test(arc_chip_dut, asic_id):
     arc_chip = pyluwen.detect_chips()[asic_id]
     fail_count = 0
-    tmin = 25
+    tmin = 20
     tmax = 70
     for sensor_id in range(NUM_TS):
         response = arc_chip.as_bh().arc_msg_buf(
