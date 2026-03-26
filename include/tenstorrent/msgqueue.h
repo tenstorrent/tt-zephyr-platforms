@@ -430,7 +430,9 @@ struct i2c_message_rqst {
 };
 
 /** @brief Host request to blink the LED
- * @details Messages of this type are processed by @ref toggle_blinky_handler
+ * @details Messages of this type are processed by @ref toggle_blinky_handler.
+ *          If is_blinking is high, the LED will blink continuously until stopped.
+ *          To stop the blinking, set is_blinking low.
  */
 struct led_blink_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_BLINKY */
@@ -439,7 +441,9 @@ struct led_blink_rqst {
 	/** @brief Three bytes of padding */
 	uint8_t pad[3];
 
-	/** @brief Whether led should be blinking or not */
+	/** @brief Whether LED should be blinking or not.
+	 *         Set to 1 to start continuous blinking, 0 to stop blinking.
+	 */
 	uint8_t is_blinking: 1;
 };
 
