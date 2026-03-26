@@ -64,6 +64,8 @@ zephyr_library_sources(
 # zephyr-keep-sorted-stop
 )
 
+zephyr_library_add_dependencies(nanopb_generated_headers)
+
 zephyr_library_sources_ifdef(CONFIG_TT_SHELL tt_shell.c)
 
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)

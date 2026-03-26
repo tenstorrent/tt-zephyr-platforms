@@ -17,7 +17,6 @@ zephyr_library_include_directories(${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR}/lib/t
 # include(${ZEPHYR_BASE}/modules/nanopb/nanopb.cmake)
 set(PROTOC ${ZEPHYR_NANOPB_MODULE_DIR}/generator/protoc)
 zephyr_library_include_directories(${CMAKE_BINARY_DIR}/modules/tt-system-firmware/drivers/misc/bh_fwtable)
-#zephyr_library_add_dependencies(nanopb_generated_headers)
 
 set(MOD_DIR ${ZEPHYR_TT_SYSTEM_FIRMWARE_MODULE_DIR})
 set(SPIROM_PROTOBUFS ${MOD_DIR}/drivers/misc/bh_fwtable/spirom_protobufs)
