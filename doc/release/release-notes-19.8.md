@@ -64,6 +64,9 @@ Major enhancements with this release include:
 
 ### API Changes
 
+- New throttler count SMC message to display how often each throttler has been activated
+  - Provides get, freeze, and clear functionality for each throttler.
+  - [Documentation](https://docs.tenstorrent.com/tt-system-firmware/doxygen/structcounter__rqst.html) and [sample usage](https://github.com/tenstorrent/tt-system-firmware/blob/b59acea1d296f959780de5a9ee5be025005b0708/app/smc/pytest/e2e_smoke.py#L462).
 - Added extensive Doxygen documentation for SMC message APIs including:
   - ForceVddHandler request structures
   - AICLK host message protocols
