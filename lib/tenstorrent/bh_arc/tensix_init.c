@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <tenstorrent/bh_power.h>
 #include <tenstorrent/post_code.h>
 #include <tenstorrent/spi_flash_buf.h>
 #include <tenstorrent/sys_init_defines.h>
@@ -83,8 +84,12 @@ static const struct device *const flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi
 /* 15 - L1 Banks */
 /* 16 - Src B */
 
-static void EnableTensixCG(void)
+void EnableTensixCG(bool broadcast, uint8_t noc_x, uint8_t noc_y)
 {
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
+		return;
+	}
+
 	uint8_t ring = 0;
 	uint8_t noc_tlb = 0;
 
@@ -100,7 +105,11 @@ static void EnableTensixCG(void)
 	uint32_t cg_ctrl_en = 0xFFB12244;
 	uint32_t enable_all_tensix_cg = 0xFFFFFFFF; /* Only bits 0-16 are used. */
 
-	NOC2AXITensixBroadcastTlbSetup(ring, noc_tlb, cg_ctrl_en, kNoc2AxiOrderingStrict);
+	if (broadcast) {
+		NOC2AXITensixBroadcastTlbSetup(ring, noc_tlb, cg_ctrl_en, kNoc2AxiOrderingStrict);
+	} else {
+		NOC2AXITlbSetup(ring, noc_tlb, noc_x, noc_y, cg_ctrl_en);
+	}
 
 	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_hyst0, all_blocks_hyst_2);
 	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_hyst1, all_blocks_hyst_2);
@@ -318,8 +327,14 @@ static int wipe_dest(void)
 
 void TensixInit(void)
 {
-	if (!tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
-		EnableTensixCG();
+	bool power_state;
+
+	EnableTensixCG(true, 0, 0);
+
+	/* NocInit un-gates tile clocks. If tensix is in low power, re-gate them. */
+	bh_power_state_get(BH_POWER_DOMAIN_TENSIX, &power_state);
+	if (!power_state) {
+		set_tensix_enable(false);
 	}
 
 	/* wipe_l1()/wipe_dest() aren't here because they're only needed on boot & board reset. */
