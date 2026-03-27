@@ -50,6 +50,10 @@
 #define STREAM_PERF_CONFIG_REG_INDEX 35
 #define CLOCK_GATING_EN              0
 
+static const uint32_t kNoc0RegBase = 0x80050000;
+static const uint32_t kNoc1RegBase = 0x80058000;
+static const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;
+
 static const uint8_t kTlbIndex;
 
 static const uint32_t kFirstCfgRegIndex = 0x100 / sizeof(uint32_t);
@@ -219,6 +223,16 @@ int32_t set_tensix_enable(bool enable)
 	return 0;
 }
 
+void SetSingleTileClockGate(uint8_t phys_x, uint8_t phys_y, bool gate)
+{
+	volatile uint32_t *noc_regs = SetupNiuTlbPhys(kTlbIndex, phys_x, phys_y, 0);
+
+	uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, gate);
+	WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+}
+
 int NocInit(void)
 {
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
@@ -293,6 +307,45 @@ int NocInit(void)
 }
 SYS_INIT_APP(NocInit);
 
+void NocInitSingleTile(uint8_t noc0_x, uint8_t noc0_y)
+{
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
+	uint8_t px = NocToPhysX(noc0_x, 0);
+	uint8_t py = NocToPhysY(noc0_y, 0);
+
+	uint32_t niu_cfg_0_updates = BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF);
+	uint32_t router_cfg_0_updates = 0xF << 8;
+
+	bool cg_en = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en;
+
+	if (cg_en) {
+		niu_cfg_0_updates |= BIT(0);
+		router_cfg_0_updates |= BIT(0);
+	}
+
+	for (uint32_t noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
+		volatile uint32_t *noc_regs = SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
+
+		uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+		niu_cfg_0 |= niu_cfg_0_updates;
+		WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, GetTileClkDisable(px, py));
+		WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+
+		uint32_t router_cfg_0 = ReadNocCfgReg(noc_regs, ROUTER_CFG(0));
+
+		router_cfg_0 |= router_cfg_0_updates;
+		WriteNocCfgReg(noc_regs, ROUTER_CFG(0), router_cfg_0);
+	}
+
+	if (cg_en) {
+		EnableOverlayCg(kTlbIndex, px, py);
+	}
+}
+
 #define PRE_TRANSLATION_SIZE 32
 
 struct NocTranslation {
@@ -305,6 +358,9 @@ struct NocTranslation {
 
 	uint16_t logical_coords[NOC_X_SIZE][NOC_Y_SIZE];
 };
+
+static struct NocTranslation cached_noc0;
+static struct NocTranslation cached_noc1;
 
 static void SetLogicalCoord(struct NocTranslation *nt, uint8_t post_x, uint8_t post_y,
 			    uint8_t logical_x, uint8_t logical_y)
@@ -621,6 +677,9 @@ void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, ui
 	CopyNoc0ToNoc1(&noc0, &noc1);
 	ProgramNocTranslation(&noc1, 1);
 
+	cached_noc0 = noc0;
+	cached_noc1 = noc1;
+
 	UpdateTelemetryNocTranslation(true);
 
 	noc_translation_enabled = true;
@@ -674,15 +733,58 @@ int InitNocTranslationFromHarvesting(void)
 }
 SYS_INIT_APP(InitNocTranslationFromHarvesting);
 
-static void DisableArcNocTranslation(void)
+void ProgramNocTranslationSingleTile(uint8_t noc0_x, uint8_t noc0_y)
+{
+	if (!noc_translation_enabled) {
+		return;
+	}
+
+	uint8_t px = NocToPhysX(noc0_x, 0);
+	uint8_t py = NocToPhysY(noc0_y, 0);
+
+	const struct NocTranslation *nts[] = {&cached_noc0, &cached_noc1};
+
+	for (unsigned int noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
+		const struct NocTranslation *nt = nts[noc_id];
+
+		uint32_t translate_table_x[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+		uint32_t translate_table_y[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+
+		for (unsigned int i = 0; i < PRE_TRANSLATION_SIZE; i++) {
+			uint32_t index = i / NOC_TRANSLATE_TABLE_XY_SIZE;
+			uint32_t shift = i % NOC_TRANSLATE_TABLE_XY_SIZE * NOC_TRANSLATE_ID_WIDTH;
+
+			translate_table_x[index] |= nt->translate_table_x[i] << shift;
+			translate_table_y[index] |= nt->translate_table_y[i] << shift;
+		}
+
+		uint8_t ring_x = PhysXToNoc(px, noc_id);
+		uint8_t ring_y = PhysYToNoc(py, noc_id);
+
+		volatile void *noc_regs = SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
+
+		uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+		WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_COL_MASK, nt->translate_col_mask[0]);
+		WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_ROW_MASK, nt->translate_row_mask[0]);
+		WriteNocCfgReg(noc_regs, DDR_COORD_TRANSLATE_TABLE(5), 0);
+		WriteNocCfgReg(noc_regs, NOC_ID_LOGICAL, nt->logical_coords[ring_x][ring_y]);
+
+		for (unsigned int i = 0; i < ARRAY_SIZE(translate_table_x); i++) {
+			WriteNocCfgReg(noc_regs, NOC_X_ID_TRANSLATE_TABLE(i), translate_table_x[i]);
+			WriteNocCfgReg(noc_regs, NOC_Y_ID_TRANSLATE_TABLE(i), translate_table_y[i]);
+		}
+
+		WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
+		WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+	}
+}
+
+void DisableArcNocTranslation(void)
 {
 	/* Program direct rather than relying on NOC loopback, because we
 	 * don't know what the pre-translation ARC coordinates are.
 	 */
-	const uint32_t kNoc0RegBase = 0x80050000;
-	const uint32_t kNoc1RegBase = 0x80058000;
-	const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;
-
 	uint32_t niu_cfg_0 = ReadReg(kNoc0RegBase + kNiuCfg0Offset);
 
 	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
@@ -690,6 +792,18 @@ static void DisableArcNocTranslation(void)
 
 	niu_cfg_0 = ReadReg(kNoc1RegBase + kNiuCfg0Offset);
 	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
+	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
+}
+
+void EnableArcNocTranslation(void)
+{
+	uint32_t niu_cfg_0 = ReadReg(kNoc0RegBase + kNiuCfg0Offset);
+
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
+	WriteReg(kNoc0RegBase + kNiuCfg0Offset, niu_cfg_0);
+
+	niu_cfg_0 = ReadReg(kNoc1RegBase + kNiuCfg0Offset);
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
 	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
 }
 
@@ -785,4 +899,15 @@ void GetEnabledTensix(uint8_t *x, uint8_t *y)
 bool IsNocTranslationEnabled(void)
 {
 	return noc_translation_enabled;
+}
+
+void NocLogicalToPhysical(uint8_t logical_x, uint8_t logical_y, uint8_t *phys_x, uint8_t *phys_y)
+{
+	if (noc_translation_enabled) {
+		*phys_x = cached_noc0.translate_table_x[logical_x];
+		*phys_y = cached_noc0.translate_table_y[logical_y];
+	} else {
+		*phys_x = logical_x;
+		*phys_y = logical_y;
+	}
 }
