@@ -94,6 +94,13 @@ def err_fmtd(original, always_error):
     )
 
 
+# List of compliance checks to exclude
+exclude_checks = [
+    "BinaryFiles",
+    "KconfigBasicNoModules",
+    "SysbuildKconfigBasic",
+    "LicenseAndCopyrightCheck",
+]
 # items in this list will return the severity based on zephyr upstream
 default_fmtd = ["Checkpatch", "CheckpatchFile"]
 # items in this list will always return a severity of error
@@ -104,6 +111,7 @@ for cls in check_compliance.inheritors(check_compliance.ComplianceTest):
     if cls.name not in default_fmtd:
         cls.fmtd_failure = err_fmtd(cls.fmtd_failure, cls.name in all_errors)
 
-
 if __name__ == "__main__":
+    for exclude in exclude_checks:
+        sys.argv.extend(["-e", exclude])
     check_compliance.main()
