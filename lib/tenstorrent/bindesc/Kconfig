@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config TT_BINDESC
+	bool "Tenstorrent Bindesc Extensions"
+	depends on BINDESC
+	help
+	  Tenstorrent's Extensions to Zephyr's Bindesc Library.
