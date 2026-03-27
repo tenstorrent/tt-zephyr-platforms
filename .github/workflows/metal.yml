@@ -57,7 +57,7 @@ jobs:
         - /dev/hugepages:/dev/hugepages
         - /opt/tenstorrent/hf-models/:/opt/tenstorrent/hf-models/
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
-      options: '--device /dev/tenstorrent --device /dev/bus/usb --device /dev/ipmi0 --privileged --user=root'
+      options: ${{ matrix.config.metal-options }}
     env:
       ARCH_NAME: blackhole
       HOME: /home/user/tt-metal
@@ -99,16 +99,18 @@ jobs:
         with:
           name: ${{ needs.build-fw-artifact.outputs.combined-fwbundle-artifact }}
           path: ${{ env.HOME }}
-      - name: Run the rescan-pcie.sh script
-        run: |
-          curl -o /tmp/rescan-pcie.sh https://raw.githubusercontent.com/tenstorrent/tt-system-firmware/${{ github.sha }}/scripts/rescan-pcie.sh
-          source /tmp/rescan-pcie.sh
       - name: Flash the firmware
         run: |
           python -m venv .env
           source .env/bin/activate
-          pip install tt-flash@git+https://github.com/tenstorrent/tt-flash.git@73969bd2e2c5d843f4427c460e3a1eeff7fd1aa1
+          pip install tt-flash==3.6.2
           tt-flash $HOME/fw_pack-*.fwbundle --force
+          if [ "${{ matrix.config.board }}" == "galaxy" ]; then
+            # Use tt-smi galaxy reset, otherwise we may drop to Gen1 PCIe speeds
+            tt-smi -glx_reset
+          else
+            tt-smi -r
+          fi
       - name: Patch Test Command
         run: |
           # Patch whisper demo test to run with CI=false to skip the performance checks.
@@ -123,19 +125,21 @@ jobs:
             INSERT="    pytest tests/didt/test_resnet_conv.py::test_resnet_conv -k \"all\" --didt-workload-iterations 100 --determinism-check-interval 0"
             sed -i "/$SEARCH/a$INSERT" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
           fi
-          if [ "${{ matrix.config.board }}" == "p100a" ]; then
-            # Skip the entire metal unit test series
-            export SEARCH="ARCH_NAME=blackhole TT_METAL_SLOW_DISPATCH_MODE=1 .\\/tests\\/scripts\\/run_cpp_fd2_tests.sh"
-            export REPLACE="return 0"
-            sed -i "s/$SEARCH/$REPLACE/g" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
-          fi
 
           # To verify patch was applied
           cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
 
       - name: Run Container Test
+        timeout-minutes: 120
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
+          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}" > container_test_output.log 2>&1
+
+      - name: Upload Test Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-test-${{ matrix.config.board }}-output
+          path: container_test_output.log
+
       - name: cleanup
         if: ${{ always() }}
         run: |
