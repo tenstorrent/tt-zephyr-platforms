@@ -13,7 +13,37 @@ Coding Style
 
 Zephyr's coding style is described in the `Zephyr Coding Style Guidelines <https://docs.zephyrproject.org/latest/contribute/style/index.html>`_. We want to follow this style for new files being introduced.
 
-If in doubt, you can always reformat a file by running ``clang-format -i <file>`` - but please create a distinct commit when doing this, and don't mix formatting changes with functional ones!
+Per commit, you should run ``clang-format -i <file>`` and commit the formatting changes with functional changes. This rule will be enforced on a case-by-case basis.
+For example, a functional change which introduces  many lines of unrelated tabbing/spacing changes could be split based on developer discretion.
+Regardless of if formatting is applied per functional commit, or in one final formatting commit, the overall changes of any PR to main must pass ``clang-format`` checks.
+
+Every commit should adhere to ``checkpatch`` guidelines, along with the other zephyr compliance checks. Errors must be addressed. Warnings should be considered.
+
+All commit compliance, including ``checkpatch`` and ``clang-format``, are captured by running ``./scripts/check_sysfw_compliance.py -c origin/main..``, which you can run locally on your branch.
+Note this only checks committed changes.
+
+Conflicts Between checkpatch and clang-format
+----------------------------------------------
+
+``checkpatch`` often can yield seemingly incorrect results due to it not understanding the typedefs in the system.
+Our preference is to remove type definitions where possible.
+See :ref:`struct-and-enum-definitions` for guidance on preferred definitions.
+
+In cases where ``checkpatch`` and ``clang-format`` disagree on formatting, **checkpatch takes precedence**. When this occurs, you may disable ``clang-format`` for the specific code block that conflicts.
+
+**Example:**
+
+.. code-block:: c
+
+   /* clang-format off */
+   static const struct device_config dev_configs[] = {
+       { .name = "device1", .addr = 0x1000, .irq = 10 },
+       { .name = "device2", .addr = 0x2000, .irq = 11 },
+       { .name = "device3", .addr = 0x3000, .irq = 12 },
+   };
+   /* clang-format on */
+
+Use ``/* clang-format off */`` and ``/* clang-format on */`` comments to disable automatic formatting for blocks where checkpatch formatting is required.
 
 Zephyr Coding Guidelines
 ========================
@@ -26,6 +56,8 @@ Additional Guidelines
 =====================
 
 The following additional guidelines apply to this project:
+
+.. _struct-and-enum-definitions:
 
 struct and enum Definitions
 ---------------------------
