@@ -23,8 +23,7 @@ void DisableArcNocTranslation(void);
 void EnableArcNocTranslation(void);
 void RestoreArcNocTranslation(void);
 bool IsNocTranslationEnabled(void);
-void NocLogicalToPhysical(uint8_t logical_x, uint8_t logical_y,
-			  uint8_t *phys_x, uint8_t *phys_y);
+void NocLogicalToPhysical(uint8_t logical_x, uint8_t logical_y, uint8_t *phys_x, uint8_t *phys_y);
 void SetSingleTileClockGate(uint8_t noc0_x, uint8_t noc0_y, bool gate);
 
 /* Returns NOC 0 coordinates of an enabled, unharvested tensix core.
