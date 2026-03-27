@@ -133,6 +133,16 @@ uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id)
 	return 0xFF;
 }
 
+uint8_t NocToTensixPhysY(uint8_t y, uint8_t noc_id)
+{
+	for (uint8_t i = 0; i < NUM_TENSIX_Y; i++) {
+		if (TensixPhysYToNoc(i, noc_id) == y) {
+			return i;
+		}
+	}
+	return 0xFF;
+}
+
 uint8_t NocToPhysX(uint8_t nx, uint8_t noc_id)
 {
 	uint8_t noc0_x = (noc_id == 0) ? nx : NOC0_X_TO_NOC1(nx);
