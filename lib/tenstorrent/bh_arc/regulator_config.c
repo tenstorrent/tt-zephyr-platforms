@@ -53,7 +53,7 @@ static const uint8_t p1x0_vcore_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(p1x0_vcore_e7_data) == sizeof(p1x0_vcore_e7_mask));
 
-static const RegulatorData p1x0_vcore_data[] = {
+static const struct regulator_data p1x0_vcore_data[] = {
 	REGULATOR_DATA(p1x0_vcore, b0), REGULATOR_DATA(p1x0_vcore, cb),
 	REGULATOR_DATA(p1x0_vcore, d3), REGULATOR_DATA(p1x0_vcore, ca),
 	REGULATOR_DATA(p1x0_vcore, 38), REGULATOR_DATA(p1x0_vcore, 39),
@@ -83,7 +83,7 @@ static const uint8_t p1x0_vcorem_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(p1x0_vcorem_e7_data) == sizeof(p1x0_vcorem_e7_mask));
 
-static const RegulatorData p1x0_vcorem_data[] = {
+static const struct regulator_data p1x0_vcorem_data[] = {
 	REGULATOR_DATA(p1x0_vcorem, b0),
 	REGULATOR_DATA(p1x0_vcorem, 38),
 	REGULATOR_DATA(p1x0_vcorem, 39),
@@ -124,7 +124,7 @@ static const uint8_t p300_vcore_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(p300_vcore_e7_data) == sizeof(p300_vcore_e7_mask));
 
-static const RegulatorData p300_vcore_data[] = {
+static const struct regulator_data p300_vcore_data[] = {
 	REGULATOR_DATA(p300_vcore, b0), REGULATOR_DATA(p300_vcore, cb),
 	REGULATOR_DATA(p300_vcore, 38), REGULATOR_DATA(p300_vcore, 39),
 	REGULATOR_DATA(p300_vcore, e7),
@@ -153,7 +153,7 @@ static const uint8_t p300_vcorem_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(p300_vcorem_e7_data) == sizeof(p300_vcorem_e7_mask));
 
-static const RegulatorData p300_vcorem_data[] = {
+static const struct regulator_data p300_vcorem_data[] = {
 	REGULATOR_DATA(p300_vcorem, b0),
 	REGULATOR_DATA(p300_vcorem, 38),
 	REGULATOR_DATA(p300_vcorem, 39),
@@ -204,7 +204,7 @@ static const uint8_t ubb_vcore_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(ubb_vcore_e7_data) == sizeof(ubb_vcore_e7_mask));
 
-static const RegulatorData ubb_vcore_data[] = {
+static const struct regulator_data ubb_vcore_data[] = {
 	REGULATOR_DATA(ubb_vcore, b0), REGULATOR_DATA(ubb_vcore, cb), REGULATOR_DATA(ubb_vcore, d3),
 	REGULATOR_DATA(ubb_vcore, ca), REGULATOR_DATA(ubb_vcore, 38), REGULATOR_DATA(ubb_vcore, 39),
 	REGULATOR_DATA(ubb_vcore, e7),
@@ -223,7 +223,7 @@ static const uint8_t ubb_vcorem_e7_mask[] = {0x07};
 
 BUILD_ASSERT(sizeof(ubb_vcorem_e7_data) == sizeof(ubb_vcorem_e7_mask));
 
-static const RegulatorData ubb_vcorem_data[] = {
+static const struct regulator_data ubb_vcorem_data[] = {
 	REGULATOR_DATA(ubb_vcorem, b0),
 	REGULATOR_DATA(ubb_vcorem, e7),
 };
@@ -240,7 +240,7 @@ static const uint8_t ubb_gddrio_21_mask[] = {0xff, 0xff};
 
 BUILD_ASSERT(sizeof(ubb_gddrio_21_data) == sizeof(ubb_gddrio_21_mask));
 
-static const RegulatorData ubb_gddrio_data[] = {
+static const struct regulator_data ubb_gddrio_data[] = {
 	REGULATOR_DATA(ubb_gddrio, 29),
 	REGULATOR_DATA(ubb_gddrio, 21),
 };
@@ -254,13 +254,13 @@ static const uint8_t serdes_vr_d2_mask[] = {0xff};
 
 BUILD_ASSERT(sizeof(serdes_vr_d2_data) == sizeof(serdes_vr_d2_mask));
 
-static const RegulatorData serdes_vr_data[] = {
+static const struct regulator_data serdes_vr_data[] = {
 	REGULATOR_DATA(serdes_vr, d2),
 };
 
 /***** End of common serdes VR settings */
 
-static const RegulatorConfig p150_config[] = {
+static const struct regulator_config p150_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
 		.regulator_data = p1x0_vcore_data,
@@ -288,12 +288,12 @@ static const RegulatorConfig p150_config[] = {
 	},
 };
 
-const BoardRegulatorsConfig p150_regulators_config = {
+const struct board_regulators_config p150_regulators_config = {
 	.regulator_config = p150_config,
 	.count = ARRAY_SIZE(p150_config),
 };
 
-static const RegulatorConfig p300_left_config[] = {
+static const struct regulator_config p300_left_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
 		.regulator_data = p300_vcore_data,
@@ -317,12 +317,12 @@ static const RegulatorConfig p300_left_config[] = {
 	},
 };
 
-const BoardRegulatorsConfig p300_left_regulators_config = {
+const struct board_regulators_config p300_left_regulators_config = {
 	.regulator_config = p300_left_config,
 	.count = ARRAY_SIZE(p300_left_config),
 };
 
-static const RegulatorConfig p300_right_config[] = {
+static const struct regulator_config p300_right_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
 		.regulator_data = p300_vcore_data,
@@ -350,12 +350,12 @@ static const RegulatorConfig p300_right_config[] = {
 	},
 };
 
-const BoardRegulatorsConfig p300_right_regulators_config = {
+const struct board_regulators_config p300_right_regulators_config = {
 	.regulator_config = p300_right_config,
 	.count = ARRAY_SIZE(p300_right_config),
 };
 
-static const RegulatorConfig ubb_config[] = {
+static const struct regulator_config ubb_config[] = {
 	{
 		.address = P0V8_VCORE_ADDR,
 		.regulator_data = ubb_vcore_data,
@@ -393,7 +393,7 @@ static const RegulatorConfig ubb_config[] = {
 	},
 };
 
-const BoardRegulatorsConfig ubb_regulators_config = {
+const struct board_regulators_config ubb_regulators_config = {
 	.regulator_config = ubb_config,
 	.count = ARRAY_SIZE(ubb_config),
 };

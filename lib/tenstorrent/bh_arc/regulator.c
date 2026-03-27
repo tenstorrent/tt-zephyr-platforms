@@ -217,7 +217,7 @@ uint32_t RegulatorInit(PcbType board_type)
 	uint32_t aggregate_i2c_errors = 0;
 	uint32_t i2c_error = 0;
 
-	const BoardRegulatorsConfig *regulators_config = NULL;
+	const struct board_regulators_config *regulators_config = NULL;
 
 	if (board_type == PcbTypeP150) {
 		regulators_config = &p150_regulators_config;
@@ -237,13 +237,13 @@ uint32_t RegulatorInit(PcbType board_type)
 	}
 	if (regulators_config) {
 		for (uint32_t i = 0; i < regulators_config->count; i++) {
-			const RegulatorConfig *regulator_config =
+			const struct regulator_config *regulator_config =
 				regulators_config->regulator_config + i;
 
 			I2CInit(I2CMst, regulator_config->address, I2CFastMode, PMBUS_MST_ID);
 
 			for (uint32_t j = 0; j < regulator_config->count; j++) {
-				const RegulatorData *regulator_data =
+				const struct regulator_data *regulator_data =
 					&regulator_config->regulator_data[j];
 
 				LOG_DBG("Regulator %#x init on cmd %#x", regulator_config->address,

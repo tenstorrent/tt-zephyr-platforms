@@ -8,27 +8,27 @@
 
 #include <stdint.h>
 
-typedef struct {
+struct regulator_data {
 	uint8_t cmd;
 	const uint8_t *data;
 	const uint8_t *mask;
 	uint32_t size;
-} RegulatorData;
+};
 
-typedef struct {
+struct regulator_config {
 	uint8_t address;
-	const RegulatorData *regulator_data;
+	const struct regulator_data *regulator_data;
 	uint32_t count;
-} RegulatorConfig;
+};
 
-typedef struct {
-	const RegulatorConfig *regulator_config;
+struct board_regulators_config {
+	const struct regulator_config *regulator_config;
 	uint32_t count;
-} BoardRegulatorsConfig;
+};
 
-extern const BoardRegulatorsConfig p150_regulators_config;
-extern const BoardRegulatorsConfig p300_left_regulators_config;
-extern const BoardRegulatorsConfig p300_right_regulators_config;
-extern const BoardRegulatorsConfig ubb_regulators_config;
+extern const struct board_regulators_config p150_regulators_config;
+extern const struct board_regulators_config p300_left_regulators_config;
+extern const struct board_regulators_config p300_right_regulators_config;
+extern const struct board_regulators_config ubb_regulators_config;
 
 #endif
