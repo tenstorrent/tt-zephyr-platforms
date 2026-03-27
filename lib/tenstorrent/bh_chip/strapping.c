@@ -12,6 +12,7 @@
 void bh_chip_set_straps(struct bh_chip *chip)
 {
 	int ret;
+
 	bharc_enable_i2cbus(&chip->config.arc);
 	const struct gpio_dt_spec straps[] = {
 		chip->config.strapping.gpio6,
