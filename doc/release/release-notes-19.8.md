@@ -43,6 +43,8 @@ Major enhancements with this release include:
   - Fix training instability in revB UBBs
   - Clear EDC error counters after training so they don't get reported in telemetry
 - Resolved issue of first LLK Unpacker instruction being corrupted (SYS-3628).
+- Resolved issue with 1/2 chips enumerating on P300 systems across frequent
+  reboots
 
 ### Drivers
 
