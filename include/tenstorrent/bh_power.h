@@ -12,5 +12,6 @@
 int32_t bh_set_l2cpu_enable(bool enable);
 bool bh_get_aiclk_busy(void);
 bool bh_get_mrisc_power_state(void);
+bool bh_get_tensix_power_state(void);
 
 #endif
