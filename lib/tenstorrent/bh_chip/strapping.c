@@ -61,3 +61,29 @@ void bh_chip_unset_straps(struct bh_chip *chip)
 	}
 	bharc_disable_i2cbus(&chip->config.arc);
 }
+
+#ifdef CONFIG_GPIO_PCA_SERIES_INIT_PRIORITY
+BUILD_ASSERT(CONFIG_TT_I2C_STRAP_INIT_PRIORITY < CONFIG_GPIO_PCA_SERIES_INIT_PRIORITY,
+	     "I2C straps init must run before GPIO init");
+#endif
+
+int i2c_straps(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		/* Enable I2C bus connection for strapping */
+		bharc_enable_i2cbus(&chip->config.arc);
+	}
+	return 0;
+}
+
+int deinit_i2c_straps(void)
+{
+	ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+		/* Disable I2C bus connection for strapping */
+		bharc_disable_i2cbus(&chip->config.arc);
+	}
+	return 0;
+}
+
+SYS_INIT(i2c_straps, POST_KERNEL, CONFIG_TT_I2C_STRAP_INIT_PRIORITY);
+SYS_INIT(deinit_i2c_straps, APPLICATION, CONFIG_TT_I2C_STRAP_INIT_PRIORITY);
