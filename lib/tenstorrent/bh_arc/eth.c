@@ -33,6 +33,7 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 #define ETH_FW_BASE_ADDR           0x70000
 #define ETH_PARAM_ADDR             0x7c000
 #define ETH_FW_VERSION_ADDR_OFFSET 0x188
+#define ETH_HEARTBEAT_ADDR         0x7cc70
 
 #define ERISC_L1_SIZE (512 * 1024)
 
@@ -41,6 +42,7 @@ LOG_MODULE_REGISTER(eth, CONFIG_TT_APP_LOG_LEVEL);
 #define ETH_RESET_PC_1              0xFFB14008
 #define ETH_END_PC_1                0xFFB1400C
 #define ETH_RISC_DEBUG_SOFT_RESET_0 0xFFB121B0
+#define ETH_PCS_STATUS              0xFFB9800C
 
 #define ETH_MAC_ADDR_ORG 0x208C47 /* 20:8C:47 */
 
@@ -53,6 +55,8 @@ static const struct device *const fwtable_dev = DEVICE_DT_GET(DT_NODELABEL(fwtab
 static const struct device *flash = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(spi_flash));
 static const struct device *const arc_dma_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(dma0));
 static const struct device *dma_noc = DEVICE_DT_GET(DT_NODELABEL(dma1));
+
+static uint32_t saved_heartbeat[MAX_ETH_INSTANCES];
 
 typedef struct {
 	uint32_t sd_mode_sel_0: 1;
@@ -128,7 +132,7 @@ uint32_t GetEthSel(uint32_t eth_enabled)
 
 	if (pcie_misc_cntl3_reg.f.mux_sel == 0b00) {
 		eth_sel |= BIT(4) | BIT(5); /* ETH 4, 5 */
-		/* 0b00 is invalid/not used */
+		/* 0b01 is invalid/not used */
 	} else if (pcie_misc_cntl3_reg.f.mux_sel == 0b10) {
 		eth_sel |= BIT(4) | BIT(6); /* ETH 4, 6 */
 	} else if (pcie_misc_cntl3_reg.f.mux_sel == 0b11) {
@@ -137,7 +141,7 @@ uint32_t GetEthSel(uint32_t eth_enabled)
 
 	if (pcie1_misc_cntl3_reg.f.mux_sel == 0b00) {
 		eth_sel |= BIT(9) | BIT(8); /* ETH 9, 8 */
-		/* 0b00 is invalid/not used */
+		/* 0b01 is invalid/not used */
 	} else if (pcie1_misc_cntl3_reg.f.mux_sel == 0b10) {
 		eth_sel |= BIT(9) | BIT(7); /* ETH 9, 7 */
 	} else if (pcie1_misc_cntl3_reg.f.mux_sel == 0b11) {
@@ -215,6 +219,53 @@ uint32_t GetEthFwVersion(uint32_t ring)
 
 	/* If no ETHs are enabled, return 0 as the FW version, which will be read as 0.0.0 */
 	return 0;
+}
+
+uint32_t GetEthHeartbeatStatus(uint32_t ring)
+{
+	/* Look through all the enabled ETH tiles, and read the heartbeatfrom each tile's L1
+	 * Compare the heartbeat status versus the saved heartbeat to see if it's still alive.
+	 * Accumulate the heartbeat status of all the tiles into a bitmask
+	 */
+	uint32_t heartbeat_status = 0;
+
+	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
+			SetupEthTlb(eth_inst, ring, ETH_HEARTBEAT_ADDR);
+
+			volatile uint32_t *heartbeat =
+				GetTlbWindowAddr(ring, ETH_SETUP_TLB, ETH_HEARTBEAT_ADDR);
+			if (saved_heartbeat[eth_inst] != *heartbeat) {
+				heartbeat_status |= BIT(eth_inst);
+			}
+			saved_heartbeat[eth_inst] = *heartbeat;
+		}
+	}
+
+	return heartbeat_status;
+}
+
+uint32_t GetEthLinkStatus(uint32_t ring)
+{
+	/* Look through all the enabled ETH tiles, and read the PCS_STATUS from each tile's
+	 * eth_ctrl_a register space to get the link status.
+	 * Accumulate the link status of all the tiles into a bitmask
+	 */
+	uint32_t link_status = 0;
+
+	for (uint8_t eth_inst = 0; eth_inst < MAX_ETH_INSTANCES; eth_inst++) {
+		if (IS_BIT_SET(tile_enable.eth_enabled, eth_inst)) {
+			SetupEthTlb(eth_inst, ring, ETH_PCS_STATUS);
+
+			volatile uint32_t *pcs_status =
+				GetTlbWindowAddr(ring, ETH_SETUP_TLB, ETH_PCS_STATUS);
+			if (*pcs_status) {
+				link_status |= BIT(eth_inst);
+			}
+		}
+	}
+
+	return link_status;
 }
 
 void ReleaseEthReset(uint32_t eth_inst, uint32_t ring)
@@ -473,6 +524,8 @@ static void EthInit(void)
 				     image_size);
 			ReleaseEthReset(eth_inst, ring);
 		}
+		/* Clear saved heartbeat since we just released reset, so heartbeat starts from 0 */
+		saved_heartbeat[eth_inst] = 0;
 	}
 }
 
