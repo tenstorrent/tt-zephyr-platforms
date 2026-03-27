@@ -193,7 +193,7 @@ static inline void SetupDbiAccess(void)
 }
 
 static void CntlInitV2ParamInit(uint8_t pcie_inst, const ReadOnly *rotable,
-				const FwTable_PciPropertyTable *pcitable,
+				const struct _FwTable_PciPropertyTable *pcitable,
 				struct CntlInitV2Param *param)
 {
 	/* Start with 32-bit bar size in MiB. Round up as needed. Final value is bar mask in B */
@@ -427,6 +427,7 @@ static PCIeInitStatus PCIeInit(const struct CntlInitV2Param *param)
 	}
 
 	PCIeInitStatus status = PCIeInitComm(param);
+
 	if (status != PCIeInitOk) {
 		return status;
 	}
