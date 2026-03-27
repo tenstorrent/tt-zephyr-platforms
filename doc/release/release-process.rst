@@ -12,146 +12,219 @@ Release Procedure
 The following steps are required to be followed by firmware release engineers when creating a new
 Tenstorrent firmware release.
 
-Release Checklist
-=================
+High Level Process
+==================
 
-Create an issue with the title ``Release Checklist v1.2.3``. If the issue does not already exist,
-then create it using the previous release checklist as a template. The checklist will list the
-steps required before tagging a final release.
+The release process consists of the following high level steps:
 
-Tagging
-=======
+1. Create a release branch from main, and increment the version on main to the next minor version
+
+2. Create a release candiate (RC) from the release branch and post it to GitHub.
+
+3. Announce the RC via the Tenstorrent #syseng-tt-firmware-releases channel
+
+4. Sync with qualification team to kick off qualification testing on the RC.
+
+5. Backport any critical fixes to the release branch.
+
+6. Create new RCs as needed until the RC is validated by the qualification team.
+
+7. Once the final RC has been validated, create a final release and post it to GitHub.
+
+8. Announce the release via the Tenstorrent #syseng-tt-firmware-releases channel
+
+
+Signed Tags and Immutable Releases
+==================================
+
+Tenstorrent firmware uses signed tags and immutable releases to ensure the
+integrity of each release. In order to create a signed tag, you must have a
+signing key configured in Git. You can verify that your signing key is
+configured correctly by running the following commands
+
+.. code-block:: shell
+
+   # Path to signing key should be returned
+   git config --global user.signingkey
+   # Should return "ssh". GPG keys are supported,
+   # but the process is not documented in this guide.
+   git config --global gpg.format
+   # Provide github CLI with access to the signing keys in your account
+   gh auth refresh -h github.com -s admin:ssh_signing_key
+   # Check that you have a signing key available (type MUST be signing)
+   gh ssh-key list
+   # Check that the signing key you are using matches the key in your account
+   cat $(git config --global user.signingkey).pub
+
+You can verify that a tag has been signed correctly by running ``git show`` for
+the tag, which should show a signature block in the output (look for the ``BEGIN
+PGP SIGNATURE`` or ``BEGIN SSH SIGNATURE`` marker in the output):
+
+For example:
+
+.. code-block:: shell
+
+   tag v19.7.0
+   Tagger: Scott Lindsay <slindsay@tenstorrent.com>
+   Date:   Wed Mar 11 18:43:17 2026 -0400
+
+   tt-system-firmware 19.7.0
+   -----BEGIN PGP SIGNATURE-----
+
+GitHub will show a "Verified" badge for tags that have been signed with a key
+that is associated with a GitHub account, and the signature is valid. For
+more details, see here:
+`GitHub Docs - About commit signature verification <https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification>`_.
+
+RC Process
+==========
+
+Firmware follows a release candidate (RC) process. The RC process is used to
+allow for testing and validation of firmware before a final release is made.
+Each RC is tagged and posted to GitHub as a pre-release, and the final release
+is tagged and posted to GitHub as a stable release.
+
+To start the RC process, perform the following steps:
+
+1. Post a PR incrementing the next minor version on main, and merge after CI is
+   successful. For example, if the release branch is ``v19.9-branch``, then the
+   version on main should be incremented to 19.10. This step can be performed
+   using the command ``./scripts/update_versions.sh post-branch``, then
+   creating a PR with the commits it creates.
+
+2. Create a release branch from main with the name ``vX.Y-branch`` where X and Y
+   are the major and minor version numbers of the release.
+
+3. Update the MINOR version field, and set the EXTRAVERSION field to "rc1" in
+   the release branch. For example, if the release branch is ``v19.9-branch``, then
+   the MINOR version should be set to 9 and the EXTRAVERSION field should be set to
+   "rc1". This step can be performed using the command
+   ``./scripts/update_versions.sh rc``.
+
+3. Tag the release branch with the first RC tag, following the format ``vX.Y.Z-rc1``
+   where X, Y and Z are the major, minor and patch version numbers of the release,
+   For example, if the release branch is ``v19.9-branch``, then the first RC tag
+   should be ``v19.9.0-rc1``. The tag can be created with the command
+   ``git tag -s vX.Y.Z-rc1 -m "tt-system-firmware vX.Y.Z-rc1"``, where
+   X, Y and Z are the major, minor and patch version numbers of the release.
+
+4. Push the release branch and RC tag to GitHub. This will start the CI process
+   for the release from the tag. Once this is complete, follow
+   `Posting Release to GitHub`_ steps to post the RC to GitHub as a published
+   pre-release.
+
+Automated RC Creation
+*********************
 
 .. note::
 
-    This section uses an script to generate commits. Always check that the commits are correct.
+   The below steps require the GitHub CLI tool to be installed and
+   authenticated. You can verify that you are authenticated by running
+   ``gh auth status`` and checking that you have access to the repository.
 
-.. important::
+These steps can be automated using the ``scripts/create_release_candidate.sh``
+script, which will create the release branch, increment the version on main, tag
+the RC, and push the changes to GitHub. For example:
 
-    Any changes to ``app/*/VERSION`` files is required to take place prior to the release process.
+.. code-block:: shell
 
-1. Run ``scripts/update_versions.sh rc`` to increment the minor version of the FW, SMC and DMC,
-   and to set ``EXTRAVERSION = rc1``. Major version bumps or RC2 candidates must be done manually.
+   # You can specify a different remote (IE a personal fork) in order to test
+   # the script without pushing to the main tt-system-firmware repository.  You
+   # can also specify the --dry-run flag to create all relevant branches and
+   # tags locally without pushing to GitHub.
+   ./scripts/create-release-candidate.sh git@github.com:tenstorrent/tt-zephyr-platforms.git
 
-   Below is an example of how each ``VERSION`` file should look after the script ran.
 
-   .. code-block:: shell
+RC Backports and Validation
+===========================
 
-       VERSION_MAJOR = 19
-       VERSION_MINOR = 4
-       PATCHLEVEL =
-       VERSION_TWEAK = 0
-       EXTRAVERSION = rc1
+Once the RC is posted to GitHub, it is the responsibility of the release manager
+to work with the qualification team to validate the RC. During the RC process,
+the following changes are candidates for backporting to the release branch:
 
-2. Post a PR with the updated ``VERSION`` files and merge after CI is successful.
+.. Note::
 
-3. Tag and push the version, using an annotated tag:
+   No changes (except version increments) should be made to the release branch
+   without also being made to main.
 
-   .. code-block:: shell
+* Critical bug fixes that are required for the RC to pass qualification testing.
+  These should be backported to the release branch and included in the next RC.
 
-       git tag -s -m "tt-system-firmware 1.2.3-rc1" v1.2.3-rc1
+* Documentation updates for features included in the release. These do not
+  require creation of a new RC for validation.
 
-4. Verify that the tag has been
-   `signed correctly <https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key>`_,
-   ``git show`` for the tag must contain a signature (look for the ``BEGIN PGP SIGNATURE`` or
-   ``BEGIN SSH SIGNATURE`` marker in the output):
+* Features, at the discretion of the release manager and qualification team.
 
-   .. code-block:: shell
+Backports should be made via PRs against the release branch. Any change that is
+not documentation updates should trigger a new RC to be created for validation.
 
-       git show v1.2.3-rc1
+Additional RC Process
+*********************
 
-5. Push the tag:
+To create a new RC for validation after the first RC, follow these steps:
 
-   .. code-block:: shell
+1. Update the EXTRAVERSION field in the release branch to the next RC version
+   (e.g. "rc2", "rc3", etc). This step can be performed using the command
+   ``./scripts/update_versions.sh update-rc``.
 
-       git push git@github.com:tenstorrent/tt-system-firmware.git v1.2.3-rc1
+2. Tag the release branch with the new RC tag, following the format
+   ``vX.Y.Z-rcN`` where X, Y and Z are the major, minor and patch version numbers
+   of the release, and N is the RC version number. For example, if the release
+   branch is ``v19.9-branch`` and this is the second RC, then the new RC tag should
+   be ``v19.9.0-rc2``. The tag can be created with the command
+   ``git tag -s vX.Y.Z-rcN -m "tt-system-firmware vX.Y.Z-rcN"``, where X, Y and Z are
+   the major, minor and patch version numbers of the release, and N is the RC version number.
 
-Lastly, for final releases,
+3. Push the release branch and new RC tag to GitHub. This will start the CI process
+   for the release from the new RC tag. Once this is complete, follow
+   `Posting Release to GitHub`_ steps to post the new RC to GitHub as
+   a published pre-release.
 
-6. Run ``scripts/update_versions.sh pre-release`` to set ``EXTRAVERSION`` back to blank. Post a PR
-   and merge after CI is successful.
 
-7. Find the generated
-   `draft release <https://github.com/tenstorrent/tt-system-firmware/releases>`_, edit the release
-   notes, and publish the release. It is recommended to copy the contents of
-   ``doc/release/release-notes-1.2.3.md`` into the release-notes area.
+Final Release Process
+=====================
 
-8. Run ``scripts/update_versions.sh post-release`` to set ``PATCHLEVEL`` back to ``99``. Post a PR
-   and merge after CI is successful.
+Once a final RC has been validated by the qualification team, the release
+manager can create the final release. To create the final release, follow these
+steps:
 
-9. Announce the release via official Tenstorrent channels and provide a link to the
-   GitHub release page.
+1. Update the EXTRAVERSION field in the release branch to be empty. This step can
+   be performed using the command ``./scripts/update_versions.sh pre-release``.
 
-10. Run ``scripts/generate-release-docs.py`` to generate the release notes and migration guide files for the next release.
-    Post a PR with the generated files and merge after CI is successful.
+2. Tag the release branch with the final release tag, following the format
+   ``vX.Y.Z`` where X, Y and Z are the major, minor and patch version numbers of
+   the release. For example, if the release branch is ``v19.9-branch``, then the
+   final release tag should be ``v19.9.0``. The tag can be created with the command
+   ``git tag -s vX.Y.Z -m "tt-system-firmware vX.Y.Z"``, where X, Y and Z are the
+   major, minor and patch version numbers of the release.
 
-Publishing a Combined Firmware Bundle to ``tt-firmware``
-********************************************************
+3. Push the release branch and final release tag to GitHub. This will start the CI process
+   for the release from the final release tag. Once this is complete, follow
+   `Posting Release to GitHub`_ steps to post the final release to GitHub as
+   a published stable release.
 
-Make a pull request to `tt-firmware <https://github.com/tenstorrent/tt-firmware>`_ with the new
-combined firmware bundle and accompanying required changes.
+Posting Release to GitHub
+=========================
 
-As part of the pull request:
+Once Github actions creates a draft release at `GitHub Releases
+<https://github.com/tenstorrent/tt-system-firmware/releases>`_,
 
-1. Clone the ``tt-firmware`` repository (if it has not already been cloned).
+1. Edit the release. If the release is an RC, mark the release as a pre-release.
 
-   .. code-block:: shell
+2. Verify the release includes a verified tag. There should be a green
+   "Verified" badge next to the tag in the release, indicating that the tag is
+   signed with a key that is associated with a GitHub account, and the signature is
+   valid. If the tag is not verified, do not publish the release and investigate
+   the issue.
 
-       if [ ! -d ~/tt-firmware ]; then
-         git clone git@github.com:tenstorrent/tt-firmware.git ~/tt-firmware
-         cd ~/tt-firmware
-       fi
+3. For final releases, copy the contents of the associated release notes template
+   (e.g. ``doc/release/release-notes-19.9.md``) into the release notes area.
 
-2. Create a branch to make modifications for the release.
+5. Publish the release. **Note**- since we use immutable releases, once a release
+   is published, it cannot be edited.
 
-   .. code-block:: shell
-
-       git checkout -b release-v1.2.3
-
-3. Download the ``fw_pack-<version>.fwbundle`` file in the associated `release <https://github.com/tenstorrent/tt-system-firmware/releases>`_.
-
-   .. code-block:: shell
-
-       wget https://github.com/tenstorrent/tt-system-firmware/releases/download/v1.2.3/fw_pack-1.2.3.fwbundle
-
-4. Change the ``latest.fwbundle`` symbolic link to point to the new firmware bundle and remove the
-   older version, staging the files for commit.
-
-   .. code-block:: shell
-
-       git rm -f $(readlink latest.fwbundle) latest.fwbundle
-       ln -sf fw_pack-1.2.3.fwbundle latest.fwbundle
-       git add *.fwbundle
-
-5. Edit the ``README.md`` file following the existing structure. Update the "Available Firmware"
-   and "Release Notes" sections, staging the file for commit.
-
-   .. code-block:: shell
-
-       $EDITOR README.md
-       git add README.md
-
-6. Make a signed commit (``git commit -s``) for the changes using the commit subject and body below.
-
-   .. code-block::
-
-       release: fw bundle v1.2.3
-
-       Release FW Bundle v1.2.3
-
-       Signed-off-by: Your Name <your@email.com>
-
-7. Create a pull request for the changes. After the PR has been merged, refresh the ``main`` branch,
-   and tag the release with a signed commit.
-
-   .. code-block:: shell
-
-       git checkout main
-       git pull
-       git tag -s -m "tt-firmware 1.2.3" v1.2.3
-       git push git@github.com:tenstorrent/tt-firmware.git v1.2.3
-
-8. Create a new ``tt-firmware``
-   `release from the new tag <https://github.com/tenstorrent/tt-firmware/releases/new>`_ by
-   copying the contents of ``doc/release/release-notes-1.2.3.md`` into the release notes for
-   the new ``tt-firmware`` release.
+6. Announce the release candidate via the Tenstorrent
+   #syseng-tt-firmware-releases channel, providing a link to the GitHub release
+   page for the RC. Release notes are not required for RCs, but it is recommended
+   to link the draft release notes template for the release (e.g.
+   ``doc/release/release-notes-19.9.md``) in the RC announcement
