@@ -130,8 +130,17 @@ jobs:
           cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
 
       - name: Run Container Test
+        timeout-minutes: 120
         run: |
-          sh -c "dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }}"
+          dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }} > /tmp/container_test_output.log 2>&1
+
+      - name: Upload Test Output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-test-${{ matrix.config.board }}-output
+          path: /tmp/container_test_output.log
+
       - name: cleanup
         if: ${{ always() }}
         run: |
