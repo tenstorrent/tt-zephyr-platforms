@@ -346,6 +346,7 @@ int stm32_spi_deinit(void)
 int stm32_spi_transfer(struct spi_buf *bufs, uint8_t cnt)
 {
 	uint32_t tx_off, rx_off;
+
 	LL_SPI_Enable(SPI_DEV);
 #ifdef USE_SPI_COMBO
 	LL_SPI_Enable(SPI1); /* Enable SPI1 as well for the combo mode */
