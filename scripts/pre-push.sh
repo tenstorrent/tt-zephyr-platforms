@@ -18,21 +18,15 @@ echo "## Running compliance checks on commits. To skip these checks, run git pus
 if [ -z "${ZEPHYR_BASE}" ]; then
 	zep_base=$(west list -f "{abspath}" zephyr)
 	echo "ZEPHYR_BASE not set, using $zep_base"
+	export ZEPHYR_BASE="${zep_base}"
 else
 	zep_base="${ZEPHYR_BASE}"
 fi
 
 manifest_base=$(west list -f "{abspath}" manifest)
 
-# Exclude Kconfig check, as it only works on base Zephyr repo.
-# ClangFormat and Ruff are excluded as they will return failures, but CI
-# treats these as formatting hints only
-$zep_base/scripts/ci/check_compliance.py \
-	-e KconfigBasicNoModules \
-	-e SysbuildKconfigBasic \
-	-e BinaryFiles \
-	-e LicenseAndCopyrightCheck \
-	-n -o /dev/null \
+$manifest_base/scripts/check_sysfw_compliance.py \
+	-no /dev/null \
 	-c main..$HEAD
 
 $manifest_base/scripts/check-copyright.py
