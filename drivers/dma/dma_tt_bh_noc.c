@@ -471,6 +471,7 @@ static int tt_bh_dma_noc_start(const struct device *dev, uint32_t channel)
 
 		if (chan_data->config.linked_channel != DMA_CHANNEL_INVALID) {
 			uint32_t linked_chan = chan_data->config.linked_channel;
+
 			if (linked_chan < cfg->num_channels &&
 			    cfg->channels[linked_chan].state.configured) {
 				if (chan_data->config.dest_chaining_en ||
