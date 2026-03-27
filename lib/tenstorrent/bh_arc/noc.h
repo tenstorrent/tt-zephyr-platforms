@@ -12,6 +12,9 @@
 #define NOC_X_SIZE 17
 #define NOC_Y_SIZE 12
 
+#define NUM_TENSIX_X 14
+#define NUM_TENSIX_Y 10
+
 #define NIU_CFG_0_AXI_SLAVE_ENABLE 15
 
 #define NOC0_X_TO_NOC1(x) (NOC_X_SIZE - (x) - 1)
@@ -28,6 +31,7 @@ uint8_t NocToPhysY(uint8_t ny, uint8_t noc_id);
 uint8_t TensixPhysXToNoc(uint8_t px, uint8_t noc_id);
 uint8_t TensixPhysYToNoc(uint8_t py, uint8_t noc_id);
 uint8_t NocToTensixPhysX(uint8_t x, uint8_t noc_id);
+uint8_t NocToTensixPhysY(uint8_t y, uint8_t noc_id);
 void GetGddrNocCoords(uint8_t gddr_inst, uint8_t noc2axi_port, uint8_t noc_id, uint8_t *x,
 		      uint8_t *y);
 void GetEthNocCoords(uint8_t eth_inst, uint8_t noc_id, uint8_t *x, uint8_t *y);
