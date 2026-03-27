@@ -67,6 +67,8 @@ ARC_STATUS = 0x1FF30060
 
 # ARC messages
 TT_SMC_MSG_TEST = 0x90
+MSG_TYPE_FORCE_AICLK = 0x33
+MSG_TYPE_GET_AICLK = 0x34
 
 
 @pytest.fixture(scope="session")
@@ -133,6 +135,20 @@ def arc_chip_dut(launched_arc_dut, asic_id):
     return launched_arc_dut
 
 
+def smi_reset_test(asic_id):
+    """
+    Helper to run tt-smi reset test. Returns True if test passed, False otherwise
+    """
+    smi_reset_cmd = "tt-smi -r --eth_train_skip"
+    smi_reset_result = subprocess.run(
+        smi_reset_cmd.split(), capture_output=True, check=False
+    )
+    if smi_reset_result.returncode != 0:
+        logger.warning(f"'tt-smi -r' failed: {smi_reset_result.stdout.decode()}")
+
+    return smi_reset_result.returncode == 0
+
+
 def upgrade_from_version_test(
     arc_chip_dut,
     tmp_path: Path,
@@ -178,24 +194,25 @@ def upgrade_from_version_test(
     )
 
     logger.info(
-        "Baseline FW: fwbundle:0x{fw_bundle_base:08x} m3:0x{m3_version_base:08x} cm:{cmfw_version_base:08x}"
+        f"Baseline FW: fwbundle:0x{fw_bundle_base:08x} m3:0x{m3_version_base:08x} cm:{cmfw_version_base:08x}"
     )
 
     # flash firmware to update to (the one build in repository)
+    del arc_chip
     unlaunched_dut.launch()
-
     time.sleep(0.5)
 
+    arc_chip = pyluwen.detect_chips()[asic_id]
     arc0_version_new = arc_chip.as_wh().get_telemetry().arc0_fw_version
     fwbundle_version_new = arc_chip.as_wh().get_telemetry().fw_bundle_version
     m3_version_new = arc_chip.as_wh().get_telemetry().m3_app_fw_version
 
-    assert ((19 << 24) | (6 << 16) | (1)) == fwbundle_version_new
-    assert ((2 << 24) | (39 << 16)) == arc0_version_new
-    assert (5 << 24 | 12 << 16) == m3_version_new
+    assert f"{((19 << 24) | (8 << 16) | (1)):08x}" == f"{fwbundle_version_new:08x}"
+    assert f"{((2 << 24) | (41 << 16)):08x}" == f"{arc0_version_new:08x}"
+    assert f"{(5 << 24 | 12 << 16):08x}" == f"{m3_version_new:08x}"
 
     logger.info(
-        "FW under test: fwbundle:0x{fwbundle_version_new:08x} m3:0x{m3_version_new:08x} cm:{arc0_version_new:08x}"
+        f"FW under test: fwbundle:0x{fwbundle_version_new:08x} m3:0x{m3_version_new:08x} cm:{arc0_version_new:08x}"
     )
 
 
@@ -236,3 +253,127 @@ def test_arc_msg(arc_chip_dut, asic_id):
     # Post code should have updated after first message
     status = arc_chip.axi_read32(ARC_STATUS)
     logger.info("ARC Status: %08x", status)
+
+
+def test_fw_bundle_version(arc_chip_dut, asic_id):
+    """
+    Checks that the fw bundle version in telemetry matches the repo
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    telemetry = arc_chip.get_telemetry()
+
+    exp_bundle_version = 19 << 24 | 8 << 16 | 1
+    assert telemetry.fw_bundle_version == exp_bundle_version, (
+        f"Firmware bundle version mismatch: {telemetry.fw_bundle_version:#010x} != {exp_bundle_version:#010x}"
+    )
+    logger.info(f"FW bundle version: {telemetry.fw_bundle_version:#010x}")
+
+
+def test_boot_status(arc_chip_dut, asic_id):
+    """
+    Validates the boot status of the ARC firmware
+    """
+    # Read the boot status register and validate that it is correct
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    status = arc_chip.axi_read32(ARC_STATUS)
+    assert (status & 0xFFFF0000) == 0xC0DE0000, "SMC firmware postcode is invalid"
+    logger.info(f"SMC boot status {status:08x}")
+
+
+def test_smi_reset(arc_chip_dut, asic_id):
+    """
+    Checks that tt-smi resets are working successfully
+    """
+    total_tries = 10
+    fail_count = 0
+    for i in range(total_tries):
+        logger.info(f"Iteration {i}:")
+        result = smi_reset_test(asic_id)
+
+        if not result:
+            logger.warning(f"tt-smi reset failed on iteration {i}")
+            fail_count += 1
+
+    logger.info(f"'tt-smi -r' failed {fail_count}/{total_tries} times.")
+    assert fail_count == 0, "'tt-smi -r' failed a non-zero number of times."
+
+
+def test_aiclk(arc_chip_dut, asic_id):
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    TARGET_AICLKS = [
+        1000,
+        800,
+        250,
+    ]
+
+    for clk in TARGET_AICLKS:
+        arc_chip.arc_msg(MSG_TYPE_FORCE_AICLK, True, False, clk, 0, 1000)
+        # Delay to allow AICLK to settle
+        time.sleep(0.1)
+        aiclk = arc_chip.arc_msg(MSG_TYPE_GET_AICLK)[0]
+        assert aiclk == clk, f"Failed to set clock to {clk} MHz"
+        logger.info(f"AICLK set to {aiclk} MHz successfully")
+
+
+def test_power_virus(arc_chip_dut, asic_id):
+    """
+    - Run the power virus TTX workload (tt-burnin) for 180 seconds
+    - The expectations are:
+    -       temperatures can be fetched from the device successfully
+    -       The tt-burnin command completes
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    # Raise to high power state
+    arc_chip.set_power_state("high")
+
+    # Run tt-burnin for 180s and read_ts at the same time
+    logger.info("Starting tt-burnin process for power virus test")
+    burnin_process = subprocess.Popen(
+        ["tt-burnin", "--no-reset"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    duration = 180  # 180 seconds
+    fail_count = 0
+
+    try:
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            # Read temperature sensors during burnin
+            t = (arc_chip.get_telemetry().asic_temperature & 0xFFFF) / 16
+            p = arc_chip.get_telemetry().tdp & 0xFFFF
+            logger.info(f"Temperature: {t:4.1f}, Power {p}")
+            time.sleep(1.0)  # Sample every second during power virus
+
+    except Exception as e:
+        logger.warning(f"Power virus test failed: {e}")
+        fail_count += 1
+
+    finally:
+        # Stop tt-burnin
+        logger.info("Stopping tt-burnin process")
+        if burnin_process.poll() is None:
+            # Send enter key to stop tt-burnin gracefully
+            try:
+                burnin_process.stdin.write(b"\n")
+                burnin_process.stdin.flush()
+                burnin_process.wait(timeout=5)
+            except (subprocess.TimeoutExpired, BrokenPipeError):
+                logger.warning(
+                    "tt-burnin did not terminate gracefully, killing process"
+                )
+                burnin_process.terminate()
+                try:
+                    burnin_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    burnin_process.kill()
+                    burnin_process.wait()
+
+    logger.info(
+        f"Power virus test completed with {fail_count} temperature read failures"
+    )
+    assert fail_count == 0, (
+        f"Power virus test failed with {fail_count} temperature read failures"
+    )
