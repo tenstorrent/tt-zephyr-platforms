@@ -23,6 +23,7 @@ from e2e_smoke import (
     process_detectors_test,
     temperature_sensors_test,
     power_state_toggle_test,
+    _logical_tensix_x_coords,
 )
 
 # Needed to keep ruff from complaining about this "unused import"
@@ -46,6 +47,7 @@ PING_DMFW_DURATION_REG_ADDR = 0x80030448
 TT_SMC_MSG_PING_DM = 0xC0
 TT_SMC_MSG_READ_TS = 0x1B
 TT_SMC_MSG_TEST = 0x90
+TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET = 0xAE
 
 # Lower this number if testing local changes, so that tests run faster.
 MAX_TEST_ITERATIONS = 1000
@@ -477,3 +479,44 @@ def test_power_virus(arc_chip_dut, asic_id):
     assert fail_count == 0, (
         f"Power virus test failed with {fail_count} temperature read failures"
     )
+
+
+@pytest.mark.skipif(
+    os.getenv("BOARD") == "galaxy", reason="Burnin not stable on Galaxy"
+)
+def test_tensix_reset_then_burnin(arc_chip_dut, asic_id):
+    """
+    Reset every non-harvested tensix tile, then run tt-burnin and check
+    that it exits successfully.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    TENSIX_NOC_Y = list(range(2, 12))
+    enabled_cols = int(arc_chip.get_telemetry().tensix_enabled_col)
+    valid_x = _logical_tensix_x_coords(enabled_cols)
+    all_tiles = [(x, y) for x in valid_x for y in TENSIX_NOC_Y]
+
+    # We want to test the tensix reset message on low power.
+    # Set high power after the message to allow NOC read/write to function properly.
+    arc_chip.set_power_state("low")
+    for noc_x, noc_y in all_tiles:
+        response = arc_chip.arc_msg(
+            TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET,
+            arg0=noc_x | (noc_y << 8),
+        )
+        assert response[1] == 0, (
+            f"Tensix ({noc_x}, {noc_y}) reset failed with {response[1]}"
+        )
+    arc_chip.set_power_state("high")
+
+    logger.info(f"Reset {len(all_tiles)} tensix tiles, starting burnin")
+
+    result = subprocess.run(
+        ["tt-burnin", "--no-reset"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        timeout=300,
+    )
+
+    logger.info(f"tt-burnin exited with code {result.returncode}")
+    assert result.returncode == 0, "tt-burnin failed after tensix reset"
