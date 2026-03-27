@@ -497,6 +497,26 @@ struct pcie_dma_transfer_rqst {
 	uint64_t msi_completion_addr;
 };
 
+/** @brief Host request to reset a single Tensix tile
+ * @details Messages of this type are processed by @ref ToggleSingleTensixReset.
+ *
+ * On success, response data[0] = 0.
+ * Returns non-zero on failure.
+ */
+struct toggle_single_tensix_reset_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief NOC0 X coordinate of the target tile */
+	uint8_t noc_x;
+
+	/** @brief NOC0 Y coordinate of the target tile */
+	uint8_t noc_y;
+};
+
 /** @brief Host request to toggle GDDR reset
  * @details Messages of this type are processed by @ref toggle_gddr_reset.
  *
@@ -773,6 +793,8 @@ union request {
 
 	/** @brief A trigger reset request */
 	struct trigger_reset_rqst trigger_reset;
+	/** @brief A single Tensix reset request */
+	struct toggle_single_tensix_reset_rqst toggle_single_tensix_reset;
 
 	/** @brief A GDDR reset request */
 	struct gddr_reset_rqst gddr_reset;
