@@ -7,6 +7,7 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/bindesc.h>
+#include <tenstorrent/tt_bindesc.h>
 #include <version.h>
 
 static int tt_boot_banner(void)
@@ -43,8 +44,8 @@ static int tt_boot_banner(void)
 	printk(logo);
 	printk("*** Booting " CONFIG_BOARD " with Zephyr OS " STRINGIFY(BUILD_VERSION) " ***\n");
 
-#if defined(CONFIG_BINDESC_APP_BUILD_VERSION)
-	printk("*** APP_BUILD_VERSION %s ***\n", BINDESC_GET_STR(app_build_version));
+#if defined(CONFIG_TT_BINDESC)
+	printk("*** APP_GIT_VERSION %s ***\n", BINDESC_GET_STR(app_git_version));
 #endif
 	if (IS_ENABLED(CONFIG_TT_BOOT_BANNER_SDK_VERSION)) {
 		printk("*** SDK_VERSION " ZEPHYR_SDK_VERSION " ***\n");
