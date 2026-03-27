@@ -32,7 +32,7 @@ struct CntlInitV2Param {
 };
 
 /* Verify prototype of ArcDmaTransfer, because it's used by libpciesd.a. */
-__unused static bool (*verify_ArcDmaTransfer)(const void *, void *, uint32_t) = ArcDmaTransfer;
+static __unused bool (*verify_ArcDmaTransfer)(const void *, void *, uint32_t) = ArcDmaTransfer;
 
 /* The functions below are implemented in tt_blackhole_libpciesd.a */
 PCIeInitStatus SerdesInit(uint8_t pcie_inst, PCIeDeviceType device_type,
