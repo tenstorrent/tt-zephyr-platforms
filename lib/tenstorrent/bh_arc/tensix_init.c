@@ -330,6 +330,32 @@ void TensixInit(void)
 	tensix_inject_instruction(TENSIX_INSTRUCTION_UNPACR, 0, true, 0, 0);
 }
 
+void TensixInitSingleTile(uint8_t noc_x, uint8_t noc_y)
+{
+	if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en) {
+		return;
+	}
+
+	uint8_t ring = 0;
+	uint8_t noc_tlb = 0;
+
+	uint32_t cg_ctrl_hyst0 = 0xFFB12070;
+	uint32_t cg_ctrl_hyst1 = 0xFFB12074;
+	uint32_t cg_ctrl_hyst2 = 0xFFB1207C;
+	uint32_t all_blocks_hyst_2 = 0x02020202;
+
+	uint32_t cg_ctrl_en = 0xFFB12244;
+	uint32_t enable_all_tensix_cg = 0xFFFFFFFF;
+
+	NOC2AXITlbSetup(ring, noc_tlb, noc_x, noc_y, cg_ctrl_en);
+
+	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_hyst0, all_blocks_hyst_2);
+	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_hyst1, all_blocks_hyst_2);
+	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_hyst2, all_blocks_hyst_2);
+
+	NOC2AXIWrite32(ring, noc_tlb, cg_ctrl_en, enable_all_tensix_cg);
+}
+
 static int tensix_init(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ARC_INIT_STEPD);
