@@ -21,9 +21,9 @@ extern "C" {
 #include "flash_info.pb.h"
 #include "read_only.pb.h"
 
-const FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev);
-const FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *dev);
-const ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev);
+const struct _FwTable *tt_bh_fwtable_get_fw_table(const struct device *dev);
+const struct _FlashInfoTable *tt_bh_fwtable_get_flash_info_table(const struct device *dev);
+const struct _ReadOnly *tt_bh_fwtable_get_read_only_table(const struct device *dev);
 
 /* Board type values extracted from board_id */
 #define BOARDTYPE_ORION_SLT 0x37
