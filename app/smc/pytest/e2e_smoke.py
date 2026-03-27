@@ -89,6 +89,7 @@ TT_SMC_MSG_FORCE_AICLK = 0x33
 TT_SMC_MSG_GET_AICLK = 0x34
 TT_SMC_MSG_TEST = 0x90
 TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF
+TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET = 0xAE
 TT_SMC_MSG_PING_DM = 0xC0
 TT_SMC_MSG_SET_WDT = 0xC1
 TT_SMC_MSG_READ_TS = 0x1B
@@ -953,6 +954,89 @@ def test_tensix_reset(arc_chip_dut, asic_id):
         )
 
         logger.info(f"Tensix reset test iteration {i} passed")
+
+
+def _logical_tensix_x_coords(enabled_cols: int) -> list[int]:
+    """Return valid logical NOC0 X coordinates for enabled tensix columns.
+
+    Translation fills logical X 1..7 (left half) then 10..16 (right half)
+    with good columns in ascending physical NOC0 X order.  Harvested columns
+    are pushed to the high end of the right half.
+    """
+    num_enabled = enabled_cols.bit_count()
+    left_count = min(7, num_enabled)
+    right_count = max(0, num_enabled - 7)
+    return list(range(1, 1 + left_count)) + list(range(10, 10 + right_count))
+
+
+def test_tensix_reset_single(arc_chip_dut, asic_id):
+    """
+    Reset every non-harvested tensix one at a time and verify that only the
+    target tile is affected.  For each tile the test:
+
+    1. Writes a sentinel pattern to every enabled tile.
+    2. Resets one tile and checks its register is cleared.
+    3. Reads every *other* tile and checks the pattern is still intact.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    TENSIX_NOC_Y = list(range(2, 12))
+    TRISC0_RESET_PC = 0xFFB12228
+    PATTERN = 0xA5A5
+
+    enabled_cols = int(arc_chip.get_telemetry().tensix_enabled_col)
+    assert enabled_cols != 0, "tensix_enabled_col is zero"
+
+    valid_x = _logical_tensix_x_coords(enabled_cols)
+    all_tiles = [(x, y) for x in valid_x for y in TENSIX_NOC_Y]
+
+    arc_chip.set_power_state("high")
+
+    # Write pattern to every tile once up front
+    for x, y in all_tiles:
+        arc_chip.noc_write32(noc_id=0, x=x, y=y, addr=TRISC0_RESET_PC, data=PATTERN)
+
+    failed = 0
+
+    for target_x, target_y in all_tiles:
+        # Reset the target tile
+        response = arc_chip.arc_msg(
+            TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET,
+            arg0=target_x | (target_y << 8),
+        )
+        if response[1] != 0:
+            failed += 1
+            arc_chip.noc_write32(
+                noc_id=0, x=target_x, y=target_y, addr=TRISC0_RESET_PC, data=PATTERN
+            )
+            continue
+
+        # Verify the target tile was cleared
+        val = arc_chip.noc_read32(
+            noc_id=0, x=target_x, y=target_y, addr=TRISC0_RESET_PC
+        )
+        if val != 0:
+            failed += 1
+            arc_chip.noc_write32(
+                noc_id=0, x=target_x, y=target_y, addr=TRISC0_RESET_PC, data=PATTERN
+            )
+            continue
+
+        # Verify no other tile was affected
+        for x, y in all_tiles:
+            if (x, y) == (target_x, target_y):
+                continue
+            val = arc_chip.noc_read32(noc_id=0, x=x, y=y, addr=TRISC0_RESET_PC)
+            if val != PATTERN:
+                failed += 1
+                break
+
+        # Restore pattern on the reset tile before moving to the next
+        arc_chip.noc_write32(
+            noc_id=0, x=target_x, y=target_y, addr=TRISC0_RESET_PC, data=PATTERN
+        )
+
+    assert failed == 0, f"{failed}/{len(all_tiles)} tiles failed"
 
 
 def test_aiclk(arc_chip_dut, asic_id):
