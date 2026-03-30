@@ -42,6 +42,7 @@ Major enhancements with this release include:
 - Updated Blackhole MRISC FW to v2.14
   - Fix training instability in revB UBBs
   - Clear EDC error counters after training so they don't get reported in telemetry
+- Resolved issue of first LLK Unpacker instruction being corrupted (SYS-3628).
 
 ### Drivers
 
