@@ -1,5 +1,5 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-config BOARD_TT_GRENDEL_SMC
-	select SOC_TT_GRENDEL_SMC
+config BOARD_TT_MIMIR
+	select SOC_TT_MIMIR_SMC if BOARD_TT_MIMIR_TT_MIMIR_SMC

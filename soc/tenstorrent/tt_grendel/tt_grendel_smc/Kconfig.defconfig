@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-if SOC_TT_GRENDEL_SMC
+if TT_GRENDEL_SMC
 
 config SYS_CLOCK_HW_CYCLES_PER_SEC
 	default 800000
@@ -28,4 +28,4 @@ config 2ND_LVL_INTR_00_OFFSET
 config RISCV_PMP
 	default y
 
-endif # SOC_TT_GRENDEL_SMC
+endif # TT_GRENDEL_SMC

@@ -14,11 +14,11 @@ tests:
   drivers.uart.uart_elementary.grendel_uart:
     tags: smoke
     platform_allow:
-      - tt_grendel_smc
+      - tt_mimir/tt_mimir/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
         ../../../../../tt-system-firmware/test-conf/tests/drivers/uart/uart_elementary/\
-        tt_grendel_smc.overlay"
+        tt_mimir_tt_mimir_smc.overlay"
       - "CONF_FILE=\
         ../../../../../tt-system-firmware/test-conf/tests/drivers/uart/uart_elementary/\
-        tt_grendel_smc.conf"
+        tt_mimir_tt_mimir_smc.conf"

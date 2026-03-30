@@ -10,7 +10,7 @@
 #include <zephyr/drivers/gpio/gpio_utils.h>
 #include <zephyr/sys/sys_io.h>
 
-#include <smc_cpu_reg.h>
+#include <platform.h>
 
 struct gpio_grendel_config {
 	/* gpio_driver_config needs to be first */

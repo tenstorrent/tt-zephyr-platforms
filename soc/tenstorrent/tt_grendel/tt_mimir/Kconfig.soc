@@ -1,0 +1,13 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# Mimir SMC core- quad core RISV-V core based on tenstorrent-rocketcore
+config SOC_TT_MIMIR_SMC
+	bool
+	select SOC_FAMILY_TT_GRENDEL
+	select TT_GRENDEL_SMC
+	help
+	  Tenstorrent Mimir System Management Controller (SMC)
+
+config SOC
+	default "tt_mimir" if SOC_TT_MIMIR_SMC

@@ -9,7 +9,7 @@
 OUTDIR=${OUTDIR:-twister-out}
 
 # Build all grendel platforms
-./zephyr/scripts/twister -p tt_grendel_smc -T ./zephyr/tests/ \
+./zephyr/scripts/twister -p tt_mimir/tt_mimir/smc -T ./zephyr/tests/ \
 	--alt-config-root ./tt-system-firmware/test-conf/tests/ \
 	--tag smoke \
 	--outdir $OUTDIR

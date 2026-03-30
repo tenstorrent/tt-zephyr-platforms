@@ -1,4 +1,6 @@
 family:
   - name: tt_grendel
     socs:
-      - name: tt_grendel_smc
+      - name: tt_mimir
+        cpuclusters:
+          - name: smc

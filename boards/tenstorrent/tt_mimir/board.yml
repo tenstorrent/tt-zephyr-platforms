@@ -1,0 +1,6 @@
+board:
+  name: tt_mimir
+  full_name: Tenstorrent Mimir Board
+  vendor: tenstorrent
+  socs:
+    - name: tt_mimir
