@@ -7,6 +7,7 @@
 #define _GDDR_H_
 
 #include "gddr_telemetry_table.h"
+#include "gddr_params.h"
 
 #include <zephyr/sys_clock.h>
 
