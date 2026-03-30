@@ -106,24 +106,6 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100A.bin"
     description: "Memory Controller FW parameters"
     doc-url: https://tenstorrent.com
-  - path: tt_blackhole_gddr_params_P100B.bin
-    sha256: dc981fecbe3662187fb64fb7678ee9a0d83c0bd313944738fd92455285717fa0
-    type: img
-    version: '2.14'
-    license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-system-firmware/\
-          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100B.bin"
-    description: "Memory Controller FW parameters"
-    doc-url: https://tenstorrent.com
-  - path: tt_blackhole_gddr_params_P100.bin
-    sha256: cc47640f78ac54cebbcca1c9811e1b3117c246c29ce82d1c4fd29fbc46e91ce1
-    type: img
-    version: '2.14'
-    license-path: zephyr/blobs/license.txt
-    url: "https://github.com/tenstorrent/tt-system-firmware/\
-          raw/refs/heads/main/zephyr/blobs/tt_blackhole_gddr_params_P100.bin"
-    description: "Memory Controller FW parameters"
-    doc-url: https://tenstorrent.com
   - path: tt_blackhole_gddr_params_P150A.bin
     sha256: a6711eb789ab57ad6b06b0f11eae3049e927744c7fdcf222b17a7d3bdbe2daa1
     type: img
