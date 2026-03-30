@@ -44,6 +44,7 @@ Major enhancements with this release include:
   - Clear EDC error counters after training so they don't get reported in telemetry
 - Resolved issue with 1/2 chips enumerating on P300 systems across frequent
   reboots
+- Resolved issue of first LLK Unpacker instruction being corrupted (SYS-3628).
 
 ### Drivers
 
