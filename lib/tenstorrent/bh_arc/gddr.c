@@ -195,6 +195,19 @@ static int LoadMriscFwCfg(uint8_t gddr_inst, uint8_t *buf, size_t buf_size, size
 	int rc = spi_arc_dma_transfer_to_tile(flash, spi_address, image_size, buf, buf_size,
 					      (uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET);
 
+	if (rc == 0) {
+		/* Set the controller_id field to the GDDR instance */
+		volatile gddr_params_table_t *params_table =
+			(volatile gddr_params_table_t *)((uint8_t *)mrisc_l1 + MRISC_FW_CFG_OFFSET);
+		if (params_table->params_table_version >= 6) {
+			params_table->controller_id = gddr_inst;
+		} else {
+			LOG_WRN_ONCE("MRISC params table version %d does not support controller_id "
+				     "field (>= 6 required)",
+				     params_table->params_table_version);
+		}
+	}
+
 	return rc;
 }
 
