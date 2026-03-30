@@ -40,11 +40,5 @@
     "runs-on": "n150-jtag",
     "product": "wh",
     "kmd_build": "2.7.0"
-  },
-  {
-    "board": "n300",
-    "runs-on": "n300-jtag",
-    "product": "wh",
-    "kmd_build": "2.7.0"
   }
 ]
