@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+set(SOC_LINKER_SCRIPT ${ZEPHYR_BASE}/include/zephyr/arch/riscv/common/linker.ld CACHE INTERNAL "")
+zephyr_include_directories(.)
+
+# Add SOC setup
+zephyr_compile_definitions(PLATFORM_MIMIR_SMC=1)
+
+set(SIVAL_EXTDIR ${CMAKE_BINARY_DIR}/grendel-sival-sources)
+set(SIVAL_TARBALL ${CMAKE_CURRENT_SOURCE_DIR}/../../../../zephyr/blobs/grendel-sival-sources.tar.gz)
+
+file(MAKE_DIRECTORY ${SIVAL_EXTDIR})
+execute_process(COMMAND tar -xzf ${SIVAL_TARBALL}
+  WORKING_DIRECTORY ${SIVAL_EXTDIR}
+)
+zephyr_include_directories(${SIVAL_EXTDIR})

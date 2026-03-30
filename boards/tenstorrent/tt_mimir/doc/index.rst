@@ -1,17 +1,17 @@
-.. _tt_grendel_smc:
+.. _tt_mimir:
 
-TT Grendel SMC Board
-####################
+TT Mimir Board
+##############
 
 Overview
 ********
 
-The ``tt_grendel_smc`` "board" is a simulation target intended to be run
-within simulation/emulation environments. It represents a 4 core instance of the
-Berkeley RISC-V Rocket core, with tenstorrent specific peripherals. This
-core is used across several Tenstorrent chips. For instructions on running
-within specific simulation environments, see the
-:ref:`executing_applications` section.
+The ``tt_mimir`` "board" is a simulation target intended to be run within
+simulation/emulation environments. It represents a 4 core instance of the
+Berkeley RISC-V Rocket core, with tenstorrent specific peripherals. This board
+targets the Mimir Chiplet, which is the memory controller chiplet in the Grendel
+Family. For instructions on running within specific simulation environments, see
+the :ref:`executing_applications` section.
 
 Hardware
 ********
@@ -73,7 +73,7 @@ For example, you could run the hello world application as follows:
 .. code-block:: console
 
     # Build a binary and upload it to the emulation host
-    west build -p always -b tt_grendel_smc ../zephyr/samples/hello_world
+    west build -p always -b tt_mimir ../zephyr/samples/hello_world
     scp build/zephyr/zephyr.bin <user@emu-host>:zephyr.bin
 
     # Source the environment every login
@@ -138,7 +138,7 @@ Running Within Renode Co-Simulation
 ===================================
 
 The renode co-simulation environment should be considered experimental for
-development on the ``tt_grendel_smc`` board. The SMC simulation environment
+development on the ``tt_mimir`` board. The SMC simulation environment
 should be treated as the "ground truth" for simulation of this board.
 
 To run within the Renode co-simulation environment, a prebuilt co-simulation
@@ -167,7 +167,7 @@ Co-Simulation can be run as follows:
 
 .. code-block:: console
 
-    west build -p always -b tt_grendel_smc app/hello_world
+    west build -p always -b tt_mimir app/hello_world
     /proj_syseng/user_dev/ddegrasse/public/grendel-renode-cosim-2025-12-11/start-renode.sh <build-dir>/zephyr/zephyr.elf
     [INFO] Including script(s): /tmp/renode_cmds.S9DMFL
     [INFO] sysbus: Loading block of 85880 bytes length at 0xC0060000.

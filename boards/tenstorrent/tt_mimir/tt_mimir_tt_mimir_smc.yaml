@@ -1,5 +1,5 @@
-identifier: tt_grendel_smc
-name: Tenstorrent Grendel System Management Controller
+identifier: tt_mimir/tt_mimir/smc
+name: Tenstorrent Mimir SMC
 type: mcu
 arch: riscv
 toolchain:

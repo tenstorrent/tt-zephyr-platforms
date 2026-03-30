@@ -12,13 +12,13 @@
 #include <zephyr/sys/sys_io.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/logging/log.h>
-#include <smc_cpu_reg.h>
+#include <platform.h>
 
 LOG_MODULE_REGISTER(clock_control_tt_grendel, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
 
-#define CGM_READ(reg) sys_read32(cfg->base + SMC_WRAP_PLL_CNTL_CGM_0_##reg##_REG_OFFSET)
+#define CGM_READ(reg) sys_read32(cfg->base + SMC_CPU_SMC_WRAP_PLL_CNTL_CGM_0_##reg##_REG_OFFSET)
 #define CGM_WRITE(reg, val)                                                                        \
-	sys_write32((val), cfg->base + SMC_WRAP_PLL_CNTL_CGM_0_##reg##_REG_OFFSET)
+	sys_write32((val), cfg->base + SMC_CPU_SMC_WRAP_PLL_CNTL_CGM_0_##reg##_REG_OFFSET)
 
 #define POSTDIV_CONFIG_BYPASS_THEN_SWITCH 0x0
 #define POSTDIV_CONFIG_ALWAYS_POSTDIV     0x1

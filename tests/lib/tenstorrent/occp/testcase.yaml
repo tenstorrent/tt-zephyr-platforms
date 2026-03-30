@@ -5,4 +5,4 @@ tests:
   lib.tenstorrent.occp:
     tags: smoke
     platform_allow:
-      - tt_grendel_smc
+      - tt_mimir/tt_mimir/smc

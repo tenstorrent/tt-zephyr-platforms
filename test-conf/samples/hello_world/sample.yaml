@@ -20,4 +20,4 @@ tests:
       - rtt
   sample.basic.helloworld.grendel:
     platform_allow:
-      - tt_grendel_smc
+      - tt_mimir/tt_mimir/smc

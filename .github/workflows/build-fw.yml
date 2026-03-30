@@ -464,7 +464,7 @@ jobs:
       - name: Grendel Build Test
         shell: bash
         run: |
-          ./zephyr/scripts/twister -p tt_grendel_smc --tag smoke \
+          ./zephyr/scripts/twister -p tt_mimir/tt_mimir/smc --tag smoke \
             --alt-config-root tt-system-firmware/test-conf/samples \
             --alt-config-root tt-system-firmware/test-conf/tests \
             -T zephyr/tests -T zephyr/samples \

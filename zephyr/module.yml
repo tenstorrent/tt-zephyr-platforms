@@ -232,3 +232,12 @@ blobs:
           raw/refs/heads/main/zephyr/blobs/tt_blackhole_trisc_dest_wipe.bin"
     description: "TRISC 0 DEST wipe firmware"
     doc-url: https://tenstorrent.com
+  - path: grendel-sival-sources.tar.gz
+    sha256: 8e89f108f9642b6119b92eed0861346c47ca84f5f1190ca5eae222b1933e7d24
+    type: lib
+    version: '0.0'
+    license-path: zephyr/blobs/license.txt
+    url: "https://github.com/tenstorrent/tt-system-firmware/\
+          raw/refs/heads/main/zephyr/blobs/grendel-sival-sources.tar.gz"
+    description: "Grendel Sival sources"
+    doc-url: https://tenstorrent.com

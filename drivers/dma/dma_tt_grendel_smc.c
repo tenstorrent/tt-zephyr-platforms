@@ -12,18 +12,19 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/sys_io.h>
 
-#include "smc_cpu_reg.h"
+#include <platform.h>
 
 LOG_MODULE_REGISTER(dma_tt_grendel_smc);
 
-#define DMA_REG_STATUS(ch)  (AXI_DATA_ACCEL_AXI_DMA_CTRL_STATUS_0_REG_OFFSET + (ch) * 0x4)
-#define DMA_REG_NEXT_ID(ch) (AXI_DATA_ACCEL_AXI_DMA_CTRL_NEXT_ID_0_REG_OFFSET + (ch) * 0x8)
-#define DMA_REG_DONE(ch)    (AXI_DATA_ACCEL_AXI_DMA_CTRL_DONE_0_REG_OFFSET + (ch) * 0x4)
+#define DMA_REG_STATUS(ch)  (SMC_CPU_AXI_DATA_ACCEL_AXI_DMA_CTRL_STATUS_0_REG_OFFSET + (ch) * 0x4)
+#define DMA_REG_NEXT_ID(ch) (SMC_CPU_AXI_DATA_ACCEL_AXI_DMA_CTRL_NEXT_ID_0_REG_OFFSET + (ch) * 0x8)
+#define DMA_REG_DONE(ch)    (SMC_CPU_AXI_DATA_ACCEL_AXI_DMA_CTRL_DONE_0_REG_OFFSET + (ch) * 0x4)
 
-#define DMA_READ(reg)        sys_read32(cfg->base + AXI_DATA_ACCEL_AXI_DMA_CTRL_##reg##_REG_OFFSET)
+#define DMA_READ(reg) sys_read32(cfg->base + SMC_CPU_AXI_DATA_ACCEL_AXI_DMA_CTRL_##reg##_REG_OFFSET)
+
 #define DMA_READ_CH(reg, ch) sys_read32(cfg->base + DMA_REG_##reg(ch))
 #define DMA_WRITE(reg, val)                                                                        \
-	sys_write32((val), cfg->base + AXI_DATA_ACCEL_AXI_DMA_CTRL_##reg##_REG_OFFSET)
+	sys_write32((val), cfg->base + SMC_CPU_AXI_DATA_ACCEL_AXI_DMA_CTRL_##reg##_REG_OFFSET)
 
 struct dma_grendel_channel_data {
 	struct dma_config cfg;
@@ -198,9 +199,9 @@ static int dma_grendel_init(const struct device *dev)
 	AXI_DMA_CTRL_CONFIG_reg_u config = {.f.enabled_nd = 1};
 
 	/* Release DMA from reset */
-	reset_ctrl.val = sys_read32(SMC_CPU_CTRL_RESET_CTRL_REG_ADDR);
+	reset_ctrl.val = sys_read32(SMC_CPU_SMC_CPU_CTRL_RESET_CTRL_REG_ADDR);
 	reset_ctrl.f.dma_reset_n_n0_scan = 1;
-	sys_write32(reset_ctrl.val, SMC_CPU_CTRL_RESET_CTRL_REG_ADDR);
+	sys_write32(reset_ctrl.val, SMC_CPU_SMC_CPU_CTRL_RESET_CTRL_REG_ADDR);
 
 	DMA_WRITE(CONFIG, config.val);
 

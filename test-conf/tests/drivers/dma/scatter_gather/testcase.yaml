@@ -3,16 +3,16 @@ common:
     - smoke
     - dma
 tests:
-  drivers.dma.scatter_gather.tt_grendel_smc:
+  drivers.dma.scatter_gather.tt_mimir_smc:
     platform_allow:
-      - tt_grendel_smc
+      - tt_mimir/tt_mimir/smc
     extra_args:
       - "DTC_OVERLAY_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
-         tt_grendel_smc.overlay"
+         tt_mimir_tt_mimir_smc.overlay"
       - "EXTRA_CONF_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/dma/scatter_gather/\
-         tt_grendel_smc.conf"
+         tt_mimir_tt_mimir_smc.conf"
   drivers.dma.scatter_gather.tt_bh_noc:
     platform_allow:
       - tt_blackhole@p100a/tt_blackhole/smc

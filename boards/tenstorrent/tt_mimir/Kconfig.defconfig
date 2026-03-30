@@ -1,7 +1,7 @@
 # Copyright (c) 2024 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-if BOARD_TT_GRENDEL_SMC
+if BOARD_TT_MIMIR
 
 config SYS_CLOCK_TICKS_PER_SEC
 	default 1000
@@ -23,4 +23,4 @@ endchoice
 
 endif
 
-endif # BOARD_TT_GRENDEL_SMC
+endif # BOARD_TT_MIMIR

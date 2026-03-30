@@ -6,6 +6,6 @@ common:
 tests:
   drivers.clock_control.grendel_smc.basic:
     platform_allow:
-      - tt_grendel_smc
+      - tt_mimir/tt_mimir/smc
     extra_args:
-      - "platform:tt_grendel_smc:DTC_OVERLAY_FILE=app.overlay"
+      - "platform:tt_mimir/tt_mimir/smc:DTC_OVERLAY_FILE=app.overlay"
