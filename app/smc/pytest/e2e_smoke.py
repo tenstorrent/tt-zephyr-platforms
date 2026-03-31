@@ -1290,3 +1290,36 @@ def test_set_asic_host_fmax(arc_chip_dut, asic_id):
         [TT_SMC_MSG_SET_ASIC_HOST_FMAX, 100, 0, 0, 0, 0, 0, 0]
     )
     assert response[0] != 0, "Expected error for out-of-range fmax (too low)"
+
+
+def test_bindesc(arc_chip_dut, asic_id):
+    """
+    Validates that the version descriptor matches what is running on
+    the SMC
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+    smc_bin = arc_chip_dut.device_config.app_build_dir / "zephyr/zephyr.bin"
+    smc_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "app/smc/VERSION")
+    logger.info(f"Expected SMC version from file: 0x{smc_version:08x}")
+    # Read version from running FW telemetry
+    cmfw_version = read_telem(arc_chip, TAG_CM_FW_VERSION)
+    assert cmfw_version == smc_version, (
+        f"CMFW version mismatch: telemetry 0x{cmfw_version:08x} != expected 0x{smc_version:08x}"
+    )
+    logger.info(f"CMFW version from telemetry: 0x{cmfw_version:08x}")
+    # Read version from bindesc
+    output = subprocess.run(
+        f"west bindesc dump {smc_bin}".split(),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    # Search stdout for the line formatted as APP_VERSION_STRING: "0.0.0"
+    match = re.search(r"v(\d+)\.(\d+)\.(\d+)-.*", output.stdout)
+    assert match, "Failed to find version string in bindesc output"
+    major, minor, patch = map(int, match.groups())
+    bindesc_version = (major << 24) | (minor << 16) | (patch << 8)
+    assert bindesc_version == smc_version, (
+        f"Bindesc version mismatch: 0x{bindesc_version:08x} != expected 0x{smc_version:08x}"
+    )
+    logger.info(f"Bindesc version: 0x{bindesc_version:08x}")
