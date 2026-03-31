@@ -678,6 +678,20 @@ struct set_asic_host_fmax_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Host request to set the ASIC fmin
+ * @details Messages of this type are processed by @ref set_arb_host_fmin_handler
+ */
+struct set_asic_host_fmin_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SET_ASIC_HOST_FMIN */
+	uint8_t command_code;
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+	/** @brief The ASIC host fmin to set in MHz */
+	uint32_t asic_fmin;
+	/** @brief Restore the ASIC host fmin to the default value */
+	uint8_t restore_default: 1;
+};
+
 /** @brief Host request to reinitialize Tensix NOC programming and tile configuration
  * @details Messages of this type are processed by @ref ReinitTensix.
  *
@@ -794,6 +808,10 @@ union request {
 
 	/** @brief A set ASIC host fmax request */
 	struct set_asic_host_fmax_rqst set_asic_host_fmax;
+
+	/** @brief A set ASIC host fmin request */
+	struct set_asic_host_fmin_rqst set_asic_host_fmin;
+
 	/** @brief A report scratch-only request */
 	struct report_scratch_only_rqst report_scratch_only;
 
