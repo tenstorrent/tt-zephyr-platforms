@@ -97,8 +97,12 @@ TT_SMC_MSG_READ_PD = 0x1C
 TT_SMC_MSG_READ_VM = 0x1D
 TT_SMC_MSG_SET_TDP_LIMIT = 0x22
 TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23
+TT_SMC_MSG_CHARACTERISATION = 0xC6
 TT_SMC_MSG_COUNTER = 0x35
 TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
+
+# Characterization submessage IDs
+TT_SUB_MSG_SET_HOST_REQUESTED_FMIN = 0x1
 
 # Telemetry tags
 TAG_TDP = 7
@@ -1401,6 +1405,104 @@ def test_set_asic_host_fmax(arc_chip_dut, asic_id):
         [TT_SMC_MSG_SET_ASIC_HOST_FMAX, 100, 0, 0, 0, 0, 0, 0]
     )
     assert response[0] != 0, "Expected error for out-of-range fmax (too low)"
+
+
+def test_set_characterisation_host_fmin(arc_chip_dut, asic_id):
+    """
+    Validates that the SET_HOST_REQUESTED_FMIN characterization message works.
+
+    Sets a host fmin of 600 MHz, which should be within the valid range
+    [AICLK_FMIN_MIN=200, AICLK_FMIN_MAX=1400] on all boards.
+    Verifies that the request succeeds.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    NEW_HOST_FMIN = 600  # MHz
+
+    # Positive case: set a valid host fmin
+    response = arc_chip.as_bh().arc_msg_buf(
+        [
+            TT_SMC_MSG_CHARACTERISATION | TT_SUB_MSG_SET_HOST_REQUESTED_FMIN << 8,
+            NEW_HOST_FMIN,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+    )
+    assert response[0] == 0, f"Failed to set host fmin to {NEW_HOST_FMIN} MHz"
+    logger.info(f"Successfully set host fmin to {NEW_HOST_FMIN} MHz")
+
+
+def test_restore_characterisation_host_fmin(arc_chip_dut, asic_id):
+    """
+    Validates that restoring default (disabling) the host fmin floor works.
+
+    Uses the restore mechanism (value=1) to disable the host-requested
+    minimum frequency floor.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    # Positive case: restore default (disables the fmin floor)
+    response = arc_chip.as_bh().arc_msg_buf(
+        [
+            TT_SMC_MSG_CHARACTERISATION | TT_SUB_MSG_SET_HOST_REQUESTED_FMIN << 8,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+    )
+    assert response[0] == 0, "Failed to restore default host fmin"
+    logger.info("Successfully restored default host fmin (disabled)")
+
+
+def test_characterisation_host_fmin_out_of_range(arc_chip_dut, asic_id):
+    """
+    Validates that out-of-range fmin values are rejected.
+
+    Checks boundaries:
+    - Value too high (9999 MHz > 1400): expect error
+    - Value too low (100 MHz < 200): expect error
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    # Negative case: value too high
+    response = arc_chip.as_bh().arc_msg_buf(
+        [
+            TT_SMC_MSG_CHARACTERISATION,
+            TT_SUB_MSG_SET_HOST_REQUESTED_FMIN,
+            0,
+            0,
+            9999,
+            0,
+            0,
+            0,
+        ]
+    )
+    assert response[0] != 0, "Expected error for out-of-range fmin (too high)"
+    logger.info("Correctly rejected fmin value 9999 (too high)")
+
+    # Negative case: value too low
+    response = arc_chip.as_bh().arc_msg_buf(
+        [
+            TT_SMC_MSG_CHARACTERISATION,
+            TT_SUB_MSG_SET_HOST_REQUESTED_FMIN,
+            0,
+            0,
+            100,
+            0,
+            0,
+            0,
+        ]
+    )
+    assert response[0] != 0, "Expected error for out-of-range fmin (too low)"
+    logger.info("Correctly rejected fmin value 100 (too low)")
 
 
 def test_bindesc(arc_chip_dut, asic_id):
