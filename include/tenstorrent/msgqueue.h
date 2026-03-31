@@ -725,6 +725,42 @@ struct set_asic_host_fmax_rqst {
 	uint8_t restore_default: 1;
 };
 
+/** @brief Characterization submessage to set host-requested minimum frequency floor
+ * @details Payload is a single uint32_t with two interpretations:
+ * - Value == 1: Restore default (disable host fmin floor)
+ * - Value in [200, 1400]: Set frequency to this value in MHz
+ */
+struct characterisation_set_fmin_submsg {
+	/** @brief Either 1 (restore) or frequency in MHz (200-1400) */
+	uint32_t value;
+};
+
+/** @brief Union of all possible characterization submessage payloads */
+union characterisation_submsg_data {
+	/** @brief Set host-requested minimum frequency floor */
+	struct characterisation_set_fmin_submsg fmin_value;
+	/* add to this union to define more sub-message payloads */
+	/** @brief Generic fallback for raw access */
+	uint8_t raw_data[4];
+};
+
+/** @brief Generic characterization message for internal SMC use
+ * @warning This is an internal interface. Direct use is not recommended
+ *          unless implementing new characterization features.
+ * @details Uses submsg_ID to dispatch to specific operations.
+ *          Messages of this type are processed by @ref characterisation_handler
+ */
+struct characterisation_msg_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_CHARACTERISATION */
+	uint8_t command_code;
+	/** @brief Submessage ID identifying which payload structure is active */
+	uint8_t submsg_ID;
+	/** @brief Two bytes of padding */
+	uint8_t pad[2];
+	/** @brief The submessage payload (interpretation depends on submsg_ID) */
+	union characterisation_submsg_data submsg_data;
+};
+
 /** @brief Host request to reinitialize Tensix NOC programming and tile configuration
  * @details Messages of this type are processed by @ref ReinitTensix.
  *
@@ -910,6 +946,9 @@ union request {
 
 	/** @brief A set ASIC host fmax request */
 	struct set_asic_host_fmax_rqst set_asic_host_fmax;
+
+	/** @brief A set ASIC host fmin request */
+	struct characterisation_msg_rqst characterisation_msg;
 
 	/** @brief A report scratch-only request */
 	struct report_scratch_only_rqst report_scratch_only;

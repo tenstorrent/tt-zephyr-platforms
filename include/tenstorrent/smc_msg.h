@@ -159,6 +159,15 @@ enum tt_smc_msg {
 
 	/** @brief @ref led_blink_rqst "Toggle red LED on the board" */
 	TT_SMC_MSG_BLINKY = 0xC5,
+
+	/** @brief @ref characterisation_rqst "Generic characterization message" */
+	TT_SMC_MSG_CHARACTERISATION = 0xC6,
+};
+
+/** @brief Enumeration of characterization submessage IDs */
+enum char_submsg_ids {
+	/** @brief Set host-requested minimum frequency (AICLK) */
+	TT_SUB_MSG_SET_HOST_REQUESTED_FMIN = 0x1,
 };
 
 /** @} */

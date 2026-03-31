@@ -31,10 +31,10 @@ LOG_MODULE_REGISTER(aiclk_ppm, CONFIG_TT_APP_LOG_LEVEL);
 static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(pll0));
 
 /* Bounds checks for FMAX and FMIN (in MHz) */
-#define AICLK_FMAX_MAX 1400.0F
-#define AICLK_FMAX_MIN 800.0F
-#define AICLK_FMIN_MAX 800.0F
-#define AICLK_FMIN_MIN 200.0F
+#define AICLK_FMAX_MAX        1400.0F
+#define AICLK_FMAX_MIN        800.0F
+#define AICLK_FMIN_MAX        1400.0F
+#define AICLK_FMIN_MIN        200.0F
 #define AICLK_RESET_SAFE_FREQ 250.0F
 
 /* aiclk control mode */
@@ -55,6 +55,7 @@ typedef struct {
 	uint32_t boot_freq;   /* in MHz */
 	uint32_t fmax;        /* in MHz */
 	uint32_t fmin;        /* in MHz */
+	uint32_t host_requested_fmin; /* Host-requested minimum frequency floor, 0 = disabled */
 	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
 	bool reset_safe;      /* cap to reset-safe frequency after forced frequency is applied */
 	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
@@ -137,10 +138,15 @@ void CalculateTargAiclk(void)
 		}
 	}
 
-	/* Make sure target is not below Fmin */
+	/* Make sure target is not below Fmin or host-requested minimum */
 	/* (it will not be above Fmax, since we calculated the max limits last) */
-	if (aiclk_ppm.targ_freq < aiclk_ppm.fmin) {
-		aiclk_ppm.targ_freq = aiclk_ppm.fmin;
+	uint32_t effective_fmin_floor = aiclk_ppm.fmin;
+
+	if (aiclk_ppm.host_requested_fmin > 0) {
+		effective_fmin_floor = MAX(effective_fmin_floor, aiclk_ppm.host_requested_fmin);
+	}
+	if (aiclk_ppm.targ_freq < effective_fmin_floor) {
+		aiclk_ppm.targ_freq = effective_fmin_floor;
 		info.reason = limit_reason_fmin;
 		info.arbiter = 0U;
 	}
@@ -490,6 +496,52 @@ static uint8_t set_arb_host_fmax_handler(const union request *request, struct re
 	return 0;
 }
 
+/** @brief Handles the characterization submessage for setting host minimum frequency floor
+ * @param[in] fmin_value The submessage data of type @ref characterisation_set_fmin_submsg
+ * @param[out] response The response to the host
+ * @return 0 for success, 1 for invalid input
+ */
+static uint8_t handle_char_set_host_fmin(const struct characterisation_set_fmin_submsg fmin_value,
+					 struct response *response)
+{
+	uint32_t new_fmin = fmin_value.value;
+
+	/* Check for restore flag */
+	if (new_fmin == 1) {
+		aiclk_ppm.host_requested_fmin = 0;
+		LOG_INF("host fmin floor disabled");
+		return 0;
+	}
+
+	/* Reject if outside valid range [AICLK_FMIN_MIN, AICLK_FMIN_MAX] */
+	if (new_fmin > (uint32_t)AICLK_FMIN_MAX || new_fmin < (uint32_t)AICLK_FMIN_MIN) {
+		return 1;
+	}
+
+	aiclk_ppm.host_requested_fmin = new_fmin;
+	LOG_INF("host fmin floor set to %u MHz", new_fmin);
+	return 0;
+}
+
+/** @brief Dispatcher for characterization submessages
+ * @param[in] request The characterization request with submsg_ID
+ * @param[out] response The response to the host
+ * @return 0 for success, 1 for invalid input or unknown submessage
+ */
+static uint8_t characterisation_handler(const union request *request, struct response *response)
+{
+	switch (request->characterisation_msg.submsg_ID) {
+	case TT_SUB_MSG_SET_HOST_REQUESTED_FMIN:
+		return handle_char_set_host_fmin(
+			request->characterisation_msg.submsg_data.fmin_value, response);
+
+	default:
+		LOG_WRN("Unknown characterization submessage ID: 0x%02x",
+			request->characterisation_msg.submsg_ID);
+		return 1;
+	}
+}
+
 uint8_t throttler_counter_handler(const union request *request, struct response *response)
 {
 	switch (request->counter.command) {
@@ -532,3 +584,4 @@ REGISTER_MESSAGE(TT_SMC_MSG_GET_AICLK, get_aiclk_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_START, SweepAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_STOP, SweepAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_SET_ASIC_HOST_FMAX, set_arb_host_fmax_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_CHARACTERISATION, characterisation_handler);
