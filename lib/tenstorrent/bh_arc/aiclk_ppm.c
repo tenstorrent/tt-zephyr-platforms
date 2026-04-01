@@ -35,6 +35,7 @@ static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 #define AICLK_FMAX_MIN 800.0F
 #define AICLK_FMIN_MAX 800.0F
 #define AICLK_FMIN_MIN 200.0F
+#define AICLK_RESET_SAFE_FREQ 250.0F
 
 /* aiclk control mode */
 typedef enum {
@@ -55,6 +56,7 @@ typedef struct {
 	uint32_t fmax;        /* in MHz */
 	uint32_t fmin;        /* in MHz */
 	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
+	bool reset_safe;      /* cap to reset-safe frequency after forced frequency is applied */
 	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
 	uint32_t sweep_low;   /* in MHz */
 	uint32_t sweep_high;  /* in MHz */
@@ -159,6 +161,10 @@ void CalculateTargAiclk(void)
 		info.arbiter = 0U;
 	}
 
+	if (aiclk_ppm.reset_safe && aiclk_ppm.targ_freq > AICLK_RESET_SAFE_FREQ) {
+		aiclk_ppm.targ_freq = AICLK_RESET_SAFE_FREQ;
+	}
+
 	aiclk_ppm.lim_arb_info = info;
 	sys_trace_named_event("targ_freq_update", aiclk_ppm.targ_freq,
 			      aiclk_ppm.lim_arb_info.u32_all);
@@ -246,6 +252,7 @@ static int InitAiclkPPM(void)
 
 	/* disable forcing of AICLK */
 	aiclk_ppm.forced_freq = 0;
+	aiclk_ppm.reset_safe = false;
 
 	/* disable AICLK sweep */
 	aiclk_ppm.sweep_en = 0;
@@ -287,6 +294,16 @@ uint8_t ForceAiclk(uint32_t freq)
 				       (clock_control_subsys_rate_t)freq);
 	}
 	return 0;
+}
+
+void SetAiclkResetSafe(bool enable)
+{
+	if (aiclk_ppm.reset_safe == enable) {
+		return;
+	}
+
+	aiclk_ppm.reset_safe = enable;
+	DVFSChange();
 }
 
 uint32_t GetAiclkTarg(void)

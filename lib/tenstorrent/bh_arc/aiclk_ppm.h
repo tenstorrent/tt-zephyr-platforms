@@ -83,6 +83,7 @@ void IncreaseAiclk(void);
 void InitArbMaxVoltage(void);
 float GetThrottlerArbMax(enum aiclk_arb_max arb_max);
 uint8_t ForceAiclk(uint32_t freq);
+void SetAiclkResetSafe(bool enable);
 uint32_t GetAiclkTarg(void);
 uint32_t GetMaxAiclkForVoltage(uint32_t voltage);
 uint32_t GetAiclkFmin(void);
