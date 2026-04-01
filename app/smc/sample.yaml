@@ -94,7 +94,9 @@ tests:
   app.tracing:
     build_only: true
     sysbuild: true
-    tags: e2e-flash
+    tags:
+      - e2e-flash
+      - build-ci
     extra_overlay_confs:
       - tracing.conf
     extra_args:
@@ -102,5 +104,7 @@ tests:
   app.tt_shell:
     build_only: true
     sysbuild: false
+    tags:
+      - build-ci
     extra_configs:
       - CONFIG_SHELL=y
