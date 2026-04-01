@@ -455,24 +455,6 @@ ZTEST(msgqueue, test_msg_type_read_eeprom_no_flash)
 	zassert_equal(rsp.data[0], 1);
 }
 
-ZTEST(msgqueue, test_msg_type_write_eeprom_locked)
-{
-	req = (union request){0};
-	rsp = (struct response){0};
-
-	req.eeprom.command_code = TT_SMC_MSG_WRITE_EEPROM;
-	req.eeprom.buffer_mem_type = 0;
-	req.eeprom.spi_address = 0x1000;
-	req.eeprom.num_bytes = 64;
-
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	/* Flash is locked by default, handler returns 2 */
-	zassert_equal(rsp.data[0], 2);
-}
-
 ZTEST(msgqueue, test_msg_type_force_vdd)
 {
 	union request req = {0};
@@ -567,6 +549,95 @@ ZTEST(msgqueue, test_msg_type_trigger_reset_invalid)
 	msgqueue_response_pop(0, &rsp);
 
 	zassert_equal(rsp.data[0], 5, "Invalid level should return the level as error");
+}
+
+ZTEST(msgqueue, test_msg_type_flash_unlock)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* Test flash unlock message */
+	req.flash_unlock.command_code = TT_SMC_MSG_FLASH_UNLOCK;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	zassert_equal(rsp.data[0], 0, "Flash unlock should succeed");
+
+	/* Verify flash is unlocked by attempting EEPROM write */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.eeprom.command_code = TT_SMC_MSG_WRITE_EEPROM;
+	req.eeprom.spi_address = 0x1000;
+	req.eeprom.num_bytes = 4;
+	req.eeprom.csm_addr = 0x12345678; /* Valid CSM address range */
+	req.eeprom.buffer_mem_type = 0;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Should fail with error 1 (flash not ready), not error 2 (flash locked) */
+	zassert_equal(rsp.data[0], 1, "Write should fail due to flash not ready, not locked");
+}
+
+ZTEST(msgqueue, test_msg_type_flash_lock)
+{
+	union request req = {0};
+	struct response rsp = {0};
+
+	/* First unlock flash */
+	req.flash_unlock.command_code = TT_SMC_MSG_FLASH_UNLOCK;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+	zassert_equal(rsp.data[0], 0, "Flash unlock should succeed");
+
+	/* Then lock it */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.flash_lock.command_code = TT_SMC_MSG_FLASH_LOCK;
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+	zassert_equal(rsp.data[0], 0, "Flash lock should succeed");
+
+	/* Verify flash is locked by attempting EEPROM write */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.eeprom.command_code = TT_SMC_MSG_WRITE_EEPROM;
+	req.eeprom.spi_address = 0x1000;
+	req.eeprom.num_bytes = 4;
+	req.eeprom.csm_addr = 0x12345678; /* Valid CSM address range */
+	req.eeprom.buffer_mem_type = 0;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Should fail with error 2 (flash locked) */
+	zassert_equal(rsp.data[0], 2, "Write should fail due to flash locked");
+}
+
+ZTEST(msgqueue, test_msg_type_confirm_flashed_spi)
+{
+	union request req = {0};
+	struct response rsp = {0};
+	uint32_t challenge_data = 0xDEADBEEF;
+
+	/* Test SPI flash confirmation with challenge data */
+	req.confirm_flashed_spi.command_code = TT_SMC_MSG_CONFIRM_FLASHED_SPI;
+	req.data[1] = challenge_data;
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Should succeed */
+	zassert_equal(rsp.data[0], 0, "Confirm flash should succeed");
+	/* Response should echo the challenge data */
+	zassert_equal(rsp.data[1], challenge_data, "Challenge data should be echoed back");
 }
 
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
