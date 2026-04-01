@@ -403,6 +403,10 @@ jobs:
           - p100a
           - p150a
           - p300a
+        test:
+          - app.tracing
+          - app.tt_shell
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -419,35 +423,36 @@ jobs:
           BOARD="$(./scripts/rev2board.sh "${{ matrix.board }}" smc)"
           echo "BOARD=$BOARD" | tee "$GITHUB_ENV"
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          docker-images: false
-
       - name: Build SMC Build Only Tests
         shell: bash
         run: |
+          # Convert test names to twister scenario filter and create safe artifact name
+          TEST_SCENARIOS="${{ matrix.test }}"
+          TEST_ID=$(echo "${{ matrix.test }}" | tr ' .' '-')
+          echo "TEST_ID=$TEST_ID" >> $GITHUB_ENV
+
           ./zephyr/scripts/twister \
             -p $BOARD \
             --build-only \
             -T tt-system-firmware/app/smc \
-            --outdir twister-smc-tests-${{ matrix.board }} \
+            --outdir twister-smc-tests-${{ matrix.board }}-$TEST_ID \
             --runtime-artifact-cleanup pass \
+            -s "$TEST_SCENARIOS" \
             -j 2
 
       - name: Upload Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: build-smc-tests-${{ matrix.board }}
+          name: build-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}
           include-hidden-files: true
           path: |
-            twister-smc-tests-${{ matrix.board }}/**/handler.log
-            twister-smc-tests-${{ matrix.board }}/**/twister_harness.log
-            twister-smc-tests-${{ matrix.board }}/**/zephyr.dts
-            twister-smc-tests-${{ matrix.board }}/**/.config
-            twister-smc-tests-${{ matrix.board }}/**/*.map
-            twister-smc-tests-${{ matrix.board }}/**/zephyr.elf
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/handler.log
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/twister_harness.log
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/zephyr.dts
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/.config
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/*.map
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/zephyr.elf
             twister-smc-tests-${{ matrix.board }}/**/*.lst
             twister-smc-tests-${{ matrix.board }}/twister.log
             twister-smc-tests-${{ matrix.board }}/twister.json
