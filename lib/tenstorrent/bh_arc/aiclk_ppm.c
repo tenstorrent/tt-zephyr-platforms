@@ -33,7 +33,7 @@ static const struct device *const pll_dev_0 = DEVICE_DT_GET_OR_NULL(DT_NODELABEL
 /* Bounds checks for FMAX and FMIN (in MHz) */
 #define AICLK_FMAX_MAX 1400.0F
 #define AICLK_FMAX_MIN 800.0F
-#define AICLK_FMIN_MAX 800.0F
+#define AICLK_FMIN_MAX 1400.0F
 #define AICLK_FMIN_MIN 200.0F
 
 /* aiclk control mode */
@@ -49,15 +49,16 @@ typedef struct {
 } AiclkArb;
 
 typedef struct {
-	uint32_t curr_freq;   /* in MHz */
-	uint32_t targ_freq;   /* in MHz */
-	uint32_t boot_freq;   /* in MHz */
-	uint32_t fmax;        /* in MHz */
-	uint32_t fmin;        /* in MHz */
-	uint32_t forced_freq; /* in MHz, a value of zero means disabled. */
-	uint32_t sweep_en;    /* a value of one means enabled, otherwise disabled. */
-	uint32_t sweep_low;   /* in MHz */
-	uint32_t sweep_high;  /* in MHz */
+	uint32_t curr_freq;        /* in MHz */
+	uint32_t targ_freq;        /* in MHz */
+	uint32_t boot_freq;        /* in MHz */
+	uint32_t fmax;             /* in MHz */
+	uint32_t fmin;             /* in MHz */
+	uint32_t host_requested_fmin; /* Host-requested minimum frequency floor, 0 = disabled */
+	uint32_t forced_freq;      /* in MHz, a value of zero means disabled. */
+	uint32_t sweep_en;         /* a value of one means enabled, otherwise disabled. */
+	uint32_t sweep_low;        /* in MHz */
+	uint32_t sweep_high;       /* in MHz */
 	union aiclk_targ_freq_info lim_arb_info; /*information on the limiting arbiter */
 	AiclkArb arbiter_max[aiclk_arb_max_count];
 	AiclkArb arbiter_min[aiclk_arb_min_count];
@@ -135,10 +136,14 @@ void CalculateTargAiclk(void)
 		}
 	}
 
-	/* Make sure target is not below Fmin */
+	/* Make sure target is not below Fmin or host-requested minimum */
 	/* (it will not be above Fmax, since we calculated the max limits last) */
-	if (aiclk_ppm.targ_freq < aiclk_ppm.fmin) {
-		aiclk_ppm.targ_freq = aiclk_ppm.fmin;
+	uint32_t effective_fmin_floor = aiclk_ppm.fmin;
+	if (aiclk_ppm.host_requested_fmin > 0) {
+		effective_fmin_floor = MAX(effective_fmin_floor, aiclk_ppm.host_requested_fmin);
+	}
+	if (aiclk_ppm.targ_freq < effective_fmin_floor) {
+		aiclk_ppm.targ_freq = effective_fmin_floor;
 		info.reason = limit_reason_fmin;
 		info.arbiter = 0U;
 	}
@@ -473,6 +478,35 @@ static uint8_t set_arb_host_fmax_handler(const union request *request, struct re
 	return 0;
 }
 
+/** @brief Handles the request to set ASIC host minimum frequency floor
+ * @param[in] request The request, of type @ref set_asic_host_fmin_rqst, with command code
+ *	@ref TT_SMC_MSG_SET_ASIC_HOST_FMIN
+ * @param[out] response The response to the host
+ * @return 0 for success, 1 for invalid input
+ */
+static uint8_t set_arb_host_fmin_handler(const union request *request, struct response *response)
+{
+	uint32_t new_fmin;
+
+	if (request->set_asic_host_fmin.restore_default) {
+		/* Disable the host-requested minimum */
+		aiclk_ppm.host_requested_fmin = 0;
+		LOG_INF("host fmin floor disabled");
+		return 0;
+	}
+
+	new_fmin = request->set_asic_host_fmin.asic_fmin;
+
+	/* Reject if outside valid range [AICLK_FMIN_MIN, AICLK_FMIN_MAX] */
+	if (new_fmin > (uint32_t)AICLK_FMIN_MAX || new_fmin < (uint32_t)AICLK_FMIN_MIN) {
+		return 1;
+	}
+
+	aiclk_ppm.host_requested_fmin = new_fmin;
+	LOG_INF("host fmin floor set to %u MHz", new_fmin);
+	return 0;
+}
+
 uint8_t throttler_counter_handler(const union request *request, struct response *response)
 {
 	switch (request->counter.command) {
@@ -515,3 +549,4 @@ REGISTER_MESSAGE(TT_SMC_MSG_GET_AICLK, get_aiclk_handler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_START, SweepAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_AISWEEP_STOP, SweepAiclkHandler);
 REGISTER_MESSAGE(TT_SMC_MSG_SET_ASIC_HOST_FMAX, set_arb_host_fmax_handler);
+REGISTER_MESSAGE(TT_SMC_MSG_SET_ASIC_HOST_FMIN, set_arb_host_fmin_handler);
