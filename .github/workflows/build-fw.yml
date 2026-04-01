@@ -394,8 +394,29 @@ jobs:
         run: |
           ./build-flm.sh
 
+  discover-smc-tests:
+    runs-on: ubuntu-24.04
+    outputs:
+      tests: ${{ steps.discover.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tt-system-firmware
+
+      - name: Discover SMC Tests
+        id: discover
+        shell: bash
+        run: |
+          # Parse sample.yaml to find tests with build-ci tag
+          cd tt-system-firmware
+
+          TESTS=$(./scripts/discover_build_ci_tests.py)
+          echo "tests=$TESTS" >> $GITHUB_OUTPUT
+          echo "Discovered tests: $TESTS"
+
   smc-build-only-tests:
     runs-on: ubuntu-24.04
+    needs: discover-smc-tests
     strategy:
       fail-fast: false
       matrix:
@@ -403,9 +424,7 @@ jobs:
           - p100a
           - p150a
           - p300a
-        test:
-          - app.tracing
-          - app.tt_shell
+        test: ${{ fromJson(needs.discover-smc-tests.outputs.tests) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -426,9 +445,8 @@ jobs:
       - name: Build SMC Build Only Tests
         shell: bash
         run: |
-          # Convert test names to twister scenario filter and create safe artifact name
-          TEST_SCENARIOS="${{ matrix.test }}"
-          TEST_ID=$(echo "${{ matrix.test }}" | tr ' .' '-')
+          # Create safe artifact name
+          TEST_ID=$(echo "${{ matrix.test }}" | tr '.' '-')
           echo "TEST_ID=$TEST_ID" >> $GITHUB_ENV
 
           ./zephyr/scripts/twister \
@@ -437,8 +455,8 @@ jobs:
             -T tt-system-firmware/app/smc \
             --outdir twister-smc-tests-${{ matrix.board }}-$TEST_ID \
             --runtime-artifact-cleanup pass \
-            -s "$TEST_SCENARIOS" \
-            -j 2
+            -s "${{ matrix.test }}" \
+            -j 4
 
       - name: Upload Artifacts
         if: ${{ always() }}
@@ -453,9 +471,9 @@ jobs:
             twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/.config
             twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/*.map
             twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/zephyr.elf
-            twister-smc-tests-${{ matrix.board }}/**/*.lst
-            twister-smc-tests-${{ matrix.board }}/twister.log
-            twister-smc-tests-${{ matrix.board }}/twister.json
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/**/*.lst
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/twister.log
+            twister-smc-tests-${{ matrix.board }}-${{ env.TEST_ID }}/twister.json
 
   grendel-build-test:
     runs-on: ubuntu-24.04
