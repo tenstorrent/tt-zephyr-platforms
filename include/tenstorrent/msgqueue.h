@@ -698,6 +698,48 @@ struct toggle_tensix_reset_rqst {
 	uint8_t command_code;
 };
 
+/** @brief Host request to unlock flash for writing
+ * @details Messages of this type are processed by @ref flash_unlock_handler.
+ *
+ * This is a command-only request with no additional arguments.
+ */
+struct flash_unlock_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_FLASH_UNLOCK */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+};
+
+/** @brief Host request to lock flash writes
+ * @details Messages of this type are processed by @ref flash_lock_handler.
+ *
+ * This is a command-only request with no additional arguments.
+ */
+struct flash_lock_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_FLASH_LOCK */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+};
+
+/** @brief Host request to confirm SPI flash operation
+ * @details Messages of this type are processed by @ref confirm_flashed_spi_handler.
+ *
+ * Challenge message issued from tt-flash to confirm a firmware update.
+ */
+struct confirm_flashed_spi_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_CONFIRM_FLASHED_SPI */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief Challenge data for confirmation */
+	uint32_t challenge_data;
+};
+
 /** @brief A tenstorrent host request*/
 union request {
 	/** @brief The interpretation of the request as an array of uint32_t entries*/
@@ -794,11 +836,21 @@ union request {
 
 	/** @brief A set ASIC host fmax request */
 	struct set_asic_host_fmax_rqst set_asic_host_fmax;
+
 	/** @brief A report scratch-only request */
 	struct report_scratch_only_rqst report_scratch_only;
 
 	/** @brief A generic counter request */
 	struct counter_rqst counter;
+
+	/** @brief A flash unlock request */
+	struct flash_unlock_rqst flash_unlock;
+
+	/** @brief A flash lock request */
+	struct flash_lock_rqst flash_lock;
+
+	/** @brief A confirm SPI flash request */
+	struct confirm_flashed_spi_rqst confirm_flashed_spi;
 };
 
 /** @} */
