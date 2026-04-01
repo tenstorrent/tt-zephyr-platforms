@@ -53,17 +53,16 @@ First, ssh into an SOC lab host and setup the environment:
     mkdir -p /proj_soc/user_dev/$USER/
     cd /proj_soc/user_dev/$USER/
 
-    # Clone the Mimir SOC repository
-    git clone <mimir_soc_git_url>
-    cd mimir_soc
+    # Clone the Grendel Emulation Repository
+    git clone <grendel_emulation_url>
+    cd grendelemulation/models/mimir
 
     # Setup the environment, these have to be done at every login
     source /tools_soc/tt/bin/bashrc
-    source emu/bin/setup_env.sh
+    source ./bin/setup_env.sh
 
     # Run the default SMC test
-    cd emu/tests
-    ./run-smc-test.sh
+    zrun tests/test_smc.py -- -svk test_smc_plusargs
 
 To run a Zephyr binary in the Mimir enumlation environment, upload the built binary stored in ``<build-dir>/zephyr/zephyr.bin``,
 to the emulation system using ``scp`` or a similar tool before running.
@@ -78,27 +77,25 @@ For example, you could run the hello world application as follows:
 
     # Source the environment every login
     ssh <user@emu-host>
+    cd /proj_soc/user_dev/$USER/grendelemulation/models/mimir
     source /tools_soc/tt/bin/bashrc
-    source emu/bin/setup_env.sh
+    source ./setup_env.sh
 
     # Run the emulation
-    cd emu/bin
-    ./run-smc-test.sh ~/zephyr.bin
+    zrun tests/test_smc.py -- -svk test_smc_plusargs +bin_file=<zephyr.bin>
 
 The zrun process should include output like the following:
 
 .. code-block:: console
 
-    2025-06-23 16:31:00,759 INFO     pytest_plugin.dut                  Sim time = 204,008.22 ns, Real time = 0.60 s, Ratio = 337,660.34 ns/s
-    CONSOLE: *** Booting Zephyr OS build v4.1.0-rc2 ***
-    CONSOLE: Hello World!
+    TEST                         STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s)
+    -------------------------------------------------------------------------------
+    test_smc::test_smc_plusargs  PASSED      72,500.62           0.67    108,449.29
+    -------------------------------------------------------------------------------
+    TOTAL                                    72,500.62           0.67    108,449.29
 
-
-    TEST                       STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s)
-    -----------------------------------------------------------------------------
-    test_smc::test_smc_binary  PASSED     204,008.22           0.60    337,660.34
-    -----------------------------------------------------------------------------
-    TOTAL                                 204,008.22           0.60    337,660.34
+Console output for the run can be found within
+``zrun/test_smc-test_smc_plusargs/console-smc.log``
 
 Running Within SMC Simulation Environment
 =========================================
