@@ -71,6 +71,8 @@ enum tt_smc_msg {
 	TT_SMC_MSG_SET_TDP_LIMIT = 0x22,
 	/** @brief @ref set_asic_host_fmax_rqst "Set ASIC fmax request" */
 	TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23,
+	/** @brief @ref dmc_command_rqst "DMC command request" */
+	TT_SMC_MSG_DMC_COMMAND = 0x24,
 	/** @brief @ref get_freq_curve_from_voltage_rqst "Frequency Curve from Voltage Request"*/
 	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
 	/** @brief @ref aisweep_rqst "Start AICLK sweep request" */

@@ -34,6 +34,7 @@
 #include <tenstorrent/tt_smbus_regs.h>
 
 #define RESET_UNIT_ARC_PC_CORE_0 0x80030C00
+#define RESET_UNIT_SCRATCH_0 0x80030060
 
 #define INITIAL_FAN_SPEED 35
 #define LED_BLINK_RATE_MS 400
@@ -43,6 +44,8 @@ LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 BUILD_ASSERT(FIXED_PARTITION_EXISTS(bmfw), "bmfw fixed-partition does not exist");
 
 static bool blink_led;
+static int bh_chip_log_tgt = BH_CHIP_PRIMARY_INDEX;
+static uint32_t jtag_dump_addr;
 
 struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), chips, INIT_CHIP)};
 
@@ -201,6 +204,95 @@ static bool process_led_blink_request(struct bh_chip *chip, uint8_t msg_id, uint
 	return false;
 }
 
+static bool process_dmc_command(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
+{
+	dmc_command_data cmd_data;
+
+	cmd_data.raw_data = msg_data;
+	switch (cmd_data.dmc_command_data.dmc_command_code) {
+	uint32_t chip_pc, chip_postcode;
+	uint8_t asic_idx, num_bytes, log_target;
+	uint32_t data[64]; /* Buffer for JTAG dump, max 256 bytes / 4 bytes per word */
+
+	case kDmcCmdDumpAsicState:
+		LOG_INF("Received DMC command to dump ASIC state");
+		ARRAY_FOR_EACH_PTR(BH_CHIPS, chip) {
+			LOG_INF("Dumping state for chip %p", chip);
+			LOG_INF("Telemetry heartbeat: %u", chip->data.telemetry_heartbeat);
+			LOG_INF("Auto reset timeout: %u", chip->data.auto_reset_timeout);
+			LOG_INF("Thermal trip count: %u", chip->data.therm_trip_count);
+			LOG_INF("PGOOD last trip time (ms): %lld", chip->data.pgood_last_trip_ms);
+			LOG_INF("PGOOD severe fault: %d", chip->data.pgood_severe_fault);
+			LOG_INF("Fan speed: %d%%", chip->data.fan_speed);
+			LOG_INF("CM2DM message sequence number: %d (valid: %d)",
+				chip->data.last_cm2dm_seq_num,
+				chip->data.last_cm2dm_seq_num_valid);
+			/* Read PC and postcode via JTAG */
+			jtag_setup(chip->config.jtag);
+			jtag_reset(chip->config.jtag);
+			jtag_axi_read32(chip->config.jtag, RESET_UNIT_ARC_PC_CORE_0,
+					&chip_pc);
+			jtag_axi_read32(chip->config.jtag, RESET_UNIT_SCRATCH_0,
+					&chip_postcode);
+			jtag_teardown(chip->config.jtag);
+			LOG_INF("Program counter 0x%08x", chip_pc);
+			LOG_INF("Postcode 0x%08x", chip_postcode);
+		}
+		break;
+	case kDmcCmdSetLogTarget:
+		log_target = cmd_data.dmc_command_data.arg0;
+		LOG_INF("Received DMC command to set log target to %d", log_target);
+		if (cmd_data.dmc_command_data.arg0 < BH_CHIP_COUNT) {
+			bh_chip_log_tgt = log_target;
+		} else {
+			LOG_WRN("Received DMC command to set log target to invalid ASIC index %d",
+				log_target);
+		}
+		break;
+	case kDmcCmdResetAsic:
+		asic_idx = cmd_data.dmc_command_data.arg0;
+		LOG_INF("Received DMC command to reset ASIC %d", asic_idx);
+		if (asic_idx < BH_CHIP_COUNT) {
+			bh_chip_cancel_bus_transfer_clear(&BH_CHIPS[asic_idx]);
+			bh_chip_reset_chip(&BH_CHIPS[asic_idx], true);
+		} else {
+			LOG_WRN("Received DMC command to reset invalid ASIC index %d", asic_idx);
+		}
+		break;
+	case kDmcCmdSetJtagDumpAddr:
+		jtag_dump_addr = (cmd_data.dmc_command_data.arg2 << 24) |
+				(cmd_data.dmc_command_data.arg1 << 16) |
+				(cmd_data.dmc_command_data.arg0 << 8);
+		LOG_INF("Received DMC command to set JTAG dump address to 0x%08x", jtag_dump_addr);
+		break;
+	case kDmcCmdDumpJtagData:
+		asic_idx = cmd_data.dmc_command_data.arg0;
+		num_bytes = cmd_data.dmc_command_data.arg1;
+		if (asic_idx < BH_CHIP_COUNT) {
+			LOG_INF("Received DMC command to dump %d bytes of JTAG data "
+				"from ASIC %d starting at 0x%08x",
+				num_bytes, asic_idx, jtag_dump_addr);
+			jtag_setup(BH_CHIPS[asic_idx].config.jtag);
+			jtag_reset(BH_CHIPS[asic_idx].config.jtag);
+			for (uint32_t offset = 0; offset < num_bytes; offset += 4) {
+				jtag_axi_read32(BH_CHIPS[asic_idx].config.jtag,
+						jtag_dump_addr + offset, &data[offset / 4]);
+			}
+			LOG_HEXDUMP_INF(data, num_bytes, "JTAG dump");
+			jtag_teardown(BH_CHIPS[asic_idx].config.jtag);
+		} else {
+			LOG_WRN("Received DMC command to dump JTAG data from invalid ASIC index %d",
+				asic_idx);
+		}
+		break;
+	default:
+		LOG_WRN("Received unknown DMC command code %d",
+			cmd_data.dmc_command_data.dmc_command_code);
+		break;
+	}
+	return false;
+}
+
 void process_cm2dm_message(struct bh_chip *chip)
 {
 	typedef bool (*msg_processor_t)(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data);
@@ -214,6 +306,7 @@ void process_cm2dm_message(struct bh_chip *chip)
 		[kCm2DmMsgIdAutoResetTimeoutUpdate] = process_auto_reset_timeout_update,
 		[kCm2DmMsgTelemHeartbeatUpdate] = process_heartbeat_update,
 		[kCm2DmMsgIdLedBlink] = process_led_blink_request,
+		[kCm2DmMsgCmd] = process_dmc_command,
 	};
 
 	for (uint32_t i = 0U; i < kCm2DmMsgCount; i++) {
@@ -542,7 +635,7 @@ static void send_logs_to_smc(void)
 	ret = log_backend_ringbuf_get_claim(&log_data, 32);
 	if (ret > 0) {
 		/* Write log data to the first BH chip */
-		if (bh_chip_write_logs(&BH_CHIPS[BH_CHIP_PRIMARY_INDEX], log_data, ret) == 0) {
+		if (bh_chip_write_logs(&BH_CHIPS[bh_chip_log_tgt], log_data, ret) == 0) {
 			/* Only finish the claim if the write was successful */
 			log_backend_ringbuf_finish_claim(ret);
 		} else {
