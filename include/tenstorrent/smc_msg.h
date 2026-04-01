@@ -17,7 +17,9 @@ extern "C" {
 #endif
 
 /**
- * @addtogroup tt_msg_apis
+ * @defgroup tt_smc_msg_enum SMC Message IDs
+ * @ingroup tt_msg_apis
+ * @brief Enumeration of all available SMC message command IDs
  * @{
  */
 
