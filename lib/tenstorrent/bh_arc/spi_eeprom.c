@@ -221,19 +221,32 @@ static uint8_t write_eeprom_handler(const union request *request, struct respons
 	return SpiSmartWrite(spi_address, csm_addr, num_bytes);
 }
 
-/* Challenge message issued from tt-flash to confirm a firmware update. */
+/**
+ * @brief Confirms SPI flash operation by echoing challenge data
+ * @details Echoes the challenge data from request field back to response data[1]
+ *          to confirm firmware update completion
+ */
 static uint8_t confirm_flashed_spi_handler(const union request *request, struct response *response)
 {
-	response->data[1] = request->data[1];
+	response->data[1] = request->confirm_flashed_spi.challenge_data;
 	return 0;
 }
 
+/**
+ * @brief Locks flash memory to prevent writes
+ * @details Sets the global flash_locked flag to true, blocking all subsequent
+ *          flash write operations until unlocked
+ */
 static uint8_t flash_lock_handler(const union request *request, struct response *response)
 {
 	flash_locked = true;
 	return 0;
 }
 
+/**
+ * @brief Unlocks flash memory to allow writes
+ * @details Clears the global flash_locked flag, enabling flash write operations
+ */
 static uint8_t flash_unlock_handler(const union request *request, struct response *response)
 {
 	flash_locked = false;

@@ -149,11 +149,11 @@ enum tt_smc_msg {
 	/** @brief Ping DMC request */
 	TT_SMC_MSG_PING_DM = 0xC0,
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
-	/** @brief Flash write unlock request */
+	/** @brief @ref flash_unlock_rqst "Flash write unlock request" */
 	TT_SMC_MSG_FLASH_UNLOCK = 0xC2,
-	/** @brief Flash write lock request */
+	/** @brief @ref flash_lock_rqst "Flash write lock request" */
 	TT_SMC_MSG_FLASH_LOCK = 0xC3,
-	/** @brief Confirm SPI flash succeeded */
+	/** @brief @ref confirm_flashed_spi_rqst "Confirm SPI flash succeeded" */
 	TT_SMC_MSG_CONFIRM_FLASHED_SPI = 0xC4,
 	/** @brief @ref led_blink_rqst "Toggle red LED on the board" */
 	TT_SMC_MSG_BLINKY = 0xC5,
