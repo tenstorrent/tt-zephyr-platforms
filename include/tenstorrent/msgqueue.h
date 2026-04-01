@@ -55,6 +55,13 @@ struct message_queue_header {
  * @{
  */
 
+/**
+ * @defgroup tt_msg_structs Message Request Structures
+ * @ingroup tt_msg_apis
+ * @brief Structures and enums used for different types of host requests
+ * @{
+ */
+
 /** @brief Counter commands */
 enum counter_cmd {
 	/** @brief Read counter values and status */
@@ -852,6 +859,8 @@ union request {
 	/** @brief A confirm SPI flash request */
 	struct confirm_flashed_spi_rqst confirm_flashed_spi;
 };
+
+/** @} */
 
 /** @} */
 
