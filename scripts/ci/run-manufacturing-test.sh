@@ -1,13 +1,13 @@
 #!/bin/env bash
 
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2025 Tenstorrent AI ULC
+# Copyright (c) 2026 Tenstorrent AI ULC
 
 # This script runs the manufacturing test sequence for Blackhole boards.
 # It assumes the following:
-# - pyocd is installed and available in the PATH
-# - tt-flash is installed and available in the PATH
-# - The DUT is connected and accessible via JTAG
+# - pyocd is installed for early SPI preflash (step 1) and assembly DMC flash (step 2)
+# - pyluwen is available for production SPI programming over PCIe/SMC (step 5)
+# - The DUT is reachable via JTAG for pyocd steps and enumerated on PCIe for step 5
 # - All required firmware artifacts are available in the specified directories
 
 set -e
@@ -79,6 +79,8 @@ function verify_pcie_enumeration {
 	local TIMEOUT=60
 	local ELAPSED=0
 	while true; do
+		echo "Rescanning PCIe bus..."
+		"$TT_Z_P_ROOT"/scripts/rescan-pcie.sh
 		local COUNT=0
 		for dev in /sys/bus/pci/devices/*/vendor; do
 			if [ -f "$dev" ] && [ "$(cat "$dev")" = "0x1e52" ]; then
@@ -95,8 +97,7 @@ function verify_pcie_enumeration {
 				"enumerated after ${TIMEOUT}s"
 			return 1
 		fi
-		echo "Rescanning PCIe bus..."
-		echo 1 > /sys/bus/pci/rescan
+		echo "Retrying in 2 seconds..."
 		sleep 2
 		ELAPSED=$((ELAPSED + 2))
 	done
@@ -139,11 +140,12 @@ python3 "$TT_Z_P_ROOT"/scripts/dmc_reset.py
 echo "=== Step 4: Verify PCIe enumeration (assembly test FW) ==="
 verify_pcie_enumeration "assembly test FW"
 
-# ---- Step 5: Flash production FW via tt-flash ----
-echo "=== Step 5: Flash production firmware ==="
+# ---- Step 5: Flash full production fwbundle to SPI over PCIe (SMC on ARC) ----
+echo "=== Step 5: Flash production firmware bundle to SPI (PCIe / SMC) ==="
 FWBUNDLE=$(ls "$FWBUNDLE_DIR"/fw_pack*.fwbundle | head -1)
 echo "Using firmware bundle: $FWBUNDLE"
-tt-flash "$FWBUNDLE" --force
+python3 "$TT_Z_P_ROOT"/scripts/smc_spi_flash.py \
+	--board-name "$BOARD" -v flash-fwbundle "$FWBUNDLE"
 
 # ---- Step 6: DMC reset (simulate cold boot after bootstrap) ----
 echo "=== Step 6: DMC reset after production flash ==="
@@ -152,5 +154,13 @@ python3 "$TT_Z_P_ROOT"/scripts/dmc_reset.py
 # ---- Step 7: Verify PCIe enumeration (production FW) ----
 echo "=== Step 7: Verify PCIe enumeration (production FW) ==="
 verify_pcie_enumeration "production FW"
+
+# ---- Step 8: Verify ARC + DMC are responsive (proves production FW booted) ----
+echo "=== Step 8: Verify production firmware is running ==="
+for ASIC_ID in $(seq 0 $((NUM_ASICS - 1))); do
+	echo "Checking ASIC $ASIC_ID..."
+	python3 "$TT_Z_P_ROOT"/scripts/check_card.py \
+		--asic-id "$ASIC_ID" --timeout 60
+done
 
 echo "=== Manufacturing test completed successfully! ==="

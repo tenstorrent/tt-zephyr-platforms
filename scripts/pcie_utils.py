@@ -177,18 +177,18 @@ def wait_for_enum(asic_id=0, timeout=60, delay=2):
     deadline = time.time() + timeout
 
     while time.time() < deadline:
-        try:
-            rescan_pcie()
-        except PermissionError:
-            logger.error("Permission denied rescanning PCIe bus")
-            return False
-
         if check_card_status(asic_id):
             return True
 
         remaining = deadline - time.time()
         logger.info("Card not ready, retrying... (%.0fs remaining)", remaining)
         time.sleep(delay)
+
+        try:
+            rescan_pcie()
+        except PermissionError:
+            logger.error("Permission denied rescanning PCIe bus")
+            return False
 
     logger.error(
         "Timed out after %ds waiting for card %d to enumerate", timeout, asic_id
