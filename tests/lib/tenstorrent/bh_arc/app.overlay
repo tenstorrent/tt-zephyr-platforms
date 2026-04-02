@@ -29,6 +29,11 @@
 		num_ts = <8>;
 		status = "okay";
 	};
+
+	wdt0: wdt0 {
+		compatible = "tenstorrent,bh-watchdog";
+		status = "okay";
+	};
 };
 
 &i2c0 {
