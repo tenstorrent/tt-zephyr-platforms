@@ -16,6 +16,28 @@ TT_Z_P_ROOT=$(realpath $(dirname $(realpath $0))/../..)
 # Prefer Zephyr base from environment, otherwise use the one in this repo
 ZEPHYR_BASE=${ZEPHYR_BASE:-$(realpath $TT_Z_P_ROOT/../zephyr)}
 
+run_twister_test() {
+    # Set tag and outdir suffix args and remove from argument list
+    local tag=$1
+    local outdir_suffix=$2
+    shift 2
+
+    # Common Twister execution
+    $ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
+        --tag "$tag" -T "$TT_Z_P_ROOT/app" \
+        --west-flash="--force,--allow-major-downgrades" \
+        --west-runner tt_flash \
+        --device-testing -c \
+        --device-flash-timeout 240 \
+        --device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV -p" \
+        --failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
+        --flash-before \
+        --outdir "$ZEPHYR_BASE/twister-$outdir_suffix" \
+        --extra-args=SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
+		-ll DEBUG \
+        "$@"
+}
+
 function print_help {
 	echo -n "Usage: $0 [-p <pcie_index>] [-t test_set] [-k <keyfile>] "
 	echo "<board_name> -- [additional twister args]"
@@ -55,7 +77,7 @@ export CONSOLE_DEV
 export BOARD
 
 if [ -z "$TEST_SET" ]; then
-    TEST_SET=":e2e-flash"
+    TEST_SET=":e2e-flash:recovery-flash"
 fi
 
 if [ -z "$KEYFILE" ]; then
@@ -83,19 +105,8 @@ make -C $TT_Z_P_ROOT/scripts/tooling -j$(nproc)
 
 if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 	# Run a full flash test, using tt-flash as the runner
-	$ZEPHYR_BASE/scripts/twister -i -p $SMC_BOARD \
-		--tag e2e-flash -T $TT_Z_P_ROOT/app \
-		--west-flash="--force,--allow-major-downgrades" \
-		--west-runner tt_flash \
-		--device-testing -c \
-		--device-flash-timeout 240 \
-		--device-serial-pty "$TT_Z_P_ROOT/scripts/smc_console.py -d $CONSOLE_DEV -p" \
-		--failure-script "$TT_Z_P_ROOT/scripts/smc_test_recovery.py --asic-id $ASIC_ID" \
-		--flash-before \
-		--outdir $ZEPHYR_BASE/twister-e2e-flash \
-		--extra-args=SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$KEYFILE\" \
-		-ll DEBUG \
-		$@
+    run_twister_test "e2e-flash" "e2e-flash" "$@"
+
 	# Restore a stable DMFW, since the copy flashed by BL2 tests will
 	# leave the DMC flash in a different state than other tests expect
 	# We erase the DMC flash first to ensure no old image fragments remain
@@ -105,4 +116,9 @@ if [[ "$TEST_SET" == *"e2e-flash"* ]]; then
 		--cmd-erase 'flash erase_sector 0 0 last'
 	west flash -d $ZEPHYR_BASE/build-dmc --domain dmc
 	rm -rf $ZEPHYR_BASE/build-dmc
+fi
+
+if [[ "$TEST_SET" == *"recovery-flash"* ]]; then
+    # Run a recovery flash test
+    run_twister_test "recovery" "recovery-flash" "$@"
 fi
