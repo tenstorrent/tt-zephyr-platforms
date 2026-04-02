@@ -6,7 +6,6 @@
 # This script runs the manufacturing test sequence for Blackhole boards.
 # It assumes the following:
 # - pyocd is installed and available in the PATH
-# - tt-flash is installed and available in the PATH
 # - The DUT is connected and accessible via JTAG
 # - All required firmware artifacts are available in the specified directories
 
@@ -139,11 +138,15 @@ python3 "$TT_Z_P_ROOT"/scripts/dmc_reset.py
 echo "=== Step 4: Verify PCIe enumeration (assembly test FW) ==="
 verify_pcie_enumeration "assembly test FW"
 
-# ---- Step 5: Flash production FW via tt-flash ----
+# ---- Step 5: Flash production FW to SPI via pyocd (STM32 SWD) ----
 echo "=== Step 5: Flash production firmware ==="
 FWBUNDLE=$(ls "$FWBUNDLE_DIR"/fw_pack*.fwbundle | head -1)
 echo "Using firmware bundle: $FWBUNDLE"
-tt-flash "$FWBUNDLE" --force
+python3 "$TT_Z_P_ROOT"/scripts/spi_flash.py \
+	--board-name "$BOARD" --no-prompt -v full_erase
+python3 "$TT_Z_P_ROOT"/scripts/spi_flash.py \
+	--board-name "$BOARD" --no-prompt -v \
+	write_from_fwbundle "$FWBUNDLE"
 
 # ---- Step 6: DMC reset (simulate cold boot after bootstrap) ----
 echo "=== Step 6: DMC reset after production flash ==="
@@ -152,5 +155,13 @@ python3 "$TT_Z_P_ROOT"/scripts/dmc_reset.py
 # ---- Step 7: Verify PCIe enumeration (production FW) ----
 echo "=== Step 7: Verify PCIe enumeration (production FW) ==="
 verify_pcie_enumeration "production FW"
+
+# ---- Step 8: Verify ARC + DMC are responsive (proves production FW booted) ----
+echo "=== Step 8: Verify production firmware is running ==="
+for ASIC_ID in $(seq 0 $((NUM_ASICS - 1))); do
+	echo "Checking ASIC $ASIC_ID..."
+	python3 "$TT_Z_P_ROOT"/scripts/check_card.py \
+		--asic-id "$ASIC_ID" --timeout 60
+done
 
 echo "=== Manufacturing test completed successfully! ==="
