@@ -150,6 +150,7 @@ enum tt_smc_msg {
 	TT_SMC_MSG_EFUSE_BURN = 0xBF,
 	/** @brief Ping DMC request */
 	TT_SMC_MSG_PING_DM = 0xC0,
+	/** @brief @ref set_wdt_timeout_rqst "Set watchdog timeout request" */
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
 	/** @brief @ref flash_unlock_rqst "Flash write unlock request" */
 	TT_SMC_MSG_FLASH_UNLOCK = 0xC2,
