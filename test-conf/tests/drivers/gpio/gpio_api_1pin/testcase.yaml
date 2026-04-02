@@ -28,5 +28,8 @@ tests:
       - "platform:tt_mimir/tt_mimir/smc:DTC_OVERLAY_FILE=\
          ../../../../../tt-system-firmware/test-conf/tests/drivers/gpio/gpio_api_1pin/\
          boards/tt_mimir_tt_mimir_smc.overlay"
+      - "platform:tt_mimir/tt_mimir/smc:CONF_FILE=\
+         ../../../../../tt-system-firmware/test-conf/tests/drivers/gpio/gpio_api_1pin/\
+         boards/tt_mimir_tt_mimir_smc.conf"
     harness_config:
       fixture: gpio_external_pull_down
