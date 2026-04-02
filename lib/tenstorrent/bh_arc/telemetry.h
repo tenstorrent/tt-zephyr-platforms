@@ -92,7 +92,12 @@
 /** @brief L2CPU clock 3 frequency in megahertz. */
 #define TAG_L2CPUCLK3 20
 
-/** @brief Ethernet live status. */
+/** @brief Ethernet live status.
+ * [15:0] - heartbeat status bitmask
+ *      (1 = heartbeat alive, 0 = no heartbeat)
+ * [31:16] - live link status bitmask
+ *      (1 = link up, 0 = link down)
+ */
 #define TAG_ETH_LIVE_STATUS 21
 
 /** @brief GDDR training and BIST status.
