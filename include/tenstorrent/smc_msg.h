@@ -123,6 +123,8 @@ enum tt_smc_msg {
 	TT_SMC_MSG_FORCE_FAN_SPEED = 0xAC,
 	/** @brief Get DRAM temperature request (not supported) */
 	TT_SMC_MSG_GET_DRAM_TEMPERATURE = 0xAD,
+	/** @brief @ref toggle_single_tensix_reset_rqst "Toggle single Tensix reset request" */
+	TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET = 0xAE,
 	/** @brief @ref toggle_tensix_reset_rqst "Toggle Tensix reset request" */
 	TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF,
 	/** @brief DRAM BIST start request (not supported) */

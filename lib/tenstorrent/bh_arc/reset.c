@@ -15,8 +15,12 @@
 #include "noc2axi.h"
 #include "reg.h"
 #include "status_reg.h"
+#include "tensix.h"
 #include "tensix_init.h"
+#include "aiclk_ppm.h"
 #include "bh_reset.h"
+
+#include <tenstorrent/bh_power.h>
 
 #include <stdint.h>
 
@@ -191,6 +195,91 @@ static __maybe_unused uint8_t ToggleTensixReset(const union request *req, struct
 
 #ifndef CONFIG_TT_SMC_RECOVERY
 REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_TENSIX_RESET, ToggleTensixReset);
+#endif
+
+static __maybe_unused uint8_t ToggleSingleTensixReset(const union request *req,
+						      struct response *rsp)
+{
+	uint8_t noc_x = req->toggle_single_tensix_reset.noc_x;
+	uint8_t noc_y = req->toggle_single_tensix_reset.noc_y;
+
+	/* The host sends logical (post-translation) NOC coordinates.
+	 * Convert to physical (pre-translation) so NocToTensixPhysX/Y
+	 * can map them to the correct grid indices for the reset registers.
+	 */
+	uint8_t phys_x, phys_y;
+
+	NocLogicalToPhysical(noc_x, noc_y, &phys_x, &phys_y);
+
+	uint8_t tensix_col = NocToTensixPhysX(phys_x, 0);
+	uint8_t tensix_row = NocToTensixPhysY(phys_y, 0);
+
+	if (tensix_col >= NUM_TENSIX_X || tensix_row >= NUM_TENSIX_Y) {
+		rsp->data[0] = 1;
+		return 1;
+	}
+
+	uint8_t tensix_index = (NUM_TENSIX_Y * tensix_col) + tensix_row;
+	uint8_t reg_index = tensix_index / 32;
+	uint8_t bit_index = tensix_index % 32;
+
+	uint32_t tile_addr = RESET_UNIT_TENSIX_RESET_0_REG_ADDR + 4 * reg_index;
+	uint32_t risc_addr = RESET_UNIT_TENSIX_RISC_RESET_0_REG_ADDR + 4 * reg_index;
+
+	SetAiclkResetSafe(true);
+
+	/* RISC reset assert */
+	uint32_t risc_val = sys_read32(risc_addr);
+
+	sys_write32(risc_val & ~BIT(bit_index), risc_addr);
+
+	/* Tile reset assert */
+	uint32_t tensix_val = sys_read32(tile_addr);
+
+	sys_write32(tensix_val & ~BIT(bit_index), tile_addr);
+
+	/* Tile reset deassert */
+	sys_write32(tensix_val | BIT(bit_index), tile_addr);
+
+	/* The init functions use NOC2AXITlbSetup with
+	 * physical NOC coordinates; disable ARC translation first to
+	 * prevent double-translation.
+	 */
+	DisableArcNocTranslation();
+
+	NocInitSingleTile(phys_x, phys_y);
+	ProgramNocTranslationSingleTile(phys_x, phys_y);
+	EnableTensixCG(false, phys_x, phys_y);
+
+	/* RISC soft reset assert */
+	NOC2AXITlbSetup(kNocRing, kNocTlb, phys_x, phys_y, kSoftReset0Addr);
+	NOC2AXIWrite32(kNocRing, kNocTlb, kSoftReset0Addr, kAllRiscSoftReset);
+
+	RestoreArcNocTranslation();
+
+	/* RISC reset deassert */
+	sys_write32(risc_val | BIT(bit_index), risc_addr);
+
+	SetAiclkResetSafe(false);
+
+	tensix_inject_instruction(TENSIX_INSTRUCTION_UNPACR, 0, false, noc_x, noc_y);
+
+	/* NocInitSingleTile un-gates the tile clock.
+	 * If tensix was in low power, clock gate this tile.
+	 */
+	bool power_state;
+
+	bh_power_state_get(BH_POWER_DOMAIN_TENSIX, &power_state);
+	if (!power_state) {
+		SetSingleTileClockGate(phys_x, phys_y, true);
+	}
+
+	rsp->data[0] = 0;
+	return 0;
+}
+
+#ifndef CONFIG_TT_SMC_RECOVERY
+REGISTER_MESSAGE(TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET, ToggleSingleTensixReset);
 #endif
 
 /**

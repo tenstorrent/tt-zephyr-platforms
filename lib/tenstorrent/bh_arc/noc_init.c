@@ -50,6 +50,10 @@
 #define STREAM_PERF_CONFIG_REG_INDEX 35
 #define CLOCK_GATING_EN              0
 
+static const uint32_t kNoc0RegBase = 0x80050000;
+static const uint32_t kNoc1RegBase = 0x80058000;
+static const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;
+
 static const uint8_t kTlbIndex;
 
 static const uint32_t kFirstCfgRegIndex = 0x100 / sizeof(uint32_t);
@@ -219,66 +223,25 @@ int32_t set_tensix_enable(bool enable)
 	return 0;
 }
 
+void SetSingleTileClockGate(uint8_t phys_x, uint8_t phys_y, bool gate)
+{
+	volatile uint32_t *noc_regs = SetupNiuTlbPhys(kTlbIndex, phys_x, phys_y, 0);
+
+	uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, gate);
+	WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+}
+
 int NocInit(void)
 {
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
 		return 0;
 	}
 
-	/* Initialize NOC so we can broadcast to all Tensixes */
-	uint32_t niu_cfg_0_updates =
-		BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF); /* noc2axi tile header double-write feature
-						       * disable, ignored on all other nodes
-						       */
-
-	uint32_t router_cfg_0_updates = 0xF << 8; /* max backoff exp */
-
-	bool cg_en = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en;
-
-	if (cg_en) {
-		niu_cfg_0_updates |= BIT(0);    /* NIU clock gating enable */
-		router_cfg_0_updates |= BIT(0); /* router clock gating enable */
-	}
-
-	/* In cable fault mode, all tiles are deasserted from hardware reset
-	 * but clock-gated via NIU_CFG_0 TILE_CLK_OFF (except ARC at px=15).
-	 * The full NOC grid is configured so all routers remain alive.
-	 */
-
 	for (uint32_t py = 0; py < NOC_Y_SIZE; py++) {
 		for (uint32_t px = 0; px < NOC_X_SIZE; px++) {
-			for (uint32_t noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
-				volatile uint32_t *noc_regs =
-					SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
-
-				uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
-
-				niu_cfg_0 |= niu_cfg_0_updates;
-
-				/* In cable fault mode, clock-gate ALL tiles except
-				 * column 15 (contains ARC) to minimize power. In normal mode,
-				 * only clock-gate harvested tiles.
-				 */
-				bool tile_clk_off;
-
-				if (is_cable_fault_mode()) {
-					tile_clk_off = (px != 15); /* keep ARC column active */
-				} else {
-					tile_clk_off = GetTileClkDisable(px, py);
-				}
-
-				WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, tile_clk_off);
-				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
-
-				uint32_t router_cfg_0 = ReadNocCfgReg(noc_regs, ROUTER_CFG(0));
-
-				router_cfg_0 |= router_cfg_0_updates;
-				WriteNocCfgReg(noc_regs, ROUTER_CFG(0), router_cfg_0);
-			}
-
-			if (cg_en) {
-				EnableOverlayCg(kTlbIndex, px, py);
-			}
+			NocInitSingleTile(PhysXToNoc(px, 0), PhysYToNoc(py, 0));
 		}
 	}
 
@@ -293,6 +256,53 @@ int NocInit(void)
 }
 SYS_INIT_APP(NocInit);
 
+void NocInitSingleTile(uint8_t noc0_x, uint8_t noc0_y)
+{
+	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY) || !IS_ENABLED(CONFIG_ARC)) {
+		return;
+	}
+
+	uint8_t px = NocToPhysX(noc0_x, 0);
+	uint8_t py = NocToPhysY(noc0_y, 0);
+
+	uint32_t niu_cfg_0_updates = BIT(NIU_CFG_0_TILE_HEADER_STORE_OFF);
+	uint32_t router_cfg_0_updates = 0xF << 8;
+
+	bool cg_en = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.cg_en;
+
+	if (cg_en) {
+		niu_cfg_0_updates |= BIT(0);
+		router_cfg_0_updates |= BIT(0);
+	}
+
+	bool tile_clk_off;
+
+	if (is_cable_fault_mode()) {
+		tile_clk_off = (px != 15);
+	} else {
+		tile_clk_off = GetTileClkDisable(px, py);
+	}
+
+	for (uint32_t noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
+		volatile uint32_t *noc_regs = SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
+
+		uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+		niu_cfg_0 |= niu_cfg_0_updates;
+		WRITE_BIT(niu_cfg_0, NIU_CFG_0_TILE_CLK_OFF, tile_clk_off);
+		WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+
+		uint32_t router_cfg_0 = ReadNocCfgReg(noc_regs, ROUTER_CFG(0));
+
+		router_cfg_0 |= router_cfg_0_updates;
+		WriteNocCfgReg(noc_regs, ROUTER_CFG(0), router_cfg_0);
+	}
+
+	if (cg_en) {
+		EnableOverlayCg(kTlbIndex, px, py);
+	}
+}
+
 #define PRE_TRANSLATION_SIZE 32
 
 struct NocTranslation {
@@ -305,6 +315,8 @@ struct NocTranslation {
 
 	uint16_t logical_coords[NOC_X_SIZE][NOC_Y_SIZE];
 };
+
+static struct NocTranslation translation[NUM_NOCS];
 
 static void SetLogicalCoord(struct NocTranslation *nt, uint8_t post_x, uint8_t post_y,
 			    uint8_t logical_x, uint8_t logical_y)
@@ -403,73 +415,33 @@ static void ApplyLogicalCoords(struct NocTranslation *nt, uint8_t post_x_start,
 	}
 }
 
-/* This function assumes that NOC translation is disabled or identity on noc_id for the ARC node. */
-static void ProgramNocTranslation(const struct NocTranslation *nt, unsigned int noc_id)
+/* This function assumes that NOC translation is disabled or identity for the ARC node. */
+static void ProgramNocTranslation(void)
 {
-	uint32_t translate_table_x[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
-	uint32_t translate_table_y[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+	const uint8_t arc_noc0_x = 8;
+	const uint8_t arc_noc0_y = 0;
 
-	for (unsigned int i = 0; i < PRE_TRANSLATION_SIZE; i++) {
-		uint32_t index = i / NOC_TRANSLATE_TABLE_XY_SIZE;
-		uint32_t shift = i % NOC_TRANSLATE_TABLE_XY_SIZE * NOC_TRANSLATE_ID_WIDTH;
+	bool enabling = translation[0].translate_en;
 
-		uint32_t x = nt->translate_table_x[i];
+	for (uint32_t py = 0; py < NOC_Y_SIZE; py++) {
+		for (uint32_t px = 0; px < NOC_X_SIZE; px++) {
+			uint8_t noc0_x = PhysXToNoc(px, 0);
+			uint8_t noc0_y = PhysYToNoc(py, 0);
 
-		translate_table_x[index] |= x << shift;
-
-		uint32_t y = nt->translate_table_y[i];
-
-		translate_table_y[index] |= y << shift;
-	}
-
-	/* Because there's no embedded identity map, we must ensure that the very last
-	 * step is enabling translation for ARC.
-	 */
-
-	const unsigned int arc_x = 8;
-	const unsigned int arc_y = (noc_id == 0) ? 0 : NOC0_Y_TO_NOC1(0);
-
-	for (unsigned int x = 0; x < NOC_X_SIZE; x++) {
-		for (unsigned int y = 0; y < NOC_Y_SIZE; y++) {
-			volatile void *noc_regs = SetupNiuTlb(kTlbIndex, x, y, noc_id);
-
-			uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
-
-			if (!nt->translate_en) {
-				WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
-				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+			/* ARC must be the very last tile to get translation enabled,
+			 * because there's no embedded identity map.
+			 */
+			if (enabling && noc0_x == arc_noc0_x && noc0_y == arc_noc0_y) {
+				continue;
 			}
 
-			WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_COL_MASK,
-				       nt->translate_col_mask[0]);
-			WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_ROW_MASK,
-				       nt->translate_row_mask[0]);
-
-			/* Clear ddr_translate_east/west_column so DDR translation is never used. */
-			WriteNocCfgReg(noc_regs, DDR_COORD_TRANSLATE_TABLE(5), 0);
-
-			WriteNocCfgReg(noc_regs, NOC_ID_LOGICAL, nt->logical_coords[x][y]);
-
-			for (unsigned int i = 0; i < ARRAY_SIZE(translate_table_x); i++) {
-				WriteNocCfgReg(noc_regs, NOC_X_ID_TRANSLATE_TABLE(i),
-					       translate_table_x[i]);
-				WriteNocCfgReg(noc_regs, NOC_Y_ID_TRANSLATE_TABLE(i),
-					       translate_table_y[i]);
-			}
-
-			if (nt->translate_en && (x != arc_x || y != arc_y)) {
-				WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
-				WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
-			}
+			ProgramNocTranslationSingleTile(noc0_x, noc0_y);
 		}
 	}
 
-	volatile void *noc_regs = SetupNiuTlb(kTlbIndex, arc_x, arc_y, noc_id);
-
-	uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
-
-	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, nt->translate_en);
-	WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+	if (enabling) {
+		ProgramNocTranslationSingleTile(arc_noc0_x, arc_noc0_y);
+	}
 }
 
 /* Please see
@@ -612,14 +584,10 @@ static struct NocTranslation ComputeNocTranslation(unsigned int pcie_instance,
 void InitNocTranslation(unsigned int pcie_instance, uint16_t bad_tensix_cols, uint8_t bad_gddr,
 			uint16_t skip_eth)
 {
-	struct NocTranslation noc0 =
-		ComputeNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
-	ProgramNocTranslation(&noc0, 0);
+	translation[0] = ComputeNocTranslation(pcie_instance, bad_tensix_cols, bad_gddr, skip_eth);
+	CopyNoc0ToNoc1(&translation[0], &translation[1]);
 
-	struct NocTranslation noc1;
-
-	CopyNoc0ToNoc1(&noc0, &noc1);
-	ProgramNocTranslation(&noc1, 1);
+	ProgramNocTranslation();
 
 	UpdateTelemetryNocTranslation(true);
 
@@ -674,15 +642,59 @@ int InitNocTranslationFromHarvesting(void)
 }
 SYS_INIT_APP(InitNocTranslationFromHarvesting);
 
-static void DisableArcNocTranslation(void)
+void ProgramNocTranslationSingleTile(uint8_t noc0_x, uint8_t noc0_y)
+{
+	uint8_t px = NocToPhysX(noc0_x, 0);
+	uint8_t py = NocToPhysY(noc0_y, 0);
+
+	for (unsigned int noc_id = 0; noc_id < NUM_NOCS; noc_id++) {
+		const struct NocTranslation *nt = &translation[noc_id];
+
+		uint32_t packed_x[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+		uint32_t packed_y[NOC_TRANSLATE_TABLE_XY_SIZE] = {};
+
+		for (unsigned int i = 0; i < PRE_TRANSLATION_SIZE; i++) {
+			uint32_t index = i / NOC_TRANSLATE_TABLE_XY_SIZE;
+			uint32_t shift = i % NOC_TRANSLATE_TABLE_XY_SIZE * NOC_TRANSLATE_ID_WIDTH;
+
+			packed_x[index] |= (uint32_t)nt->translate_table_x[i] << shift;
+			packed_y[index] |= (uint32_t)nt->translate_table_y[i] << shift;
+		}
+
+		uint8_t ring_x = PhysXToNoc(px, noc_id);
+		uint8_t ring_y = PhysYToNoc(py, noc_id);
+
+		volatile void *noc_regs = SetupNiuTlbPhys(kTlbIndex, px, py, noc_id);
+
+		uint32_t niu_cfg_0 = ReadNocCfgReg(noc_regs, NIU_CFG_0);
+
+		if (!nt->translate_en) {
+			WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
+			WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+		}
+
+		WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_COL_MASK, nt->translate_col_mask[0]);
+		WriteNocCfgReg(noc_regs, NOC_ID_TRANSLATE_ROW_MASK, nt->translate_row_mask[0]);
+		WriteNocCfgReg(noc_regs, DDR_COORD_TRANSLATE_TABLE(5), 0);
+		WriteNocCfgReg(noc_regs, NOC_ID_LOGICAL, nt->logical_coords[ring_x][ring_y]);
+
+		for (unsigned int i = 0; i < ARRAY_SIZE(packed_x); i++) {
+			WriteNocCfgReg(noc_regs, NOC_X_ID_TRANSLATE_TABLE(i), packed_x[i]);
+			WriteNocCfgReg(noc_regs, NOC_Y_ID_TRANSLATE_TABLE(i), packed_y[i]);
+		}
+
+		if (nt->translate_en) {
+			WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
+			WriteNocCfgReg(noc_regs, NIU_CFG_0, niu_cfg_0);
+		}
+	}
+}
+
+void DisableArcNocTranslation(void)
 {
 	/* Program direct rather than relying on NOC loopback, because we
 	 * don't know what the pre-translation ARC coordinates are.
 	 */
-	const uint32_t kNoc0RegBase = 0x80050000;
-	const uint32_t kNoc1RegBase = 0x80058000;
-	const uint32_t kNiuCfg0Offset = 0x100 + 4 * NIU_CFG_0;
-
 	uint32_t niu_cfg_0 = ReadReg(kNoc0RegBase + kNiuCfg0Offset);
 
 	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
@@ -691,6 +703,25 @@ static void DisableArcNocTranslation(void)
 	niu_cfg_0 = ReadReg(kNoc1RegBase + kNiuCfg0Offset);
 	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 0);
 	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
+}
+
+void EnableArcNocTranslation(void)
+{
+	uint32_t niu_cfg_0 = ReadReg(kNoc0RegBase + kNiuCfg0Offset);
+
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
+	WriteReg(kNoc0RegBase + kNiuCfg0Offset, niu_cfg_0);
+
+	niu_cfg_0 = ReadReg(kNoc1RegBase + kNiuCfg0Offset);
+	WRITE_BIT(niu_cfg_0, NIU_CFG_0_NOC_ID_TRANSLATE_EN, 1);
+	WriteReg(kNoc1RegBase + kNiuCfg0Offset, niu_cfg_0);
+}
+
+void RestoreArcNocTranslation(void)
+{
+	if (translation[0].translate_en) {
+		EnableArcNocTranslation();
+	}
 }
 
 void ClearNocTranslation(void)
@@ -707,8 +738,10 @@ void ClearNocTranslation(void)
 		}
 	}
 
-	ProgramNocTranslation(&all_zeroes, 0);
-	ProgramNocTranslation(&all_zeroes, 1);
+	translation[0] = all_zeroes;
+	translation[1] = all_zeroes;
+
+	ProgramNocTranslation();
 
 	UpdateTelemetryNocTranslation(false);
 
@@ -785,4 +818,21 @@ void GetEnabledTensix(uint8_t *x, uint8_t *y)
 bool IsNocTranslationEnabled(void)
 {
 	return noc_translation_enabled;
+}
+
+void NocLogicalToPhysical(uint8_t logical_x, uint8_t logical_y, uint8_t *phys_x, uint8_t *phys_y)
+{
+	const struct NocTranslation *nt = &translation[0];
+
+	if (nt->translate_en && !IS_BIT_SET(nt->translate_row_mask[0], logical_y)) {
+		*phys_x = nt->translate_table_x[logical_x];
+	} else {
+		*phys_x = logical_x;
+	}
+
+	if (nt->translate_en && !IS_BIT_SET(nt->translate_col_mask[0], logical_x)) {
+		*phys_y = nt->translate_table_y[logical_y];
+	} else {
+		*phys_y = logical_y;
+	}
 }
