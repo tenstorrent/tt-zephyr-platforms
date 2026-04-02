@@ -6,10 +6,14 @@
 
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/clock_control_tt_bh.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/ztest.h>
 
 #include <tenstorrent/smc_msg.h>
 #include <tenstorrent/msgqueue.h>
+#include <tenstorrent/tt_smbus_regs.h>
+#include <tenstorrent/bh_arc.h>
 #include "asic_state.h"
 #include "clock_wave.h"
 #include "cm2dm_msg.h"
@@ -33,6 +37,72 @@ static uint32_t noc_2_axi_last_write;
 
 union request req = {0};
 struct response rsp = {0};
+
+static const struct device *const i2c0_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(i2c0));
+static const uint8_t tt_i2c_addr = 0xA;
+
+/* Helper function to simulate DMC reading posted SMBUS messages */
+static cm2dmMessage read_posted_smbus_message(void)
+{
+	cm2dmMessage msg = {0};
+	uint8_t write_data[] = {CMFW_SMBUS_REQ};
+	uint8_t read_data[7]; /* 48 bits = 6 bytes for cm2dmMessage */
+
+	/* Read the posted message */
+	int ret = i2c_write_read(i2c0_dev, tt_i2c_addr, write_data, sizeof(write_data), read_data,
+				 sizeof(read_data));
+
+	if (ret == 0) {
+		/* Parse the cm2dmMessage struct */
+		msg.msg_id = read_data[1];
+		msg.seq_num = read_data[2];
+		/* data is uint32_t, so combine bytes 2-5 */
+		msg.data = (uint32_t)read_data[3] | ((uint32_t)read_data[4] << 8) |
+			   ((uint32_t)read_data[5] << 16) | ((uint32_t)read_data[6] << 24);
+	}
+
+	return msg;
+}
+
+static inline uint8_t pec_crc_8(uint8_t crc, uint8_t data)
+{
+	return crc8(&data, 1, 0x7, crc, false);
+}
+
+/* Helper function to send ACK for received message */
+static void ack_smbus_message(const cm2dmMessage *msg)
+{
+	cm2dmAck ack;
+	uint8_t pec = 0;
+
+	ack.msg_id = msg->msg_id;
+	ack.seq_num = msg->seq_num;
+
+	pec = pec_crc_8(pec, (tt_i2c_addr << 1) | I2C_MSG_WRITE);
+	pec = pec_crc_8(pec, CMFW_SMBUS_ACK);
+	pec = pec_crc_8(pec, ack.msg_id);
+	pec = pec_crc_8(pec, ack.seq_num);
+
+	uint8_t write_data[] = {CMFW_SMBUS_ACK, ack.msg_id, ack.seq_num, pec};
+	int x = i2c_write(i2c0_dev, write_data, sizeof(write_data), tt_i2c_addr);
+
+	printf("%d", x);
+}
+
+/* Helper function to clear all pending SMBUS messages */
+static void clear_pending_smbus_messages(void)
+{
+	cm2dmMessage msg;
+	int attempts = 10; /* Prevent infinite loop */
+
+	do {
+		msg = read_posted_smbus_message();
+		if (msg.msg_id != 0) {
+			ack_smbus_message(&msg);
+			attempts--;
+		}
+	} while (msg.msg_id != 0 && attempts > 0);
+}
 
 static void push_msg_success(void)
 {
@@ -383,10 +453,7 @@ ZTEST(msgqueue, test_msg_type_i2c_message)
 
 ZTEST(msgqueue, test_msg_type_blink_led)
 {
-	uint8_t request_data[6];
-	uint8_t request_size = sizeof(request_data);
-	cm2dmMessage *msg;
-	int ret;
+	clear_pending_smbus_messages();
 
 	req.data[0] = TT_SMC_MSG_BLINKY;
 	req.data[1] = 0x1;
@@ -394,15 +461,15 @@ ZTEST(msgqueue, test_msg_type_blink_led)
 	push_msg_success();
 	zassert_equal(rsp.data[1], 0);
 
-	PostCm2DmMsg(kCm2DmMsgIdLedBlink, 1);
+	/* Now act as DMC and read the posted SMBUS message */
+	cm2dmMessage posted_msg = read_posted_smbus_message();
 
-	ret = Cm2DmMsgReqSmbusHandler(request_data, &request_size);
-	zassert_equal(ret, 0);
-	zassert_equal(request_size, 6);
+	/* Verify the posted message contains the correct LED blink data */
+	zassert_equal(posted_msg.msg_id, kCm2DmMsgIdLedBlink, "Posted message should be LedBlink");
+	zassert_equal(posted_msg.data, 1, "Posted message data should contain blink value 1");
 
-	msg = (cm2dmMessage *)request_data;
-	zassert_equal(msg->msg_id, kCm2DmMsgIdLedBlink);
-	zassert_equal(msg->data, 1);
+	/* Send ACK for the message */
+	ack_smbus_message(&posted_msg);
 }
 
 ZTEST(msgqueue, test_msg_type_test)
@@ -416,22 +483,13 @@ ZTEST(msgqueue, test_msg_type_test)
 
 ZTEST(msgqueue, test_msg_type_asic_state)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.data[0] = TT_SMC_MSG_ASIC_STATE3;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zexpect_equal(rsp.data[0], 0);
+	push_msg_success();
 	zexpect_equal(get_asic_state(), A3State);
 
 	/* Test ASIC_STATE0 to return to state 0 */
 	req.data[0] = TT_SMC_MSG_ASIC_STATE0;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	zexpect_equal(rsp.data[0], 0);
 	zexpect_equal(get_asic_state(), A0State);
@@ -464,11 +522,7 @@ ZTEST(msgqueue, test_msg_type_force_vdd)
 	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
 	req.force_vdd.forced_voltage = 800;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zassert_equal(rsp.data[0], 0, "Valid voltage should succeed");
+	push_msg_success();
 
 	/* Disable forcing with 0 */
 	req = (union request){0};
@@ -477,11 +531,7 @@ ZTEST(msgqueue, test_msg_type_force_vdd)
 	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
 	req.force_vdd.forced_voltage = 0;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zassert_equal(rsp.data[0], 0, "Disabling forcing should succeed");
+	push_msg_success();
 
 	/* Out-of-range voltage should be rejected */
 	req = (union request){0};
@@ -638,6 +688,68 @@ ZTEST(msgqueue, test_msg_type_confirm_flashed_spi)
 	zassert_equal(rsp.data[0], 0, "Confirm flash should succeed");
 	/* Response should echo the challenge data */
 	zassert_equal(rsp.data[1], challenge_data, "Challenge data should be echoed back");
+}
+
+ZTEST(msgqueue, test_msg_type_set_wdt_timeout)
+{
+	/* Clear any pending messages from previous tests */
+	clear_pending_smbus_messages();
+
+	/* Test setting watchdog timeout with valid value */
+	req.set_wdt_timeout.command_code = TT_SMC_MSG_SET_WDT_TIMEOUT;
+	req.set_wdt_timeout.timeout_ms = 5000; /* 5 seconds - should be valid */
+
+	push_msg_success();
+
+	/* Now act as DMC and read the posted SMBUS message */
+	cm2dmMessage posted_msg = read_posted_smbus_message();
+
+	/* Verify the posted message contains the correct timeout data */
+	zassert_equal(posted_msg.msg_id, kCm2DmMsgIdAutoResetTimeoutUpdate,
+		      "Posted message should be AutoResetTimeoutUpdate");
+	zassert_equal(posted_msg.data, 5000,
+		      "Posted message data should contain timeout value 5000ms");
+
+	/* Send ACK for the message */
+	ack_smbus_message(&posted_msg);
+
+	/* Test disabling watchdog (timeout = 0) */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.set_wdt_timeout.command_code = TT_SMC_MSG_SET_WDT_TIMEOUT;
+	req.set_wdt_timeout.timeout_ms = 0; /* Disable watchdog */
+
+	push_msg_success();
+
+	/* Read the posted disable message */
+	cm2dmMessage disable_msg = read_posted_smbus_message();
+
+	/* Verify the disable message */
+	zassert_equal(disable_msg.msg_id, kCm2DmMsgIdAutoResetTimeoutUpdate,
+		      "Posted message should be AutoResetTimeoutUpdate");
+	zassert_equal(disable_msg.data, 0,
+		      "Posted message data should contain timeout value 0 (disabled)");
+
+	/* Send ACK for the disable message */
+	ack_smbus_message(&disable_msg);
+
+	/* Test setting timeout too small (should fail with ENOTSUP) */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.set_wdt_timeout.command_code = TT_SMC_MSG_SET_WDT_TIMEOUT;
+	req.set_wdt_timeout.timeout_ms = 1; /* Very small timeout - should be rejected */
+
+	msgqueue_request_push(0, &req);
+	process_message_queues();
+	msgqueue_response_pop(0, &rsp);
+
+	/* Should fail with ENOTSUP (too small) */
+	zassert_equal(rsp.data[0], ENOTSUP, "Small watchdog timeout should fail with ENOTSUP");
+
+	/* Verify no message was posted for invalid timeout */
+	cm2dmMessage invalid_msg = read_posted_smbus_message();
+
+	zassert_equal(invalid_msg.msg_id, 0, "No message should be posted for invalid timeout");
 }
 
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
