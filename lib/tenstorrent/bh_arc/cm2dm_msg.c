@@ -239,6 +239,22 @@ static uint8_t ping_dm_handler(const union request *request, struct response *re
 
 REGISTER_MESSAGE(TT_SMC_MSG_PING_DM, ping_dm_handler);
 
+/**
+ * @brief Handler for @ref TT_SMC_MSG_SET_WDT_TIMEOUT
+ *
+ * Handler for a host request to set the watchdog timeout value. This can be used
+ * to configure the watchdog timer period or disable it entirely.
+ *
+ * @param[in] request The request, of type @ref set_wdt_timeout_rqst, with command code
+ *	@ref TT_SMC_MSG_SET_WDT_TIMEOUT. The @ref set_wdt_timeout_rqst::timeout_ms field
+ *	specifies the timeout value in milliseconds. If set to 0, the watchdog is disabled.
+ * @param[out] response The response to the host (unused for this handler).
+ * @retval 0 Success
+ * @retval ENODEV Watchdog device is not ready
+ * @retval ENOTSUP Timeout is below the minimum feed interval
+ * @return Other error codes for watchdog setup failures
+ * @see set_wdt_timeout_rqst
+ */
 static uint8_t set_watchdog_timeout(const union request *request, struct response *response)
 {
 	const struct device *wdt_dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(wdt0));
@@ -249,12 +265,12 @@ static uint8_t set_watchdog_timeout(const union request *request, struct respons
 		return ENODEV;
 	}
 
-	if (request->data[1] != 0) {
+	if (request->set_wdt_timeout.timeout_ms != 0) {
 		/* Deny a timeout lower than our feed interval */
-		if (request->data[1] <= CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL) {
+		if (request->set_wdt_timeout.timeout_ms <= CONFIG_TT_BH_ARC_WDT_FEED_INTERVAL) {
 			return ENOTSUP;
 		}
-		cfg.window.max = request->data[1];
+		cfg.window.max = request->set_wdt_timeout.timeout_ms;
 		/* Program watchdog timeout */
 		ret = wdt_install_timeout(wdt_dev, &cfg);
 		if (ret < 0) {
