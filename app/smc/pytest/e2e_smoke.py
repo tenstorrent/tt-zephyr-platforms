@@ -99,9 +99,11 @@ TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23
 TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6
 
 # Telemetry tags
-TAG_CM_FW_VERSION = 29
-TAG_DM_APP_FW_VERSION = 26
 TAG_TDP = 7
+TAG_DM_APP_FW_VERSION = 26
+TAG_ETH_LIVE_STATUS = 21
+TAG_CM_FW_VERSION = 29
+TAG_ENABLED_ETH = 35
 TAG_INPUT_POWER = 54
 TAG_HOST_AICLK_LIMIT = 70
 
@@ -1092,6 +1094,31 @@ def test_power_state_toggle(arc_chip_dut, asic_id, board_name):
     """
     assert 0 == power_state_toggle_test(arc_chip_dut, asic_id, board_name), (
         "power_state_toggle_test failed"
+    )
+
+
+def test_eth_live_status(arc_chip_dut, asic_id):
+    """
+    Validates that the Ethernet live status reflects correct heartbeat status.
+
+    Reads TAG_ETH_LIVE_STATUS from telemetry and checks that the heartbeat
+    bitmask (lower 16 bits) matches the enabled ETH bitmask (TAG_ENABLED_ETH),
+    since every enabled ETH tile should be posting a heartbeat.
+    """
+    arc_chip = pyluwen.detect_chips()[asic_id]
+
+    eth_live_status = read_telem(arc_chip, TAG_ETH_LIVE_STATUS)
+    eth_enabled = read_telem(arc_chip, TAG_ENABLED_ETH)
+
+    heartbeat_status = eth_live_status & 0xFFFF
+
+    logger.info(
+        f"ETH enabled: {eth_enabled:#06x}, heartbeat status: {heartbeat_status:#06x}"
+    )
+
+    assert heartbeat_status == eth_enabled, (
+        f"Heartbeat status {heartbeat_status:#06x} does not match "
+        f"eth_enabled {eth_enabled:#06x}"
     )
 
 
