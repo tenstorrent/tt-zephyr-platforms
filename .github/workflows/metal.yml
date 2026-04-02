@@ -132,6 +132,13 @@ jobs:
       - name: Run Container Test
         timeout-minutes: 120
         run: |
+          # Keep the network alive by periodically pulling tenstorrent.com.
+          # This prevents a bug in the container runtime where the network interface can
+          # drop after a period of inactivity, which would cause our tests to fail.
+          echo "while true; do curl -o /dev/null https://tenstorrent.com; sleep 10; done" > /tmp/network-keepalive
+          chmod +x /tmp/network-keepalive
+          /tmp/network-keepalive &
+          echo "Network keepalive started."
           dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh ${{ matrix.config.metal-target }} > /tmp/container_test_output.log 2>&1
 
       - name: Upload Test Output
@@ -146,3 +153,4 @@ jobs:
         run: |
           # Clean out metal
           rm -f $HOME/fw_pack-*.fwbundle
+          kill $(pgrep -f network-keepalive) || true
