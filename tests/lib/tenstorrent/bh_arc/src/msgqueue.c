@@ -515,9 +515,6 @@ ZTEST(msgqueue, test_msg_type_read_eeprom_no_flash)
 
 ZTEST(msgqueue, test_msg_type_force_vdd)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* Force a valid voltage */
 	req.force_vdd.command_code = TT_SMC_MSG_FORCE_VDD;
 	req.force_vdd.forced_voltage = 800;
@@ -549,9 +546,6 @@ ZTEST(msgqueue, test_msg_type_force_vdd)
 
 ZTEST(msgqueue, test_msg_type_pcie_dma_chip_to_host)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.pcie_dma_transfer.command_code = TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER;
 	req.pcie_dma_transfer.completion_data = 0xAB;
 	req.pcie_dma_transfer.transfer_size_bytes = 4096;
@@ -559,18 +553,13 @@ ZTEST(msgqueue, test_msg_type_pcie_dma_chip_to_host)
 	req.pcie_dma_transfer.host_addr = 0x200000;
 	req.pcie_dma_transfer.msi_completion_addr = 0x300000;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	zassert_equal(rsp.data[0], 0, "Chip-to-host DMA transfer should succeed");
 }
 
 ZTEST(msgqueue, test_msg_type_pcie_dma_host_to_chip)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	req.pcie_dma_transfer.command_code = TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER;
 	req.pcie_dma_transfer.completion_data = 0xCD;
 	req.pcie_dma_transfer.transfer_size_bytes = 2048;
@@ -578,18 +567,13 @@ ZTEST(msgqueue, test_msg_type_pcie_dma_host_to_chip)
 	req.pcie_dma_transfer.host_addr = 0x500000;
 	req.pcie_dma_transfer.msi_completion_addr = 0x600000;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	zassert_equal(rsp.data[0], 0, "Host-to-chip DMA transfer should succeed");
 }
 
 ZTEST(msgqueue, test_msg_type_trigger_reset_invalid)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* Invalid reset level should be rejected */
 	req.trigger_reset.command_code = TT_SMC_MSG_TRIGGER_RESET;
 	req.trigger_reset.reset_level = 5;
@@ -603,17 +587,10 @@ ZTEST(msgqueue, test_msg_type_trigger_reset_invalid)
 
 ZTEST(msgqueue, test_msg_type_flash_unlock)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* Test flash unlock message */
 	req.flash_unlock.command_code = TT_SMC_MSG_FLASH_UNLOCK;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
-
-	zassert_equal(rsp.data[0], 0, "Flash unlock should succeed");
+	push_msg_success();
 
 	/* Verify flash is unlocked by attempting EEPROM write */
 	memset(&req, 0, sizeof(req));
@@ -634,23 +611,16 @@ ZTEST(msgqueue, test_msg_type_flash_unlock)
 
 ZTEST(msgqueue, test_msg_type_flash_lock)
 {
-	union request req = {0};
-	struct response rsp = {0};
-
 	/* First unlock flash */
 	req.flash_unlock.command_code = TT_SMC_MSG_FLASH_UNLOCK;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 	zassert_equal(rsp.data[0], 0, "Flash unlock should succeed");
 
 	/* Then lock it */
 	memset(&req, 0, sizeof(req));
 	memset(&rsp, 0, sizeof(rsp));
 	req.flash_lock.command_code = TT_SMC_MSG_FLASH_LOCK;
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 	zassert_equal(rsp.data[0], 0, "Flash lock should succeed");
 
 	/* Verify flash is locked by attempting EEPROM write */
@@ -672,22 +642,68 @@ ZTEST(msgqueue, test_msg_type_flash_lock)
 
 ZTEST(msgqueue, test_msg_type_confirm_flashed_spi)
 {
-	union request req = {0};
-	struct response rsp = {0};
 	uint32_t challenge_data = 0xDEADBEEF;
 
 	/* Test SPI flash confirmation with challenge data */
 	req.confirm_flashed_spi.command_code = TT_SMC_MSG_CONFIRM_FLASHED_SPI;
 	req.data[1] = challenge_data;
 
-	msgqueue_request_push(0, &req);
-	process_message_queues();
-	msgqueue_response_pop(0, &rsp);
+	push_msg_success();
 
 	/* Should succeed */
 	zassert_equal(rsp.data[0], 0, "Confirm flash should succeed");
 	/* Response should echo the challenge data */
 	zassert_equal(rsp.data[1], challenge_data, "Challenge data should be echoed back");
+}
+
+ZTEST(msgqueue, test_msg_type_set_last_serial)
+{
+	uint32_t test_serial_number = 0x12345678;
+
+	/* Test setting a specific serial number */
+	req.set_last_serial.command_code = TT_SMC_MSG_SET_LAST_SERIAL;
+	req.set_last_serial.serial_number = test_serial_number;
+
+	push_msg_success();
+
+	/* Verify the operation succeeded */
+	zassert_equal(rsp.data[0], 0, "Set last serial should succeed");
+
+	/* Verify the serial number was set by using a test message */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.test.command_code = TT_SMC_MSG_TEST;
+	req.test.test_value = 42; /* arbitrary test value */
+
+	push_msg_success();
+
+	/* Response data[2] contains last_serial + 1 */
+	zassert_equal(rsp.data[2], test_serial_number + 1,
+		      "Serial number should be set to the specified value");
+	/* Verify test value was also processed correctly */
+	zassert_equal(rsp.data[1], 43, "Test value should be incremented");
+
+	/* Test setting a different serial number */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	uint32_t new_serial_number = 0xABCDEF00;
+
+	req.set_last_serial.command_code = TT_SMC_MSG_SET_LAST_SERIAL;
+	req.set_last_serial.serial_number = new_serial_number;
+
+	push_msg_success();
+
+	/* Verify the new serial number was set */
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+	req.test.command_code = TT_SMC_MSG_TEST;
+	req.test.test_value = 99; /* arbitrary test value */
+
+	push_msg_success();
+
+	/* Verify new serial number is active */
+	zassert_equal(rsp.data[2], new_serial_number + 1,
+		      "Serial number should be updated to the new value");
 }
 
 ZTEST(msgqueue, test_msg_type_set_wdt_timeout)
@@ -750,6 +766,53 @@ ZTEST(msgqueue, test_msg_type_set_wdt_timeout)
 	cm2dmMessage invalid_msg = read_posted_smbus_message();
 
 	zassert_equal(invalid_msg.msg_id, 0, "No message should be posted for invalid timeout");
+}
+
+ZTEST(msgqueue, test_msg_type_ping_dm)
+{
+	/* Clear any pending messages from previous tests */
+	clear_pending_smbus_messages();
+
+	/* Test ping DMC with legacy_ping = false (read transaction) */
+	req.dmc_ping.command_code = TT_SMC_MSG_PING_DM;
+	req.dmc_ping.legacy_ping = false;
+
+	push_msg_success();
+
+	/* Now act as DMC and read the posted SMBUS message */
+	cm2dmMessage posted_msg = read_posted_smbus_message();
+
+	/* Verify the posted message contains the correct ping data */
+	zassert_equal(posted_msg.msg_id, 2, "Posted message should be Ping (kCm2DmMsgIdPing = 2)");
+	zassert_equal(posted_msg.data, 0, "Posted message data should contain legacy_ping = false");
+
+	/* Send ACK for the message */
+	ack_smbus_message(&posted_msg);
+	/* Note the DM PING SMBUS message is not simulated in this test */
+
+	/* Test ping DMC with legacy_ping = true (write transaction) */
+	clear_pending_smbus_messages();
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
+
+	req.dmc_ping.command_code = TT_SMC_MSG_PING_DM;
+	req.dmc_ping.legacy_ping = true;
+
+	push_msg_success();
+
+	/* Verify the command was processed */
+	zassert_equal(rsp.data[0], 0, "Ping DM command should be processed successfully");
+
+	/* Read the posted SMBUS message for legacy ping */
+	cm2dmMessage legacy_msg = read_posted_smbus_message();
+
+	/* Verify the legacy ping message */
+	zassert_equal(legacy_msg.msg_id, 2, "Posted message should be Ping (kCm2DmMsgIdPing = 2)");
+	zassert_equal(legacy_msg.data, 1, "Posted message data should contain legacy_ping = true");
+
+	/* Send ACK for the legacy message */
+	ack_smbus_message(&legacy_msg);
+	/* Note the DM PING SMBUS message is not simulated in this test */
 }
 
 ZTEST_SUITE(msgqueue, NULL, NULL, test_setup, NULL, NULL);
