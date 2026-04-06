@@ -263,6 +263,15 @@ static void process_l2_message_queue(const union request *request, struct respon
 	response->data[0] |= exit_code;
 }
 
+/**
+ * @brief Handler for host request to set the message queue serial number
+ * @param[in] queue The message queue whose serial number will be updated
+ * @param[in] request The request, of type @ref set_last_serial_rqst, with command code
+ *                   @ref TT_SMC_MSG_SET_LAST_SERIAL. The serial number is taken from data[1].
+ *
+ * This function allows the host to manually set the serial number for message queue
+ * synchronization purposes, bypassing the normal auto-increment behavior.
+ */
 static void handle_set_last_serial(struct message_queue *queue, const union request *request)
 {
 	queue->header.last_serial = request->data[1];

@@ -145,10 +145,11 @@ enum tt_smc_msg {
 	TT_SMC_MSG_UPDATE_M3_AUTO_RESET_TIMEOUT = 0xBC,
 	/** @brief Clear number of auto resets request (not supported) */
 	TT_SMC_MSG_CLEAR_NUM_AUTO_RESET = 0xBD,
+	/** @brief @ref set_last_serial_rqst "Set message queue serial number request" */
 	TT_SMC_MSG_SET_LAST_SERIAL = 0xBE,
 	/** @brief eFuse burn request (not supported) */
 	TT_SMC_MSG_EFUSE_BURN = 0xBF,
-	/** @brief Ping DMC request */
+	/** @brief @ref dmc_ping_rqst "Ping DMC request" */
 	TT_SMC_MSG_PING_DM = 0xC0,
 	/** @brief @ref set_wdt_timeout_rqst "Set watchdog timeout request" */
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
