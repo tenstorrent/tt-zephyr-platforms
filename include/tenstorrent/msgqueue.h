@@ -380,7 +380,8 @@ struct debug_noc_translation_rqst {
 };
 
 /** @brief Host request to ping DMC
- * @details Messages of this type are processed by @ref ping_dm_handler
+ * @details Messages of this type are processed by @ref ping_dm_handler.
+ * This request is used to test SMBus stability using different transaction types.
  */
 struct dmc_ping_rqst {
 	/** @brief The command code corresponding to @ref TT_SMC_MSG_PING_DM */
@@ -389,8 +390,27 @@ struct dmc_ping_rqst {
 	/** @brief Three bytes of padding */
 	uint8_t pad[3];
 
-	/** @brief Use legacy ping mode */
+	/** @brief Use legacy ping mode
+	 * - true: DMC uses SMBus write word transaction, which could fail without acknowledgment
+	 * - false: DMC Uses SMBus read word transaction, which provides DMC acknowledgment
+	 */
 	bool legacy_ping;
+};
+
+/** @brief Host request to set the message queue serial number
+ * @details Messages of this type are processed by @ref handle_set_last_serial.
+ * This message allows the host to manually set the serial number for message queue
+ * synchronization purposes.
+ */
+struct set_last_serial_rqst {
+	/** @brief The command code corresponding to @ref TT_SMC_MSG_SET_LAST_SERIAL */
+	uint8_t command_code;
+
+	/** @brief Three bytes of padding */
+	uint8_t pad[3];
+
+	/** @brief The serial number to set in the message queue header */
+	uint32_t serial_number;
 };
 
 /** @brief Host request to send PCIE MSI
@@ -823,6 +843,9 @@ union request {
 
 	/** @brief A dmc ping request */
 	struct dmc_ping_rqst dmc_ping;
+
+	/** @brief A set last serial request */
+	struct set_last_serial_rqst set_last_serial;
 
 	/** @brief A Send PCIE MSI request */
 	struct send_pcie_msi_rqst send_pci_msi;
