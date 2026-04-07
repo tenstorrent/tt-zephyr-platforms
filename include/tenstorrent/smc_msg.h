@@ -25,12 +25,6 @@ extern "C" {
 
 /** @brief Enumeration listing the available host requests IDs the SMC can process*/
 enum tt_smc_msg {
-	/** @brief Reserved*/
-	TT_SMC_MSG_RESERVED_01 = 0x1,
-
-	/** @brief No-op request (not supported) */
-	TT_SMC_MSG_NOP = 0x11,
-
 	/** @brief @ref set_voltage_rqst "Set voltage request" */
 	TT_SMC_MSG_SET_VOLTAGE = 0x12,
 
@@ -42,6 +36,7 @@ enum tt_smc_msg {
 
 	/** @brief @ref debug_noc_translation_rqst "Debug NOC translation request" */
 	TT_SMC_MSG_DEBUG_NOC_TRANSLATION = 0x15,
+
 	/** @brief @ref report_scratch_only_rqst "Report scratch-only request" */
 	TT_SMC_MSG_REPORT_SCRATCH_ONLY = 0x16,
 
@@ -53,112 +48,109 @@ enum tt_smc_msg {
 
 	/** @brief @ref eeprom_rqst "Read SPI EEPROM request" */
 	TT_SMC_MSG_READ_EEPROM = 0x19,
+
 	/** @brief @ref eeprom_rqst "Write SPI EEPROM request" */
 	TT_SMC_MSG_WRITE_EEPROM = 0x1A,
+
 	/** @brief @ref read_ts_rqst "Read temperature sensor request" */
 	TT_SMC_MSG_READ_TS = 0x1B,
+
 	/** @brief @ref read_pd_rqst "Read process detector request" */
 	TT_SMC_MSG_READ_PD = 0x1C,
+
 	/** @brief @ref read_vm_rqst "Read voltage monitor request" */
 	TT_SMC_MSG_READ_VM = 0x1D,
+
 	/** @brief @ref i2c_message_rqst "I2C message request" */
 	TT_SMC_MSG_I2C_MESSAGE = 0x1E,
-	/** @brief eFuse burn bits request (not supported) */
-	TT_SMC_MSG_EFUSE_BURN_BITS = 0x1F,
+
 	/** @brief @ref reinit_tensix_rqst "Reinitialize Tensix request" */
 	TT_SMC_MSG_REINIT_TENSIX = 0x20,
+
 	/** @brief @ref power_setting_rqst "Power Setting Request"*/
 	TT_SMC_MSG_POWER_SETTING = 0x21,
+
 	/** @brief @ref set_tdp_limit_rqst "Set TDP limit request" */
 	TT_SMC_MSG_SET_TDP_LIMIT = 0x22,
+
 	/** @brief @ref set_asic_host_fmax_rqst "Set ASIC fmax request" */
 	TT_SMC_MSG_SET_ASIC_HOST_FMAX = 0x23,
+
 	/** @brief @ref get_freq_curve_from_voltage_rqst "Frequency Curve from Voltage Request"*/
 	TT_SMC_MSG_GET_FREQ_CURVE_FROM_VOLTAGE = 0x30,
+
 	/** @brief @ref aisweep_rqst "Start AICLK sweep request" */
 	TT_SMC_MSG_AISWEEP_START = 0x31,
+
 	/** @brief @ref aisweep_rqst "Stop AICLK sweep request" */
 	TT_SMC_MSG_AISWEEP_STOP = 0x32,
+
 	/** @brief @ref force_aiclk_rqst "Force AICLK frequency request" */
 	TT_SMC_MSG_FORCE_AICLK = 0x33,
+
 	/** @brief @ref get_aiclk_rqst "Get AICLK frequency request" */
 	TT_SMC_MSG_GET_AICLK = 0x34,
+
 	/** @brief @ref counter_rqst "Generic Counter Request" */
 	TT_SMC_MSG_COUNTER = 0x35,
+
 	/** @brief @ref force_vdd_rqst "Force VDD voltage request" */
 	TT_SMC_MSG_FORCE_VDD = 0x39,
-	/** @brief PCIe index request (not supported) */
-	TT_SMC_MSG_PCIE_INDEX = 0x51,
+
 	/** @brief @ref aiclk_set_speed_rqst "AI Clock Set Busy Speed Request"*/
 	TT_SMC_MSG_AICLK_GO_BUSY = 0x52,
+
 	/** @brief @ref aiclk_set_speed_rqst "AI Clock Set Idle Speed Request"*/
 	TT_SMC_MSG_AICLK_GO_LONG_IDLE = 0x54,
+
 	/** @brief @ref trigger_reset_rqst "Trigger chip reset request" */
 	TT_SMC_MSG_TRIGGER_RESET = 0x56,
 
-	/** @brief Reserved*/
-	TT_SMC_MSG_RESERVED_60 = 0x60,
 	/** @brief @ref test_rqst "Test request" */
 	TT_SMC_MSG_TEST = 0x90,
+
 	/** @brief @ref pcie_dma_transfer_rqst "PCIe DMA chip-to-host transfer request" */
 	TT_SMC_MSG_PCIE_DMA_CHIP_TO_HOST_TRANSFER = 0x9B,
+
 	/** @brief @ref pcie_dma_transfer_rqst "PCIe DMA host-to-chip transfer request" */
 	TT_SMC_MSG_PCIE_DMA_HOST_TO_CHIP_TRANSFER = 0x9C,
-	/** @brief PCIe error count reset request (not supported) */
-	TT_SMC_MSG_PCIE_ERROR_CNT_RESET = 0x9D,
-	/** @brief Trigger IRQ request (not supported) */
-	TT_SMC_MSG_TRIGGER_IRQ = 0x9F,
+
 	/** @brief @ref asic_state_rqst "ASIC State 0 (A0State) request" */
 	TT_SMC_MSG_ASIC_STATE0 = 0xA0,
-	/** @brief ASIC state 1 request (not supported) */
-	TT_SMC_MSG_ASIC_STATE1 = 0xA1,
+
 	/** @brief @ref asic_state_rqst "ASIC State 3 (A3State) request" */
 	TT_SMC_MSG_ASIC_STATE3 = 0xA3,
-	/** @brief ASIC state 5 request (not supported) */
-	TT_SMC_MSG_ASIC_STATE5 = 0xA5,
+
 	/** @brief @ref get_voltage_curve_from_freq_rqst "Voltage Curve from Frequency Request"*/
 	TT_SMC_MSG_GET_VOLTAGE_CURVE_FROM_FREQ = 0xA6,
 
 	/** @brief @ref force_fan_speed_rqst "Force Fan Speed Request"*/
 	TT_SMC_MSG_FORCE_FAN_SPEED = 0xAC,
-	/** @brief Get DRAM temperature request (not supported) */
-	TT_SMC_MSG_GET_DRAM_TEMPERATURE = 0xAD,
+
 	/** @brief @ref toggle_tensix_reset_rqst "Toggle Tensix reset request" */
 	TT_SMC_MSG_TOGGLE_TENSIX_RESET = 0xAF,
-	/** @brief DRAM BIST start request (not supported) */
-	TT_SMC_MSG_DRAM_BIST_START = 0xB0,
-	/** @brief NOC write word request (not supported) */
-	TT_SMC_MSG_NOC_WRITE_WORD = 0xB1,
-	/** @brief Toggle Ethernet reset request (not supported) */
-	TT_SMC_MSG_TOGGLE_ETH_RESET = 0xB2,
-	/** @brief Set DRAM refresh rate request (not supported) */
-	TT_SMC_MSG_SET_DRAM_REFRESH_RATE = 0xB3,
-	/** @brief ARC DMA request (not supported) */
-	TT_SMC_MSG_ARC_DMA = 0xB4,
-	/** @brief Test SPI request (not supported) */
-	TT_SMC_MSG_TEST_SPI = 0xB5,
+
 	/** @brief @ref gddr_reset_rqst "Toggle GDDR reset request" */
 	TT_SMC_MSG_TOGGLE_GDDR_RESET = 0xB6,
-	/** @brief Current date request (not supported) */
-	TT_SMC_MSG_CURR_DATE = 0xB7,
-	/** @brief Update M3 auto reset timeout request (not supported) */
-	TT_SMC_MSG_UPDATE_M3_AUTO_RESET_TIMEOUT = 0xBC,
-	/** @brief Clear number of auto resets request (not supported) */
-	TT_SMC_MSG_CLEAR_NUM_AUTO_RESET = 0xBD,
+
 	/** @brief @ref set_last_serial_rqst "Set message queue serial number request" */
 	TT_SMC_MSG_SET_LAST_SERIAL = 0xBE,
-	/** @brief eFuse burn request (not supported) */
-	TT_SMC_MSG_EFUSE_BURN = 0xBF,
+
 	/** @brief @ref dmc_ping_rqst "Ping DMC request" */
 	TT_SMC_MSG_PING_DM = 0xC0,
+
 	/** @brief @ref set_wdt_timeout_rqst "Set watchdog timeout request" */
 	TT_SMC_MSG_SET_WDT_TIMEOUT = 0xC1,
+
 	/** @brief @ref flash_unlock_rqst "Flash write unlock request" */
 	TT_SMC_MSG_FLASH_UNLOCK = 0xC2,
+
 	/** @brief @ref flash_lock_rqst "Flash write lock request" */
 	TT_SMC_MSG_FLASH_LOCK = 0xC3,
+
 	/** @brief @ref confirm_flashed_spi_rqst "Confirm SPI flash succeeded" */
 	TT_SMC_MSG_CONFIRM_FLASHED_SPI = 0xC4,
+
 	/** @brief @ref led_blink_rqst "Toggle red LED on the board" */
 	TT_SMC_MSG_BLINKY = 0xC5,
 };
