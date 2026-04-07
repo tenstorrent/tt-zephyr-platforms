@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+config MBOX_TT_GRENDEL
+	bool "Grendel Mailbox Driver"
+	default y
+	depends on DT_HAS_TENSTORRENT_GRENDEL_MBOX_ENABLED
+	help
+	  Enable support for the Grendel mailbox driver.

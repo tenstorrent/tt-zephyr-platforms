@@ -1,0 +1,25 @@
+# Copyright (c) 2026 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Tenstorrent Grendel Mailbox
+
+compatible: "tenstorrent,grendel-mbox"
+
+include: [base.yaml, mailbox-controller.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  channel-pairs:
+    type: int
+    required: true
+    description: |
+      The number of outbound/inbound channel pairs supported by the mailbox
+      controller. The total number of channels is twice this value.
+
+mbox-cells:
+  - channel
