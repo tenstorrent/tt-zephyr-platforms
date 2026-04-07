@@ -1,0 +1,19 @@
+/*
+ * Copyright 2026 Tenstorrent AI ULC
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	mbox-consumer {
+		compatible = "vnd,mbox-consumer";
+		/*
+		 * Testing SMC <-> SMC communication, so we write to
+		 * outbound channels and listen on inbound channels.
+		 */
+		mboxes = <&mbox0 0>, <&mbox0 1>, <&mbox0 2>, <&mbox0 3>,
+			 <&mbox0 4>, <&mbox0 5>, <&mbox0 62>, <&mbox0 63>;
+		mbox-names = "tx0", "rx0", "tx1", "rx1", "tx2", "rx2", "tx3",
+			     "rx3";
+	};
+};
