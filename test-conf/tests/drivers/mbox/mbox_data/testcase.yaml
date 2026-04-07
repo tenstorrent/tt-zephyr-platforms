@@ -1,0 +1,12 @@
+tests:
+  drivers.mbox.mbox_data.grendel:
+    tags: smoke
+    platform_allow:
+      - tt_mimir/tt_mimir/smc
+    extra_args:
+      - "DTC_OVERLAY_FILE=\
+        ../../../../../tt-system-firmware/test-conf/tests/drivers/mbox/mbox_data/\
+        boards/tt_mimir_tt_mimir_smc.overlay"
+      - "CONF_FILE=\
+        ../../../../../tt-system-firmware/test-conf/tests/drivers/mbox/mbox_data/\
+        boards/tt_mimir_tt_mimir_smc.conf"
