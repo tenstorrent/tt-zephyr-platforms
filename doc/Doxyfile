@@ -110,7 +110,8 @@ WARN_LINE_FORMAT       = "at line $line of file $file"
 WARN_LOGFILE           =
 INPUT                  = _doxygen/main.md \
                          ../include \
-                         ../lib
+                         ../lib \
+                         ../drivers
 INPUT_ENCODING         = UTF-8
 INPUT_FILE_ENCODING    =
 FILE_PATTERNS          = *.c \
@@ -279,7 +280,7 @@ EXTERNAL_GROUPS        = NO
 EXTERNAL_PAGES         = NO
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = YES
-HAVE_DOT               = NO
+HAVE_DOT               = YES
 DOT_NUM_THREADS        = 0
 DOT_COMMON_ATTR        = "fontname=Helvetica,fontsize=10"
 DOT_EDGE_ATTR          = "labelfontname=Helvetica,labelfontsize=10"
