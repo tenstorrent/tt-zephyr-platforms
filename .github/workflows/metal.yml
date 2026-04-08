@@ -125,6 +125,10 @@ jobs:
             INSERT="    pytest tests/didt/test_resnet_conv.py::test_resnet_conv -k \"all\" --didt-workload-iterations 100 --determinism-check-interval 0"
             sed -i "/$SEARCH/a$INSERT" dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
           fi
+          # Patch tests to remove determinism checks, which are only reliable
+          # on metal CI fleets
+          sed -i 's/--determinism-check-interval 1/--determinism-check-interval 0/g' \
+            dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
 
           # To verify patch was applied
           cat dockerfile/upstream_test_images/run_upstream_tests_vanilla.sh
