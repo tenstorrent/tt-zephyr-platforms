@@ -21,6 +21,10 @@ Major enhancements with this release include:
 <!-- New and Experimental Features, if applicable -->
 <!-- External Project Collaboration Efforts, if applicable -->
 
+### New API
+
+- Added [`TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET`](https://docs.tenstorrent.com/tt-system-firmware/doxygen/structtoggle__single__tensix__reset__rqst.html) ARC message to reset a specific Tensix tile (SYS-2832).
+
 ### Stability Improvements
 
 - Updated Blackhole MRISC FW to v2.15
