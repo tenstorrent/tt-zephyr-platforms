@@ -97,6 +97,10 @@ Major enhancements with this release include:
 - Enhanced device initialization with configurable init/deinit function pointers
 - Improved firmware bundle tooling with better diff support for unsigned bootfs entries
 
+### Bug Fixes
+
+- Fixed red LED not staying on for manufacturing test (SYS-3844).
+
 <!-- Security vulnerabilities fixed? -->
 <!-- Other Notable Changes, if applicable -->
 <!-- New Boards, if applicable -->
