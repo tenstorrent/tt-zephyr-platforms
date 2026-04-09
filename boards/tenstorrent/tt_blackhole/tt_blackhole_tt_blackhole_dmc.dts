@@ -53,13 +53,6 @@
 			gpios = <&gpiox2 5 GPIO_ACTIVE_HIGH>;
 		};
 	};
-
-	leds: leds {
-		compatible = "gpio-leds";
-		led0: led_0 {
-			gpios = <&gpioc 15 GPIO_ACTIVE_HIGH>;
-		};
-	};
 };
 
 / {
