@@ -42,8 +42,6 @@ LOG_MODULE_REGISTER(main, CONFIG_TT_APP_LOG_LEVEL);
 
 BUILD_ASSERT(FIXED_PARTITION_EXISTS(bmfw), "bmfw fixed-partition does not exist");
 
-static bool blink_led;
-
 struct bh_chip BH_CHIPS[BH_CHIP_COUNT] = {DT_FOREACH_PROP_ELEM(DT_PATH(chips), chips, INIT_CHIP)};
 
 #if BH_CHIP_PRIMARY_INDEX >= BH_CHIP_COUNT
@@ -57,7 +55,6 @@ static const struct device *const max6639_pwm_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_pwm));
 static const struct device *const max6639_sensor_dev =
 	DEVICE_DT_GET_OR_NULL(DT_NODELABEL(max6639_sensor));
-static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);
 
 /* No mechanism for getting bl version... yet */
 static dmStaticInfo static_info = {.version = 1, .bl_version = 0, .app_version = APPVERSION};
@@ -195,9 +192,28 @@ static bool process_heartbeat_update(struct bh_chip *chip, uint8_t msg_id, uint3
 	return false;
 }
 
+static void blink_led_expired(struct k_timer *timer)
+{
+	ARG_UNUSED(timer);
+	gpio_pin_toggle_dt(&board_fault_led);
+}
+static K_TIMER_DEFINE(blink_led_timer, blink_led_expired, NULL);
+
 static bool process_led_blink_request(struct bh_chip *chip, uint8_t msg_id, uint32_t msg_data)
 {
-	blink_led = msg_data;
+	/* Do not allow LED blinks in manufacturing. */
+	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST)) {
+		return false;
+	}
+
+	if (msg_data) {
+		k_timer_start(&blink_led_timer, K_MSEC(LED_BLINK_RATE_MS),
+			      K_MSEC(LED_BLINK_RATE_MS));
+	} else {
+		k_timer_stop(&blink_led_timer);
+		gpio_pin_set_dt(&board_fault_led, 0);
+	}
+
 	return false;
 }
 
@@ -566,18 +582,6 @@ static void board_power_update_expired(struct k_timer *timer)
 }
 static K_TIMER_DEFINE(board_power_update_timer, board_power_update_expired, NULL);
 
-static void blink_led_expired(struct k_timer *timer)
-{
-	ARG_UNUSED(timer);
-
-	if (blink_led) {
-		gpio_pin_toggle_dt(&red_led);
-	} else {
-		gpio_pin_set_dt(&red_led, 0);
-	}
-}
-static K_TIMER_DEFINE(blink_led_timer, blink_led_expired, NULL);
-
 int main(void)
 {
 	int ret;
@@ -671,15 +675,13 @@ int main(void)
 
 	printk("DMFW VERSION " APP_VERSION_STRING "\n");
 
+	/* For manufacturing, keep the red LED solid on so it can be visually inspected. */
 	if (IS_ENABLED(CONFIG_TT_ASSEMBLY_TEST) && board_fault_led.port != NULL) {
 		gpio_pin_set_dt(&board_fault_led, 1);
 	}
 
 	k_timer_start(&shared_20ms_event_timer, K_MSEC(20), K_MSEC(20));
 	k_timer_start(&board_power_update_timer, K_MSEC(1), K_MSEC(1));
-	k_timer_start(&blink_led_timer, K_MSEC(LED_BLINK_RATE_MS), K_MSEC(LED_BLINK_RATE_MS));
-
-	gpio_pin_configure_dt(&red_led, GPIO_OUTPUT_ACTIVE);
 
 	while (true) {
 		uint32_t events = tt_event_wait(TT_EVENT_ANY, K_FOREVER);
