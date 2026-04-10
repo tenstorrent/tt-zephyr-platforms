@@ -72,7 +72,7 @@ For example, you could run the hello world application as follows:
 .. code-block:: console
 
     # Build a binary and upload it to the emulation host
-    west build -p always -b tt_mimir ../zephyr/samples/hello_world
+    west build -p always -b tt_mimir/tt_mimir/smc ../zephyr/samples/hello_world
     scp build/zephyr/zephyr.bin <user@emu-host>:zephyr.bin
 
     # Source the environment every login
@@ -164,7 +164,7 @@ Co-Simulation can be run as follows:
 
 .. code-block:: console
 
-    west build -p always -b tt_mimir app/hello_world
+    west build -p always -b tt_mimir/tt_mimir/smc app/hello_world
     /proj_syseng/user_dev/ddegrasse/public/grendel-renode-cosim-2025-12-11/start-renode.sh <build-dir>/zephyr/zephyr.elf
     [INFO] Including script(s): /tmp/renode_cmds.S9DMFL
     [INFO] sysbus: Loading block of 85880 bytes length at 0xC0060000.
