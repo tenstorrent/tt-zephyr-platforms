@@ -56,7 +56,7 @@ jobs:
         config: ${{ fromJson(needs.gen-config.outputs.matrix-config-bh) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      image: ghcr.io/danieldegrasse/tt-system-firmware/ci-image:feature-container-uprev
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
@@ -147,7 +147,7 @@ jobs:
         config: ${{ fromJson(needs.gen-config.outputs.matrix-config-bh) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      image: ghcr.io/danieldegrasse/tt-system-firmware/ci-image:feature-container-uprev
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
@@ -234,7 +234,7 @@ jobs:
         config: ${{ fromJson(needs.gen-config.outputs.matrix-config-wh) }}
     runs-on: ${{ matrix.config.runs-on }}
     container:
-      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      image: ghcr.io/danieldegrasse/tt-system-firmware/ci-image:feature-container-uprev
       volumes:
         - /dev/hugepages-1G:/dev/hugepages-1G
         - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
