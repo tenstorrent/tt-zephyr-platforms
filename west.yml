@@ -7,6 +7,8 @@ manifest:
       url-base: https://github.com/tenstorrent
     - name: tenstorrent-forks
       url-base: https://github.com/tenstorrent-forks
+    - name: danieldegrasse
+      url-base: https://github.com/danieldegrasse
 
   # zephyr-keep-sorted-start re(^\s+\- name:)
   projects:
@@ -15,9 +17,9 @@ manifest:
       path: modules/lib/librpmi
       revision: 23e94f7007731e91be4de7c1d9c8c48b2173f6a2
     - name: zephyr
-      remote: tenstorrent
-      repo-path: zephyr-fork
-      revision: 5ab07b7c18aca6cd47fc3e68c478d082db1d3717
+      remote: danieldegrasse
+      repo-path: zephyr
+      revision: 00101fbc013aae67873ad36c539e2e3450b909cb
       import:
         name-allowlist:
           - cmsis_6
@@ -26,6 +28,7 @@ manifest:
           - mcuboot
           - nanopb
           - segger
+          - tf-psa-crypto
   # zephyr-keep-sorted-stop
 
   group-filter:
