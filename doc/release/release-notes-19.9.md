@@ -30,6 +30,10 @@ Major enhancements with this release include:
 - Updated Blackhole MRISC FW to v2.15
   - Tuned CA/WCK settings to address Galaxy revC data mismatch issues
 
+### Bug Fixes
+
+- Fixed red LED not staying on for manufacturing test (SYS-3844).
+
 <!-- Security vulnerabilities fixed? -->
 <!-- API Changes, if applicable -->
 <!-- Removed APIs, H3 Deprecated APIs, H3 New APIs, if applicable -->
