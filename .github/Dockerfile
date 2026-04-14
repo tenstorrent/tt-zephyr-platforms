@@ -1,7 +1,7 @@
 # Image to run tt-system-firmware CI tests.
 # Includes python dependencies and base copy of repos
 
-ARG ZEP_CONTAINER=v0.28.2
+ARG ZEP_CONTAINER=v0.29.1
 FROM ghcr.io/zephyrproject-rtos/zephyr-build:${ZEP_CONTAINER} AS base
 
 USER root
