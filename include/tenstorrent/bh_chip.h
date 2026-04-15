@@ -90,6 +90,16 @@ struct bh_chip_data {
 
 	/* Cable power limit detected at boot, written to scratch register during resets. */
 	uint16_t cable_power_limit;
+
+	/*
+	 * Per-chip DMC init timing
+	 * perst_seen flags whether dm_init_done should be tracked.
+	 * dm_init_done is in DMC clock cycles
+	 * arc_start_time is ASIC refclk counter read over JTAG (see jtag_bootrom_soft_reset_arc).
+	 */
+	bool perst_seen;
+	uint32_t dm_init_done;
+	uint32_t arc_start_time;
 };
 
 struct bh_chip {
