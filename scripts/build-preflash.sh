@@ -64,4 +64,5 @@ echo "Build completed successfully"
 echo "Generating preflash.ihex..."
 YAML_PATH="$TTZP_BASE/boards/tenstorrent/tt_blackhole/bootfs/preflash-bootfs.yaml"
 $SCRIPT_DIR/tt_boot_fs.py mkfs "$YAML_PATH" "preflash-$RELEASE.ihex" --build-dir "$BUILD_DIR" --hex
+objcopy -I ihex -O binary "preflash-$RELEASE.ihex" "preflash-$RELEASE.bin"
 echo "preflash.ihex-$RELEASE generated successfully"

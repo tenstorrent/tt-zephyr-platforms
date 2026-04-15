@@ -344,6 +344,7 @@ jobs:
           name: preflash-fw
           path: |
             preflash*.ihex
+            preflash*.bin
 
   build-combined-fwbundle:
     runs-on: ubuntu-24.04
