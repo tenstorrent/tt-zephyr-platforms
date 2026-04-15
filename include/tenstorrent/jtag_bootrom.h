@@ -38,11 +38,11 @@ ALWAYS_INLINE int jtag_bootrom_patch(struct bh_chip *chip, const uint32_t *patch
 	return jtag_bootrom_patch_offset(chip, patch, patch_len, 0);
 }
 
+uint32_t jtag_bootrom_get_perst_start_time(void);
+
 /* for verification via gpio-emul */
 void jtag_bootrom_emul_setup(const uint32_t *buf, size_t buf_len);
 int jtag_bootrom_emul_axiread(uint32_t addr, uint32_t *value);
-uint32_t get_arc_start_time(void);
-uint32_t get_dm_init_duration(void);
 
 #ifdef __cplusplus
 }
