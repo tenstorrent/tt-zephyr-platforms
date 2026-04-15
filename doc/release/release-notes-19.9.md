@@ -29,6 +29,7 @@ Major enhancements with this release include:
 
 - Updated Blackhole MRISC FW to v2.15
   - Tuned CA/WCK settings to address Galaxy revC data mismatch issues
+- Fixed a bug with specific chips where the bootrom would get stuck on memory repair (postcode 0x13) (SYS-2903).
 
 ### Bug Fixes
 
