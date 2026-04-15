@@ -181,6 +181,22 @@ jobs:
         with:
           name: tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
 
+      - name: Download assembly firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: assembly-fw-*
+
+      - name: Download assembly test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: assembly-test-*
+
+      - name: Download preflash firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: preflash-fw
+          path: preflash-fw
+
       - name: Download Debian Package
         uses: actions/download-artifact@v4
         with:
@@ -206,7 +222,15 @@ jobs:
           done
           tar zcf fw-pack-${{ github.ref_name }}-recovery.tar.gz -C firmware-recovery-${{ github.ref_name }} .
 
-          zip -r -9 tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]}
+          ASSEMBLY_FW_DIRS=(assembly-fw-*)
+          zip -r -9 tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.zip ${BOARD_REVS[@]} ${ASSEMBLY_FW_DIRS[@]}
+
+          # Package manufacturing artifacts (assembly test collateral + preflash firmware)
+          VERSION=${{ steps.set_vars.outputs.VERSION }}
+          mkdir manufacturing-artifacts
+          cp -r assembly-test-*/. manufacturing-artifacts/
+          cp -r preflash-fw/. manufacturing-artifacts/
+          tar zcf manufacturing-artifacts-${VERSION}.tar.gz -C manufacturing-artifacts .
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -223,3 +247,4 @@ jobs:
             *.deb
             tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.zip
             tt-system-firmware-${{ steps.set_vars.outputs.VERSION }}.spdx
+            manufacturing-artifacts-${{ steps.set_vars.outputs.VERSION }}.tar.gz
