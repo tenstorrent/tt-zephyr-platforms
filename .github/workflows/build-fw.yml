@@ -282,7 +282,7 @@ jobs:
         shell: bash
         run: |
             mkdir assembly-test-preflash
-            cp build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.elf assembly-test-preflash/${{ matrix.board }}-bootloader-${{ steps.sanitize.outputs.sanitized_ref_name }}.elf
+            cp build-assembly-test-${{ matrix.board }}/mcuboot/zephyr/zephyr.hex assembly-test-preflash/${{ matrix.board }}-bootloader-${{ steps.sanitize.outputs.sanitized_ref_name }}.hex
             cp build-assembly-test-${{ matrix.board }}/dmc/zephyr/zephyr.signed.hex assembly-test-preflash/${{ matrix.board }}-app-${{ steps.sanitize.outputs.sanitized_ref_name }}.signed.hex
 
       - name: Upload firmware assets
