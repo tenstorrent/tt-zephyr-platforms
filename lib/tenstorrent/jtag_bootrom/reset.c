@@ -40,7 +40,7 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset, uint16_t
 	}
 #endif
 
-	int64_t start = k_uptime_get();
+	LOG_DBG("start reset sequence at %lld us", k_cyc_to_us_floor64(k_cycle_get_64()));
 
 	/* Need to be able to send an i2c transaction to set the straps on the p300 */
 	bh_chip_cancel_bus_transfer_clear(chip);
@@ -56,17 +56,13 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset, uint16_t
 
 	jtag_bootrom_patch_offset(chip, patch, patch_len, 0x80);
 
-	volatile int64_t end = k_uptime_delta(&start);
-
-	LOG_DBG("jtag bootrom load took %lld ms", end);
+	LOG_DBG("load sequence finished at %lld us", k_cyc_to_us_floor64(k_cycle_get_64()));
 
 	if (jtag_bootrom_verify(chip->config.jtag, patch, patch_len) != 0) {
 		printk("Bootrom verification failed\n");
 	}
 
 	jtag_bootrom_set_cable_power_limit(chip, cable_power_limit);
-
-	start = k_uptime_get();
 
 #ifdef CONFIG_JTAG_LOAD_ON_PRESET
 	if (chip->data.trigger_reset) {
@@ -79,8 +75,6 @@ int jtag_bootrom_reset_sequence(struct bh_chip *chip, bool force_reset, uint16_t
 
 	jtag_bootrom_teardown(chip);
 
-	end = k_uptime_delta(&start);
-	LOG_DBG("jtag bootrom reset took %lld ms", end);
-
+	LOG_DBG("reset sequence finished at %lld us", k_cyc_to_us_floor64(k_cycle_get_64()));
 	return 0;
 }
