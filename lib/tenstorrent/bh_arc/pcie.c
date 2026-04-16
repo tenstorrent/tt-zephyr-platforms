@@ -467,16 +467,28 @@ static int pcie_init(void)
 	struct CntlInitV2Param param;
 
 	if (IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
+		/* Set num_serdes based on board type:
+		 * P300 variants and UBB (Galaxy): 1 serdes
+		 * P100 and P150 variants: 2 serdes
+		 */
+#if defined(CONFIG_BOARD_REVISION_P300A) || defined(CONFIG_BOARD_REVISION_P300B) ||                \
+	defined(CONFIG_BOARD_REVISION_P300C) || defined(CONFIG_BOARD_REVISION_GALAXY) ||           \
+	defined(CONFIG_BOARD_REVISION_GALAXY_REVC)
+		uint8_t recovery_num_serdes = 1;
+#else
+		uint8_t recovery_num_serdes = 2;
+#endif
+
 		pci0_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 1,
+			.num_serdes = recovery_num_serdes,
 			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
 			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
 			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
 		};
 		pci1_property_table = (FwTable_PciPropertyTable){
 			.pcie_mode = FwTable_PciPropertyTable_PcieMode_EP,
-			.num_serdes = 1,
+			.num_serdes = recovery_num_serdes,
 			.pcie_bar0_size = PCIE_BAR0_SIZE_DEFAULT_MB,
 			.pcie_bar2_size = PCIE_BAR2_SIZE_DEFAULT_MB,
 			.pcie_bar4_size = PCIE_BAR4_SIZE_DEFAULT_MB,
