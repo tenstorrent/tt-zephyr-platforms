@@ -57,6 +57,8 @@ Major enhancements with this release include:
 ### Bug Fixes
 
 - Fixed red LED not staying on for manufacturing test (SYS-3844).
+- Fix for postcode 0x13 on p300 devices by triggering mem repair during DMC reset (SYS-3829).
+- Fix for p300 recovery/preflash images not enumerating (SYS-3893).
 
 ## Grendel
 
