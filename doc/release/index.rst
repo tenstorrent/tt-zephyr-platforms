@@ -49,17 +49,22 @@ Tenstorrent firmware uses `semantic versioning`_ where tagged version numbers fo
 
 We add pre-release tags using the format ``MAJOR.MINOR.PATCH-EXTRAVERSION``.
 
-Stabilization Period
-====================
+Release Branch
+==============
 
-A stabilization period will occur prior to each release, where tags are made for at
-least one release candidate, ``a.b.c-rc1``. If needed, additional release candidates ``a.b.c-rc2``
-may be made, ultimately followed by the official and final ``a.b.c`` release.
+At the start of a release process, a release branch is created from the main
+branch. The release branch is used for stabilization and bug fixes during the
+release process. An initial release candidate is created from the release
+branch, and additional release candidates created as needed until the final
+release candidate passes quality assurance (QA) testing and is ready for final
+release.
 
-During the stabilization period between ``rc1`` and the final release, the only changes that should
-be merged into the ``main`` branch are to improve testing, fix bugs, correct documentation and other
-cosmetic fixes, and explicitly not to introduce other major changes or features. The stabilization
-period is effectively a feature freeze.
+Additional point releases (e.g. ``v19.8.1``) may be created from the release
+branch if there are critical bug fixes that need to be delivered to customers
+before the next major or minor release.
+
+Only bug fixes and documentation may be merged into the release branch, unless
+the release manager approves the inclusion of a new feature.
 
 Exceptions
 ==========
