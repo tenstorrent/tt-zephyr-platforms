@@ -142,7 +142,7 @@
 /** @brief L2CPU firmware version. */
 #define TAG_L2CPU_FW_VERSION 30
 
-/** @brief Fan speed as a percentage. */
+/** @brief Fan speed as a percentage. 0xFFFFFFFF if fan control disabled. */
 #define TAG_FAN_SPEED 31
 
 /** @brief Timer heartbeat counter. */
@@ -172,7 +172,7 @@
 /** @brief NOC translation status. */
 #define TAG_NOC_TRANSLATION 40
 
-/** @brief Fan RPM. */
+/** @brief Fan RPM. 0xFFFFFFFF if fan control disabled. */
 #define TAG_FAN_RPM 41
 
 /** @brief GDDR 0 and 1 temperature. */
