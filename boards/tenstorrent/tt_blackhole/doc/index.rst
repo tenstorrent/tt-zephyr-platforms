@@ -80,6 +80,14 @@ chip-level functionality.
 Hardware
 ********
 
+Board Configurations
+=====================
+
+.. toctree::
+   :maxdepth: 1
+
+   _generated/tt_blackhole_configuration
+
 Supported Features
 ==================
 
