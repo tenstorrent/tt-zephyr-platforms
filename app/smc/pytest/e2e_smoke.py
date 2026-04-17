@@ -1410,7 +1410,9 @@ def test_bindesc(arc_chip_dut, asic_id):
     """
     arc_chip = pyluwen.detect_chips()[asic_id]
     smc_bin = arc_chip_dut.device_config.app_build_dir / "zephyr/zephyr.bin"
-    smc_version = get_int_version_from_file(SCRIPT_DIR.parents[2] / "app/smc/VERSION")
+    smc_version = get_ttzp_version.get_ttzp_version_u32(
+        SCRIPT_DIR.parents[2] / "app/smc/VERSION"
+    )
     logger.info(f"Expected SMC version from file: 0x{smc_version:08x}")
     # Read version from running FW telemetry
     cmfw_version = read_telem(arc_chip, TAG_CM_FW_VERSION)
