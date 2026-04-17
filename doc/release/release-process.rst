@@ -76,6 +76,40 @@ that is associated with a GitHub account, and the signature is valid. For
 more details, see here:
 `GitHub Docs - About commit signature verification <https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification>`_.
 
+Testing Release Process
+***********************
+
+The release process can be tested by creating a release candidate from a release
+branch in a personal fork of the repository, and posting the RC to GitHub as a
+pre-release. This allows you to verify that the RC creation and posting process
+works correctly, without affecting the main tt-system-firmware repository.
+
+To do so, follow the steps in the `RC Process`_ section, but push the release
+branch and RC tag to a personal fork of the repository instead of the main
+tt-system-firmware repository. For example,
+
+.. code-block:: shell
+
+   # Run automated RC creation script, specifying your personal fork as the remote
+   ./scripts/create-release-candidate.sh git@github.com:<username>/tt-system-firmware.git
+
+Note that the release process requires a few secrets to function correctly.
+These can be added within the "Settings > Secrets and variables > Actions" page
+of the repository on GitHub. For testing purposes, you can add these secrets to
+your personal fork as well.
+
+* ``SIGNATURE_KEY``: This should be the private key used to sign DMFW and CMFW
+   during release. To generate, run
+   ``openssl genrsa -out private_key.pem 2048 && base64 -i private_key.pem``
+
+* ``PKG_SIGNING_KEY_DEB``: This should be an ASCII-armored GPG key used to
+   sign Debian packages during release. To generate, run
+   ``--gpg --gen-key`` and follow the prompts to create a new GPG key, then
+   export the key with ``gpg --armor --export <key-id>``. Note: the key
+   cannot have a passphrase set- just leave the passphrase blank when creating
+   the key.
+
+
 RC Process
 ==========
 
@@ -134,7 +168,7 @@ the RC, and push the changes to GitHub. For example:
    # the script without pushing to the main tt-system-firmware repository.  You
    # can also specify the --dry-run flag to create all relevant branches and
    # tags locally without pushing to GitHub.
-   ./scripts/create-release-candidate.sh git@github.com:tenstorrent/tt-zephyr-platforms.git
+   ./scripts/create-release-candidate.sh git@github.com:tenstorrent/tt-system-firmware.git
 
 
 RC Backports and Validation
