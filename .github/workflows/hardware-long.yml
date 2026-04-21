@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       matrix-config: ${{ steps.gen-config.outputs.matrix-config }}
+      mfg-matrix-config: ${{ steps.gen-config.outputs.mfg-matrix-config }}
     steps:
       - uses: actions/checkout@v4
       - id: gen-config
@@ -41,6 +42,9 @@ jobs:
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
           MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
+          # Same filter, but exclude galaxy board (for manufacturing tests)
+          MFG_MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh" and .board != "galaxy") | del(.product)]' .github/ci_boards.json)"
+          echo "mfg-matrix-config=$MFG_MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   e2e-stress-test:
     name: BH E2E Stress Test on ${{ matrix.config.board }}
@@ -164,3 +168,107 @@ jobs:
             exit 1
           fi
           echo "Successfully verified that tensix-enabled column count is correct: $TENSIX_COUNT"
+
+  manufacturing-test:
+    needs: [build-fw-artifact, gen-config]
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.gen-config.outputs.mfg-matrix-config) }}
+    runs-on: ${{ matrix.config.runs-on }}
+    container:
+      image: ghcr.io/tenstorrent/tt-zephyr-platforms/ci-image:v18.12.0-rc1
+      volumes:
+        - /dev/hugepages-1G:/dev/hugepages-1G
+        - /opt/tenstorrent/kmd-builds/:/opt/tenstorrent/kmd-builds/
+      options: '--device /dev/tenstorrent --device /dev/bus/usb --privileged'
+    steps:
+      - name: Cleanup State
+        if: ${{ always() }}
+        run: |
+          ls -la
+          rm -rf *
+
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          path: tt-system-firmware
+
+      - name: Prepare Container
+        uses: ./tt-system-firmware/.github/workflows/prepare-container
+        with:
+          app-path: tt-system-firmware
+          kmd-version: ${{ matrix.config.kmd_build }}
+
+      - name: Derive board properties
+        id: board-map
+        shell: bash
+        run: |
+          BOARD="${{ matrix.config.board }}"
+          ASSEMBLY_BOARD=$(echo "$BOARD" | sed 's/[a-z]$//')
+          # p100 uses the same assembly test firmware as p150
+          if [[ "$ASSEMBLY_BOARD" == "p100" ]]; then
+            ASSEMBLY_BOARD="p150"
+          fi
+          echo "assembly_board=$ASSEMBLY_BOARD" | tee -a $GITHUB_OUTPUT
+          # p300 variants have 2 ASICs, all others have 1
+          if [[ "$ASSEMBLY_BOARD" == p300 ]]; then
+            echo "num_asics=2" | tee -a $GITHUB_OUTPUT
+          else
+            echo "num_asics=1" | tee -a $GITHUB_OUTPUT
+          fi
+
+      - name: Download preflash firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: preflash-fw
+          path: artifacts/preflash
+
+      - name: Download assembly test firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-fw-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-fw
+
+      - name: Download assembly MCUBoot
+        uses: actions/download-artifact@v4
+        with:
+          name: assembly-mcuboot-${{ steps.board-map.outputs.assembly_board }}
+          path: artifacts/assembly-mcuboot
+
+      - name: Download combined firmware bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-fwbundle
+          path: artifacts/fwbundle
+
+      - name: Download Flash Loader Module
+        uses: actions/download-artifact@v4
+        with:
+          name: bh-flm
+          path: tt-system-firmware/scripts/tooling/blackhole_recovery/data/bh_flm/build
+
+      - name: Run manufacturing test
+        shell: bash
+        run: |
+          tt-system-firmware/scripts/ci/run-manufacturing-test.sh \
+            -p artifacts/preflash \
+            -m artifacts/assembly-mcuboot \
+            -a artifacts/assembly-fw \
+            -f artifacts/fwbundle \
+            ${{ matrix.config.board }}
+
+      # ---- Debug info on failure ----
+      - name: Print RTT logs
+        if: ${{ failure() }}
+        working-directory: tt-system-firmware
+        run: |
+          echo "DMC RTT logs:"
+          python3 ./scripts/dmc_rtt.py -n
+          echo "SMC RTT logs:"
+          python3 ./scripts/smc_console.py --rtt -n
+          NUM_ASICS=${{ steps.board-map.outputs.num_asics }}
+          for ((i=0; i<NUM_ASICS; i++)); do
+            echo "SMC state dump for ASIC $i:"
+            python3 ./scripts/dump_smc_state.py --asic-id $i
+          done
