@@ -1,0 +1,136 @@
+name: Produce Data
+
+on:
+  workflow_run:
+    workflows:
+      - "Build"
+      - "HW Smoke"
+      - "HW Soak"
+      - "Metal 🤘"
+      - "Unit"
+      - "Create a Release"
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      test_workflow_run_id:
+        description: "Workflow run ID to process"
+        required: true
+        type: string
+      test_workflow_run_attempt:
+        description: "Workflow run attempt number"
+        required: false
+        default: "1"
+        type: string
+      upload_data:
+        description: "Upload data via SFTP"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  produce-data:
+    name: Produce Pipeline Data
+    if: >-
+      ${{ (github.event_name == 'workflow_run' &&
+           (github.event.workflow_run.conclusion == 'success' ||
+            github.event.workflow_run.conclusion == 'failure' ||
+            github.event.workflow_run.conclusion == 'cancelled')) ||
+          github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            scripts/ci
+            VERSION
+            app/smc/VERSION
+            app/dmc/VERSION
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pydantic pyyaml requests
+
+      - name: Determine run ID
+        id: run-info
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            run_id="${{ inputs.test_workflow_run_id }}"
+            run_attempt="${{ inputs.test_workflow_run_attempt }}"
+            upload="${{ inputs.upload_data }}"
+          else
+            run_id="${{ github.event.workflow_run.id }}"
+            run_attempt="${{ github.event.workflow_run.run_attempt }}"
+            upload="true"
+          fi
+
+          [[ -z "$run_id" ]] && { echo "::error::run_id is empty"; exit 1; }
+          [[ -z "$run_attempt" ]] && { echo "::error::run_attempt is empty"; exit 1; }
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_attempt=$run_attempt" >> "$GITHUB_OUTPUT"
+          echo "upload=$upload" >> "$GITHUB_OUTPUT"
+
+          echo "::notice title=target-workflow-link::The workflow being analyzed is available at https://github.com/${{ github.repository }}/actions/runs/$run_id/attempts/$run_attempt"
+
+      - name: Check API rate limit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api rate_limit
+
+      - name: Wait for GitHub API consistency
+        run: |
+          echo "Sleeping 60s for GitHub to fully sync workflow run data"
+          sleep 60
+
+      - name: Produce pipeline JSON
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: scripts/ci
+        run: |
+          python create_pipeline_json.py \
+            --run-id "${{ steps.run-info.outputs.run_id }}" \
+            --run-attempt "${{ steps.run-info.outputs.run_attempt }}" \
+            --repo "${{ github.repository }}" \
+            --output-dir "${{ runner.temp }}/pipeline-data"
+
+      - name: Upload pipeline JSON as artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-data
+          path: ${{ runner.temp }}/pipeline-data/*.json
+          retention-days: 30
+
+      - name: Upload via SFTP
+        if: steps.run-info.outputs.upload == 'true'
+        shell: bash
+        env:
+          SFTP_PRIVATE_KEY: ${{ secrets.SFTP_PRIVATE_KEY }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_ENDPOINT: ${{ secrets.SFTP_ENDPOINT }}
+        run: |
+          # Write private key to temp file
+          KEY_FILE="$(mktemp)"
+          echo "$SFTP_PRIVATE_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+
+          # Upload all JSON files
+          for f in ${{ runner.temp }}/pipeline-data/*.json; do
+            echo "Uploading $(basename "$f")"
+            sftp -i "$KEY_FILE" \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              "${SFTP_USERNAME}@${SFTP_ENDPOINT}" <<EOF
+          put "$f"
+          bye
+          EOF
+          done
+
+          rm -f "$KEY_FILE"
