@@ -17,6 +17,13 @@ config TT_BH_ARC
 
 if TT_BH_ARC
 
+config NOP_HACK
+	bool "Enable NOP hack for I2C write"
+	default y
+	help
+	  Enable a NOP hack for the I2C write function, which fixes
+	  a stack overflow fault. Why? Not sure yet!
+
 config TT_BH_ARC_NUM_MSG_CODES
 	int "Number of message codes"
 	default 199
