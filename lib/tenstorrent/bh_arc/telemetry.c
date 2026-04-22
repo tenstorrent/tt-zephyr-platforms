@@ -453,8 +453,13 @@ static void update_telemetry(void)
 					     * yet), lower 16 bits - current L2CPUCLK3
 					     */
 
-	telemetry[TAG_FAN_SPEED] = GetFanSpeed(); /* Target fan speed - reported in percentage */
-	telemetry[TAG_FAN_RPM] = GetFanRPM();     /* Actual fan RPM */
+	bool fan_ctrl_en = tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.fan_ctrl_en;
+
+	/*Target fan speed - reported in percentage */
+	telemetry[TAG_FAN_SPEED] = fan_ctrl_en ? GetFanSpeed() : 0xFFFFFFFFU;
+
+	/* Actual fan RPM */
+	telemetry[TAG_FAN_RPM] = fan_ctrl_en ? GetFanRPM() : 0xFFFFFFFFU;
 	UpdateEthTelemetry();
 	UpdateGddrTelemetry();
 	telemetry[TAG_MAX_GDDR_TEMP] = GetMaxGDDRTemp();
