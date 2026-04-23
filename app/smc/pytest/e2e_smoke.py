@@ -1006,6 +1006,7 @@ def test_tensix_reset_single(arc_chip_dut, asic_id):
 
     for target_x, target_y in all_tiles:
         # Reset the target tile
+        arc_chip.set_power_state("low")
         response = arc_chip.arc_msg(
             TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET,
             arg0=target_x | (target_y << 8),
@@ -1018,6 +1019,7 @@ def test_tensix_reset_single(arc_chip_dut, asic_id):
             continue
 
         # Verify the target tile was cleared
+        arc_chip.set_power_state("high")
         val = arc_chip.noc_read32(
             noc_id=0, x=target_x, y=target_y, addr=TRISC0_RESET_PC
         )
