@@ -40,5 +40,11 @@
     "runs-on": "n150-jtag",
     "product": "wh",
     "kmd_build": "2.7.0"
+  },
+  {
+    "board": "p150b",
+    "runs-on": "loudbox",
+    "product": "bh",
+    "kmd_build": "2.7.0"
   }
 ]
