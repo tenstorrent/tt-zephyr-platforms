@@ -43,6 +43,7 @@ void CntlInit(uint8_t pcie_inst, uint8_t num_serdes_instance, uint8_t max_pcie_s
 	      uint64_t board_id, uint32_t vendor_id);
 
 void CntlInitV2(const struct CntlInitV2Param *param);
+void ChangeLinkSpeed(uint8_t pcie_speed);
 
 #ifdef __cplusplus
 }
