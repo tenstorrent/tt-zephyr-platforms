@@ -37,7 +37,7 @@ BUILD_ASSERT(FIXED_PARTITION_EXISTS(cmfw), "cmfw fixed-partition does not exist"
 int main(void)
 {
 	SetPostCode(POST_CODE_SRC_CMFW, POST_CODE_ZEPHYR_INIT_DONE);
-	printk("Tenstorrent Blackhole CMFW %s\n", APP_VERSION_STRING);
+	LOG_INF("Tenstorrent Blackhole CMFW %s", APP_VERSION_STRING);
 
 	if (!IS_ENABLED(CONFIG_TT_SMC_RECOVERY)) {
 		if (tt_bh_fwtable_get_fw_table(fwtable_dev)->feature_enable.aiclk_ppm_en) {
