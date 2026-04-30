@@ -500,6 +500,7 @@ def test_tensix_reset_then_burnin(arc_chip_dut, asic_id):
     # Set high power after the message to allow NOC read/write to function properly.
     arc_chip.set_power_state("low")
     for noc_x, noc_y in all_tiles:
+        logger.info(f"Resetting ({noc_x},{noc_y})")
         response = arc_chip.arc_msg(
             TT_SMC_MSG_TOGGLE_SINGLE_TENSIX_RESET,
             arg0=noc_x | (noc_y << 8),
