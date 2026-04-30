@@ -56,6 +56,9 @@
 #define SCRAPPY_GDDR_VDDR_FB1 1.07
 #define SCRAPPY_GDDR_VDDR_FB2 3.48
 
+extern uint32_t I2CWriteBytes_ASM(uint32_t id, uint16_t command, uint32_t command_byte_size,
+		       const uint8_t *p_write_buf, uint32_t data_byte_size);
+
 struct OperationBits {
 	uint8_t reserved: 1;
 	uint8_t transition_control: 1;
@@ -111,7 +114,7 @@ static void set_max20730(uint32_t slave_addr, uint32_t voltage_in_mv, float rfb1
 	float vref = voltage_in_mv / (1 + rfb1 / rfb2);
 	uint16_t vout_cmd = vref * LINEAR_FORMAT_CONSTANT * 0.001f;
 
-	I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
+	I2CWriteBytes_ASM(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
 		      VOUT_COMMAND_DATA_BYTE_SIZE);
 
 	/* delay to flush i2c transaction and voltage change */
@@ -123,7 +126,7 @@ static void set_mpm3695(uint32_t slave_addr, uint32_t voltage_in_mv, float rfb1,
 	I2CInit(I2CMst, slave_addr, I2CFastMode, PMBUS_MST_ID);
 	uint16_t vout_cmd = voltage_in_mv * 0.5f / SCALE_LOOP / (1 + rfb1 / rfb2);
 
-	I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
+	I2CWriteBytes_ASM(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
 		      VOUT_COMMAND_DATA_BYTE_SIZE);
 
 	/* delay to flush i2c transaction and voltage change */
@@ -136,7 +139,7 @@ static void i2c_set_max20816(uint32_t slave_addr, uint32_t voltage_in_mv)
 	I2CInit(I2CMst, slave_addr, I2CFastMode, PMBUS_MST_ID);
 	uint16_t vout_cmd = 2 * voltage_in_mv;
 
-	I2CWriteBytes(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
+	I2CWriteBytes_ASM(PMBUS_MST_ID, VOUT_COMMAND, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&vout_cmd,
 		      VOUT_COMMAND_DATA_BYTE_SIZE);
 
 	/* 100us to flush the tx of i2c + 150us to cover voltage switch from 0.65V to 0.95V with
@@ -204,7 +207,7 @@ void SwitchVoutControl(enum VoltageCmdSource source)
 	operation.transition_control =
 		1; /* copy vout command when control is passed from AVSBus to PMBus */
 	operation.voltage_command_source = source;
-	I2CWriteBytes(PMBUS_MST_ID, OPERATION, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&operation,
+	I2CWriteBytes_ASM(PMBUS_MST_ID, OPERATION, PMBUS_CMD_BYTE_SIZE, (uint8_t *)&operation,
 		      OPERATION_DATA_BYTE_SIZE);
 
 	/* 100us to flush the tx of i2c */

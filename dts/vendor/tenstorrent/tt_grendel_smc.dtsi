@@ -27,27 +27,13 @@
 		cpu@0 {
 			clock-frequency = <0>;
 			compatible = "sifive,rocket0", "riscv";
-			d-cache-block-size = <64>;
-			d-cache-sets = <32>;
-			d-cache-size = <4096>;
-			d-tlb-sets = <1>;
-			d-tlb-size = <32>;
 			device_type = "cpu";
-			hardware-exec-breakpoint-count = <16>;
-			i-cache-block-size = <64>;
-			i-cache-sets = <32>;
-			i-cache-size = <4096>;
-			i-tlb-sets = <1>;
-			i-tlb-size = <32>;
-			mmu-type = "riscv,sv57";
-			next-level-cache = <&ram0 &rom>;
+			mmu-type = "riscv,sv48";
 			reg = <0x0>;
-			riscv,isa = "rv64imafdczicond_zicsr_zifencei_zihpm_xrocket";
-			riscv,pmpgranularity = <4>;
-			riscv,pmpregions = <8>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "m", "a", "f", "d", "c",
+				"zicond", "zicsr", "zifencei", "zihpm", "xrocket";
 			status = "okay";
-			timebase-frequency = <1000000>;
-			tlb-split;
 			cpu0_intc: interrupt-controller {
 				#address-cells = <0>;
 				#interrupt-cells = <1>;
@@ -58,27 +44,13 @@
 		cpu@1 {
 			clock-frequency = <0>;
 			compatible = "sifive,rocket0", "riscv";
-			d-cache-block-size = <64>;
-			d-cache-sets = <32>;
-			d-cache-size = <4096>;
-			d-tlb-sets = <1>;
-			d-tlb-size = <32>;
 			device_type = "cpu";
-			hardware-exec-breakpoint-count = <16>;
-			i-cache-block-size = <64>;
-			i-cache-sets = <32>;
-			i-cache-size = <4096>;
-			i-tlb-sets = <1>;
-			i-tlb-size = <32>;
-			mmu-type = "riscv,sv57";
-			next-level-cache = <&ram0 &rom>;
-			reg = <0x1>;
-			riscv,isa = "rv64imafdczicond_zicsr_zifencei_zihpm_xrocket";
-			riscv,pmpgranularity = <4>;
-			riscv,pmpregions = <8>;
+			mmu-type = "riscv,sv48";
+			reg = <0x0>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "m", "a", "f", "d", "c",
+				"zicond", "zicsr", "zifencei", "zihpm", "xrocket";
 			status = "okay";
-			timebase-frequency = <1000000>;
-			tlb-split;
 			cpu1_intc: interrupt-controller {
 				#address-cells = <0>;
 				#interrupt-cells = <1>;
@@ -89,27 +61,13 @@
 		cpu@2 {
 			clock-frequency = <0>;
 			compatible = "sifive,rocket0", "riscv";
-			d-cache-block-size = <64>;
-			d-cache-sets = <32>;
-			d-cache-size = <4096>;
-			d-tlb-sets = <1>;
-			d-tlb-size = <32>;
 			device_type = "cpu";
-			hardware-exec-breakpoint-count = <16>;
-			i-cache-block-size = <64>;
-			i-cache-sets = <32>;
-			i-cache-size = <4096>;
-			i-tlb-sets = <1>;
-			i-tlb-size = <32>;
-			mmu-type = "riscv,sv57";
-			next-level-cache = <&ram0 &rom>;
-			reg = <0x2>;
-			riscv,isa = "rv64imafdczicond_zicsr_zifencei_zihpm_xrocket";
-			riscv,pmpgranularity = <4>;
-			riscv,pmpregions = <8>;
+			mmu-type = "riscv,sv48";
+			reg = <0x0>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "m", "a", "f", "d", "c",
+				"zicond", "zicsr", "zifencei", "zihpm", "xrocket";
 			status = "okay";
-			timebase-frequency = <1000000>;
-			tlb-split;
 			cpu2_intc: interrupt-controller {
 				#address-cells = <0>;
 				#interrupt-cells = <1>;
@@ -120,27 +78,13 @@
 		cpu@3 {
 			clock-frequency = <0>;
 			compatible = "sifive,rocket0", "riscv";
-			d-cache-block-size = <64>;
-			d-cache-sets = <32>;
-			d-cache-size = <4096>;
-			d-tlb-sets = <1>;
-			d-tlb-size = <32>;
 			device_type = "cpu";
-			hardware-exec-breakpoint-count = <16>;
-			i-cache-block-size = <64>;
-			i-cache-sets = <32>;
-			i-cache-size = <4096>;
-			i-tlb-sets = <1>;
-			i-tlb-size = <32>;
-			mmu-type = "riscv,sv57";
-			next-level-cache = <&ram0 &rom>;
-			reg = <0x3>;
-			riscv,isa = "rv64imafdczicond_zicsr_zifencei_zihpm_xrocket";
-			riscv,pmpgranularity = <4>;
-			riscv,pmpregions = <8>;
+			mmu-type = "riscv,sv48";
+			reg = <0x0>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "m", "a", "f", "d", "c",
+				"zicond", "zicsr", "zifencei", "zihpm", "xrocket";
 			status = "okay";
-			timebase-frequency = <1000000>;
-			tlb-split;
 			cpu3_intc: interrupt-controller {
 				#address-cells = <0>;
 				#interrupt-cells = <1>;

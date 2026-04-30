@@ -565,6 +565,8 @@ uint32_t I2CReadBytes(uint32_t id, uint16_t command, uint32_t command_byte_size,
 /**
  * @brief I2C Read-Modify-Write-Verify
  */
+extern uint32_t I2CWriteBytes_ASM(uint32_t id, uint16_t command, uint32_t command_byte_size,
+		       const uint8_t *p_write_buf, uint32_t data_byte_size);
 uint32_t I2CRMWV(uint32_t id, uint16_t command, uint32_t command_byte_size, const uint8_t *p_data,
 		 const uint8_t *p_mask, uint32_t data_byte_size)
 {
@@ -583,7 +585,8 @@ uint32_t I2CRMWV(uint32_t id, uint16_t command, uint32_t command_byte_size, cons
 	}
 
 	/* Write */
-	ic_error = I2CWriteBytes(id, command, command_byte_size, buffer, data_byte_size);
+	//ic_error = I2CWriteBytes(id, command, command_byte_size, buffer, data_byte_size);
+	ic_error = I2CWriteBytes_ASM(id, command, command_byte_size, buffer, data_byte_size);
 	if (ic_error) {
 		return ic_error;
 	}
