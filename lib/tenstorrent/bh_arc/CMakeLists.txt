@@ -23,7 +23,6 @@ zephyr_library_sources_ifndef(
   noc.c
   noc_init.c
   pcie_dma.c
-  pcie_msi.c
   pvt.c
   regulator.c
   regulator_config.c
@@ -53,6 +52,7 @@ zephyr_library_sources(
   noc2axi.c
   noc_init.c
   pcie.c
+  pcie_msi.c
   pll.c
   post_code.c
   reset.c
@@ -67,6 +67,7 @@ zephyr_library_sources(
 zephyr_library_add_dependencies(nanopb_generated_headers)
 
 zephyr_library_sources_ifdef(CONFIG_TT_SHELL tt_shell.c)
+zephyr_library_sources_ifdef(CONFIG_TT_PCIE_LOG_BACKEND tt_pcie_log.c)
 
 zephyr_linker_sources(DATA_SECTIONS iterables.ld)
 if(CONFIG_ARC)
