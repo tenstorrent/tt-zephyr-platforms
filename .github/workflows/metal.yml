@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
-          MATRIX_CONFIG="$(jq -c '[.[] | select(.product == "bh") | del(.product)]' .github/ci_boards.json)"
+          MATRIX_CONFIG="$(jq -c '[.[] | select((.product == "bh") and (."metal-image" != null)) | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config=$MATRIX_CONFIG" | tee -a $GITHUB_OUTPUT
 
   metal-test:

@@ -37,11 +37,11 @@ jobs:
         run: |
           # Filter to only Blackhole boards (product == "bh"), then remove the product field
           # Exclude galaxy board from smoke tests since we do not have a recovery solution for it
-          MATRIX_CONFIG_BH="$(jq -c '[.[] | select((.product == "bh") and (.board != "galaxy")) | del(.product)]' .github/ci_boards.json)"
+          MATRIX_CONFIG_BH="$(jq -c '[.[] | select((.product == "bh") and (.board != "galaxy") and (.stlink != false)) | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config-bh=$MATRIX_CONFIG_BH" | tee -a $GITHUB_OUTPUT
 
           # Filter to only Wormhole boards (product == "wh"), then remove the product field
-          MATRIX_CONFIG_WH="$(jq -c '[.[] | select(.product == "wh") | del(.product)]' .github/ci_boards.json)"
+          MATRIX_CONFIG_WH="$(jq -c '[.[] | select((.product == "wh") and (.stlink != false)) | del(.product)]' .github/ci_boards.json)"
           echo "matrix-config-wh=$MATRIX_CONFIG_WH" | tee -a $GITHUB_OUTPUT
 
   hardware-smoke-test:
